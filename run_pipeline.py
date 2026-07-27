@@ -46,7 +46,8 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from me_engine.assembly.assembler import Assembler
 from me_engine.domain.runtime_taxonomy import build_taxonomy_from_workbook
 from me_engine.io.input_drivers import InputDriverBuilder
-from me_engine.io.me_writer import MEWorkbookWriter
+from me_engine.io.me_builder import MEWorkbookBuilder
+from me_engine.io.me_writer import MEWorkbookWriter, TemplateMismatchError
 from me_engine.io.workbook_inspector import WorkbookInspector, metadata_output_path
 from me_engine.validation.gate1 import InputValidator
 from me_engine.validation.gate3 import OutputValidator
@@ -147,19 +148,26 @@ def main() -> int:
     print("└─ Assembly done.\n")
 
     # ── WRITE OUTPUT ────────────────────────────────────────────────────────
-    if template and template.exists():
-        writer = MEWorkbookWriter(template)
-    elif ref_path and ref_path.exists():
-        writer = MEWorkbookWriter(ref_path)
+    # A template/reference is only usable when its own sheets/labels match this
+    # market's taxonomy (MEWorkbookWriter.write raises TemplateMismatchError
+    # otherwise — e.g. the reference's geography breakdown is coarser/finer
+    # than this run's). Rather than halting, fall back to a from-scratch build
+    # (MEWorkbookBuilder) straight from the assembled result — nothing borrowed.
+    # Gate 3's reference diff below still runs against `ref_path` regardless of
+    # which writer produced the file; it compares whichever geographies/rows
+    # genuinely overlap and simply skips the rest.
+    borrowed = template if (template and template.exists()) else (ref_path if ref_path and ref_path.exists() else None)
+    if borrowed is not None:
+        try:
+            MEWorkbookWriter(borrowed).write(result, output_path)
+        except TemplateMismatchError as exc:
+            print("  [WARN] " + str(exc).replace("\n", "\n  "))
+            print("  Falling back to a from-scratch ME workbook (taxonomy-driven, nothing borrowed).")
+            MEWorkbookBuilder(taxonomy).build(result, output_path)
     else:
-        fallback = Path("ME - Global Avocado Oil Market.xlsx")
-        if not fallback.exists():
-            print("ERROR: no template workbook found. Provide --template or --reference.")
-            return 1
-        print(f"  [WARN] Using avocado template for styling: {fallback}")
-        writer = MEWorkbookWriter(fallback)
-
-    writer.write(result, output_path)
+        print("  No template/reference given — building the ME workbook from scratch "
+              "(taxonomy-driven, nothing borrowed).")
+        MEWorkbookBuilder(taxonomy).build(result, output_path)
     print(f"  Wrote: {output_path}\n")
 
     # ── GATE 3 ──────────────────────────────────────────────────────────────

@@ -1,12 +1,16 @@
 """LangGraph StateGraph for the synthetic Input-Sheet generator.
 
 Flow:
-    structure -> market_size -> shares -> reward -> (loop back to shares | asp)
-    asp -> brain -> END
+    structure -> market_size -> geo -> shares -> asp -> reward
+                     ^                                    |
+                     +---------- refine (loop back) -------+
+    reward -> (accept) -> finalize -> brain -> END
 
-The reward -> shares edge is the evidence-refinement ("RL") loop: the reward
-signal + critique feed back into the segmentation policy until the reward clears
-the threshold or the iteration budget is spent.
+The reward -> market_size edge is the evidence-refinement ("RL") loop: the
+reward signal + per-family critique (shares, market size/regional, asp) feed
+back into all four decision nodes for another attempt, until the reward clears
+the threshold or the iteration budget is spent. finalize restores whichever
+full iteration scored best, not just the last one.
 """
 from __future__ import annotations
 
@@ -28,6 +32,7 @@ class GenState(TypedDict, total=False):
     llm: GenLLM
     db_evidence: Any
     web_snippets: list[str]
+    dim_snippets: dict[str, list[str]]
     regional: dict[str, dict[str, float]]
     global_anchor_2026: float
     global_cagr: float
@@ -38,8 +43,13 @@ class GenState(TypedDict, total=False):
     reward: float
     critique: str
     dim_critique: dict[str, str]
+    market_critique: str
+    asp_critique: str
+    dim_score: dict[str, float]
+    market_score: float | None
+    asp_score: float | None
     best_reward: float
-    best_shares: dict[str, Any]
+    best_state: dict[str, Any]
     iter: int
     log: list[str]
 
@@ -70,10 +80,10 @@ def build_graph():
     g.add_edge("structure", "market_size")
     g.add_edge("market_size", "geo")
     g.add_edge("geo", "shares")
-    g.add_edge("shares", "reward")
-    g.add_conditional_edges("reward", _should_refine, {"refine": "shares", "accept": "finalize"})
-    g.add_edge("finalize", "asp")
-    g.add_edge("asp", "brain")
+    g.add_edge("shares", "asp")
+    g.add_edge("asp", "reward")
+    g.add_conditional_edges("reward", _should_refine, {"refine": "market_size", "accept": "finalize"})
+    g.add_edge("finalize", "brain")
     g.add_edge("brain", END)
     return g.compile()
 
@@ -90,6 +100,7 @@ def run_generation(market_name: str, skeleton: Skeleton, config: GenConfig,
         "iter": 0,
         "log": [],
     }
-    # recursion_limit must exceed nodes * loop iterations
-    final = graph.invoke(init, config={"recursion_limit": 50})
+    # recursion_limit must exceed nodes * loop iterations (5 nodes/iteration now
+    # that market_size/geo/asp are refined too, not just shares)
+    final = graph.invoke(init, config={"recursion_limit": 80})
     return final

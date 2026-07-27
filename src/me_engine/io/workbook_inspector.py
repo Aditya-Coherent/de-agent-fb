@@ -772,13 +772,6 @@ class WorkbookInspector:
         """
         _SHARE_TOL = 0.05  # allow ±5% rounding (lenient — just a warning)
 
-        # Build a row map: label -> row number
-        label_row: dict[str, int] = {}
-        for row in range(1, ws.max_row + 1):
-            label = ws.cell(row, _COL_LABEL).value
-            if isinstance(label, str) and label.strip():
-                label_row[label.strip()] = row
-
         # Build col map from column_headers actually found
         geo_cols: dict[str, int] = {}
         for col in range(_COL_GEO_START, _COL_GEO_END + 1):
@@ -792,17 +785,27 @@ class WorkbookInspector:
                        if g.has_column and g.has_cagr and g.has_anchor][:5]
 
         for dim in dimensions:
-            seg_rows = [label_row.get(seg) for seg in dim.segments]
-            if any(r is None for r in seg_rows):
+            # Look up each segment's row ONLY within this dimension's own
+            # row_start..row_end range. A segment label reused across
+            # dimensions (e.g. a generic "Others" leaf present in every
+            # dimension) must resolve to THIS dimension's own row — a
+            # whole-sheet label->row map would let a later dimension's row
+            # silently overwrite an earlier one for a shared label.
+            seg_rows: dict[str, int] = {}
+            for row in range(dim.row_start, dim.row_end + 1):
+                label = ws.cell(row, _COL_LABEL).value
+                if isinstance(label, str) and label.strip() in dim.segments:
+                    seg_rows[label.strip()] = row
+            if len(seg_rows) != len(dim.segments):
                 continue   # partial dimension — skip
             for geo in sample_geos:
                 col = geo_cols.get(geo)
                 if col is None:
                     continue
                 total = sum(
-                    float(ws.cell(seg_rows[i], col).value)
-                    for i, _ in enumerate(dim.segments)
-                    if isinstance(ws.cell(seg_rows[i], col).value, (int, float))
+                    float(ws.cell(seg_rows[seg], col).value)
+                    for seg in dim.segments
+                    if isinstance(ws.cell(seg_rows[seg], col).value, (int, float))
                 )
                 if total > 0 and abs(total - 1.0) > _SHARE_TOL:
                     msg = (f"'{dim.title}' shares for {geo} sum to {total:.4f} "

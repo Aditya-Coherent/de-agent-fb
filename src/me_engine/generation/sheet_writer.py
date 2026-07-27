@@ -12,12 +12,44 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from openpyxl import Workbook
-from openpyxl.styles import Font
+from openpyxl.comments import Comment
+from openpyxl.styles import Font, PatternFill
 
 from .skeleton import Skeleton
+
+_CONF_FILL = {
+    "High": PatternFill("solid", fgColor="C6EFCE"),
+    "Medium": PatternFill("solid", fgColor="FFEB9C"),
+    "Low": PatternFill("solid", fgColor="FFC7CE"),
+    "Unscored": PatternFill("solid", fgColor="F2F2F2"),
+}
+
+
+def _confidence(score: float | None, has_evidence: bool) -> tuple[str, str]:
+    """Classify a reviewer score (+ whether real evidence backed it) into a
+    (label, note) pair. Reflects how the number was actually arrived at —
+    high LLM plausibility alone isn't "High" unless real evidence backed it,
+    since a confident-sounding guess is still a guess."""
+    if score is None:
+        return "Unscored", "No reviewer score recorded for this run."
+    if score >= 0.7 and has_evidence:
+        return "High", f"Reviewer score {score:.2f}; backed by web evidence."
+    if score >= 0.5:
+        note = "backed by web evidence" if has_evidence else "no direct web evidence — plausibility-based only"
+        return "Medium", f"Reviewer score {score:.2f}; {note}."
+    detail = "evidence was available but the split still scored low" if has_evidence \
+        else "no direct evidence and low reviewer plausibility"
+    return "Low", f"Reviewer score {score:.2f}; needs review — {detail}."
+
+
+def _write_confidence(ws, row: int, col: int, score: float | None, has_evidence: bool) -> None:
+    label, note = _confidence(score, has_evidence)
+    cell = ws.cell(row, col, label)
+    cell.fill = _CONF_FILL[label]
+    cell.comment = Comment(note, "DeAgent")
 
 
 def _country_factor(key: str, spread: float = 0.12) -> float:
@@ -31,7 +63,7 @@ def _dispersed_group(base_vec: dict[str, float], geo: str) -> dict[str, float]:
     return {seg: round(v / total, 4) for seg, v in raw.items()}
 
 
-def write_input_sheet(state: dict[str, Any], out_path: Path, flat: bool = False) -> Path:
+def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = False) -> Path:
     """Write the generated drivers to an Input Sheet workbook.
 
     flat=False (default): hierarchical share-of-parent rows (mirrors the human
@@ -45,6 +77,8 @@ def write_input_sheet(state: dict[str, Any], out_path: Path, flat: bool = False)
     shares = state["shares"]
     asp = state.get("asp", {})
     regional = state.get("regional", {})
+    dim_score = state.get("dim_score") or {}
+    dim_snippets = state.get("dim_snippets") or {}
     geos = sk.geographies
     # reverse map: geography -> region (for per-region share lookup)
     geo_region = {geo: region for region, members in sk.regions.items() for geo in members}
@@ -90,10 +124,13 @@ def write_input_sheet(state: dict[str, Any], out_path: Path, flat: bool = False)
     ws.cell(3, 2, "Segment").font = bold
     for ci, geo in enumerate(geos, start=3):
         ws.cell(3, ci, geo).font = bold
+    conf_col = 3 + len(geos) + 1
+    ws.cell(3, conf_col, "Confidence").font = bold
 
     r = 4
     for dim in sk.nesting:
         ws.cell(r, 2, dim).font = bold
+        _write_confidence(ws, r, conf_col, dim_score.get(dim), bool(dim_snippets.get(dim)))
         r += 1
         if flat:
             # only leaf segments, compounded share-of-dimension (sum to 1 per country)
@@ -162,6 +199,9 @@ def write_input_sheet(state: dict[str, Any], out_path: Path, flat: bool = False)
         aws.cell(3, ci, geo).font = bold
     ar = 4
     aws.cell(ar, 3, sk.priced_dimension).font = bold
+    asp_conf_col = 4 + len(geos) + 1
+    aws.cell(3, asp_conf_col, "Confidence").font = bold
+    _write_confidence(aws, ar, asp_conf_col, state.get("asp_score"), bool(state.get("web_snippets")))
     ar += 1
     priced_products = sk.leaves(sk.priced_dimension) if flat else sk.ordered_segments(sk.priced_dimension)
     for leaf in priced_products:
@@ -178,6 +218,7 @@ def write_input_sheet(state: dict[str, Any], out_path: Path, flat: bool = False)
     mv.cell(3, 3, "USD Mn").font = bold
     mv.cell(3, 4, "Share").font = bold
     mv.cell(3, 5, "CAGR").font = bold
+    mv.cell(3, 6, "Confidence").font = bold
     anchor = state.get("global_anchor_2026", 0.0)
     mr = 4
     for region, info in regional.items():
@@ -189,6 +230,7 @@ def write_input_sheet(state: dict[str, Any], out_path: Path, flat: bool = False)
     mv.cell(mr, 2, "Global").font = bold
     mv.cell(mr, 3, round(anchor, 2))
     mv.cell(mr, 5, round(state.get("global_cagr", 0.0), 4))
+    _write_confidence(mv, mr, 6, state.get("market_score"), bool(state.get("web_snippets")))
 
     # ---------------- Artifacts sheet ----------------
     art = wb.create_sheet("Artifacts")

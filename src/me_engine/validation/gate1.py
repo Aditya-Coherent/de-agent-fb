@@ -150,13 +150,31 @@ class InputValidator:
         # Only check flat dimensions (not hierarchical Distribution Channel)
         flat_dims = [d for d in self._taxonomy.segmentation_dimensions
                      if not any(d.parent_of(s) for s in d.segments)]
+        dim_by_title = {d.title: d for d in flat_dims}
+
+        # Single pass tracking which dimension's block each row belongs to.
+        # A segment label reused across dimensions (e.g. a generic "Others"
+        # leaf present in every dimension) must map to the row inside its OWN
+        # dimension's block — scanning the whole sheet per-dimension (the old
+        # approach) let a later dimension's row silently overwrite an earlier
+        # one for a shared label, corrupting the sum for the earlier dimension.
+        rows_by_dim: dict[str, dict[str, int]] = {d.title: {} for d in flat_dims}
+        current_dim: str | None = None
+        for row in range(1, ws.max_row + 1):
+            label = ws.cell(row, 2).value
+            if not isinstance(label, str):
+                continue
+            label = label.strip()
+            if not label:
+                continue
+            if label.startswith("By ") or label.startswith("Cross") or label == "Region":
+                current_dim = label
+                continue
+            if current_dim in rows_by_dim and label in dim_by_title[current_dim].segments:
+                rows_by_dim[current_dim][label] = row
 
         for dim in flat_dims:
-            seg_rows: dict[str, int] = {}
-            for row in range(1, ws.max_row + 1):
-                label = ws.cell(row, 2).value
-                if isinstance(label, str) and label.strip() in dim.segments:
-                    seg_rows[label.strip()] = row
+            seg_rows = rows_by_dim[dim.title]
 
             if len(seg_rows) != len(dim.segments):
                 report.warnings.append(

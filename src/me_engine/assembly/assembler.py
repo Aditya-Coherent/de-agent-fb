@@ -34,7 +34,109 @@ class Assembler:
             name: self._assemble_geography(geo)
             for name, geo in drivers.geographies.items()
         }
+        results = self._add_rollups(results)
         return MarketResult(market_name=drivers.market_name, geographies=results)
+
+    # --- region/Global rollups ------------------------------------------------
+    def _add_rollups(self, results: dict[str, GeographyResult]) -> dict[str, GeographyResult]:
+        """Synthesise Region/Global-level results by rolling up their children.
+
+        The Input Sheet only carries data for LEAF geographies (each has its
+        own column), so any parent node in the taxonomy's geography tree
+        (a region, or Global) has no driver of its own. Value and Volume are
+        additive across children, so they're summed; ASP is DERIVED from the
+        rolled-up Value and Volume (the implied weighted-average price) —
+        never summed or averaged directly, same identity the leaf-level
+        assembly already uses (value = volume * asp / 1000).
+
+        `geographies.in_order` lists parents before children (pre-order);
+        reversed, every node is visited only after all of its descendants,
+        so a region always rolls up from already-finished country results,
+        and Global rolls up from already-finished regions.
+        """
+        out = dict(results)
+        for node in reversed(self._taxonomy.geographies.in_order):
+            if node.name in out or not node.children:
+                continue
+            children = [out[c.name] for c in node.children if c.name in out]
+            if not children:
+                continue
+            out[node.name] = self._rollup_geography(node.name, children)
+        return out
+
+    def _rollup_geography(self, name: str, children: list[GeographyResult]) -> GeographyResult:
+        value_band = self._rollup_value_band(children)
+        volume_band = self._rollup_flat_band(Band.VOLUME, children)
+        asp_band = self._rollup_asp_band(value_band, volume_band)
+        return GeographyResult(
+            name=name,
+            bands={Band.VALUE: value_band, Band.ASP: asp_band, Band.VOLUME: volume_band},
+        )
+
+    def _rollup_value_band(self, children: list[GeographyResult]) -> BandResult:
+        """Sum every segment's series across children, then recompute each
+        segment's share_of_parent from the SUMMED series (respecting the
+        dimension's own parent/child nesting, exactly like `_segment_rows`)."""
+        child_bands = [c.bands[Band.VALUE] for c in children if Band.VALUE in c.bands]
+        total = self._sum_series(b.total for b in child_bands)
+
+        summed: dict[str, Series] = {}
+        for dim in self._taxonomy.segmentation_dimensions:
+            for segment in dim.segments:
+                series_list = [b.rows_by_label[segment].series
+                               for b in child_bands if segment in b.rows_by_label]
+                if series_list:
+                    summed[segment] = self._sum_series(series_list)
+
+        rows: dict[str, MetricRow] = {}
+        for dim in self._taxonomy.segmentation_dimensions:
+            for segment in dim.segments:
+                if segment not in summed:
+                    continue
+                parent_label = dim.parent_of(segment)
+                parent_series = total if parent_label is None else summed.get(parent_label, total)
+                rows[segment] = MetricRow(segment, summed[segment], summed[segment].share_of(parent_series))
+        return BandResult(band=Band.VALUE, total=total, rows_by_label=rows)
+
+    def _rollup_flat_band(self, band_kind: Band, children: list[GeographyResult]) -> BandResult:
+        """Sum every (flat, no nesting) row across children — used for Volume,
+        which is additive across geographies. Shares are then relative to the
+        summed total, same as the leaf-level volume band."""
+        child_bands = [c.bands[band_kind] for c in children if band_kind in c.bands]
+        labels = {label for b in child_bands for label in b.rows_by_label}
+        rows = {
+            label: MetricRow(
+                label,
+                self._sum_series(b.rows_by_label[label].series
+                                  for b in child_bands if label in b.rows_by_label),
+                share_of_parent=None,
+            )
+            for label in labels
+        }
+        if not rows:
+            fallback = child_bands[0].total if child_bands else Series({})
+            return BandResult(band=band_kind, total=fallback, rows_by_label={})
+        total = self._sum_series(r.series for r in rows.values())
+        rows = self._attach_shares(rows, total)
+        return BandResult(band=band_kind, total=total, rows_by_label=rows)
+
+    @staticmethod
+    def _rollup_asp_band(value_band: BandResult, volume_band: BandResult) -> BandResult:
+        """ASP is never summed/averaged — it's re-derived from the rolled-up
+        Value and Volume, the same identity used everywhere else:
+        volume = value / asp * 1000  =>  asp = value / volume * 1000."""
+        common = [p for p in volume_band.rows_by_label if p in value_band.rows_by_label]
+        rows = {
+            product: MetricRow(
+                product,
+                value_band.rows_by_label[product].series.divided_by(
+                    volume_band.rows_by_label[product].series, VOLUME_UNIT_SCALE),
+                share_of_parent=None,
+            )
+            for product in common
+        }
+        placeholder_total = next(iter(rows.values())).series if rows else value_band.total
+        return BandResult(band=Band.ASP, total=placeholder_total, rows_by_label=rows)
 
     # --- per geography ------------------------------------------------------
     def _assemble_geography(self, geo: GeographyDrivers) -> GeographyResult:

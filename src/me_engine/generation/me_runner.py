@@ -30,7 +30,7 @@ def run_me_pipeline(input_path: Path, output_path: Path, reference: Path | None 
     """
     root = root or Path(__file__).resolve().parents[3]
     args = [sys.executable, "-u", str(root / "run_pipeline.py"),
-            "--input", str(input_path), "--output", str(output_path), "--no-agents"]
+            "--input", str(input_path), "--output", str(output_path)]
     if reference is not None and reference.exists():
         args += ["--reference", str(reference)]
 

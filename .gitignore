@@ -19,6 +19,11 @@ output/
 # Generated output workbooks only
 output/*.xlsx
 my_outputs/
+agentGeneratedInputSheet/*.xlsx
+agentGeneratedMEWorkbook/
+
+# Log files (dev server output)
+*.log
 
 # Local environment files
 .env

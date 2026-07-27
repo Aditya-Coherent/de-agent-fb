@@ -244,4 +244,4 @@ python compare_input_sheets.py \
   --save-report "output/compare-technical-foam.json"
 ```
 
-Or use the Streamlit app (`streamlit run app.py`) → generate → **Baseline compare** tab.
+Or use the web app (backend: `python backend/main.py`, frontend: `npm run dev` in `frontend/`) → generate → **Baseline compare** tab.

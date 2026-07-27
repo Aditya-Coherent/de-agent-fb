@@ -53,7 +53,7 @@ class GenConfig:
             max_loop_iters=int(os.environ.get("DEAGENT_MAX_LOOP_ITERS", "4")),
             min_loop_iters=int(os.environ.get("DEAGENT_MIN_LOOP_ITERS", "2")),
             reward_threshold=float(os.environ.get("DEAGENT_REWARD_THRESHOLD", "0.9")),
-            per_region_shares=os.environ.get("DEAGENT_PER_REGION_SHARES", "0") == "1",
+            per_region_shares=os.environ.get("DEAGENT_PER_REGION_SHARES", "1") == "1",
         )
 
     @property

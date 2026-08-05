@@ -238,6 +238,26 @@ export default function Home() {
 
           <LiveLog lines={logLines} active={generating} />
 
+          {summary && summary.quality_flags?.length > 0 && (
+            <div className="space-y-2">
+              {summary.quality_flags.map((flag, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                    flag.severity === "critical"
+                      ? "border-rose-900/50 bg-rose-950/40 text-rose-300"
+                      : flag.severity === "warning"
+                        ? "border-amber-900/50 bg-amber-950/40 text-amber-300"
+                        : "border-sky-900/50 bg-sky-950/40 text-sky-300"
+                  }`}
+                >
+                  <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+                  <span>{flag.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {summary && (
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

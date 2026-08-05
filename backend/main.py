@@ -127,6 +127,15 @@ def get_history(limit: int = 25):
 # Generation (SSE — live log lines, then a final "done" event)
 # --------------------------------------------------------------------------- #
 def _run_generation_stream(market: str, source: str, skeleton_choice: str | None):
+    try:
+        yield from _run_generation_stream_inner(market, source, skeleton_choice)
+    except Exception as exc:
+        yield {"event": "error", "data": json.dumps({
+            "message": f"Generation crashed: {exc}"
+        })}
+
+
+def _run_generation_stream_inner(market: str, source: str, skeleton_choice: str | None):
     cfg = GenConfig.load(ROOT)
     if not cfg.is_online:
         yield {"event": "error", "data": json.dumps({"message": "No LLM API key found in .env"})}
@@ -136,7 +145,7 @@ def _run_generation_stream(market: str, source: str, skeleton_choice: str | None
         if not cfg.neon_url:
             yield {"event": "error", "data": json.dumps({"message": "NEON_DATABASE_URL not set in .env"})}
             return
-        yield {"event": "log", "data": json.dumps({"line": f"Building skeleton from the Neon report DB for '{market}' …"})}
+        yield {"event": "log", "data": json.dumps({"line": f"Looking up past research for '{market}' in our database..."})}
         skeleton, _ev = load_skeleton_from_db(market, cfg)
         if skeleton is None:
             yield {"event": "error", "data": json.dumps({"message": f"No DB segmentation found for '{market}'"})}
@@ -148,15 +157,17 @@ def _run_generation_stream(market: str, source: str, skeleton_choice: str | None
             yield {"event": "error", "data": json.dumps({"message": "No reference sheet chosen"})}
             return
         human_sheet = INPUTS_DIR / skeleton_choice
-        yield {"event": "log", "data": json.dumps({"line": f"Reading real structure from {skeleton_choice} (labels only) …"})}
+        yield {"event": "log", "data": json.dumps({"line": f"Reading the market structure from {skeleton_choice}..."})}
         skeleton = load_skeleton_from_human_sheet(human_sheet, market) or load_skeleton(human_sheet, market)
         skeleton_source = "Reference sheet"
 
     yield {"event": "log", "data": json.dumps({
-        "line": f"Skeleton: {len(skeleton.geographies)} geographies · {len(skeleton.nesting)} dimensions"
+        "line": f"Structure ready: {len(skeleton.geographies)} countries/regions, "
+                f"{len(skeleton.nesting)} segment categories to estimate"
     })}
     yield {"event": "log", "data": json.dumps({
-        "line": "Invoking LangGraph: structure → market_size → geo → shares ⇄ reward → finalize → asp → brain …"
+        "line": "Starting the AI analyst team: gathering evidence, then estimating market size, "
+                "geography, segments, and pricing -- with a review pass after each attempt..."
     })}
 
     llm = GenLLM(cfg, cache_path=CACHE_PATH)
@@ -197,6 +208,7 @@ def _run_generation_stream(market: str, source: str, skeleton_choice: str | None
         "shares": final_state.get("shares"),
         "artifacts": final_state.get("artifacts"),
         "has_human_sheet": human_sheet is not None,
+        "quality_flags": final_state.get("quality_flags") or [],
     }
     yield {"event": "done", "data": json.dumps(_json_safe(summary))}
 
@@ -221,14 +233,18 @@ def generate_me(req: RunIdBody):
     market = run["market"]
     out_path = Path(run["out_path"])
     me_input = out_path.with_name(out_path.stem + " [pipeline].xlsx")
-    write_input_sheet(state, me_input, flat=True)
 
-    me_output = ME_DIR / f"ME - {market}.xlsx"
-    # Production flow: Input Sheet -> ME workbook, nothing else. No automatic
-    # reference lookup/comparison here — that was a dev-only accuracy-testing
-    # aid (still available via `python run_pipeline.py --reference ...` for
-    # manual testing), not something the one-click flow should silently do.
-    res = run_me_pipeline(me_input, me_output, reference=None, root=ROOT)
+    try:
+        write_input_sheet(state, me_input, flat=True)
+        me_output = ME_DIR / f"ME - {market}.xlsx"
+        # Production flow: Input Sheet -> ME workbook, nothing else. No automatic
+        # reference lookup/comparison here — that was a dev-only accuracy-testing
+        # aid (still available via `python run_pipeline.py --reference ...` for
+        # manual testing), not something the one-click flow should silently do.
+        res = run_me_pipeline(me_input, me_output, reference=None, root=ROOT)
+    except Exception as exc:
+        raise HTTPException(500, f"ME workbook generation crashed: {exc}") from exc
+
     run["me_result"] = res
 
     if res.output_exists:

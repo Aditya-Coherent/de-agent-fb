@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Globe2,
   PieChart,
+  Table2,
   MessageSquareQuote,
   GitCompareArrows,
   History as HistoryIcon,
@@ -12,10 +13,12 @@ import {
 } from "lucide-react";
 import type { GenerateSummary, HistoryEntry, CompareReport } from "@/lib/types";
 import { runCompare, downloadByPathUrl } from "@/lib/api";
+import PivotExplorer from "./PivotExplorer";
 
 const TABS: { name: string; icon: LucideIcon }[] = [
   { name: "Regional", icon: Globe2 },
   { name: "Segmentation shares", icon: PieChart },
+  { name: "Pivot", icon: Table2 },
   { name: "Artifacts", icon: MessageSquareQuote },
   { name: "Baseline compare", icon: GitCompareArrows },
   { name: "History", icon: HistoryIcon },
@@ -131,6 +134,8 @@ export default function ResultsTabs({
             })}
           </div>
         )}
+
+        {tab === "Pivot" && <PivotExplorer summary={summary} />}
 
         {tab === "Artifacts" && (
           <div className="space-y-4">

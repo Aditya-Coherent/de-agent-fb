@@ -17,7 +17,7 @@ from __future__ import annotations
 import html
 import re
 
-from .db_source import DBEvidence, fetch_market_evidence
+from .db_source import DBEvidence, fetch_market_evidence, fetch_market_evidence_semantic, verify_market_match
 from .skeleton import Skeleton
 
 _REGION_TITLE = re.compile(r"region|geograph", re.I)
@@ -217,15 +217,34 @@ def build_skeleton_via_llm(market_name: str, ev: DBEvidence, llm) -> Skeleton | 
 
 def load_skeleton_from_db(market_name: str, cfg) -> tuple[Skeleton | None, DBEvidence | None]:
     """Fetch DB evidence and build a skeleton. Primary path: LLM schema extraction
-    (robust to messy HTML). Fallback: regex HTML parser."""
+    (robust to messy HTML). Fallback: regex HTML parser.
+
+    A keyword LIKE match can land on a completely unrelated report (e.g. "Global
+    Watch Market" matching a blood-pressure-monitor report that happens to share a
+    substring) — this builds the ENTIRE category taxonomy, so an unverified match
+    here is worse than an unverified market-size evidence brief. Same guard as
+    structure_node's DB evidence fetch: verify, and on rejection retry once with a
+    genuine semantic-only lookup before giving up."""
+    llm = None
+    if cfg.is_online:
+        from .llm import GenLLM  # local import to avoid a hard dependency cycle
+        llm = GenLLM(cfg)
+
     ev = fetch_market_evidence(cfg.neon_url, market_name)
+    if ev is not None and llm is not None and not verify_market_match(market_name, ev.raw_narrative, llm):
+        ev = None
+        try:
+            alt = fetch_market_evidence_semantic(cfg.neon_url, market_name)
+            if alt is not None and verify_market_match(market_name, alt.raw_narrative, llm):
+                ev = alt
+        except Exception:  # noqa: BLE001
+            pass
     if ev is None or not ev.raw_segmentation:
         return None, ev
     sk = None
-    if cfg.is_online:
-        from .llm import GenLLM  # local import to avoid a hard dependency cycle
+    if llm is not None:
         try:
-            sk = build_skeleton_via_llm(market_name, ev, GenLLM(cfg))
+            sk = build_skeleton_via_llm(market_name, ev, llm)
         except Exception:  # noqa: BLE001
             sk = None
     if sk is None:

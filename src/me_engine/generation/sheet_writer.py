@@ -137,7 +137,7 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
             for seg in sk.leaves(dim):
                 ws.cell(r, 2, seg)
                 for ci, geo in enumerate(geos, start=3):
-                    ws.cell(r, ci, country_leaf_vector(dim, geo).get(seg, 0.0))
+                    ws.cell(r, ci, country_leaf_vector(dim, geo).get(seg, 0.0)).number_format = "0.0%"
                 r += 1
         else:
             # hierarchical share-of-parent rows (mirrors the human sheet)
@@ -151,7 +151,7 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
                     for ci, geo in enumerate(geos, start=3):
                         base_vec = base_vector(dim, geo_region.get(geo), parent)
                         disp = _dispersed_group(base_vec, geo)
-                        ws.cell(r, ci, disp.get(seg, base_vec.get(seg, 0.0)))
+                        ws.cell(r, ci, disp.get(seg, base_vec.get(seg, 0.0))).number_format = "0.0%"
                     r += 1
         r += 1  # blank spacer between dimensions
 
@@ -168,7 +168,7 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
     ws.cell(r, 5, "Value").font = bold
     r += 1
     ws.cell(r, 2, "Global").font = bold
-    ws.cell(r, 3, 1)
+    ws.cell(r, 3, 1).number_format = "0.0%"
     ws.cell(r, 5, round(anchor, 2))
     r += 1
     for region, members in sk.regions.items():
@@ -176,16 +176,16 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
         rshare = info.get("value_share", 0.0)
         rvalue = anchor * rshare
         ws.cell(r, 2, region).font = bold
-        ws.cell(r, 3, round(rshare, 4))
-        ws.cell(r, 4, round(info.get("cagr", 0.0), 4))
+        ws.cell(r, 3, round(rshare, 4)).number_format = "0.0%"
+        ws.cell(r, 4, round(info.get("cagr", 0.0), 4)).number_format = "0.0%"
         ws.cell(r, 5, round(rvalue, 2))
         r += 1
         for country in members:
             cinfo = geo.get(region, {}).get(country, {})
             cshare = cinfo.get("share_of_region", 1.0 / max(1, len(members)))
             ws.cell(r, 2, country)
-            ws.cell(r, 3, round(cshare, 4))
-            ws.cell(r, 4, round(cinfo.get("cagr", info.get("cagr", 0.1)), 4))
+            ws.cell(r, 3, round(cshare, 4)).number_format = "0.0%"
+            ws.cell(r, 4, round(cinfo.get("cagr", info.get("cagr", 0.1)), 4)).number_format = "0.0%"
             ws.cell(r, 5, round(rvalue * cshare, 2))
             r += 1
 
@@ -224,12 +224,12 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
     for region, info in regional.items():
         mv.cell(mr, 2, region)
         mv.cell(mr, 3, round(anchor * info["value_share"], 2))
-        mv.cell(mr, 4, round(info["value_share"], 4))
-        mv.cell(mr, 5, round(info["cagr"], 4))
+        mv.cell(mr, 4, round(info["value_share"], 4)).number_format = "0.0%"
+        mv.cell(mr, 5, round(info["cagr"], 4)).number_format = "0.0%"
         mr += 1
     mv.cell(mr, 2, "Global").font = bold
     mv.cell(mr, 3, round(anchor, 2))
-    mv.cell(mr, 5, round(state.get("global_cagr", 0.0), 4))
+    mv.cell(mr, 5, round(state.get("global_cagr", 0.0), 4)).number_format = "0.0%"
     _write_confidence(mv, mr, 6, state.get("market_score"), bool(state.get("web_snippets")))
 
     # ---------------- Artifacts sheet ----------------

@@ -32,3 +32,146 @@ then other one will answer there is us-iran war that's why? and will generate th
 
 comparison ME workbook Command : 
 python compare_me_workbooks.py --generated "agentGeneratedMEWorkbook/ME - X.xlsx" --reference "my_reference/ME-X.xlsx" --save-report "output/compare.json"
+
+
+push krna bacha hai abhi
+
+
+Market Intelligence Improvement
+
+Discovered 35 companies -> my_companies/global_avocado_oil_market_discovered.csv
+Supply-side total: 680.8 USD Mn
+Demand-side total:  748.3 USD Mn
+Relative error:     9.0%
+
+
+python compare_demand_supply.py --market "<market>" --discover [--country "<optional>"]
+
+python compare_demand_supply.py --market "<market name>" --discover --save-report "output/compare-<market>.json"
+
+Dicover & Verify :- 
+python compare_demand_supply.py --market "Global Avocado Oil Market" --discover --country "India"
+
+
+Final structure ab ye hai (demand-side ke graph.py/agents.py pattern jaisa hi, apna alag state/nodes ke saath):
+
+src/me_engine/bottomup/graph.py — BottomUpState (apna TypedDict) + 4 nodes (geography → companies_revenue → coverage → aggregate) → build_graph() (LangGraph StateGraph) → run_bottom_up()
+src/me_engine/bottomup/estimator.py — sirf LLM-calling tool functions (nodes inhe call karte hain)
+src/me_engine/bottomup/geography.py — apna geography-discovery agent (demand-side ki file nahi padhta)
+bottomup_pipeline.py — CLI jo graph ko run karta hai, log-trace bhi print karta hai (dikhta hai kaunsa node chal raha hai)
+
+
+run : 
+find fresh companies
+python bottomup_pipeline.py --market "Global Avocado Oil Market" --discover --save-report "output/bottomup-avocado-oil.json" 
+
+using existing companies : 
+python bottomup_pipeline.py --market "Global Avocado Oil Market" --companies "my_companies/global_avocado_oil_market_discovered.csv" --save-report "output/bottomup-avocado-oil.json"
+
+
+// json - global smartphone
+
+
+==================================================================
+WORK DONE SUMMARY (as of Aug 2026)
+==================================================================
+
+1. DEMAND-SIDE -- real-data grounding added
+------------------------------------------------
+- LLM still generates every number (market size, CAGR, regional shares,
+  segment shares, pricing) -- LLM dependency NOT removed here.
+- What changed: market_size_node now checks if evidence has an EXPLICITLY
+  CITED real figure. If yes -> LLM's number must match it; code-level regex
+  extractor (_extract_cited_value_mn) corrects the number if LLM's own
+  unit math is off by >2x (real bug found: same "USD 214 billion" citation
+  gave $214M in one pass, $214,000M in another).
+- Every run now tagged grounded=true/false + cited_figure, tracked honestly
+  instead of silently presenting an LLM guess as evidence-backed.
+- Fixed real bug: load_skeleton_from_db (dynamic_skeleton.py) trusted an
+  UNVERIFIED Neon DB keyword match to build category structure. For
+  "Global Watch Market" this matched "Digital Blood Pressure Monitors
+  Market" -> wrong categories + nonsensical $3M market size. Fixed by
+  adding the same verify_market_match + semantic-retry guard structure_node
+  already had.
+- Also found (not a code bug): the "Smartwatches Market" report's own
+  segmentation data in Neon DB has unrelated crop/agriculture content
+  bled into it -- a source data-quality issue, flagged separately.
+- Fixed web_evidence.py (ddgs library replaces broken raw DuckDuckGo
+  scraper that was ConnectTimeout-ing).
+
+2. SUPPLY-SIDE / BOTTOM-UP -- two techniques now, merged under supply/
+------------------------------------------------------------------------
+"Bottom-up" and "supply-side" are the same thing -- bottom-up is the
+technique (sum real data upward), supply-side is the resulting number.
+bottomup/ package fully merged into supply/ (no more separate pipeline).
+
+  A) Company-based (src/me_engine/supply/) -- estimator.py, graph.py,
+     financials.py, geography.py, discovery.py, verify.py
+     - Real grounding: yfinance + InsightSentry (RapidAPI) fetch REAL
+       filed revenue for PUBLIC companies -> hard-caps the LLM's guess.
+     - For PRIVATE companies (no financial data anywhere): LLM still
+       guesses from web snippets (ddgs), no real ceiling.
+     - Real finding: for avocado oil (0/40 companies had financial data,
+       all private) -- same --discover command run twice gave 318.6M
+       then 737.0M then 585.4M -- 2x+ swing, confirmed unreliable when
+       market has no public-company coverage.
+     - Kept as OPT-IN (--method company), not default, because of this.
+
+  B) Evidence-based (src/me_engine/supply/evidence_estimator.py) -- NEW,
+     fully LLM-free, now the DEFAULT method.
+     Steps: ddgs web search -> embedding relevance filter (sentence-
+     transformers, same as Neon semantic search) -> regex number
+     extraction (no LLM) -> Google Trends CAGR nudge (replaces the
+     "sentiment analysis" idea from mentor's plan -- podcasts and Reddit
+     were both tested and ruled out as free sentiment sources) ->
+     median aggregation.
+     - Verified working on avocado oil across 3 separate runs: 637-686M,
+       consistent, ~8-15% error vs demand-side's 748.3M.
+     - Real bug found + fixed: on "Global Smartphone Market" and later
+       "Global Cloud Computing Market", low citation-extraction yield
+       (only 3/15, then 4/12 snippets yielding a real number) produced
+       a confidently-wrong total 2-7x too low vs real published figures.
+       Fixed by raising the quality-flag thresholds (see section 3).
+
+3. QUALITY / SANITY FLAGS -- new, for production readiness
+--------------------------------------------------------------
+- src/me_engine/generation/quality.py (demand-side): flags implausible
+  market size, ungrounded estimate, low reviewer confidence (<70%), no
+  evidence found at all.
+- src/me_engine/supply/quality.py (supply-side): flags low extraction
+  yield (<40% of snippets yielded a figure), small sample (<5 figures),
+  no real company financial data, disagreement >40% between the two
+  supply-side techniques or vs demand-side.
+- Surfaced in: backend SSE log + summary, generation_history.jsonl,
+  compare_demand_supply.py CLI + JSON report, and a warning banner in
+  the Next.js UI (frontend/src/app/page.tsx) right above the metric cards.
+- Validated by re-running the exact original watch-market bug (anchor=3)
+  through the flag logic directly -- confirmed it fires.
+- Batch-tested against 5 new markets (EV charging, solar, coffee, baby
+  food, cloud computing) + checked results against real published
+  figures via web search -- found 2 more real gaps (loose threshold,
+  missing cross-method disagreement check) and fixed both.
+
+4. KNOWN OPEN ITEMS (not yet solved, for mentor/next steps)
+------------------------------------------------------------
+- Run-to-run variance: same command can give very different numbers
+  (esp. company-based method). Fix idea (not built yet): run N times,
+  report median + spread instead of one-shot.
+- Demand-side only works for markets already in the Neon DB (keyword or
+  semantic match) -- 3 of 5 markets in the batch test couldn't run via
+  --source db at all. No web-only fallback skeleton builder yet.
+- No "golden set" regression test yet (a fixed list of markets with known
+  real figures, re-run automatically to catch accuracy regressions).
+- Accuracy/closeness tuning itself -- explicitly mentor's call, not code.
+
+5. UI (Next.js/frontend)
+----------------------------
+- Added Pivot tab (region x segment-dimension cross-tab, client-side only).
+- Added quality-flag warning banner above the metric cards.
+- Rewrote all pipeline log lines (agents.py, backend/main.py) into plain,
+  non-technical narration for live demos.
+
+CLI reference (new):
+  python compare_demand_supply.py --market "<market>"                     (evidence-based, default, no company file needed)
+  python compare_demand_supply.py --market "<market>" --method company --discover
+  python compare_demand_supply.py --market "<market>" --method both --discover

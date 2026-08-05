@@ -76,6 +76,7 @@ def state_to_history_entry(market_name: str, state: Mapping[str, Any], *,
         "geographies": len(state.get("regional", {}) or {}),
         "db_evidence_used": state.get("db_evidence") is not None,
         "web_snippets": len(state.get("web_snippets") or []),
+        "quality_flags": [f.get("code") for f in (state.get("quality_flags") or [])],
         "output_path": out_path,
     }
 

@@ -1,0 +1,41 @@
+#,Company,country,likely_website,functionality,verification
+=== Manufacturers (39) ===
+1,ABB Ltd,Switzerland,abb.com,Process analyzers and automation solutions,"Website unreachable (ReadTimeout) — possibly generic/placeholder, verify manually"
+2,Siemens AG,Germany,siemens.com,Process analyzers and industrial automation,Website reachable (HTTP 200)
+3,Emerson Electric Co.,USA,emerson.com,Process analyzers and control systems,Website reachable (HTTP 200)
+4,Yokogawa Electric Corporation,Japan,yokogawa.com,Process analyzers and automation,Website reachable (HTTP 202)
+5,Endress+Hauser Group,Switzerland,endress.com,Process analyzers and instrumentation,Website reachable (HTTP 200)
+6,Thermo Fisher Scientific Inc.,USA,thermofisher.com,Analytical instruments and process analyzers,Website reachable (HTTP 200)
+7,Mettler-Toledo International Inc.,USA,mt.com,Process analytical technology,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+8,Honeywell International Inc.,USA,honeywell.com,Process analyzers and automation,Website reachable (HTTP 200)
+9,Schneider Electric SE,France,se.com,Process automation and analyzers,Website reachable (HTTP 200)
+10,Rockwell Automation Inc.,USA,rockwellautomation.com,Industrial automation and process analyzers,Website reachable (HTTP 200)
+11,AMETEK Inc.,USA,ametek.com,Process analyzers and instrumentation,Website reachable (HTTP 200)
+12,Bruker Corporation,USA,bruker.com,Analytical instruments for process analysis,"Website unreachable (HTTP 406) — possibly generic/placeholder, verify manually"
+13,PerkinElmer Inc.,USA,perkinelmer.com,Process analytical instruments,Website reachable (HTTP 200)
+14,Agilent Technologies Inc.,USA,agilent.com,Process analyzers and chromatography,Website reachable (HTTP 200)
+15,Shimadzu Corporation,Japan,shimadzu.com,Analytical and process analyzers,Website reachable (HTTP 200)
+16,Horiba Ltd,Japan,horiba.com,Process analyzers and environmental monitoring,Website reachable (HTTP 200)
+17,Teledyne Technologies Incorporated,USA,teledyne.com,Process analyzers and instrumentation,Website reachable (HTTP 200)
+18,Servomex Group Limited,UK,servomex.com,Gas analyzers for process industries,Website reachable (HTTP 200)
+19,SICK AG,Germany,sick.com,Process analyzers and sensor solutions,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+20,Mitsubishi Electric Corporation,Japan,mitsubishielectric.com,Process analyzers and automation,Website reachable (HTTP 200)
+21,"Fuji Electric Co., Ltd.",Japan,fujielectric.com,Process analyzers and instrumentation,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+22,KROHNE Messtechnik GmbH,Germany,krohne.com,Process analyzers and flow measurement,Website reachable (HTTP 200)
+23,Vaisala Oyj,Finland,vaisala.com,Process analyzers for environmental parameters,Website reachable (HTTP 200)
+24,GE Vernova (formerly GE Measurement & Control),USA,gevernova.com,Process analyzers and sensing,Website reachable (HTTP 200)
+25,Parker Hannifin Corporation,USA,parker.com,Process analytical systems and fluidics,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+26,Bühler AG,Switzerland,buhlergroup.com,Process analyzers for food and feed,Website reachable (HTTP 200)
+27,Anton Paar GmbH,Austria,anton-paar.com,Process analyzers for density and concentration,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+28,LumaSense Technologies Inc.,USA,lumasenseinc.com,Process analyzers for temperature and gas,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+29,MKS Instruments Inc.,USA,mksinst.com,Process analyzers for vacuum and gas,"Website unreachable (ConnectTimeout) — possibly generic/placeholder, verify manually"
+30,Spectris plc,UK,spectris.com,Process analytical instruments (parent company),Website reachable (HTTP 200)
+31,Fortive Corporation,USA,fortive.com,Process analyzers (parent company of multiple brands),Website reachable (HTTP 200)
+32,Danaher Corporation,USA,danaher.com,Process analytical instruments (parent company),Website reachable (HTTP 200)
+33,Rohde & Schwarz GmbH & Co KG,Germany,rohde-schwarz.com,Process analyzers for communications and test,Website reachable (HTTP 200)
+34,Hach Company (Danaher),USA,hach.com,Water quality process analyzers,Website reachable (HTTP 200)
+35,Sartorius AG,Germany,sartorius.com,Process analyzers for biopharma,Website reachable (HTTP 200)
+36,Malvern Panalytical (Spectris),UK,malvernpanalytical.com,Process analyzers for particle and material characterization,Website reachable (HTTP 200)
+37,B&W Tek (Metrohm),USA,bwtek.com,Raman process analyzers,Website reachable (HTTP 200)
+38,Kaiser Optical Systems (Endress+Hauser),USA,kosi.com,Raman process analyzers,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+39,ABB Measurement & Analytics,Switzerland,abb.com/measurement,Process analyzers and instrumentation,"Website unreachable (ReadTimeout) — possibly generic/placeholder, verify manually"

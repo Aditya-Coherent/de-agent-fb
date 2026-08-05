@@ -1,37 +1,33 @@
-"""Best-effort live web evidence (DuckDuckGo HTML). Degrades gracefully to []."""
+"""Live web evidence via `ddgs` (multi-backend: Bing, Mojeek, Google,
+DuckDuckGo, with fallback). Degrades gracefully to [] on any failure.
+
+Replaces the previous single-backend raw DuckDuckGo-HTML scrape, which was
+failing (ConnectTimeout) in this environment — meaning every demand-side
+generation was silently running on zero real web evidence, with the LLM
+estimating market size/regions/segments/pricing from its own training
+knowledge alone. `ddgs` has been confirmed to actually return results here.
+"""
 from __future__ import annotations
 
-import html
-import re
 
-import httpx
-
-_DDG = "https://html.duckduckgo.com/html/"
-_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
-
-
-def search_snippets(query: str, max_results: int = 6, timeout: float = 15.0) -> list[str]:
+def search_snippets(query: str, max_results: int = 6) -> list[str]:
     """Return short text snippets for a query. Never raises — returns [] on failure."""
     try:
-        resp = httpx.post(
-            _DDG,
-            data={"q": query},
-            headers={"User-Agent": _UA},
-            timeout=timeout,
-            follow_redirects=True,
-        )
-        resp.raise_for_status()
-    except Exception:
+        from ddgs import DDGS
+
+        results = DDGS().text(query, max_results=max_results)
+    except Exception:  # noqa: BLE001 - never let a search failure break generation
         return []
 
     snippets: list[str] = []
-    for m in re.finditer(r'class="result__snippet"[^>]*>(.*?)</a>', resp.text, flags=re.S):
-        text = re.sub(r"<[^>]+>", " ", m.group(1))
-        text = re.sub(r"\s+", " ", html.unescape(text)).strip()
+    for r in results:
+        title = (r.get("title") or "").strip()
+        body = (r.get("body") or "").strip()
+        if not body:
+            continue
+        text = f"{title}: {body}" if title else body
         if len(text) > 30:
             snippets.append(text)
-        if len(snippets) >= max_results:
-            break
     return snippets
 
 

@@ -22,3 +22,8 @@ pytest>=8.0.0
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 sse-starlette>=2.0.0
+
+# Supply-side: real company revenue data + real multi-backend web search
+# (replaces LLM-guessed revenue and the broken single-backend DDG scraper)
+yfinance>=0.2.40
+ddgs>=9.0.0

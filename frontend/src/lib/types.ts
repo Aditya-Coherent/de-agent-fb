@@ -23,6 +23,12 @@ export interface Artifact {
   current_events: string[];
 }
 
+export interface QualityFlag {
+  code: string;
+  severity: "critical" | "warning" | "info";
+  message: string;
+}
+
 export interface GenerateSummary {
   run_id: string;
   market: string;
@@ -34,6 +40,7 @@ export interface GenerateSummary {
   shares: Record<string, Record<string, Record<string, Record<string, number>>>>;
   artifacts: Artifact[];
   has_human_sheet: boolean;
+  quality_flags: QualityFlag[];
 }
 
 export interface MEResult {

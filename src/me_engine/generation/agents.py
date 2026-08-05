@@ -8,6 +8,7 @@ agent scores the number set and drives the refinement loop.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from .db_source import (
@@ -17,6 +18,7 @@ from .db_source import (
     verify_market_match,
 )
 from .llm import GenLLM
+from .quality import compute_demand_quality_flags
 from .skeleton import Skeleton
 from .web_evidence import gather
 
@@ -58,6 +60,28 @@ def _evidence_brief(state: dict[str, Any], dim: str | None = None) -> str:
     return "\n\n".join(parts) if parts else "(no external evidence available)"
 
 
+_UNIT_TO_MN = {"trillion": 1_000_000, "billion": 1_000, "million": 1, "bn": 1_000, "mn": 1}
+_CITED_VALUE_RE = re.compile(
+    r"(?:USD|US\$|\$)\s*([\d,]+(?:\.\d+)?)\s*(trillion|billion|million|bn|mn)\b", re.IGNORECASE
+)
+
+
+def _extract_cited_value_mn(cited_text: str) -> float | None:
+    """Parse a real cited figure like 'USD 214 billion' into US$ Mn (214000),
+    independent of whatever number the LLM itself reported -- LLMs are
+    unreliable at billion/million conversion in their own arithmetic (verified:
+    the same 'USD 214 billion' citation produced $214M in one pass and
+    $214,000M in another for the identical market). This is the code-level
+    check, not just a prompt instruction."""
+    if not cited_text:
+        return None
+    m = _CITED_VALUE_RE.search(cited_text)
+    if not m:
+        return None
+    number = float(m.group(1).replace(",", ""))
+    return number * _UNIT_TO_MN[m.group(2).lower()]
+
+
 # --------------------------------------------------------------------------- #
 # nodes
 # --------------------------------------------------------------------------- #
@@ -71,14 +95,14 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
         try:
             db_ev = fetch_market_evidence(cfg.neon_url, sk.market_name)
         except Exception as exc:  # noqa: BLE001
-            log.append(f"DB fetch failed: {exc}")
+            log.append(f"Could not reach the research database: {exc}")
 
         if db_ev is not None and cfg.is_online:
             try:
                 if not verify_market_match(sk.market_name, db_ev.raw_narrative, llm):
                     log.append(
-                        f"DB evidence rejected: narrative did not match '{sk.market_name}' — "
-                        "trying semantic search for a second opinion"
+                        f"Past research didn't match '{sk.market_name}' closely enough -- "
+                        "trying a meaning-based search instead of a keyword match"
                     )
                     db_ev = None
                     # A LIKE hit can land on a generic word (e.g. "retail") that
@@ -88,13 +112,13 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
                         alt = fetch_market_evidence_semantic(cfg.neon_url, sk.market_name)
                         if alt is not None and verify_market_match(sk.market_name, alt.raw_narrative, llm):
                             db_ev = alt
-                            log.append(f"semantic retry matched: '{alt.keyword}'")
+                            log.append(f"Found a better match via meaning-based search: '{alt.keyword}'")
                         elif alt is not None:
-                            log.append("semantic retry also rejected — no DB evidence used")
+                            log.append("No close match found in past research -- continuing without it")
                     except Exception as exc:  # noqa: BLE001
-                        log.append(f"semantic retry failed: {exc}")
+                        log.append(f"Meaning-based search failed: {exc}")
             except Exception as exc:  # noqa: BLE001
-                log.append(f"DB match verification failed (keeping evidence): {exc}")
+                log.append(f"Could not double-check the research match, keeping it anyway: {exc}")
 
     snippets: list[str] = []
     dim_snippets: dict[str, list[str]] = {}
@@ -107,7 +131,7 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
         try:
             snippets = gather(queries)
         except Exception as exc:  # noqa: BLE001
-            log.append(f"web gather failed: {exc}")
+            log.append(f"Could not fetch live web results: {exc}")
 
         # Per-dimension queries: the broad/flat dimensions (many near-equal
         # segments) are the ones the shares agent gets most wrong when it only
@@ -121,11 +145,12 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
             try:
                 dim_snippets[dim] = gather(dim_queries, per_query=4, cap=6)
             except Exception as exc:  # noqa: BLE001
-                log.append(f"web gather failed for {dim}: {exc}")
+                log.append(f"Could not fetch live web results for '{dim}': {exc}")
 
+    db_note = "found matching past research" if db_ev else "no matching past research found"
     log.append(
-        f"structure: db={'yes' if db_ev else 'no'} web_snippets={len(snippets)} "
-        f"dim_snippets={sum(len(v) for v in dim_snippets.values())}"
+        f"Evidence gathered: {db_note}, {len(snippets)} live web results, "
+        f"{sum(len(v) for v in dim_snippets.values())} category-specific web results"
     )
     return {"db_evidence": db_ev, "web_snippets": snippets, "dim_snippets": dim_snippets, "log": log}
 
@@ -136,11 +161,19 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
     llm: GenLLM = state["llm"]
     regions = list(sk.regions.keys())
     system = (
-        "You are a market-sizing analyst. From the evidence, decide the GLOBAL market "
-        "value for the base year 2026 (US$ Mn), the overall value CAGR (2026-2033, as a "
-        "decimal), and for each region its share of global value (decimals summing to 1) "
-        "and its own value CAGR (decimal). Decide independently from evidence; if the "
-        "evidence gives a global size or CAGR, you may adopt or adjust it with reasoning."
+        "You are a market-sizing analyst. Real-data-grounded rule: first check whether the "
+        "evidence below contains an EXPLICITLY CITED market-size and/or CAGR figure (a specific "
+        "number attributed to a real source — a report, an article, a forecast — not a vague "
+        "mention). If it does, your global_value_2026 and global_cagr MUST be derived from and "
+        "consistent with that real cited figure (adjusting for year/scope differences with "
+        "reasoning is fine; inventing a disconnected number is not). Set \"grounded\": true and "
+        "name the cited figure in your reasoning. If NO explicitly cited figure exists anywhere "
+        "in the evidence, you must still produce a best estimate using your own market knowledge "
+        "(a market cannot be sized as zero) — but set \"grounded\": false so this is tracked "
+        "transparently as an ungrounded estimate, not silently presented as evidence-backed. "
+        "For each region, give its share of global value (decimals summing to 1) and its own "
+        "value CAGR (decimal), grounded the same way wherever the evidence covers a region "
+        "specifically."
     )
     refine = ""
     critique = state.get("market_critique", "")
@@ -155,7 +188,8 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
         )
     user = (
         f"Market: {sk.market_name}\nRegions: {regions}\n\n{_evidence_brief(state)}{refine}\n\n"
-        'Return JSON: {"global_value_2026": number, "global_cagr": number, '
+        'Return JSON: {"global_value_2026": number, "global_cagr": number, "grounded": <true|false>, '
+        '"cited_figure": "<the real figure you grounded on, or empty string if none>", '
         '"regions": {"<region>": {"value_share": number, "cagr": number}}}'
     )
     data = llm.complete_json(system, user)
@@ -168,10 +202,30 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
         regional[r] = {"value_share": shares[r], "cagr": round(min(0.45, max(0.01, cagr)), 4)}
     global_anchor = float(data.get("global_value_2026", 0.0) or 0.0) or 1000.0
     global_cagr = round(min(0.45, max(0.01, float(data.get("global_cagr", 0.1) or 0.1))), 4)
+    grounded = bool(data.get("grounded"))
+    cited = str(data.get("cited_figure") or "").strip()
+
+    # Code-level check, not just a prompt instruction: LLMs are unreliable at
+    # billion/million conversion in their own arithmetic (verified: the same
+    # "USD 214 billion" citation produced $214M in one pass, $214,000M in
+    # another, for the identical market). If the cited text itself states a
+    # parseable figure and the LLM's own number is off by more than 2x from
+    # it, trust the parsed citation instead of the LLM's arithmetic.
+    correction_note = ""
+    if grounded:
+        cited_value_mn = _extract_cited_value_mn(cited)
+        if cited_value_mn and cited_value_mn > 0 and not (0.5 * cited_value_mn <= global_anchor <= 2.0 * cited_value_mn):
+            correction_note = f" [corrected from ${global_anchor:,.0f}M -- unit mismatch vs cited figure]"
+            global_anchor = cited_value_mn
+
+    note = f"grounded on: {cited}{correction_note}" if grounded and cited else "no cited figure found — ungrounded estimate"
     state.setdefault("log", []).append(
-        f"market_size: anchor2026={global_anchor:.1f} cagr={global_cagr:.3f}"
+        f"Estimated total market size: ${global_anchor:,.0f}M for 2026, growing {global_cagr:.1%} per year ({note})"
     )
-    return {"regional": regional, "global_anchor_2026": global_anchor, "global_cagr": global_cagr}
+    return {
+        "regional": regional, "global_anchor_2026": global_anchor, "global_cagr": global_cagr,
+        "market_size_grounded": grounded,
+    }
 
 
 def _shares_global(state, sk, llm, regions, critique, prior):
@@ -213,7 +267,9 @@ def _shares_global(state, sk, llm, regions, critique, prior):
         for region in regions:
             dim_out[region] = {p: dict(v) for p, v in glob.items()}
         all_shares[dim] = dim_out
-    state.setdefault("log", []).append(f"shares(global): {len(all_shares)} dimensions")
+    state.setdefault("log", []).append(
+        f"Estimated segment splits across {len(all_shares)} categories (e.g. by product type, by application)"
+    )
     return {"shares": all_shares}
 
 
@@ -258,7 +314,7 @@ def geo_node(state: dict[str, Any]) -> dict[str, Any]:
         data = llm.complete_json(system, user)
     except Exception as exc:  # noqa: BLE001
         data = {}
-        state.setdefault("log", []).append(f"geo failed: {exc}")
+        state.setdefault("log", []).append(f"Could not split the market by country: {exc}")
 
     geo: dict[str, dict[str, dict[str, float]]] = {}
     for region, members in sk.regions.items():
@@ -270,7 +326,9 @@ def geo_node(state: dict[str, Any]) -> dict[str, Any]:
         for c in members:
             cagr = float((rraw.get(c, {}) or {}).get("cagr", region_cagr) or region_cagr)
             geo[region][c] = {"share_of_region": shares[c], "cagr": round(min(0.5, max(0.01, cagr)), 4)}
-    state.setdefault("log", []).append(f"geo: split {sum(len(v) for v in geo.values())} countries")
+    state.setdefault("log", []).append(
+        f"Split the market across {sum(len(v) for v in geo.values())} countries within their regions"
+    )
     return {"geo": geo}
 
 
@@ -343,7 +401,8 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
 
     filled = sum(1 for d in all_shares.values() for r in d if r != "__global__")
     state.setdefault("log", []).append(
-        f"shares: {len(all_shares)} dimensions x {len(regions)} regions ({filled} region-maps)"
+        f"Estimated segment splits across {len(all_shares)} categories, customized for "
+        f"{len(regions)} regions ({filled} distinct region-level splits)"
     )
     return {"shares": all_shares}
 
@@ -358,12 +417,19 @@ def finalize_node(state: dict[str, Any]) -> dict[str, Any]:
     best = state.get("best_state")
     best_reward = float(state.get("best_reward", -1.0))
     cur_reward = float(state.get("reward", -1.0))
+    update: dict[str, Any] = {}
     if best is not None and best_reward > cur_reward:
         state.setdefault("log", []).append(
-            f"finalize: restored best snapshot (reward {best_reward} > final {cur_reward})"
+            f"Kept the best pass from earlier -- it scored higher ({best_reward:.0%} vs {cur_reward:.0%})"
         )
-        return {**best, "reward": best_reward}
-    return {}
+        update = {**best, "reward": best_reward}
+
+    flags = compute_demand_quality_flags({**state, **update})
+    if flags:
+        codes = ", ".join(f.get("code", "") for f in flags)
+        state.setdefault("log", []).append(f"Quality check flagged this run for review: {codes}")
+    update["quality_flags"] = flags
+    return update
 
 
 def asp_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -398,7 +464,7 @@ def asp_node(state: dict[str, Any]) -> dict[str, Any]:
         except (TypeError, ValueError):
             val = 0.0
         asp[leaf] = round(val if val > 0 else 100.0, 2)
-    state.setdefault("log", []).append(f"asp: priced {len(asp)} products")
+    state.setdefault("log", []).append(f"Estimated prices for {len(asp)} products")
     return {"asp": asp}
 
 
@@ -425,8 +491,10 @@ def brain_node(state: dict[str, Any]) -> dict[str, Any]:
         artifacts = data.get("artifacts", []) or []
     except Exception as exc:  # noqa: BLE001
         artifacts = []
-        state.setdefault("log", []).append(f"brain failed: {exc}")
-    state.setdefault("log", []).append(f"brain: {len(artifacts)} artifacts")
+        state.setdefault("log", []).append(f"Could not generate the reasoning notes: {exc}")
+    state.setdefault("log", []).append(
+        f"Wrote {len(artifacts)} reasoning notes explaining the 'why' behind these numbers"
+    )
     return {"artifacts": artifacts}
 
 
@@ -559,7 +627,7 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
         reg_crit = str(data.get("regional_critique", ""))
         plaus = (sum(scores) / len(scores)) if scores else min(1.0, max(0.0, float(data.get("overall", 0.6) or 0.6)))
     except Exception as exc:  # noqa: BLE001
-        state.setdefault("log", []).append(f"reward LLM failed: {exc}")
+        state.setdefault("log", []).append(f"Reviewer could not evaluate this pass: {exc}")
         dim_score, market_score, asp_score = {}, None, None
 
     reward = round(0.4 * consistency + 0.6 * plaus, 4)
@@ -582,6 +650,7 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
             "regional": regional,
             "global_anchor_2026": state.get("global_anchor_2026"),
             "global_cagr": state.get("global_cagr"),
+            "market_size_grounded": state.get("market_size_grounded"),
             "geo": state.get("geo"),
             "asp": state.get("asp"),
             "dim_score": dim_score,
@@ -589,7 +658,7 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
             "asp_score": asp_score,
         }
     state.setdefault("log", []).append(
-        f"reward#{it}: reward={reward} consistency={consistency:.2f} plausibility={plaus:.2f} "
-        f"(best={max(best_reward, reward):.2f})"
+        f"Review pass {it}: confidence {reward:.0%} (consistency {consistency:.0%}, "
+        f"plausibility {plaus:.0%}) -- best so far: {max(best_reward, reward):.0%}"
     )
     return update

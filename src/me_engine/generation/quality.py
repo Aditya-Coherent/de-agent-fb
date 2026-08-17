@@ -1,4 +1,4 @@
-"""Sanity flags for a finished demand-side generation run.
+"""Sanity flags for a finished Desk Research (secondary-research) generation run.
 
 Every flag here corresponds to a real failure mode we've actually hit and
 diagnosed (see the specific bugs referenced in each check) -- this is not a

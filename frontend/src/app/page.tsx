@@ -20,14 +20,18 @@ import {
   generateMe,
   downloadInputSheetUrl,
   downloadMeWorkbookUrl,
+  downloadInputJsonUrl,
+  downloadMeJsonUrl,
   downloadByPathUrl,
 } from "@/lib/api";
 import LiveLog from "@/components/LiveLog";
 import MetricCard from "@/components/MetricCard";
 import ResultsTabs from "@/components/ResultsTabs";
 import StatusBadge from "@/components/StatusBadge";
+import DemandUsageWizard from "@/components/DemandUsageWizard";
 
 export default function Home() {
+  const [methodology, setMethodology] = useState<"desk-research" | "demand-usage">("desk-research");
   const [config, setConfig] = useState<Config | null>(null);
   const [skeletonFiles, setSkeletonFiles] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -188,6 +192,29 @@ export default function Home() {
 
         {/* Main */}
         <main className="flex-1 space-y-6">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setMethodology("desk-research")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                methodology === "desk-research" ? "bg-indigo-500/20 text-indigo-300" : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              Desk Research
+            </button>
+            <button
+              onClick={() => setMethodology("demand-usage")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                methodology === "demand-usage" ? "bg-emerald-500/20 text-emerald-300" : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              Demand-Side (Usage-Based)
+            </button>
+          </div>
+
+          {methodology === "demand-usage" && <DemandUsageWizard />}
+
+          {methodology === "desk-research" && (
+          <>
           <header className="space-y-2">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/20">
@@ -278,6 +305,12 @@ export default function Home() {
                 >
                   <Download size={15} /> Download Input Sheet
                 </a>
+                <a
+                  href={downloadInputJsonUrl(summary.run_id)}
+                  className="flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2.5 text-sm font-medium text-neutral-200 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-neutral-800"
+                >
+                  <Download size={15} /> Input Sheet (JSON)
+                </a>
                 <button
                   onClick={handleGenerateMe}
                   disabled={meGenerating}
@@ -295,12 +328,20 @@ export default function Home() {
                     <StatusBadge ok={meResult.gate3_passed} label="Gate 3 — output validation" />
                   </div>
                   {meResult.output_exists && (
-                    <a
-                      href={downloadMeWorkbookUrl(summary.run_id)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2.5 text-sm font-medium text-neutral-200 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-neutral-800"
-                    >
-                      <Download size={15} /> Download ME Workbook
-                    </a>
+                    <div className="flex flex-wrap gap-3">
+                      <a
+                        href={downloadMeWorkbookUrl(summary.run_id)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2.5 text-sm font-medium text-neutral-200 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-neutral-800"
+                      >
+                        <Download size={15} /> Download ME Workbook
+                      </a>
+                      <a
+                        href={downloadMeJsonUrl(summary.run_id)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-neutral-900/60 px-4 py-2.5 text-sm font-medium text-neutral-200 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-neutral-800"
+                      >
+                        <Download size={15} /> ME Workbook (JSON)
+                      </a>
+                    </div>
                   )}
                   <details className="rounded-lg border border-white/5 bg-neutral-950 p-3">
                     <summary className="cursor-pointer text-sm text-neutral-500">ME pipeline log</summary>
@@ -361,6 +402,8 @@ export default function Home() {
                 </table>
               </div>
             </div>
+          )}
+          </>
           )}
         </main>
       </div>

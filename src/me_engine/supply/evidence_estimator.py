@@ -6,7 +6,7 @@ company-based one (`estimator.py`/`graph.py`), per mentor's plan:
     2. Embedding-based relevance filtering (sentence-transformers, already
        used for Neon DB semantic search) — reject snippets that are only
        loosely related (fixes the "Popping Candy vs. whole Candy Market"
-       scope-mismatch failure mode seen in the demand-side pipeline).
+       scope-mismatch failure mode seen in the Desk Research pipeline).
     3. Real-number extraction with regex, not the LLM — pull out explicitly
        stated market-size/CAGR figures directly from the real text.
     4. Google Trends as a real, quantifiable public-attention signal — not

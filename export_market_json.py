@@ -3,7 +3,7 @@ Global revenue at the top, then by region/continent, then countries and
 segment (sub-segment) shares within each region.
 
 Reads only the already-generated Input Sheet .xlsx (Data + Market Value
-sheets) — doesn't touch the live demand-side pipeline/state, so it works on
+sheets) — doesn't touch the live Desk Research pipeline/state, so it works on
 any run's output, past or future, as long as the file exists.
 
 Shape:

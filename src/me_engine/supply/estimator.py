@@ -14,7 +14,7 @@ If neither source finds anything real for a company, that is recorded
 explicitly (`no_real_data`) rather than silently blended in as if grounded.
 
 Every country's grossed-up total is summed into one grand supply-side
-figure — directly comparable to the demand-side pipeline's global total,
+figure — directly comparable to the Desk Research pipeline's global total,
 with a per-country breakdown comparable to its regional split.
 """
 from __future__ import annotations

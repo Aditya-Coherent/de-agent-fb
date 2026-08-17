@@ -1,6 +1,6 @@
 """Baseline comparison: synthetic Input Sheet vs human Input Sheet.
 
-Reports the metrics that are robust when values are small or skewed (per rajeev.txt):
+Reports the metrics that are robust when values are small or skewed :
 MAE, RMSE, sMAPE, R², and bias (mean signed error). Comparison is done on the
 overlapping (dimension, segment, geography) share cells, plus regional value/CAGR.
 """
@@ -44,19 +44,53 @@ def _read_data_cells(path: Path) -> tuple[dict[tuple[str, str], float], dict[str
     return cells, seg_dim
 
 
-def _read_regional(path: Path) -> dict[str, dict[str, float]]:
+def _find_header_row(ws) -> tuple[int, dict[str, int]] | None:
+    """Locate the header row (containing labels like Region/Share/CAGR) and
+    return (row_index, {"name": col, "share": col, "cagr": col}). Different
+    Input Sheet templates put these columns in different positions (e.g.
+    Region|Value|Share|CAGR vs. Region|Share|CAGR|Value) -- trusting a fixed
+    column index silently reads the wrong field instead of raising, so the
+    header row must be located and matched by label, not assumed."""
+    max_row = ws.max_row or 0
+    for r in range(1, min(max_row, 10) + 1):
+        cols: dict[str, int] = {}
+        for c in range(1, ws.max_column + 1):
+            v = ws.cell(r, c).value
+            if not isinstance(v, str):
+                continue
+            label = v.strip().lower()
+            # first match wins -- some sheets repeat "Share"/"CAGR" for a second
+            # (e.g. Volume) block after the Value block; the Value block is
+            # always the leftmost/first one and is what this comparison wants.
+            if label in ("region", "regions", "geography", "country") and "name" not in cols:
+                cols["name"] = c
+            elif label == "share" and "share" not in cols:
+                cols["share"] = c
+            elif label == "cagr" and "cagr" not in cols:
+                cols["cagr"] = c
+        if "name" in cols and "share" in cols and "cagr" in cols:
+            return r, cols
+    return None
+
+
+def _read_regional(path: Path) -> dict[str, dict[str, float | None]]:
     wb = load_workbook(path, data_only=True, read_only=True)
     if "Market Value" not in wb.sheetnames:
         wb.close()
         return {}
     ws = wb["Market Value"]
-    out: dict[str, dict[str, float]] = {}
-    for r in range(4, ws.max_row + 1):
-        name = ws.cell(r, 2).value
+    header = _find_header_row(ws)
+    if header is None:
+        wb.close()
+        return {}
+    header_row, cols = header
+    out: dict[str, dict[str, float | None]] = {}
+    for r in range(header_row + 1, (ws.max_row or header_row) + 1):
+        name = ws.cell(r, cols["name"]).value
         if not name:
             continue
-        share = ws.cell(r, 4).value
-        cagr = ws.cell(r, 5).value
+        share = ws.cell(r, cols["share"]).value
+        cagr = ws.cell(r, cols["cagr"]).value
         out[str(name).strip()] = {
             "share": float(share) if isinstance(share, (int, float)) else None,
             "cagr": float(cagr) if isinstance(cagr, (int, float)) else None,

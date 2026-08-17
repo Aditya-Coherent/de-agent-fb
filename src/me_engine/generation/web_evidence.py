@@ -2,7 +2,7 @@
 DuckDuckGo, with fallback). Degrades gracefully to [] on any failure.
 
 Replaces the previous single-backend raw DuckDuckGo-HTML scrape, which was
-failing (ConnectTimeout) in this environment — meaning every demand-side
+failing (ConnectTimeout) in this environment — meaning every Desk Research
 generation was silently running on zero real web evidence, with the LLM
 estimating market size/regions/segments/pricing from its own training
 knowledge alone. `ddgs` has been confirmed to actually return results here.

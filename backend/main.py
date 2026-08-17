@@ -18,13 +18,17 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))  # export_market_json.py / export_me_json.py live at repo root, not in src/
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from demand_usage_routes import router as demand_usage_router
+from export_market_json import export_market_json
+from export_me_json import export_me_json
 from me_engine.generation.compare import compare, format_report
 from me_engine.generation.config import GenConfig
 from me_engine.generation.dynamic_skeleton import load_skeleton_from_db
@@ -53,6 +57,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Demand-Side (Usage-Based) three-phase pipeline -- isolated router, own
+# in-memory run store, no Desk Research/Supply-Side route or logic touched.
+app.include_router(demand_usage_router)
 
 # In-memory run store — one process, single user, mirrors what Streamlit's
 # st.session_state did. Not persisted; a server restart loses in-flight runs
@@ -295,6 +302,37 @@ def download_me_workbook(run_id: str):
     path = Path(res.output_path)
     return FileResponse(path, filename=path.name,
                         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@app.get("/api/download/input-json/{run_id}")
+def download_input_json(run_id: str):
+    """Export the Input Sheet's own real numbers (hierarchical, by region/
+    country/segment) as JSON -- reads the already-written .xlsx, no
+    regeneration (see export_market_json.py)."""
+    run = _RUNS.get(run_id)
+    if not run or not Path(run["out_path"]).exists():
+        raise HTTPException(404, "Not found")
+    path = Path(run["out_path"])
+    data = export_market_json(path)
+    filename = path.stem + ".json"
+    return JSONResponse(content=_json_safe(data),
+                         headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.get("/api/download/me-json/{run_id}")
+def download_me_json(run_id: str):
+    """Export the ME Workbook as JSON -- geography -> band -> segment -> year
+    (see export_me_json.py). Requires the one-click ME workbook to have
+    already been generated for this run."""
+    run = _RUNS.get(run_id)
+    res = run.get("me_result") if run else None
+    if not res or not res.output_exists:
+        raise HTTPException(404, "Not found — generate the ME workbook first")
+    path = Path(res.output_path)
+    data = export_me_json(path)
+    filename = path.stem + ".json"
+    return JSONResponse(content=_json_safe(data),
+                         headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @app.get("/api/download/file")

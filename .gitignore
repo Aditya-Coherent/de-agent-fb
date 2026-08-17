@@ -39,3 +39,5 @@ Thumbs.db
 # Office temp/lock files
 ~$*
 *.tmp
+# Added by code-review-graph
+.code-review-graph/

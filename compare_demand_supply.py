@@ -1,8 +1,8 @@
-"""Supply-side market-size pipeline -- the second, independent methodology
-alongside the demand-side agent fleet (backend/main.py, run_pipeline.py).
+"""Supply-side market-size pipeline -- an independent methodology alongside
+the Desk Research agent fleet (backend/main.py, run_pipeline.py).
 Runs entirely on its own; its estimation logic lives in src/me_engine/supply/,
 which only reuses generic company sourcing/verification utilities, not
-anything from the demand-side pipeline.
+anything from the Desk Research pipeline.
 
 "Supply-side" and "bottom-up" are not two separate methodologies -- bottom-up
 (sum real, ground-truth data upward) IS how a supply-side estimate gets
@@ -28,7 +28,7 @@ produced. Two techniques implement it, selectable via --method:
             market is dominated by public companies with real financial data.
 
   both      -- runs both techniques independently and prints/saves all
-            figures side by side for comparison, alongside the demand-side
+            figures side by side for comparison, alongside the Desk Research
             total when a matching history entry exists.
 
 Example:
@@ -72,7 +72,7 @@ def _slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
 
 
-def _lookup_demand_value(market: str, history_path: Path) -> float | None:
+def _lookup_desk_research_value(market: str, history_path: Path) -> float | None:
     rows = read_history(path=history_path, limit=1000)
     market_l = market.strip().lower()
     for row in rows:  # newest first
@@ -182,7 +182,7 @@ def _run_evidence_method(args) -> dict | None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--market", required=True, help="Market name (must match a demand-side run's market name)")
+    ap.add_argument("--market", required=True, help="Market name (must match a Desk Research run's market name)")
     ap.add_argument("--companies", default=None, help="Path to a .csv, .xlsx, .json, or .txt company list")
     ap.add_argument("--discover", action="store_true",
                     help="Skip --companies -- run the miniature LLM-based discovery instead (seconds, "
@@ -191,14 +191,14 @@ def main() -> int:
     ap.add_argument("--countries", default=None,
                     help="Comma-separated country list, e.g. \"United States,India,Brazil,Germany,China\". "
                          "Omit to let the company-based method propose its own geography breakdown (own "
-                         "LLM call -- never reads the demand-side pipeline's files). Unused by --method evidence.")
+                         "LLM call -- never reads the Desk Research pipeline's files). Unused by --method evidence.")
     ap.add_argument("--method", choices=["company", "evidence", "both"], default="evidence",
                     help="Supply-side technique to run: 'evidence' (default, zero-LLM real market-report "
                          "snippets -> regex extraction -> median, no company list needed), 'company' "
                          "(per-company LLM-estimated revenue sum -- needs --companies or --discover), "
                          "or 'both' to compare them.")
-    ap.add_argument("--demand-value", type=float, default=None,
-                    help="Override: demand-side total market value (USD Mn) instead of history lookup")
+    ap.add_argument("--desk-research-value", type=float, default=None,
+                    help="Override: Desk Research total market value (USD Mn) instead of history lookup")
     ap.add_argument("--save-report", default=None,
                      help="Path to save the JSON report (per-company shares, per-country breakdown, grand "
                           "total). Defaults to output/supply_side/<market-slug>.json -- always saved, not opt-in.")
@@ -221,23 +221,23 @@ def main() -> int:
     if args.method in ("evidence", "both"):
         evidence_result = _run_evidence_method(args)
 
-    demand_value = args.demand_value
-    if demand_value is None:
-        demand_value = _lookup_demand_value(args.market, DEFAULT_HISTORY_PATH)
-    if demand_value is None:
-        print(f"\n[WARN] No demand-side run found for '{args.market}' -- comparisons against it will be skipped.")
+    desk_research_value = args.desk_research_value
+    if desk_research_value is None:
+        desk_research_value = _lookup_desk_research_value(args.market, DEFAULT_HISTORY_PATH)
+    if desk_research_value is None:
+        print(f"\n[WARN] No Desk Research run found for '{args.market}' -- comparisons against it will be skipped.")
 
     print()
-    if demand_value is not None:
-        print(f"Demand-side total:              {demand_value:,.1f} USD Mn")
+    if desk_research_value is not None:
+        print(f"Desk Research total:            {desk_research_value:,.1f} USD Mn")
     if company_result is not None:
         print(f"Company-based supply-side total: {company_result['total_usd_mn']:,.1f} USD Mn")
     if evidence_result is not None and evidence_result["has_real_data"]:
         print(f"Evidence-based supply-side total: {evidence_result['total_usd_mn']:,.1f} USD Mn")
 
     report: dict = {"market": args.market, "method": args.method}
-    if demand_value is not None:
-        report["demand_side_total_usd_mn"] = demand_value
+    if desk_research_value is not None:
+        report["desk_research_total_usd_mn"] = desk_research_value
 
     # Mentor's own accuracy bar for a real-data-grounded bottom-up estimate is
     # ~30-40% relative error -- treat exceeding that as worth a human's attention,
@@ -249,15 +249,15 @@ def main() -> int:
 
     if company_result is not None:
         report["company_based"] = company_result
-        if demand_value is not None:
-            rel_error_pct = abs(demand_value - company_result["total_usd_mn"]) / demand_value * 100
+        if desk_research_value is not None:
+            rel_error_pct = abs(desk_research_value - company_result["total_usd_mn"]) / desk_research_value * 100
             print(f"Company-based relative error:   {rel_error_pct:.1f}%")
-            company_result["relative_error_vs_demand_pct"] = rel_error_pct
+            company_result["relative_error_vs_desk_research_pct"] = rel_error_pct
             if rel_error_pct > _DISAGREEMENT_THRESHOLD_PCT:
                 flag = {
-                    "code": "disagrees_with_demand_side",
+                    "code": "disagrees_with_desk_research",
                     "severity": "warning",
-                    "message": f"Company-based total differs from the demand-side total by {rel_error_pct:.0f}% "
+                    "message": f"Company-based total differs from the Desk Research total by {rel_error_pct:.0f}% "
                                "-- beyond the ~30-40% margin a real-data-grounded estimate should land within. "
                                "Could be a genuine scope/definition difference between sources, or a real error "
                                "on one side -- worth a human check either way.",
@@ -267,15 +267,15 @@ def main() -> int:
 
     if evidence_result is not None:
         report["evidence_based"] = evidence_result
-        if demand_value is not None and evidence_result["has_real_data"]:
-            rel_error_pct = abs(demand_value - evidence_result["total_usd_mn"]) / demand_value * 100
+        if desk_research_value is not None and evidence_result["has_real_data"]:
+            rel_error_pct = abs(desk_research_value - evidence_result["total_usd_mn"]) / desk_research_value * 100
             print(f"Evidence-based relative error:  {rel_error_pct:.1f}%")
-            evidence_result["relative_error_vs_demand_pct"] = rel_error_pct
+            evidence_result["relative_error_vs_desk_research_pct"] = rel_error_pct
             if rel_error_pct > _DISAGREEMENT_THRESHOLD_PCT:
                 flag = {
-                    "code": "disagrees_with_demand_side",
+                    "code": "disagrees_with_desk_research",
                     "severity": "warning",
-                    "message": f"Evidence-based total differs from the demand-side total by {rel_error_pct:.0f}% "
+                    "message": f"Evidence-based total differs from the Desk Research total by {rel_error_pct:.0f}% "
                                "-- beyond the ~30-40% margin a real-data-grounded estimate should land within. "
                                "Could be a genuine scope/definition difference between sources, or a real error "
                                "on one side -- worth a human check either way.",

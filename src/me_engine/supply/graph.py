@@ -8,7 +8,7 @@ over this same breakdown.
 Flow:
     geography -> companies_revenue -> coverage -> aggregate -> END
 
-Own state, own nodes — separate from the demand-side graph
+Own state, own nodes — separate from the Desk Research graph
 (`me_engine.generation.graph`). Only reuses the generic `Company` sourcing
 utilities in this same package (`companies.py` / `discovery.py` /
 `verify.py`); its estimation math lives in this package's own

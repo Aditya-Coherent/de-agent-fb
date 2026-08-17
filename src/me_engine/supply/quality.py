@@ -1,6 +1,6 @@
 """Sanity flags for the two supply-side/bottom-up techniques.
 
-Same purpose as generation/quality.py on the demand side: surface a known
+Same purpose as generation/quality.py on the Desk Research side: surface a known
 failure mode as a visible warning instead of a confident-looking number that
 happens to be wrong. Each flag maps to a real case we hit and diagnosed
 while testing this pipeline (see the message text for which one).

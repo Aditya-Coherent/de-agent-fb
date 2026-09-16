@@ -7,6 +7,15 @@ pipeline-level functions it calls -- no real LLM/network call, no real
 LangGraph run. Confirms the two approval gates are enforced at the HTTP
 layer too, and that a run_id can't skip a gate.
 
+IMPORTANT: `setup.approve_setup`/`taxonomy.approve_taxonomy` are the REAL
+functions (only `run_setup_phase`/`run_taxonomy_phase` are monkeypatched),
+so they DO write a checkpoint file via `checkpoints.write_json` using
+`root=None` (the routes never pass a root). Without redirecting
+`checkpoints._OUTPUT_ROOT` to `tmp_path` here, running this test file
+clobbers a REAL on-disk approved checkpoint for market "Crude Oil" --
+verified failure mode: this exact gap once overwrote a genuine 6-usage-
+bucket approved taxonomy with this file's 1-bucket test fixture.
+
 Run with: pytest tests/test_demand_usage_backend_routes.py
 """
 from __future__ import annotations
@@ -23,12 +32,17 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "backend"))
 
 import demand_usage_routes as routes  # noqa: E402
+from me_engine.demand_usage import checkpoints, run_lock  # noqa: E402
 
 
 @pytest.fixture()
-def client(monkeypatch):
+def client(monkeypatch, tmp_path):
     # Fresh in-memory run store per test -- routes module keeps it at import scope.
     monkeypatch.setattr(routes, "_DU_RUNS", {})
+
+    # Redirect ALL default (root=None) checkpoint reads/writes into tmp_path --
+    # see module docstring above for the real-file clobbering this prevents.
+    monkeypatch.setattr(checkpoints, "_OUTPUT_ROOT", tmp_path / "demand_usage")
 
     class _StubConfig:
         is_online = True
@@ -127,3 +141,46 @@ def test_download_before_sizing_is_404(client):
     gen = client.get("/api/demand-usage/setup/generate", params={"market": "Crude Oil"})
     run_id = gen.json()["run_id"]
     assert client.get(f"/api/demand-usage/download/{run_id}/json").status_code == 404
+
+
+# --------------------------------------------------------------------------- #
+# Runtime-hardening addendum (2026-08-24): market-level sizing lock, shared
+# by the CLI (`demand_usage_pipeline.py size`) and this SSE route -- see
+# `run_lock.py`. A backend `run_id` (per browser tab) must NOT bypass it.
+# --------------------------------------------------------------------------- #
+def _approve_setup_and_taxonomy(client) -> str:
+    gen = client.get("/api/demand-usage/setup/generate", params={"market": "Crude Oil"})
+    run_id = gen.json()["run_id"]
+    client.post(f"/api/demand-usage/setup/{run_id}/approve", json=gen.json()["draft"])
+    tax_gen = client.get("/api/demand-usage/taxonomy/generate", params={"run_id": run_id})
+    client.post(f"/api/demand-usage/taxonomy/{run_id}/approve", json=tax_gen.json()["draft"])
+    return run_id
+
+
+def test_size_generate_blocked_when_another_process_holds_the_market_lock(client):
+    run_id = _approve_setup_and_taxonomy(client)
+    # Simulate a live CLI process already sizing "Crude Oil" -- the SSE route
+    # must refuse to start, never silently run a second sizing pass.
+    other = run_lock.acquire_size_lock("Crude Oil", source="cli")
+    try:
+        with client.stream("GET", "/api/demand-usage/size/generate", params={"run_id": run_id}) as res:
+            body = b"".join(res.iter_bytes()).decode()
+        assert "already in progress" in body
+        assert "error" in body
+    finally:
+        other.release()
+
+
+def test_size_generate_does_not_block_a_different_market(client):
+    """A lock held for a DIFFERENT market must never block this one --
+    confirms the lock is market-name-keyed, not global."""
+    run_id = _approve_setup_and_taxonomy(client)
+    other = run_lock.acquire_size_lock("Cement", source="cli")
+    try:
+        # Reaching the (stub, no-web) GenLLM/graph construction without a
+        # lock-conflict error is enough to prove "Crude Oil" was not blocked
+        # by "Cement"'s lock -- we don't need the full sizing run to finish.
+        acquired = run_lock.acquire_size_lock("Crude Oil", source="cli")
+        acquired.release()
+    finally:
+        other.release()

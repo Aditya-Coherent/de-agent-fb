@@ -27,3 +27,10 @@ sse-starlette>=2.0.0
 # (replaces LLM-guessed revenue and the broken single-backend DDG scraper)
 yfinance>=0.2.40
 ddgs>=9.0.0
+
+# Demand-Side: general-purpose evidence acquisition (PDF/CSV/XLSX/API, not
+# just web-search snippets) -- pandas/openpyxl/requests/bs4/lxml already
+# required above/elsewhere; pdfplumber is the only new dependency.
+pdfplumber>=0.11.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0

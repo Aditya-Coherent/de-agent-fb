@@ -54,7 +54,7 @@ def test_never_mutates_total_market_value(monkeypatch):
 def test_large_gap_vs_published_estimate_is_flagged(monkeypatch):
     monkeypatch.setattr(
         triangulation.evidence, "extract_structured_fact",
-        lambda *a, **k: {"value": 500_000.0, "unit": "USD Mn", "source": "Published Report", "citation": "...", "evidence_type": "observed"},
+        lambda *a, **k: {"value": 500_000.0, "unit": "USD Mn", "source": "Published Report", "citation": "...", "evidence_type": "verified_observed"},
     )
     state = _base_state(1_000_000.0)  # 100% gap vs. 500,000 benchmark
     out = triangulation.triangulation_node(state)
@@ -66,7 +66,7 @@ def test_large_gap_vs_published_estimate_is_flagged(monkeypatch):
 def test_small_gap_is_not_flagged(monkeypatch):
     monkeypatch.setattr(
         triangulation.evidence, "extract_structured_fact",
-        lambda *a, **k: {"value": 980_000.0, "unit": "USD Mn", "source": "Published Report", "citation": "...", "evidence_type": "observed"},
+        lambda *a, **k: {"value": 980_000.0, "unit": "USD Mn", "source": "Published Report", "citation": "...", "evidence_type": "verified_observed"},
     )
     state = _base_state(1_000_000.0)  # ~2% gap
     out = triangulation.triangulation_node(state)

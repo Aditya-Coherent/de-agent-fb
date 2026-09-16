@@ -9,7 +9,8 @@ the CLI and the backend API routes.
 """
 from __future__ import annotations
 
-from datetime import datetime
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,11 +30,22 @@ def _current_year() -> int:
     return datetime.now().year
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def market_setup_draft_node(state: dict[str, Any]) -> dict[str, Any]:
     cfg: GenConfig = state["config"]
     llm: GenLLM = state["llm"]
     market = state["market_name"]
     log = state.setdefault("log", [])
+    # Additive audit/observability layer (`me_engine.audit`) -- optional
+    # `AuditEmitter`, read via `state.get("emitter")` exactly like every
+    # other demand-usage node (`agents.py`, `taxonomy.py`); a no-op
+    # everywhere it's absent, never a hard dependency.
+    emitter = state.get("emitter")
+    if emitter is not None:
+        emitter.emit("setup", "stage_start", data={"node": "market_setup_draft_node"})
 
     snippets: list[str] = []
     if cfg.enable_web:
@@ -51,7 +63,18 @@ def market_setup_draft_node(state: dict[str, Any]) -> dict[str, Any]:
         "propose will be shown to a person who can edit or reject it before any downstream work "
         "happens, so be concrete and specific, never vague filler.\n\n"
         "Propose: (1) a 2-4 sentence scope statement (what IS and is NOT included in this "
-        "market's boundaries); (2) the countries that materially drive demand for this market "
+        "market's boundaries). This is a BOTTOM-UP, USAGE-BASED demand methodology: the scope "
+        "statement draws the line around what is VALUED as this market's own commodity, never "
+        "around what evidence may be USED to derive that value. If this market is a raw/upstream "
+        "commodity (e.g. Crude Oil) whose scope excludes downstream/refined products (e.g. "
+        "gasoline, diesel, asphalt, petrochemicals) as SEPARATELY VALUED markets, say so explicitly "
+        "-- but also state plainly that downstream/refined-product END-USE DEMAND may still be used "
+        "as an intermediate signal to derive how much of the raw/upstream commodity that demand "
+        "requires (e.g. 'asphalt production volume' is legitimate evidence for how much crude oil "
+        "road construction requires, even though asphalt itself is never priced or valued as part "
+        "of this market). Downstream-product involvement in a usage bucket must never, by itself, "
+        "place that usage outside scope -- only a usage with NO defensible link to this market's own "
+        "commodity at all is out of scope; (2) the countries that materially drive demand for this market "
         "(8-14 entries, prefer individual countries, 'Rest of <Region>' only for genuine long "
         "tail); (3) the most recent full year this market's data would realistically be "
         "reported for (base_year); (4) the currency/scale unit the market SIZE should be "
@@ -67,11 +90,19 @@ def market_setup_draft_node(state: dict[str, Any]) -> dict[str, Any]:
         '"base_year": <int>, "market_unit": "<string>", "physical_unit": "<string>", '
         '"grounded": <true|false>}'
     )
+    llm_error: str | None = None
     try:
         data = llm.complete_json(system, user)
     except Exception as exc:  # noqa: BLE001
         log.append(f"[market_setup] LLM call failed: {exc}")
         data = {}
+        llm_error = str(exc)
+    if emitter is not None:
+        emitter.emit(
+            "setup", "llm_call",
+            llm={"prompt": f"{system}\n\n{user}", "response": json.dumps(data, ensure_ascii=False) if data else "", "error": llm_error},
+            status="failed" if llm_error else "success",
+        )
 
     scope = str(data.get("scope") or "").strip() or f"The {market}."
     geography = [str(c).strip() for c in (data.get("geography") or []) if str(c).strip()]
@@ -92,6 +123,15 @@ def market_setup_draft_node(state: dict[str, Any]) -> dict[str, Any]:
         f"{len(geography)} countries, base year {base_year}, market unit '{market_unit}', "
         f"physical unit '{physical_unit}'. EDITABLE -- nothing downstream runs until approved."
     )
+    if emitter is not None:
+        emitter.emit(
+            "setup", "stage_end",
+            data={"node": "market_setup_draft_node"},
+            output_data={
+                "scope": scope, "geography": geography, "base_year": base_year,
+                "market_unit": market_unit, "physical_unit": physical_unit, "grounded": grounded,
+            },
+        )
     return {
         "market_name": market,
         "scope": scope,
@@ -114,13 +154,32 @@ def run_setup_phase(
     """Runs the single-node Phase 1 draft and writes the draft checkpoint
     file. Returns the draft dict (same shape written to disk)."""
     llm = GenLLM(config, cache_path=cache_path)
-    state: dict[str, Any] = {"market_name": market_name, "config": config, "llm": llm, "log": []}
+
+    # Additive audit/observability layer (`me_engine.audit`) -- one
+    # `AuditEmitter` per run, injected into the initial state exactly like
+    # `graph.run_sizing_phase` does for Phase 3. Never raises: if the audit
+    # package can't be constructed for any reason, setup must still proceed
+    # exactly as before.
+    emitter = None
+    try:
+        from me_engine.audit.store import AuditEmitter
+
+        emitter = AuditEmitter(run_id=market_name, approach="usage_based", market=market_name, root=root)
+    except Exception:  # noqa: BLE001
+        emitter = None
+
+    state: dict[str, Any] = {
+        "market_name": market_name, "config": config, "llm": llm, "log": [], "emitter": emitter,
+    }
     draft = market_setup_draft_node(state)
     checkpoints.write_json(checkpoints.setup_draft_path(market_name, root), draft)
     return draft
 
 
-def approve_setup(edited: dict[str, Any], root: Path | None = None) -> dict[str, Any]:
+def approve_setup(
+    edited: dict[str, Any], root: Path | None = None,
+    approved_by: str | None = None, emitter: Any | None = None,
+) -> dict[str, Any]:
     """Validates and writes the approved setup checkpoint -- the ONLY gate
     before Phase 2 (taxonomy) may run. `edited` is the draft as returned by
     `run_setup_phase`, possibly hand-edited by the user (any field, any
@@ -148,7 +207,19 @@ def approve_setup(edited: dict[str, Any], root: Path | None = None) -> dict[str,
         "physical_unit": str(edited["physical_unit"]).strip(),
         "grounded": bool(edited.get("grounded", False)),
         "approved": True,
+        # Additive audit fields -- mirrors `taxonomy.approve_taxonomy`:
+        # `approved_by` is optional/backward compatible (None if not
+        # supplied); `approved_at` is a real UTC timestamp captured at the
+        # moment of this approval call.
+        "approved_by": approved_by,
+        "approved_at": _now_iso(),
     }
+    # `emitter` is accepted for a stable, forward-compatible signature
+    # (mirroring `taxonomy.approve_taxonomy`), but there is no real
+    # precedent to mirror here: `approve_taxonomy` itself emits nothing on
+    # a plain approval -- only on an explicit `scope_override`, a concept
+    # that has no equivalent in Phase 1's setup approval. So a plain setup
+    # approval never emits an event either, exactly matching that precedent.
     checkpoints.write_json(checkpoints.setup_approved_path(market_name, root), approved)
     return approved
 

@@ -33,6 +33,10 @@ class GenState(TypedDict, total=False):
     db_evidence: Any
     web_snippets: list[str]
     dim_snippets: dict[str, list[str]]
+    # Desk Research Phase 0 gate (segment_definition.py) -- when present,
+    # `shares_node`/`_shares_global` (agents.py) use it verbatim for every
+    # dimension it covers instead of calling the LLM for that dimension.
+    segment_definition: dict[str, Any]
     regional: dict[str, dict[str, float]]
     global_anchor_2026: float
     global_cagr: float

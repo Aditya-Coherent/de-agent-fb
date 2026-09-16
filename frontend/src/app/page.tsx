@@ -29,9 +29,12 @@ import MetricCard from "@/components/MetricCard";
 import ResultsTabs from "@/components/ResultsTabs";
 import StatusBadge from "@/components/StatusBadge";
 import DemandUsageWizard from "@/components/DemandUsageWizard";
+import DemandIndiaWizard from "@/components/DemandIndiaWizard";
+import DeskSegmentDefinitionPanel from "@/components/DeskSegmentDefinitionPanel";
+import SegmentationDemo from "@/components/SegmentationDemo";
 
 export default function Home() {
-  const [methodology, setMethodology] = useState<"desk-research" | "demand-usage">("desk-research");
+  const [methodology, setMethodology] = useState<"desk-research" | "demand-usage" | "demand-india" | "segmentation-demo">("desk-research");
   const [config, setConfig] = useState<Config | null>(null);
   const [skeletonFiles, setSkeletonFiles] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -47,6 +50,9 @@ export default function Home() {
 
   const [meGenerating, setMeGenerating] = useState(false);
   const [meResult, setMeResult] = useState<MEResult | null>(null);
+
+  // Desk Research Phase 0 gate -- required before "Generate Input Sheet" may run.
+  const [segDefApproved, setSegDefApproved] = useState(false);
 
   useEffect(() => {
     getConfig().then(setConfig).catch(() => {});
@@ -110,7 +116,7 @@ export default function Home() {
   const meOk = meResult?.gate1_passed && meResult?.gate3_passed && meResult?.output_exists;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-neutral-950 text-neutral-100">
+    <div className="relative min-h-screen overflow-x-hidden bg-neutral-950 text-neutral-100">
       {/* Ambient background accent */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-indigo-600/20 blur-[120px]" />
@@ -209,9 +215,29 @@ export default function Home() {
             >
               Demand-Side (Usage-Based)
             </button>
+            <button
+              onClick={() => setMethodology("demand-india")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                methodology === "demand-india" ? "bg-orange-500/20 text-orange-300" : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              Demand-Side (India Only)
+            </button>
+            <button
+              onClick={() => setMethodology("segmentation-demo")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                methodology === "segmentation-demo" ? "bg-fuchsia-500/20 text-fuchsia-300" : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              Segmentation Demo
+            </button>
           </div>
 
           {methodology === "demand-usage" && <DemandUsageWizard />}
+
+          {methodology === "demand-india" && <DemandIndiaWizard />}
+
+          {methodology === "segmentation-demo" && <SegmentationDemo />}
 
           {methodology === "desk-research" && (
           <>
@@ -247,14 +273,28 @@ export default function Home() {
                 market with segmentation in the report database.
               </p>
             )}
+          </div>
+
+          <DeskSegmentDefinitionPanel
+            market={market}
+            source={source}
+            skeletonChoice={skeletonChoice}
+            approved={segDefApproved}
+            onApprovedChange={setSegDefApproved}
+          />
+
+          <div className="space-y-2.5 rounded-xl border border-white/5 bg-neutral-900/40 p-4 backdrop-blur-sm">
             <button
               onClick={handleGenerate}
-              disabled={generating || !config?.is_online || !market.trim()}
+              disabled={generating || !config?.is_online || !market.trim() || !segDefApproved}
               className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 px-4 py-2.5 font-medium text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
             >
               {generating ? <Loader2 size={16} className="animate-spin" /> : <Rocket size={16} />}
               {generating ? "Generating…" : "Generate Input Sheet"}
             </button>
+            {!segDefApproved && (
+              <p className="text-xs text-neutral-600">Approve the segment definition above first.</p>
+            )}
           </div>
 
           {genError && (

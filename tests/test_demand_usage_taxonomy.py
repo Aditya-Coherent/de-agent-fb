@@ -96,6 +96,8 @@ class _StubLLM:
         if "physical consumption" in system.lower() or "GENUINE PHYSICAL CONSUMPTION" in system:
             return {"buckets": [{"name": "Transportation Fuels", "is_physical_end_use": True,
                                   "classification": "physical_consumption", "reason": "fuel is consumed", "confidence": 0.9}]}
+        if "scope-compliance auditor" in system.lower():
+            return {"buckets": [{"name": "Transportation Fuels", "classification": "in_scope", "reason": "clearly within scope"}]}
         if "coverage auditor" in system.lower():
             return {"missing": [], "estimated_coverage_pct": 80.0}
         if "demand-driver analyst" in system.lower():
@@ -129,7 +131,71 @@ def test_run_taxonomy_phase_bundles_usage_and_drivers_from_approved_setup(tmp_pa
     assert len(draft["usage_buckets"]) == 1
     assert draft["usage_buckets"][0]["bucket_category"] == "physical_consumption"
     assert "Transportation Fuels" in draft["drivers"]
+    # Scope -> Taxonomy validation ran and produced a flag record (spec section 9).
+    assert draft["scope_validation_flags"]["Transportation Fuels"]["classification"] == "in_scope"
     # Never re-derived scope/geography -- Phase 2 read them from approved setup.
     from me_engine.demand_usage import checkpoints
     on_disk = checkpoints.read_json(checkpoints.taxonomy_draft_path("Crude Oil", root=tmp_path))
     assert on_disk == draft
+
+
+# --------------------------------------------------------------------------- #
+# scope_taxonomy_validation_node -- flag ambiguous/out-of-scope buckets
+# without ever auto-removing them, and without any hardcoded exclusion list.
+# --------------------------------------------------------------------------- #
+def test_scope_validation_flags_out_of_scope_bucket_without_removing_it():
+    from me_engine.demand_usage import agents
+
+    class _ScopeLLM:
+        def complete_json(self, system, user):
+            return {"buckets": [
+                {"name": "Concrete", "classification": "in_scope", "reason": "core product"},
+                {"name": "Orthopedic Bone Cement", "classification": "out_of_scope", "reason": "unrelated medical product sharing a name"},
+            ]}
+
+    state = {
+        "llm": _ScopeLLM(), "market_name": "Cement", "log": [],
+        "market_definition": {"text": "Construction cement -- Portland/blended cement for concrete and masonry."},
+        "usage_buckets": [
+            {"name": "Concrete", "description": "structural concrete"},
+            {"name": "Orthopedic Bone Cement", "description": "surgical bone cement"},
+        ],
+    }
+    out = agents.scope_taxonomy_validation_node(state)
+    flags = out["scope_validation_flags"]
+    assert flags["Concrete"]["classification"] == "in_scope"
+    assert flags["Orthopedic Bone Cement"]["classification"] == "out_of_scope"
+    # Flag only -- the node itself never removes anything from usage_buckets.
+    assert "usage_buckets" not in out
+
+
+def test_scope_validation_defaults_missing_verdict_to_in_scope():
+    from me_engine.demand_usage import agents
+
+    class _EmptyLLM:
+        def complete_json(self, system, user):
+            return {}
+
+    state = {
+        "llm": _EmptyLLM(), "market_name": "M", "log": [],
+        "market_definition": {"text": "scope"},
+        "usage_buckets": [{"name": "A", "description": "x"}],
+    }
+    out = agents.scope_taxonomy_validation_node(state)
+    assert out["scope_validation_flags"]["A"]["classification"] == "in_scope"
+
+
+def test_scope_validation_survives_llm_call_failure():
+    from me_engine.demand_usage import agents
+
+    class _ThrowingLLM:
+        def complete_json(self, system, user):
+            raise RuntimeError("network down")
+
+    state = {
+        "llm": _ThrowingLLM(), "market_name": "M", "log": [],
+        "market_definition": {"text": "scope"},
+        "usage_buckets": [{"name": "A", "description": "x"}],
+    }
+    out = agents.scope_taxonomy_validation_node(state)
+    assert out["scope_validation_flags"]["A"]["classification"] == "in_scope"

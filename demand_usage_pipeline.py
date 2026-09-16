@@ -36,7 +36,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from me_engine.demand_usage import checkpoints, setup, taxonomy  # noqa: E402
+from me_engine.demand_usage import checkpoints, run_lock, run_report, setup, taxonomy  # noqa: E402
 from me_engine.demand_usage.buildup_writer import write_buildup_json, write_buildup_workbook  # noqa: E402
 from me_engine.demand_usage.graph import run_sizing_phase  # noqa: E402
 from me_engine.generation.config import GenConfig  # noqa: E402
@@ -128,7 +128,29 @@ def cmd_size(args: argparse.Namespace) -> int:
         print(f"ERROR: {exc}")
         return 2
 
-    state = run_sizing_phase(approved_setup, approved_taxonomy, cfg, cache_path=_cache_path(args))
+    # Runtime-hardening (2026-08-24): market-level sizing lock -- refuses a
+    # second concurrent `size` run for the same market, whether the other
+    # one is another CLI process or the backend SSE route (see
+    # `run_lock.py`). Does not change sizing methodology at all.
+    try:
+        lock = run_lock.acquire_size_lock(args.market, source="cli")
+    except run_lock.SizingLockError as exc:
+        print(f"ERROR: {exc}")
+        return 2
+
+    try:
+        try:
+            state = run_sizing_phase(approved_setup, approved_taxonomy, cfg, cache_path=_cache_path(args), source="cli")
+        except Exception as exc:  # noqa: BLE001 -- record a failure report, then re-raise unchanged
+            # Reporting addendum (2026-08-26): never overwrites a prior
+            # successful SIZE_RUN_RESULT.md -- only ever writes the separate
+            # SIZE_RUN_RESULT.partial.md, from whatever `02_sizing.progress.json`
+            # last recorded. Does not change this command's own error
+            # handling/exit behavior at all (same exception, re-raised as-is).
+            run_report.write_failure_report(args.market, error=str(exc))
+            raise
+    finally:
+        lock.release()
 
     print("\n--- run log ---")
     for line in state.get("log", []):
@@ -139,6 +161,21 @@ def cmd_size(args: argparse.Namespace) -> int:
     xlsx_path = write_buildup_workbook(state, prefix.with_suffix(".xlsx"))
     print(f"\nWrote {json_path} and {xlsx_path}")
 
+    # Reporting addendum (2026-08-26): one consolidated, human-readable
+    # SIZE_RUN_RESULT.md, built entirely from the same `state` just written
+    # to 02_sizing.json/.xlsx above -- no new calculation, purely a reporting
+    # layer. `write_success_report` re-asserts `validation` is present (the
+    # same guarantee `run_sizing_phase` already enforces) before writing.
+    report_summary = run_report.build_success_summary(
+        state, args.market, json_path=json_path, xlsx_path=xlsx_path,
+        worker_count=getattr(cfg, "evidence_workers", None),
+    )
+    report_file = run_report.write_success_report(
+        state, args.market, json_path=json_path, xlsx_path=xlsx_path,
+        worker_count=getattr(cfg, "evidence_workers", None),
+    )
+    print("\n" + run_report.format_terminal_summary(report_summary, str(report_file)))
+
     validation = state.get("validation", {})
     eq = validation.get("evidence_quality", {})
     print("\n=== Final result ===")
@@ -146,8 +183,10 @@ def cmd_size(args: argparse.Namespace) -> int:
     print(f"Related Demand (inv/reserve): ${state.get('related_demand_value', 0):,.1f}M")
     print(f"Residual/Uncovered (implied): ${(validation.get('residual_implied_usd_mn') or 0):,.1f}M")
     print(f"Reported Market View:        ${validation.get('reported_market_view_usd_mn', 0):,.1f}M")
-    print(f"Evidence quality: observed {eq.get('observed_pct', 0):.1f}%, "
-          f"derived {eq.get('derived_pct', 0):.1f}%, assumption {eq.get('assumption_pct', 0):.1f}%")
+    print(f"Evidence quality: verified_observed {eq.get('observed_pct', 0):.1f}%, "
+          f"derived {eq.get('derived_pct', 0):.1f}%, "
+          f"source_found_unverified {eq.get('source_found_unverified_pct', 0):.1f}%, "
+          f"assumption {eq.get('assumption_pct', 0):.1f}%")
 
     if state.get("quality_flags"):
         print("\nQuality flags:")

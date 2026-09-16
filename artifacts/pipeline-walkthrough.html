@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Market Sizing — How It Works</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --panel: #131316;
+    --panel2: #1a1a1f;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f1f1f3;
+    --text-dim: #9a9aa3;
+    --text-dimmer: #64646d;
+    --indigo: #818cf8;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --sky: #38bdf8;
+    --teal: #2dd4bf;
+    --violet: #a78bfa;
+    --slate: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 20% 0%, rgba(99,102,241,0.12), transparent 45%),
+                radial-gradient(circle at 85% 20%, rgba(139,92,246,0.08), transparent 45%),
+                var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 24px 20px 50px; }
+
+  /* ---------- Header ---------- */
+  .hero { text-align: center; margin-bottom: 16px; }
+  .hero h1 {
+    font-size: 24px; font-weight: 800; margin: 0 0 4px;
+    background: linear-gradient(90deg,#f8fafc,#c7c7d9);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--text-dim); font-size: 12.5px; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+
+  .legend { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+  .legend .chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border2); border-radius: 999px; padding: 4px 10px; font-size: 10.5px; font-weight: 600; }
+
+  /* ---------- Approach tabs ---------- */
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
+  .tab {
+    padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; letter-spacing: .03em;
+    text-transform: uppercase; cursor: pointer; border: 1px solid var(--border); background: var(--panel);
+    color: var(--text-dim); transition: all .15s;
+  }
+  .tab.active.usage { background: rgba(52,211,153,0.16); border-color: rgba(52,211,153,0.4); color: var(--emerald); }
+  .tab.active.desk { background: rgba(99,102,241,0.16); border-color: rgba(99,102,241,0.4); color: var(--indigo); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .approach-desc { text-align: center; font-size: 11px; color: var(--text-dimmer); max-width: 680px; margin: 0 auto 14px; line-height: 1.5; }
+
+  /* ---------- Step rail ---------- */
+  .rail-outer { overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; }
+  .rail { display: flex; align-items: center; gap: 0; min-width: max-content; padding: 4px 2px; }
+  .rail-node { display: flex; flex-direction: column; align-items: center; cursor: pointer; flex-shrink: 0; width: 100px; }
+  .rail-circle {
+    width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; border: 2px solid var(--border2); background: var(--panel2); color: var(--text-dim);
+    transition: all .15s;
+  }
+  .rail-node.current .rail-circle { border-color: var(--indigo); background: rgba(99,102,241,0.22); color: #e0e3ff; box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
+  .rail-node.visited .rail-circle { border-color: rgba(52,211,153,0.5); color: var(--emerald); }
+  .rail-node:hover .rail-circle { border-color: var(--indigo); }
+  .rail-label { font-size: 9px; text-align: center; color: var(--text-dimmer); margin-top: 5px; line-height: 1.2; max-width: 96px; }
+  .rail-node.current .rail-label { color: var(--text); font-weight: 700; }
+  .rail-line { flex: 1; min-width: 16px; height: 2px; background: var(--border2); margin-top: -18px; }
+  .rail-line.done { background: rgba(52,211,153,0.4); }
+
+  /* ---------- Data Journey strip ---------- */
+  .journey {
+    display: flex; align-items: stretch; gap: 0; overflow-x: auto; margin-bottom: 16px;
+    border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    padding: 12px 10px;
+  }
+  .journey-hdr-wrap { text-align: center; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dimmer); margin-bottom: 8px; }
+  .j-node { flex-shrink: 0; width: 128px; text-align: center; padding: 6px 6px; border-radius: 10px; position: relative; }
+  .j-lbl { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dimmer); }
+  .j-val { font-size: 13px; font-weight: 800; margin-top: 4px; color: var(--text-dimmer); min-height: 16px; }
+  .j-node.filled .j-val { color: var(--text); animation: popIn .35s ease; }
+  .j-node.active { background: rgba(99,102,241,0.14); border: 1px solid rgba(99,102,241,0.4); }
+  .j-node.active .j-lbl { color: #c7d2fe; }
+  .j-node.active .j-val { color: #fff; }
+  .j-arrow { display: flex; align-items: center; justify-content: center; width: 20px; flex-shrink: 0; color: var(--text-dimmer); font-size: 13px; }
+
+  /* ---------- Panel ---------- */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 20px;
+  }
+  @media (max-width: 860px) { .panel { grid-template-columns: 1fr; } }
+
+  @keyframes popIn { from { opacity:0; transform: scale(.9) translateY(4px); } to { opacity:1; transform: scale(1) translateY(0); } }
+  @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes flowRight { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
+
+  .step-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .step-title { font-size: 18px; font-weight: 800; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 9px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; border: 1px solid; }
+  .badge.real { color: var(--emerald); border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.08); }
+  .badge.illustrative { color: var(--amber); border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.08); }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; animation: slideUp .3s ease; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--border2); background: rgba(255,255,255,0.02); }
+  .pill.agent { color: #c7d2fe; border-color: rgba(129,140,248,0.35); background: rgba(129,140,248,0.08); cursor: help; }
+  .pill.agent.code { color: var(--slate); border-color: rgba(148,163,184,0.35); background: rgba(148,163,184,0.08); }
+  .pill .k { text-transform: uppercase; font-size: 8.5px; font-weight: 800; opacity: .6; margin-right: 2px; }
+
+  .src-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; border: 1px solid; cursor: help; }
+  .src-llm { color: #a5b4fc; border-color: rgba(129,140,248,.45); background: rgba(129,140,248,.1); }
+  .src-web { color: #7dd3fc; border-color: rgba(56,189,248,.45); background: rgba(56,189,248,.1); }
+  .src-db { color: #d8b4fe; border-color: rgba(192,132,252,.45); background: rgba(192,132,252,.1); }
+  .src-code { color: #cbd5e1; border-color: rgba(148,163,184,.45); background: rgba(148,163,184,.1); }
+  .src-derived { color: #fde68a; border-color: rgba(250,204,21,.4); background: rgba(250,204,21,.08); }
+  .src-assumption { color: #fda4af; border-color: rgba(251,113,133,.45); background: rgba(251,113,133,.1); }
+  .src-human { color: #ddd6fe; border-color: rgba(167,139,250,.45); background: rgba(167,139,250,.1); }
+
+  /* HERO — big number */
+  .hero-card { border: 1px solid var(--border2); border-radius: 14px; padding: 18px; margin: 10px 0; background: rgba(255,255,255,0.02); text-align: center; animation: popIn .4s ease; }
+  .hero-card.clickable { cursor: pointer; transition: all .15s; }
+  .hero-card.clickable:hover { border-color: rgba(251,191,36,0.5); background: rgba(251,191,36,0.05); }
+  .hero-num { font-size: 38px; font-weight: 900; line-height: 1.1; }
+  .hero-unit { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; font-weight: 600; }
+  .hero-src { margin-top: 10px; }
+  .trace-hint { display: block; margin-top: 8px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: rgba(251,191,36,.85); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .chip-out { border: 1px solid var(--border2); background: var(--panel2); border-radius: 999px; padding: 5px 11px; font-size: 12px; animation: popIn .3s ease backwards; }
+  .chip-lv { border: 1px solid var(--border2); background: var(--panel2); border-radius: 10px; padding: 7px 12px; animation: popIn .3s ease backwards; min-width: 108px; }
+  .chip-lv .l { font-size: 9px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-dimmer); font-weight: 700; margin-bottom: 2px; }
+  .chip-lv .v { font-size: 13.5px; font-weight: 800; color: var(--text); }
+
+  /* CALC FLOW: A x B = Result */
+  .calc-flow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+  .cf-box { border: 1px solid var(--border2); border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 120px; background: rgba(255,255,255,0.02); animation: popIn .4s ease backwards; }
+  .cf-box:nth-of-type(1) { animation-delay: 0s; }
+  .cf-op { font-size: 22px; color: var(--text-dimmer); animation: popIn .4s ease backwards; animation-delay: .2s; }
+  .cf-num { font-size: 22px; font-weight: 900; }
+  .cf-unit { font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
+  .cf-result { border: 1px solid rgba(52,211,153,.5); background: rgba(52,211,153,.08); border-radius: 12px; padding: 14px 20px; text-align: center; animation: popIn .5s ease backwards; animation-delay: .5s; }
+  .cf-result .cf-num { color: #a7f3d0; font-size: 26px; }
+  .cf-final { text-align: center; margin-top: 10px; animation: popIn .5s ease backwards; animation-delay: .75s; }
+  .cf-final .big { font-size: 34px; font-weight: 900; background: linear-gradient(90deg,#34d399,#6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cf-final .cap { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dimmer); margin-top: 4px; }
+
+  .callout { border-radius: 10px; padding: 8px 11px; font-size: 11.5px; margin: 8px 0; }
+  .callout.in { border-left: 3px solid var(--amber); background: rgba(251,191,36,0.08); }
+  .callout.out { border-left: 3px solid var(--sky); background: rgba(56,189,248,0.08); cursor: pointer; }
+  .callout .lbl { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; opacity: .85; }
+  .callout.in .lbl { color: var(--amber); } .callout.out .lbl { color: var(--sky); }
+
+  .agg-card { border: 1px solid rgba(45,212,191,0.3); background: rgba(45,212,191,0.05); border-radius: 12px; padding: 14px; margin: 12px 0; animation: popIn .4s ease; }
+  .agg-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--teal); margin-bottom: 10px; letter-spacing: .03em; }
+  .agg-rows { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .agg-item { border: 1px solid var(--border2); background: rgba(0,0,0,0.25); border-radius: 8px; padding: 6px 9px; font-size: 11px; animation: flowRight .3s ease backwards; }
+  .agg-item .l { color: var(--text-dimmer); }
+  .agg-item .v { color: var(--text); font-weight: 700; }
+  .agg-plus { color: var(--text-dimmer); font-size: 13px; }
+  .agg-eq { color: var(--teal); font-size: 15px; margin: 0 2px; }
+  .agg-total { border: 1px solid rgba(45,212,191,0.55); background: rgba(45,212,191,0.14); border-radius: 8px; padding: 8px 13px; animation: popIn .5s ease backwards; animation-delay: .4s; }
+  .agg-total .l { color: var(--teal); font-size: 10px; }
+  .agg-total .v { color: #d1fae5; font-weight: 800; font-size: 15px; }
+
+  .tiny-note { font-size: 10.5px; color: var(--text-dimmer); font-style: italic; margin: 4px 0 10px; }
+
+  /* Collapsed evidence */
+  details.evidence-toggle { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+  details.evidence-toggle summary { cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--text-dim); list-style: none; display: flex; align-items: center; gap: 6px; }
+  details.evidence-toggle summary::-webkit-details-marker { display: none; }
+  details.evidence-toggle summary::before { content: "▸"; transition: transform .15s; }
+  details.evidence-toggle[open] summary::before { transform: rotate(90deg); }
+  details.evidence-toggle summary:hover { color: var(--text); }
+  .ev-btn { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 1px solid var(--border2); background: rgba(255,255,255,0.02); border-radius: 9px; padding: 8px 11px; font-size: 12px; color: #d8d8e0; cursor: pointer; margin: 8px 0 0; transition: all .15s; }
+  .ev-btn:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); }
+  .ev-btn .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ev-btn .view { font-size: 9px; text-transform: uppercase; color: var(--text-dimmer); font-weight: 700; flex-shrink: 0; }
+
+  .human-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 11.5px; font-weight: 700; border: 1px solid rgba(167,139,250,.4); background: rgba(167,139,250,.08); color: #ddd6fe; cursor: pointer; margin-top: 8px; }
+
+  /* ---------- Agent activity mini panel ---------- */
+  .activity-hdr { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dimmer); margin-bottom: 10px; }
+  .activity-list { display: flex; flex-direction: column; gap: 7px; }
+  .activity-item { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: var(--text-dim); animation: slideUp .3s ease backwards; }
+  .activity-item .ck { color: var(--emerald); flex-shrink: 0; margin-top: 1px; }
+  .activity-item:nth-child(1){animation-delay:.05s} .activity-item:nth-child(2){animation-delay:.15s}
+  .activity-item:nth-child(3){animation-delay:.25s} .activity-item:nth-child(4){animation-delay:.35s}
+  .activity-item:nth-child(5){animation-delay:.45s}
+  .researcher-flag { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; border: 1px solid rgba(251,113,133,0.4); background: rgba(251,113,133,0.08); color: var(--rose); cursor: pointer; margin-top: 12px; }
+  .researcher-flag.positive { border-color: rgba(52,211,153,0.45); background: rgba(52,211,153,0.08); color: var(--emerald); }
+
+  /* ---------- Footer nav ---------- */
+  .footer { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .nav-btn { border: 1px solid var(--border2); background: var(--panel2); color: var(--text); border-radius: 10px; padding: 10px 18px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .nav-btn:disabled { opacity: .3; cursor: default; }
+  .nav-btn.primary { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.5); color: #dfe3ff; font-size: 14.5px; padding: 11px 24px; }
+  .progress-wrap { flex: 1; }
+  .progress-track { height: 6px; border-radius: 999px; background: var(--panel2); overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#6366f1,#34d399); border-radius: 999px; transition: width .3s; }
+  .progress-text { font-size: 11px; color: var(--text-dimmer); margin-top: 5px; text-align: center; }
+
+  /* ---------- Modal drawer ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; }
+  .overlay.open { display: flex; }
+  .drawer { width: min(520px, 92vw); background: #0f0f13; border-left: 1px solid var(--border2); height: 100%; overflow-y: auto; padding: 20px; animation: slidein .18s ease; }
+  @keyframes slidein { from { transform: translateX(24px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+  .drawer-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .drawer-hdr h3 { font-size: 15px; margin: 0; }
+  .drawer-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 20px; }
+  .kv { margin-bottom: 12px; }
+  .kv .k { font-size: 10px; text-transform: uppercase; color: var(--text-dimmer); font-weight: 700; margin-bottom: 4px; }
+  .kv .v { font-size: 13px; color: var(--text-dim); line-height: 1.5; white-space: pre-wrap; }
+  .kv .v.code { font-family: ui-monospace, monospace; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; }
+  .src-card { border: 1px solid var(--border2); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+  .src-card.accepted { border-color: rgba(52,211,153,0.35); }
+  .src-card.rejected { border-color: rgba(251,113,133,0.35); }
+  .src-verdict { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .src-verdict.accepted { color: var(--emerald); } .src-verdict.rejected { color: var(--rose); }
+  .checks { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .check { font-size: 10.5px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border2); }
+  .check.pass { color: var(--emerald); }
+  .calc-formula { font-family: ui-monospace, monospace; font-size: 13px; background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.3); border-radius: 8px; padding: 10px; color: #a7f3d0; margin: 8px 0; }
+  .valid-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .valid-row:last-child { border-bottom: none; }
+  .human-full { font-size: 12.5px; color: var(--text-dim); line-height: 1.6; }
+
+  /* ---------- Final result ---------- */
+  .final-hero { text-align: center; padding: 24px 20px; border: 1px solid rgba(52,211,153,0.3); border-radius: 16px; background: radial-gradient(circle at 50% 0%, rgba(52,211,153,0.1), transparent 70%); margin-bottom: 16px; animation: popIn .5s ease; }
+  .final-hero .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--emerald); font-weight: 800; margin-bottom: 8px; }
+  .final-hero .num { font-size: 42px; font-weight: 900; }
+  .prov-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
+  .prov-stat { border: 1px solid var(--border2); border-radius: 10px; padding: 8px 14px; text-align: center; background: rgba(255,255,255,0.02); animation: popIn .4s ease backwards; }
+  .prov-stat .n { font-size: 18px; font-weight: 800; }
+  .prov-stat .l { font-size: 9.5px; text-transform: uppercase; color: var(--text-dimmer); margin-top: 2px; }
+
+  .qf { border-radius: 10px; padding: 11px; margin-bottom: 9px; border: 1px solid; cursor: pointer; font-size: 12px; line-height: 1.5; animation: slideUp .3s ease backwards; }
+  .qf.critical { border-color: rgba(251,113,133,0.4); background: rgba(251,113,133,0.06); }
+  .qf.warning { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.06); }
+  .qf.info { border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.06); }
+  .qf .qf-sev { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>How the Market Size Number Is Actually Built</h1>
+    <p>Click Next and watch the number get built, live — where each value came from, what happened to it, and what it became.</p>
+  </div>
+
+  <div class="legend">
+    <span class="chip" style="color:#a5b4fc;border-color:rgba(129,140,248,.4)">🧠 LLM</span>
+    <span class="chip" style="color:#7dd3fc;border-color:rgba(56,189,248,.4)">🌐 Web Evidence</span>
+    <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
+    <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
+    <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active usage" id="tab-usage" onclick="setApproach('usage')">Usage-Pattern (Demand-Side)</div>
+    <div class="tab desk" id="tab-desk" onclick="setApproach('desk')">Desk Research</div>
+  </div>
+  <div class="approach-desc" id="approach-desc"></div>
+
+  <div class="rail-outer"><div class="rail" id="rail"></div></div>
+
+  <div class="journey-hdr-wrap">Data Journey — how the number is built</div>
+  <div class="journey" id="journey"></div>
+
+  <div class="panel" id="panel"></div>
+
+  <div class="footer">
+    <button class="nav-btn" id="btn-prev" onclick="go(-1)">&larr; Previous</button>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+    <button class="nav-btn primary" id="btn-next" onclick="go(1)">Next &rarr;</button>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this) closeDrawer()">
+  <div class="drawer">
+    <div class="drawer-hdr">
+      <h3 id="drawer-title"></h3>
+      <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div id="drawer-body"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   DATA — every field marked data_tag:"real" is read verbatim from
+   output/demand_usage/crude-oil/{00_setup_approved,01_taxonomy_approved,
+   02_sizing}.json, a real completed run. data_tag:"illustrative" numbers
+   are clearly-labelled mocked examples (no completed Desk Research run
+   exists yet for Crude Oil) — the step STRUCTURE for Desk Research is real
+   (src/me_engine/generation/graph.py / agents.py / config.py).
+
+   New fields added for the visual "data journey" experience:
+     stage    -> which node in the top Data Journey strip this step feeds
+     source   -> llm | web | db | code | derived | assumption | human
+     big      -> {value, unit} the single hero number for this step
+     flowCalc -> {a:{value,unit}, opLabel, b:{value,unit}, result:{value},
+                  final:{big,cap}} an animated "A x B = Result" calculation
+     activity -> short checklist lines for the Agent Activity mini panel
+   ========================================================================= */
+
+const GEOGRAPHY = ["United States","Saudi Arabia","Russia","China","India","Canada","Iraq","United Arab Emirates","Brazil","Kuwait","Iran","Norway","Mexico","Rest of World"];
+
+const SCOPE_TEXT = "Global production, trading & consumption of unrefined petroleum (Brent, WTI, OPEC baskets). Excludes refined products, natural gas, and petrochemical derivatives.";
+
+// HISTORICAL NOTE (kept for reference, no longer used to gate approval):
+// before the 2026-08-26 Target-Commodity Demand Relevance fix, every run of
+// this market needed a human to manually override every downstream/refined
+// bucket the (incorrectly strict) scope validator rejected. Since the fix,
+// the validator itself correctly recognizes that downstream demand (fuels,
+// asphalt, lubricants) is a legitimate crude-oil demand SIGNAL, not a
+// disqualifying factor -- 0/6 buckets were flagged in the live run below,
+// and the taxonomy approved with scope_overrides: {} (empty), no human
+// intervention required.
+const SCOPE_AMENDMENT_TEXT = "PRE-FIX (no longer applies): scope was previously extended by explicit user override for every downstream/refined bucket the validator wrongly rejected on sight. POST-FIX: the validator asks whether the usage can be defensibly connected to crude-oil consumption instead of auto-rejecting anything downstream — see the Taxonomy Approval step below for this run's real (override-free) result.";
+
+const USAGE_STAGES = [
+  {key:"market", label:"Market"}, {key:"geography", label:"Geography"}, {key:"usage", label:"Usage Taxonomy"},
+  {key:"driver", label:"Demand Driver"}, {key:"quantity", label:"Quantity"}, {key:"price", label:"Price"},
+  {key:"value", label:"Usage Value"}, {key:"global", label:"Country + Global"}, {key:"validation", label:"Validation"},
+];
+
+const usageSteps = [
+{
+  id:"setup", name:"Input / Market Setup", data_tag:"real", stage:"market", source:"code",
+  data_tag_note:"From the actual recorded Crude Oil run (00_setup_approved.json).",
+  agent:{name:"Setup Agent", role:"Records the market name, scope, geography, base year, and units every downstream step inherits."},
+  inputShort:"New run started", outputLabel:"Market setup fixed", reason:"Every downstream bucket inherits this scope unchanged.",
+  output:[{l:"Market being sized", v:"Crude Oil"},{l:"Base year for prices", v:"2023"},{l:"Currency & unit", v:"USD Bn"},{l:"Countries covered", v:"14 countries"}],
+  activity:["Recording market name","Fixing scope + geography","Setting base year & units"],
+},
+{
+  id:"market_understanding", name:"Market Understanding (Scope)", data_tag:"real", stage:"market", source:"llm",
+  data_tag_note:"From the actual recorded Crude Oil run (00_setup_approved.json), field 'scope'.",
+  agent:{name:"Scope Agent (LLM)", role:"Writes the plain-language scope statement defining what counts as \"in\" or \"out\" of this market."},
+  inputShort:"Market: Crude Oil", outputLabel:"Scope statement written", reason:"This scope excludes refined products — a fact that matters two steps from now.",
+  bigText:SCOPE_TEXT, output:GEOGRAPHY,
+  activity:["Reading market context","Drafting scope statement","Flagging exclusions"],
+},
+{
+  id:"taxonomy", name:"Usage Taxonomy Generated", data_tag:"real", stage:"usage", source:"llm",
+  data_tag_note:"From the actual recorded Crude Oil run (01_taxonomy_draft.json), post-fix live run, 2026-08-27.",
+  agent:{name:"Taxonomy Agent (LLM)", role:"Identifies the major applications/usages and divides the market into usage buckets. Scope relevance is now judged by a Target-Commodity Demand Relevance Check, not by whether the usage happens to be a downstream/refined product."},
+  inputShort:"Scope + geography", outputLabel:"6 usage buckets proposed", reason:"FIX CONFIRMED LIVE: every bucket below PASSED the corrected scope check — 0/6 flagged (was 5/5 and 6/6 in every pre-fix run of this market).",
+  output:["Transportation Fuels","Petrochemical Feedstocks","Heating & Power Generation","Lubricants & Greases","Asphalt & Road Construction","Waxes & Specialty Products"],
+  validation:[
+    {label:"Transportation Fuels", passed:true, detail:"in_scope: refining crude oil into transportation fuels directly creates demand for crude oil as the primary input."},
+    {label:"Petrochemical Feedstocks", passed:true, detail:"in_scope: crude oil is a raw material for petrochemicals, creating demand for crude oil as a feedstock."},
+    {label:"Heating and Power Generation", passed:true, detail:"in_scope: burning crude oil or heavy fuel oil for energy directly consumes crude oil, implying crude oil demand."},
+    {label:"Lubricants and Greases", passed:true, detail:"in_scope: lubricants are refined from crude oil, so their production requires crude oil as an input."},
+    {label:"Asphalt and Road Construction", passed:true, detail:"in_scope: asphalt is a heavy residue from crude oil refining, so its production consumes crude oil."},
+    {label:"Waxes and Specialty Products", passed:true, detail:"in_scope: waxes are derived from crude oil, so their production requires crude oil as a feedstock."},
+  ],
+  researcher_note:{positive:true, note:"BEFORE the fix (2026-08-26): the validator was primed to treat ANY refined/downstream usage as a scope violation, and a syntactic word-match against the scope's own exclusion clause forced a hard out_of_scope regardless of the LLM's reasoning — every run needed a full human override just to proceed. AFTER: the validator asks whether the usage can be defensibly connected to crude-oil consumption, which downstream fuel/asphalt/lubricant demand genuinely can. Root cause and fix are documented in CRUDE_OIL_METHODOLOGY_FIX (this session)."},
+  activity:["Analyzing market scope","Proposing 6 usage buckets","Checking Target-Commodity Demand Relevance","0/6 flagged — fix confirmed"],
+},
+{
+  id:"taxonomy_approval", name:"Taxonomy Approval — No Override Needed", data_tag:"real", stage:"usage", source:"code",
+  data_tag_note:"From the actual recorded Crude Oil run (01_taxonomy_approved.json), post-fix live run.",
+  agent:{name:"Deterministic Gate — taxonomy.approve_taxonomy", role:"Approves the taxonomy automatically unless a bucket is flagged out_of_scope; a human override is only required in that case."},
+  inputShort:"0/6 buckets flagged", outputLabel:"Approved automatically, zero overrides", reason:"Before the fix, this exact market needed a human to manually override every flagged bucket, every run. That workaround is no longer needed once the scope check itself reasons correctly.",
+  output:"6/6 buckets approved automatically — scope_overrides: {} (empty)",
+  researcher_note:{positive:true, note:"PRE-FIX vs POST-FIX, same market: before, 5/5 or 6/6 buckets were flagged out_of_scope every run, each requiring a human-authored override justification just to reach sizing. In this run, zero overrides were written, zero human review was required, and approval happened automatically — proof #6 from the methodology fix's validation checklist, verified live, not just in a unit test."},
+  activity:["Checking for out_of_scope buckets","0 found — approving automatically","No human override required"],
+},
+{
+  id:"geography", name:"Geography", data_tag:"real", stage:"geography", source:"code",
+  data_tag_note:"From the actual recorded Crude Oil run (00_setup_approved.json), field 'geography'.",
+  agent:{name:"Deterministic Code", role:"Carries the approved country list unchanged into every downstream bucket."},
+  inputShort:"Approved setup", outputLabel:"14 countries fixed", reason:"Every bucket is quantified once per country, then summed globally.",
+  output:GEOGRAPHY,
+  activity:["Loading approved country list","Carrying forward unchanged"],
+},
+{
+  id:"evidence_requirement", name:"Evidence Requirement / Driver Definition", data_tag:"real", stage:"driver", source:"llm",
+  data_tag_note:"From the actual recorded Crude Oil run (01_taxonomy_draft.json / 02_sizing.json, drivers), post-fix live run.",
+  agent:{name:"Driver Library Agent (LLM)", role:"Picks a measurable physical driver and a priority-ordered evidence strategy for each usage bucket. Since the fix, a FRESHLY-derived driver must also anchor its final_demand_unit to the target commodity's own unit ('Barrels') — the driver itself may still be denominated in a downstream unit."},
+  inputShort:"6 usage buckets", outputLabel:"Driver + source list chosen", reason:"A residual gap the live run exposed: BOTH buckets below reused a driver cached from BEFORE the fix, so the corrected prompt never actually ran for them.",
+  output:["Global asphalt production volume (MT/yr)","Global vehicle-km traveled (VKT)","Asphalt Institute","EIA"],
+  validation:[
+    {label:"Asphalt & Road Construction", passed:false, detail:"REUSED (similarity 0.8885) from before the fix — final_demand_unit is still 'metric tons of asphalt produced', not 'Barrels'; consumption_unit is empty, so no conversion to crude oil is even attempted."},
+    {label:"Transportation Fuels", passed:false, detail:"REUSED (similarity 1.0) from before the fix — final_demand_unit is 'liters of transportation fuel', not 'Barrels'. A conversion factor DOES bridge to barrels at the pricing step, but see Derivation below for a new bug this exposed."},
+  ],
+  researcher_note:{note:"The driver-library REUSE mechanism looks up a cached driver by description similarity BEFORE the corrected LLM prompt ever runs. Any market re-run against an already-populated library — like Crude Oil, run many times over this project — keeps inheriting pre-fix, downstream-anchored driver definitions for any bucket with a cached match. The corrected prompt only ever executes for a bucket with NO cached match."},
+  activity:["Looking up driver library","Found cached matches from before the fix","Reused without re-deriving"],
+},
+{
+  id:"search_query", name:"Search Query & Retrieval Attempts", data_tag:"real", stage:"quantity", source:"web",
+  data_tag_note:"From the actual recorded Crude Oil run (02_sizing.json), field retrieval_attempts, post-fix live run.",
+  agent:{name:"Web Acquirer Agent", role:"Executes the driver's evidence strategy — searches, downloads, extracts a usable figure from real sources. Bounded-parallel across countries (8 workers) since the runtime-hardening pass."},
+  inputShort:"Driver + evidence strategy", outputLabel:"825B liters/yr claimed (EIA, assumption)", reason:"420 driver attempts across 6 buckets this run; almost all fell back to assumption tier — a genuine, disclosed limitation, not something this run hides.",
+  big:{value:"825,000,000,000", unit:"liters of transportation fuel/year — EIA AEO2020, assumption tier"},
+  feeds_into:"This quantity carries into Validation, then Derivation → Pricing → Calculation.",
+  search_queries:[
+    {query:"United States vehicle-kilometers traveled (VKT)", purpose:"Attempt 1/5 — extraction failed.", results:[{name:"Evidence Strategy source", excerpt:"Web search returned candidate pages, but extraction of a usable figure failed.", decision:"rejected", rejectionReason:"extraction_failed"}]},
+    {query:"IEA — World Energy Statistics and Balances", purpose:"Attempt 2/5 — all candidate URLs were HTML landing pages, not data assets.", results:[{name:"IEA — World Energy Statistics", excerpt:"Candidate URLs resolved to HTML landing pages, not a data asset.", decision:"rejected", rejectionReason:"html_landing_page_not_asset"}]},
+    {query:"European Commission — EU Transport in Figures", purpose:"Attempt 3/5 — no usable source located.", results:[{name:"EC — EU Transport in Figures", excerpt:"No source could be located for this query.", decision:"rejected", rejectionReason:"no_source_found"}]},
+    {query:"UNECE — Transport Statistics Database", purpose:"Attempt 4/5 — download failed.", results:[{name:"UNECE — Transport Statistics", excerpt:"Candidate URL(s) failed to download.", decision:"rejected", rejectionReason:"download_failed"}]},
+    {query:"(LLM fallback claim) Transportation Fuels demand, United States", purpose:"Attempt 5/5 — accepted as fallback after real attempts failed (evidence_type: assumption).", results:[{name:"U.S. Energy Information Administration", url:"https://www.eia.gov/outlooks/aeo/", excerpt:"EIA, Annual Energy Outlook 2020, Table: Transportation Sector — LLM-proposed claim, cited but not independently traceability-verified.", extractedValue:"825,000,000,000", unit:"liters of transportation fuel/year", year:2020, decision:"accepted"}]},
+  ],
+  researcher_note:{note:"Evidence quality this run: 0% verified_observed, 0% derived, 1.1% source_found_unverified, 98.9% assumption (90 total driver/price inputs). This is a KNOWN, disclosed, unrelated limitation (PDF/CSV/API acquisition sits at 0% hit rate — see PHASE12_FINAL_VALIDATION.md) — the Crude Oil methodology fix does not change this; it only fixed whether a downstream bucket gets to REACH this step at all."},
+  activity:["Searching EIA / IEA / UNECE / EC","4 candidate sources failed","EIA fallback claim accepted (assumption)"],
+},
+{
+  id:"llm_extraction", name:"LLM Extraction — Pricing Call Succeeded This Run", data_tag:"real", stage:"price", source:"assumption",
+  data_tag_note:"From the actual recorded Crude Oil run (02_sizing.json, prices/Transportation Fuels), post-fix live run — no LLM call failure occurred this time.",
+  agent:{name:"Pricing Agent (LLM)", role:"Asks the LLM for an average selling price per driver unit, with a citation."},
+  carried_input:"825,000,000,000 liters of transportation fuel/yr (2020, EIA, assumption), from Search Query & Retrieval",
+  inputShort:"Needs ASP for Transport Fuels", outputLabel:"$75.00 / barrel proposed (assumption)", reason:"Unlike an earlier smoke-test run where this exact call genuinely FAILED (JSON parse error) and floored to $1, this run's call succeeded — but the resulting price is still an unverified assumption, not observed evidence.",
+  big:{value:"$75.00", unit:"per barrel of crude oil — assumption, no independent source"},
+  llm_call:{purpose:"Price Transportation Fuels (pricing)", model:"(not captured historically)", promptSummary:"Pricing-agent prompt requests an ASP for the target commodity's own unit, with a citation.", responseSummary:"Call succeeded this run — no citable source found, so an assumption fallback was used.", responseFull:"Assumed average crude oil price of $75 per barrel, based on historical range and current market conditions, applied to global transportation fuel demand. rationale field, verification_status: assumption."},
+  validation:[{label:"United States / Transportation Fuels — ASP", passed:false, detail:"evidence_type: assumption — genuinely a crude-oil price ($/barrel, not $/liter of fuel), just not sourced."}],
+  researcher_note:{note:"Good news buried in a weak number: the price basis correctly resolved to 'barrel' (the target commodity's own unit), not to a downstream fuel price — proof that check #3 (no downstream price used directly) passes for THIS bucket's price. The quantity side has a separate, more serious bug — see Derivation next."},
+  activity:["Calling pricing LLM","Call succeeded — no source found","Assumption fallback: $75/barrel"],
+},
+{
+  id:"validation", name:"Validation (Fact Validator)", data_tag:"real", stage:"quantity", source:"code",
+  data_tag_note:"The 5-check order is real (fact_validator.py); the percentages are real, from this run's log.",
+  agent:{name:"Deterministic Code — fact_validator.py", role:"Runs a fixed 5-check order — no LLM judgment, pure rule evaluation."},
+  carried_input:"825,000,000,000 liters/year (EIA, assumption) + $75/barrel ASP, awaiting the deterministic gate.",
+  inputShort:"All candidate sources", outputLabel:"38% plausibility, 0% observed", reason:"Only figures passing every check are labelled verified_observed.",
+  output:[{l:"Plausibility score", v:"38%"},{l:"Deterministic score", v:"80%"},{l:"Directly observed evidence", v:"0%"},{l:"Unlabelled assumption", v:"98.9%"}],
+  feeds_into:"The 825B-liter quantity carries into Derivation / Price-Basis Conversion.",
+  validation:[
+    {label:"Plausibility score", passed:false, detail:"38% — below the usual bar."},
+    {label:"Deterministic score", passed:true, detail:"80%."},
+    {label:"Evidence — verified_observed", passed:false, detail:"0% of all driver/price inputs this run."},
+    {label:"Evidence — assumption", passed:false, detail:"98.9% of all driver/price inputs."},
+  ],
+  activity:["Running 5-check validator","currency → geo → year → unit → metric","Scoring plausibility: 38%"],
+},
+{
+  id:"derivation", name:"Derivation — Price-Basis Conversion (⚠ new bug found)", data_tag:"real", stage:"price", source:"assumption",
+  data_tag_note:"From the actual recorded Crude Oil run (02_sizing.json), price_basis_records + pricing_conversion_factors, post-fix live run.",
+  agent:{name:"Pricing Agent (LLM) + Code", role:"The bridge factor is an LLM-proposed assumption; applying it is SUPPOSED to be deterministic arithmetic. This run proves the arithmetic itself is wrong."},
+  carried_input:"825,000,000,000 liters of transportation fuel/year, from Validation.",
+  inputShort:"Liters of fuel vs. barrels", outputLabel:"Bridge factor found — but applied backwards", reason:"The conversion factor found here is real and correct (1 barrel of crude ≈ 159 liters of refined product, matching the real 42-gallon barrel). The BUG is downstream, in Calculation: the code MULTIPLIES by this factor instead of DIVIDING.",
+  big:{value:"159", unit:"liters of transportation fuel per barrel [assumption, EIA]"},
+  feeds_into:"825,000,000,000 liters should be DIVIDED by 159 to get ≈5.19 billion barrels before Pricing — instead Calculation multiplies, inflating the result by 159² (≈25,282×).",
+  conversion:{fromValue:"825,000,000,000", fromUnit:"liters of transportation fuel", factor:"159", factorLabel:"liters of fuel per barrel [assumption, EIA Energy Explained]", formula:"CORRECT: quantity ÷ 159 = barrels. ACTUAL CODE: quantity × 159 = quantity treated as if it grew, not shrank, when converted to a bigger unit.", toValue:"5,188,679,245 (correct) vs. 131,175,000,000,000 (what the code actually computes)", toUnit:"barrels"},
+  researcher_note:{note:"NEWLY FOUND, pre-existing bug in calculate_node — NOT introduced by the Crude-Oil methodology fix, but never exercised before it, because Transportation Fuels was always rejected at scope validation before reaching this code path with a real (≠1) conversion factor. The fix correctly unblocked the bucket; that exposed this dormant bug for the first time. Not yet fixed as of this artifact."},
+  activity:["Finding a real 159 L/barrel factor (EIA)","Correct step: DIVIDE by 159","Actual code: MULTIPLIES by 159 — bug"],
+},
+{
+  id:"pricing", name:"Pricing — The Asphalt Chain Still Leaks Downstream Price", data_tag:"real", stage:"price", source:"assumption",
+  data_tag_note:"From the actual recorded Crude Oil run (02_sizing.json build_up_rows / price_basis_records, US / Asphalt), post-fix live run.",
+  agent:{name:"Pricing Agent (LLM)", role:"Proposes an average selling price per driver unit. Should always resolve to the TARGET commodity's own price basis (barrel) — for Asphalt, it still doesn't."},
+  carried_input:"30,000,000 metric tons of asphalt (US, 2022, Asphalt Institute, assumption), from Evidence/Derivation.",
+  inputShort:"30M metric tons of asphalt", outputLabel:"$450/ton ASPHALT price used directly", reason:"price_basis_records shows same_as_final_unit=TRUE and NO conversion factor at all for this bucket — because final_demand_unit was never corrected off 'metric tons of asphalt produced'. This is exactly the pre-fix bug pattern, still present here because this driver was REUSED from before the fix (see Driver Definition).",
+  big:{value:"$450", unit:"per metric ton of ASPHALT — not a crude-oil price, assumption, no source cited"},
+  feeds_into:"30,000,000 metric tons × $450/ton (asphalt's own price) both carry into Calculation — never bridged to barrels or a crude-oil price at all.",
+  validation:[
+    {label:"Asphalt & Road Construction — ASP", passed:false, detail:"$450/ton of ASPHALT, evidence_type: assumption; source/url/citation all empty; price_basis_unit='metric ton', same_as_final_unit=true — no crude-oil conversion attempted."},
+    {label:"Transportation Fuels — ASP", passed:true, detail:"$75/barrel of CRUDE OIL, price_basis_unit='barrel' — correctly resolved to the target commodity's own price basis (the Derivation step's conversion-direction bug is separate from this)."},
+  ],
+  researcher_note:{note:"target_commodity_unit_mismatch (critical, new flag from the fix) correctly catches this — flagged, NOT silently hidden. But by design the flag does not exclude the value (a word-overlap heuristic can false-positive on legitimate synonyms, so excluding automatically was judged riskier than flagging loudly) — so this asphalt-priced dollar amount still enters the Crude Oil total below."},
+  activity:["Proposing ASP for Asphalt bucket","No citable source found","Labelled: assumption — still asphalt's own price"],
+},
+{
+  id:"calculation", name:"Calculation — Two Real Bugs, One Number", data_tag:"real", stage:"value", source:"code",
+  data_tag_note:"From the actual recorded Crude Oil run (02_sizing.json build_up_rows, US / Transportation Fuels), post-fix live run.",
+  agent:{name:"Deterministic Code", role:"Multiplies quantity by price — pure arithmetic, no LLM involved in this step. The arithmetic itself is what's broken here."},
+  inputShort:"Quantity × Conversion × Price", outputLabel:"$9,838,125,000.0M produced — 25,282× too large", reason:"The exact spine the 'Trace this number' view walks backward through — and the clearest evidence that 'the pipeline ran successfully' does not mean 'the number is correct.'",
+  flowCalc:{
+    a:{value:"825,000,000,000", unit:"liters of transportation fuel/yr", src:"assumption"},
+    opLabel:"× 159 (should be ÷)",
+    b:{value:"$75.00", unit:"per barrel of crude oil", src:"assumption"},
+    result:{value:"$9,838,125,000,000,000", src:"code"},
+    final:{big:"$9,838,125,000.0M", cap:"United States · Transportation Fuels — WRONG, should be ≈$389,150.9M"},
+  },
+  feeds_into:"This single cell becomes 100% of the entire $9,838,460,621.9M Crude Oil total — the dominant_bucket_unit_mismatch_risk flag correctly caught this.",
+  calculation:{
+    inputs:[
+      {label:"Driver × Intensity — Transportation fuel demand (US, 2020)", value:"825,000,000,000 liters/year — assumption, EIA AEO2020"},
+      {label:"Conversion factor", value:"159 liters of fuel per barrel — assumption, EIA (correctly SOURCED, incorrectly APPLIED)"},
+      {label:"ASP", value:"$75.00 / barrel of crude oil — assumption, no source"},
+    ],
+    formula:"ACTUAL CODE: value_usd_mn = quantity(liters) × conv_factor(159 liters/barrel) × asp($/barrel) ÷ 1,000,000\nCORRECT:     value_usd_mn = quantity(liters) ÷ conv_factor(159 liters/barrel) × asp($/barrel) ÷ 1,000,000",
+    output:"Reported: $9,838,125,000.0M ($9.84 quadrillion). Correct: ≈$389,150.9M (≈$389.2 Bn) — a 25,282× (≈159²) overstatement, the exact fingerprint of a divide-turned-multiply bug.",
+  },
+  sources:[{name:"U.S. Energy Information Administration (EIA)", url:"https://www.eia.gov/outlooks/aeo/", excerpt:"EIA, Annual Energy Outlook 2020, Table: Transportation Sector — LLM-proposed claim, not independently traceability-verified", extractedValue:"825,000,000,000", unit:"liters of transportation fuel/year", geography:"United States", year:2020, decision:"accepted"}],
+  researcher_note:{note:"'Transportation Fuels' alone is 100% of the $9.84-quadrillion total (dominant_bucket_unit_mismatch_risk, critical) and this one US cell is 6,111,016,212× its own bucket's median country value (country_cell_outlier, critical) — both flags fired correctly and pointed straight at this bug. Separately, 'Asphalt & Road Construction' still leaks its own $450/ton asphalt price into the total (target_commodity_unit_mismatch, critical) — see Pricing above. NEITHER of these is hidden: both are flagged loudly in the real quality_flags for this run (see Final Market Size / Review as Market Researcher). Fix status: identified, not yet corrected as of this artifact."},
+  activity:["Multiplying quantity × conversion × price","825,000,000,000 × 159 × $75","= $9,838,125,000.0M — WRONG"],
+},
+{
+  id:"final_market_size", name:"Final Market Size", data_tag:"real", stage:"global", source:"code",
+  data_tag_note:"From the actual recorded Crude Oil run (02_sizing.json), total_market_value_usd_mn / country_totals_usd_mn, post-fix live run, 2026-08-27.",
+  agent:{name:"Deterministic Code", role:"Sums every country/bucket cell — no LLM or judgment; the addition chains below are exactly what runs. The SUM is correct; several of the CELLS feeding it are not (see Derivation/Pricing/Calculation)."},
+  inputShort:"84 country/bucket cells", outputLabel:"$9,838,460,621.9M produced — implausible", reason:"Real arithmetic, correctly reconciled (bucket-sum, geography-sum, and reported total all agree to <1e-5) — but on top of inputs that include the two bugs found above.",
+  big:{value:"$9,838,460,621.9M", unit:"≈ $9.84 quadrillion — 6 buckets × 14 countries — flagged implausible_total"},
+  feeds_into:"The finalized total and its 11 quality flags carry into Review as Market Researcher.",
+  aggregations:[
+    {title:"Usage 1 + Usage 2 + ... → Global Total (by bucket)", rows:[
+      {label:"Transportation Fuels", value:"$9,838,125,059.8M"},{label:"Heating & Power Generation", value:"$87,525.0M"},
+      {label:"Waxes & Specialty Products", value:"$159,000.0M"},{label:"Asphalt & Road Construction", value:"$66,330.0M"},
+      {label:"Lubricants & Greases", value:"$22,706.7M"},{label:"Petrochemical Feedstocks", value:"$0.3M"},
+    ], totalLabel:"Global Total", total:"$9,838,460,621.9M"},
+    {title:"Country A + Country B + ... → Global Total (by country)", rows:[
+      {label:"United States", value:"$9,838,169,218.0M"},{label:"Rest of World", value:"$138,551.9M"},{label:"China", value:"$41,027.7M"},
+      {label:"Russia", value:"$24,009.0M"},{label:"Saudi Arabia", value:"$18,207.2M"},{label:"Canada", value:"$17,820.3M"},
+      {label:"Brazil", value:"$9,501.8M"},{label:"Iraq", value:"$8,994.1M"},{label:"India", value:"$7,581.6M"},
+      {label:"Iran", value:"$7,026.8M"},{label:"UAE", value:"$6,955.4M"},{label:"Mexico", value:"$4,833.7M"},
+      {label:"Kuwait", value:"$3,477.7M"},{label:"Norway", value:"$3,416.6M"},
+    ], totalLabel:"Global Total", total:"$9,838,460,621.9M"},
+  ],
+  validation:[
+    {label:"Reconciliation: bucket-sum vs. geography-sum vs. reported total", passed:true, detail:"All three agree to <1e-5 (floating-point rounding only) — the AGGREGATION arithmetic is correct."},
+    {label:"Underlying evidence quality", passed:false, detail:"83/84 cells are unlabelled assumptions; 0% directly observed, 0% derived, 1.1% source_found_unverified."},
+    {label:"Does the total represent Crude Oil?", passed:false, detail:"NO — 100% of it is one bucket (Transportation Fuels) carrying a 25,282× calculation bug; a further 3 buckets are priced in a downstream product's own price, not crude oil's."},
+  ],
+  is_final:true,
+  activity:["Summing 84 country/bucket cells","6 buckets × 14 countries","Producing global total — flagged implausible"],
+},
+{
+  id:"review_researcher", name:"Review as Market Researcher", data_tag:"real", stage:"validation", source:"code",
+  data_tag_note:"Every message below is verbatim from quality_flags in the actual recorded Crude Oil run, post-fix live run.",
+  agent:{name:"Deterministic Code — quality.py", role:"Rule-based checks over the finished run — no LLM — surfacing which numbers to distrust and why."},
+  inputShort:"The completed run", outputLabel:"11 flags raised", reason:"Surfacing exactly where a real researcher should push back before trusting the number — including two flags (target_commodity_unit_mismatch, dominant_bucket_unit_mismatch_risk) that correctly point straight at the two bugs this run exposed.",
+  output:"6 critical, 4 warning, 1 info",
+  is_review:true,
+  activity:["Scanning for red flags","11 flags raised","6 critical · 4 warning · 1 info"],
+},
+];
+
+const qualityFlags = [
+  {code:"implausible_total", severity:"critical", step:"final_market_size", message:"Bottom-up global total ($9,838,460,622M) is outside a plausible range for a global market — verify before trusting this run."},
+  {code:"dominant_bucket_unit_mismatch_risk", severity:"critical", step:"calculation", message:"One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Transportation Fuels' alone is 100% of the total across 6 bucket(s) — check its driver/price for a unit mismatch before trusting this run."},
+  {code:"country_cell_outlier", severity:"critical", step:"calculation", message:"'Transportation Fuels'@United States ($9,838,125,000.0M) is 6,111,016,212x this bucket's median country value — check for a driver/intensity assumption blowup."},
+  {code:"target_commodity_unit_mismatch", severity:"critical", step:"pricing", message:"4 bucket(s) have a final_demand_unit that shares no words with the market's own target-commodity unit ('Barrels'): Transportation Fuels ('liters of transportation fuel'), Petrochemical Feedstocks ('million tonnes per year'), Lubricants and Greases ('liters of lubricant'), Asphalt and Road Construction ('metric tons of asphalt produced') — the signature of a downstream/adjacent product's own unit and price leaking into the target commodity's final value."},
+  {code:"driver_magnitude_implausible", severity:"critical", step:"evidence_requirement", message:"2 driver(s) diverge from an independent reference figure by 735,835.17x or more — flagged for review, the original value/source/note are unchanged: Petrochemical Feedstocks, Lubricants and Greases."},
+  {code:"magnitude_cross_validation_discrepancy", severity:"critical", step:"validation", message:"5 magnitude/cross-source discrepancy flag(s) across driver totals — flagged for review, original value(s)/source(s) unchanged: Transportation Fuels, Petrochemical Feedstocks, Heating and Power Generation, Lubricants and Greases."},
+  {code:"high_assumption_share", severity:"warning", step:"validation", message:"83/84 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) — this run leans heavily on estimation."},
+  {code:"no_observed_data", severity:"warning", step:"validation", message:"No country-level figure in this run was directly cited/verified in evidence — every quantity is derived, an unverified LLM claim, or assumed."},
+  {code:"low_plausibility", severity:"warning", step:"validation", message:"Validation plausibility (38%) is below the usual bar."},
+  {code:"low_observed_share", severity:"warning", step:"search_query", message:"Only 0% of driver/price inputs are directly observed evidence — this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."},
+  {code:"stale_evidence_source", severity:"info", step:"search_query", message:"9 driver evidence source(s) predate 2022 — informational, worth a fresher search if this market moves quickly."},
+];
+
+const ILLUSTRATIVE_NOTE = "ILLUSTRATIVE EXAMPLE — no completed Desk Research run exists for Crude Oil yet. Step structure is real; these specific numbers are mocked.";
+
+const DESK_STAGES = [
+  {key:"market", label:"Market"}, {key:"size", label:"Global Size Est."}, {key:"allocate", label:"Regional/Country"},
+  {key:"price", label:"Price"}, {key:"refine", label:"Refinement"}, {key:"final", label:"Final Result"},
+];
+
+const deskSteps = [
+{
+  id:"market", name:"Research & Evidence Gathering", data_tag:"real", stage:"market", source:"web",
+  data_tag_note:"Real mechanics — structure_node in src/me_engine/generation/agents.py.",
+  agent:{name:"Structure Agent (LLM + Web/DB)", role:"Gathers free-text narrative + live web-search snippets grounding every later LLM call."},
+  inputShort:"Market: Crude Oil", outputLabel:"Evidence pool gathered", reason:"Everything downstream is grounded against this same evidence pool.",
+  output:"Narrative + web snippets gathered",
+  feeds_into:"This evidence pool grounds the Global Market Sizing LLM call.",
+  activity:["Gathering DB narrative","Pulling live web snippets"],
+},
+{
+  id:"demand_drivers", name:"Global Market Sizing", data_tag:"illustrative", data_tag_note:ILLUSTRATIVE_NOTE, stage:"size", source:"llm",
+  agent:{name:"Market Size Agent (LLM)", role:"One LLM call proposes a global anchor value and forward CAGR — a top-down estimate."},
+  carried_input:"Evidence pool, from Research & Evidence Gathering.",
+  inputShort:"Evidence pool", outputLabel:"Global anchor proposed", reason:"The entire 'demand driver' concept in Desk Research is this one LLM call.",
+  big:{value:"$612.4 Bn", unit:"2026 global anchor · CAGR 3.8%"},
+  feeds_into:"The $612.4 Bn anchor becomes the base Regional Allocation splits.",
+  llm_call:{purpose:"Propose global market size anchor + CAGR", model:"(illustrative)", promptSummary:"Propose a 2026 global anchor and CAGR for Crude Oil given the gathered evidence.", responseSummary:"$612.4 Bn anchor, 3.8% CAGR.", responseFull:'{ "global_anchor_2026": 612400, "global_cagr": 0.038 }'},
+  activity:["LLM proposes global anchor","CAGR 3.8% proposed"],
+},
+{
+  id:"geography", name:"Regional Allocation", data_tag:"illustrative", data_tag_note:ILLUSTRATIVE_NOTE, stage:"allocate", source:"llm",
+  agent:{name:"Geography Agent (LLM)", role:"One LLM call proposes regional shares of the global total."},
+  carried_input:"$612.4 Bn global anchor, from Global Market Sizing.",
+  inputShort:"$612.4Bn anchor", outputLabel:"Regional split proposed", reason:"A single LLM proposal — the reward loop later catches an implausible split.",
+  output:["APAC 38%","N. America 22%","Europe 18%","MEA 14%","LatAm 8%"],
+  feeds_into:"Asia Pacific 38% becomes the base Country Shares splits further.",
+  activity:["LLM proposes regional split"],
+},
+{
+  id:"evidence_search", name:"Country Shares", data_tag:"illustrative", data_tag_note:ILLUSTRATIVE_NOTE, stage:"allocate", source:"llm",
+  agent:{name:"Shares Agent (LLM)", role:"One LLM call proposes country-level shares within each region."},
+  carried_input:"Asia Pacific 38%, from Regional Allocation.",
+  inputShort:"APAC 38% share", outputLabel:"Country split proposed", reason:"Same one-shot LLM-proposal pattern — no per-source citation exists here.",
+  output:["China 45%","India 20%","Japan 12%","Rest of APAC 23%"],
+  feeds_into:"Global anchor + shares become the base Average Selling Price prices per barrel.",
+  activity:["LLM proposes country split within APAC"],
+},
+{
+  id:"price", name:"Average Selling Price", data_tag:"illustrative", data_tag_note:ILLUSTRATIVE_NOTE, stage:"price", source:"llm",
+  agent:{name:"ASP Agent (LLM)", role:"One LLM call proposes a per-product average selling price — top-down, not a build-up."},
+  carried_input:"China 45% / India 20% / Japan 12% shares, from Country Shares.",
+  inputShort:"Global anchor + shares", outputLabel:"ASP proposed", reason:"A single top-down proposal, not a bottom-up quantity × price build.",
+  big:{value:"$83.20", unit:"per barrel"},
+  feeds_into:"market_size + geo + shares + asp together feed the Reward Loop.",
+  activity:["LLM proposes ASP"],
+},
+{
+  id:"calculation", name:"Reward Loop / Refinement", data_tag:"real", stage:"refine", source:"llm",
+  data_tag_note:"Real mechanics (reward_threshold=0.9) — config.py + graph.py. The reward SCORE is illustrative.",
+  agent:{name:"Reward Agent (LLM judge) + Code", role:"An LLM judge scores plausibility; the refine-vs-accept decision is deterministic."},
+  carried_input:"$83.20/barrel ASP + upstream outputs, from Average Selling Price.",
+  inputShort:"market_size+geo+shares+asp", outputLabel:"Iteration 2 accepted (0.93)", reason:"Desk Research's only real feedback mechanism — no per-source validator like Usage-Based.",
+  output:["Iteration 1: 0.71 (refine)","Iteration 2: 0.93 (accept)"],
+  validation:[{label:"Iteration 1 — reward 0.71", passed:false, detail:"Below threshold (0.9) — loop back to market_size."},{label:"Iteration 2 — reward 0.93", passed:true, detail:"At/above threshold — accept, proceed to finalize."}],
+  activity:["Scoring iteration 1: 0.71","Below threshold — refine","Scoring iteration 2: 0.93","Accepted"],
+},
+{
+  id:"usage_level_value", name:"Finalize Best Iteration", data_tag:"real", stage:"refine", source:"code",
+  data_tag_note:"Real mechanics — finalize_node in src/me_engine/generation/agents.py.",
+  agent:{name:"Deterministic Code — finalize_node", role:"Picks whichever iteration scored the highest reward."},
+  carried_input:"Iteration 2 (reward 0.93), from Reward Loop.",
+  inputShort:"All iterations", outputLabel:"Iteration 2 restored", reason:"Guards against a late-loop iteration scoring worse due to LLM variance.",
+  output:"Iteration 2 restored as final (reward 0.93)",
+  feeds_into:"Finalized values become the input Justification (Brain) explains.",
+  activity:["Comparing iteration rewards","Restoring best (iteration 2)"],
+},
+{
+  id:"validation", name:"Justification (Brain)", data_tag:"real", stage:"final", source:"llm",
+  data_tag_note:"Real mechanics — brain_node in src/me_engine/generation/agents.py.",
+  agent:{name:"Brain Agent (LLM)", role:"Writes a short plain-language justification of the finalized numbers, after the fact."},
+  carried_input:"Finalized iteration 2 values, from Finalize Best Iteration.",
+  inputShort:"Finalized values", outputLabel:"Justification written", reason:"Desk Research's closest analogue to a 'why' explanation.",
+  output:"Justification artifact written",
+  feeds_into:"Finalized anchor, CAGR, shares, ASP roll up into Final Market Size.",
+  llm_call:{purpose:"Write justification Q&A for finalized market size", model:"(illustrative)", promptSummary:"Explain why $612.4 Bn / 3.8% CAGR is a reasonable Crude Oil estimate.", responseSummary:"Illustrative justification text.", responseFull:'"A $612.4 Bn 2026 anchor at 3.8% CAGR is broadly consistent with recent global crude oil trade-value trends."'},
+  activity:["Writing justification text"],
+},
+{
+  id:"final_estimate", name:"Final Market Size", data_tag:"illustrative", data_tag_note:ILLUSTRATIVE_NOTE, stage:"final", source:"code",
+  agent:{name:"Deterministic Code", role:"Applies the finalized regional/country shares to the global anchor — arithmetic, not a fresh LLM call."},
+  carried_input:"Finalized anchor + CAGR + shares + ASP + justification.",
+  inputShort:"Finalized shares", outputLabel:"$612.4 Bn produced", reason:"Desk Research's single top-down number vs. Usage-Based's bottom-up build.",
+  big:{value:"$612.4 Bn", unit:"2026, illustrative"},
+  aggregations:[{title:"Region A + Region B + ... → Global Total", rows:[
+    {label:"Asia Pacific — 38%", value:"$232.7 Bn"},{label:"North America — 22%", value:"$134.7 Bn"},
+    {label:"Europe — 18%", value:"$110.2 Bn"},{label:"Middle East & Africa — 14%", value:"$85.7 Bn"},
+    {label:"Latin America — 8%", value:"$49.0 Bn"},
+  ], totalLabel:"Global Total (2026)", total:"$612.4 Bn"}],
+  is_final:true,
+  activity:["Applying shares to anchor","Producing final estimate"],
+},
+];
+
+/* =========================================================================
+   RENDER ENGINE
+   ========================================================================= */
+let approach = "usage";
+let index = 0;
+
+function steps() { return approach === "usage" ? usageSteps : deskSteps; }
+function stages() { return approach === "usage" ? USAGE_STAGES : DESK_STAGES; }
+
+function setApproach(a) {
+  approach = a; index = 0;
+  document.getElementById("tab-usage").classList.toggle("active", a === "usage");
+  document.getElementById("tab-desk").classList.toggle("active", a === "desk");
+  document.getElementById("approach-desc").textContent = a === "usage"
+    ? "Market → Geography → Usage Taxonomy → Demand Driver → Quantity → Price → Usage Value → Country/Global Total → Validation. Numbers marked REAL are read verbatim from an actual completed run."
+    : "Market → Global Size Estimate → Regional/Country Allocation → Price → Refinement Loop → Final Result. Step structure is real; the specific numbers shown are a clearly-labelled illustrative example.";
+  renderRail(); renderJourney(); renderPanel();
+}
+
+function renderRail() {
+  const s = steps();
+  const rail = document.getElementById("rail");
+  rail.innerHTML = "";
+  s.forEach((step, i) => {
+    const node = document.createElement("div");
+    node.className = "rail-node" + (i === index ? " current" : i < index ? " visited" : "");
+    node.onclick = () => { index = i; renderRail(); renderJourney(); renderPanel(); };
+    node.innerHTML = '<div class="rail-circle">'+(i+1)+'</div><div class="rail-label">'+step.name+'</div>';
+    rail.appendChild(node);
+    if (i < s.length - 1) {
+      const line = document.createElement("div");
+      line.className = "rail-line" + (i < index ? " done" : "");
+      rail.appendChild(line);
+    }
+  });
+}
+
+function esc(s){ return (s===undefined||s===null) ? "" : String(s); }
+
+function bigText(st) {
+  if (st.flowCalc) return st.flowCalc.final.big;
+  if (st.big) return st.big.value;
+  if (st.aggregations) return st.aggregations[st.aggregations.length-1].total;
+  if (typeof st.output === "string") return st.output.length > 16 ? st.output.slice(0,16)+"…" : st.output;
+  if (Array.isArray(st.output)) {
+    if (!st.output.length) return "—";
+    const first = st.output[0];
+    if (typeof first === "object" && first !== null) return esc(first.v);
+    return st.output.length + (st.output.length===1?" item":" items");
+  }
+  return "—";
+}
+
+function renderJourney() {
+  const defs = stages();
+  const s = steps();
+  const values = {};
+  for (let i=0;i<=index;i++) { if (s[i].stage) values[s[i].stage] = bigText(s[i]); }
+  const el = document.getElementById("journey");
+  let html = "";
+  defs.forEach((d,i) => {
+    const filled = values[d.key] !== undefined;
+    const active = s[index].stage === d.key;
+    html += '<div class="j-node'+(filled?' filled':'')+(active?' active':'')+'"><div class="j-lbl">'+esc(d.label)+'</div><div class="j-val">'+esc(filled?values[d.key]:"—")+'</div></div>';
+    if (i < defs.length-1) html += '<div class="j-arrow">&#8594;</div>';
+  });
+  el.innerHTML = html;
+}
+
+function srcBadge(source) {
+  const map = {
+    llm:{icon:"🧠", label:"LLM", cls:"src-llm"},
+    web:{icon:"🌐", label:"Web Evidence", cls:"src-web"},
+    db:{icon:"🗄️", label:"Database", cls:"src-db"},
+    code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
+    derived:{icon:"📐", label:"Derived", cls:"src-derived"},
+    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    human:{icon:"👤", label:"Human", cls:"src-human"},
+  };
+  const m = map[source] || map.code;
+  return '<span class="src-badge '+m.cls+'">'+m.icon+' '+m.label+'</span>';
+}
+
+function renderPanel() {
+  const step = steps()[index];
+  const panel = document.getElementById("panel");
+
+  let left = '<div class="step-title-row"><div class="step-title">'+esc(step.name)+'</div>';
+  left += '<span class="badge '+(step.data_tag==="real"?"real":"illustrative")+'">'+(step.data_tag==="real"?"Real Recorded Run":"Illustrative")+'</span></div>';
+  if (step.data_tag_note) left += '<p class="tiny-note">'+esc(step.data_tag_note)+'</p>';
+
+  left += '<div class="meta-row">';
+  if (step.agent) left += '<span class="pill agent'+(step.source==="code"?" code":"")+'" title="'+esc(step.agent.role)+'"><span class="k">Agent</span>'+esc(step.agent.name)+'</span>';
+  if (step.inputShort) left += '<span class="pill"><span class="k">In</span>'+esc(step.inputShort)+'</span>';
+  if (step.outputLabel) left += '<span class="pill"><span class="k">Out</span>'+esc(step.outputLabel)+'</span>';
+  left += srcBadge(step.source);
+  left += '</div>';
+
+  if (step.carried_input) left += '<div class="callout in"><div class="lbl">&#8615; From previous step</div>'+esc(step.carried_input)+'</div>';
+
+  // HERO visual — flowCalc > aggregations > big > chips/box
+  if (step.flowCalc) {
+    const fc = step.flowCalc;
+    left += '<div class="calc-flow">'
+      + '<div class="cf-box"><div class="cf-num">'+esc(fc.a.value)+'</div><div class="cf-unit">'+esc(fc.a.unit)+'</div>'+srcBadge(fc.a.src)+'</div>'
+      + '<div class="cf-op">'+esc(fc.opLabel)+'</div>'
+      + '<div class="cf-box"><div class="cf-num">'+esc(fc.b.value)+'</div><div class="cf-unit">'+esc(fc.b.unit)+'</div>'+srcBadge(fc.b.src)+'</div>'
+      + '<div class="cf-op">=</div>'
+      + '<div class="cf-result"><div class="cf-num">'+esc(fc.result.value)+'</div>'+srcBadge(fc.result.src)+'</div>'
+      + '</div>'
+      + '<div class="cf-final"><div class="big">'+esc(fc.final.big)+'</div><div class="cap">'+esc(fc.final.cap)+'</div></div>';
+  } else if (step.aggregations) {
+    step.aggregations.forEach(a => left += aggBlock(a));
+  } else if (step.big) {
+    const traceable = !!(step.calculation || step.carried_input || step.feeds_into);
+    left += '<div class="hero-card'+(traceable?' clickable':'')+'"'+(traceable?' onclick="onTraceNumber(\''+step.id+'\')"':'')+'>'
+      + '<div class="hero-num">'+esc(step.big.value)+'</div><div class="hero-unit">'+esc(step.big.unit||"")+'</div>'
+      + '<div class="hero-src">'+srcBadge(step.source)+'</div>'
+      + (traceable?'<span class="trace-hint">Click to trace this number ↴</span>':'')
+      + '</div>';
+  } else if (step.bigText) {
+    left += '<div class="hero-card"><div style="font-size:13px;line-height:1.5;color:var(--text-dim)">'+esc(step.bigText)+'</div></div>';
+  } else if (step.output) {
+    left += Array.isArray(step.output)
+      ? '<div class="hero-card"><div class="chips">'+step.output.map((o,i)=>
+          (typeof o === "object" && o !== null)
+            ? '<div class="chip-lv" style="animation-delay:'+(i*.06)+'s"><div class="l">'+esc(o.l)+'</div><div class="v">'+esc(o.v)+'</div></div>'
+            : '<span class="chip-out" style="animation-delay:'+(i*.06)+'s">'+esc(o)+'</span>'
+        ).join("")+'</div></div>'
+      : '<div class="hero-card"><div class="hero-num" style="font-size:24px">'+esc(step.output)+'</div></div>';
+  }
+
+  if (step.feeds_into) left += '<div class="callout out" onclick="onTraceNumber(\''+step.id+'\')"><div class="lbl">&#8615; Passed to next step</div>'+esc(step.feeds_into)+'</div>';
+
+  if (step.human_decision) {
+    left += '<div class="human-pill" onclick="openHumanDrawer('+index+')">👤 Human decision — not automated. Click to read.</div>';
+  }
+
+  // Collapsed evidence
+  const hasEv = step.llm_call || (step.search_queries&&step.search_queries.length) || (step.sources&&step.sources.length) || step.conversion || step.calculation || (step.validation&&step.validation.length);
+  if (hasEv) {
+    left += '<details class="evidence-toggle"><summary>Source Evidence &amp; Detail</summary>';
+    if (step.llm_call) left += evBtn("🧠", "LLM Call — "+step.llm_call.purpose, "llm", index);
+    (step.search_queries||[]).forEach((sq,i) => left += evBtn("🌐", 'Search: "'+sq.query.slice(0,44)+(sq.query.length>44?"…":"")+'"', "search", index, i));
+    (step.sources||[]).forEach((s,i) => left += evBtn("📄", "Source — "+s.name, "source", index, i));
+    if (step.conversion) left += evBtn("↔️", "Unit / price-basis conversion", "conversion", index);
+    if (step.calculation) left += evBtn("∑", "Calculation", "calculation", index);
+    if (step.validation && step.validation.length) left += evBtn("✅", "Validation checklist ("+step.validation.length+")", "validation", index);
+    left += '</details>';
+  }
+
+  if (step.researcher_note) {
+    const pos = !!step.researcher_note.positive;
+    left += '<div class="researcher-flag'+(pos?' positive':'')+'" onclick="alert('+JSON.stringify(step.researcher_note.note).replace(/"/g,"&quot;")+')">'
+      + (pos ? '&#10003; Fix confirmed — click to read' : '&#9888; Needs attention — click to read')
+      + '</div>';
+  }
+
+  // RIGHT: Agent Activity mini panel (or Quality Flags on review step)
+  let right = "";
+  if (step.is_review) {
+    right += '<div class="activity-hdr">'+qualityFlags.length+' Quality Flags — click to jump</div>';
+    qualityFlags.forEach(f => right += '<div class="qf '+f.severity+'" onclick="jumpTo(\''+f.step+'\')"><span class="qf-sev">'+f.severity+'</span>'+esc(f.message)+'</div>');
+  } else {
+    right += '<div class="activity-hdr">Agent Activity</div><div class="activity-list">';
+    (step.activity||[]).forEach(a => right += '<div class="activity-item"><span class="ck">✓</span>'+esc(a)+'</div>');
+    right += '</div>';
+  }
+
+  panel.innerHTML = '<div>'+left+'</div><div>'+right+'</div>';
+
+  if (step.is_final) {
+    panel.innerHTML = '<div style="grid-column:1/-1">'
+      + '<div class="final-hero"><div class="lbl">Final Market Size</div><div class="num">'+esc(bigText(step))+'</div>'
+      + provSummary() + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+      + '<div>'+left+'</div><div>'+right+'</div>'
+      + '</div>'
+      + '<div class="trace-chain" id="trace-chain"></div>'
+      + '</div>';
+    renderTrace();
+  }
+
+  updateFooter();
+}
+
+function provSummary() {
+  const s = steps();
+  const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
+  s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  let html = '<div class="prov-summary">';
+  Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
+  html += '</div>';
+  return html;
+}
+
+function evBtn(icon, label, kind, stepIdx, i) {
+  return '<div class="ev-btn" onclick="event.stopPropagation();openDrawer(\''+kind+'\','+stepIdx+(i!==undefined?','+i:'')+')"><span>'+icon+'</span><span class="grow">'+esc(label)+'</span><span class="view">View</span></div>';
+}
+
+function aggBlock(agg) {
+  let rows = agg.rows.map((r,i)=>
+    (i>0?'<span class="agg-plus">+</span>':'')+
+    '<div class="agg-item" style="animation-delay:'+(i*.05)+'s"><div class="l">'+esc(r.label)+'</div><div class="v">'+esc(r.value)+'</div></div>'
+  ).join("");
+  return '<div class="agg-card"><div class="agg-title">'+esc(agg.title)+'</div><div class="agg-rows">'+rows+
+    '<span class="agg-eq">=</span><div class="agg-total"><div class="l">'+esc(agg.totalLabel)+'</div><div class="v">'+esc(agg.total)+'</div></div></div></div>';
+}
+
+function renderTrace() {
+  const s = steps();
+  const el = document.getElementById("trace-chain");
+  if (!el) return;
+  let html = '<div style="text-align:center;font-size:11px;color:var(--text-dimmer);margin:16px 0 10px;text-transform:uppercase;letter-spacing:.05em">How did we reach this number? Click any step.</div>';
+  html += '<div class="trace-chain-inner" style="display:flex;flex-direction:column;gap:6px">';
+  s.forEach((st,i) => {
+    html += '<div class="trace-node" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--border2);border-radius:10px;background:var(--panel2);cursor:pointer;font-size:12.5px" onclick="jumpTo(\''+st.id+'\')"><span style="width:20px;height:20px;border-radius:999px;background:rgba(99,102,241,.2);color:#c7d2fe;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span>'+esc(st.name)+'</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function onTraceNumber(stepId) { jumpTo(stepId); }
+
+function jumpTo(stepId) {
+  const s = steps();
+  const i = s.findIndex(x => x.id === stepId);
+  if (i >= 0) { index = i; renderRail(); renderJourney(); renderPanel(); closeDrawer(); window.scrollTo({top:0, behavior:"smooth"}); }
+}
+
+function go(dir) {
+  const s = steps();
+  index = Math.max(0, Math.min(s.length-1, index+dir));
+  renderRail(); renderJourney(); renderPanel();
+}
+
+function updateFooter() {
+  const s = steps();
+  document.getElementById("btn-prev").disabled = index === 0;
+  document.getElementById("btn-next").disabled = index === s.length-1;
+  document.getElementById("btn-next").textContent = index === s.length-1 ? "Final step" : "Next →";
+  document.getElementById("progress-fill").style.width = ((index+1)/s.length*100)+"%";
+  document.getElementById("progress-text").textContent = "Step "+(index+1)+" of "+s.length+" — "+s[index].name;
+}
+
+/* ---------- Drawer ---------- */
+function openDrawer(kind, stepIdx, subIdx) {
+  const step = steps()[stepIdx];
+  const overlay = document.getElementById("overlay");
+  const title = document.getElementById("drawer-title");
+  const body = document.getElementById("drawer-body");
+  let html = "";
+  if (kind === "llm") {
+    const c = step.llm_call;
+    title.textContent = "LLM Call";
+    html += kv("Purpose", c.purpose);
+    html += kv("Model", c.model);
+    html += kv("Prompt (summary)", c.promptSummary);
+    html += kv("Response (summary)", c.responseSummary);
+    if (c.responseFull) html += kv("Response (full)", c.responseFull, true);
+    html += '<p style="font-size:11px;color:var(--text-dimmer);margin-top:10px">Source: <b style="color:#a5b4fc">🧠 LLM-generated</b> — this text came from a model call, not deterministic code.</p>';
+  } else if (kind === "search") {
+    const sq = step.search_queries[subIdx];
+    title.textContent = "Search Query & Sources";
+    html += kv("Query", sq.query);
+    html += kv("Purpose", sq.purpose);
+    sq.results.forEach(r => { html += sourceCard(r); });
+  } else if (kind === "source") {
+    title.textContent = "Source";
+    html += sourceCard(step.sources[subIdx]);
+  } else if (kind === "conversion") {
+    const c = step.conversion;
+    title.textContent = "Unit / Price-Basis Conversion";
+    html += '<div class="calc-formula">'+esc(c.fromValue)+' '+esc(c.fromUnit)+' × '+esc(c.factor)+' ('+esc(c.factorLabel)+') = '+esc(c.toValue)+' '+esc(c.toUnit)+'</div>';
+    html += kv("Formula", c.formula);
+    html += '<p style="font-size:11px;color:var(--text-dimmer);margin-top:10px">Calculated by: <b style="color:#cbd5e1">⚙️ Deterministic code</b> — the factor may be an LLM assumption, but applying it is pure arithmetic.</p>';
+  } else if (kind === "calculation") {
+    const c = step.calculation;
+    title.textContent = "Calculation";
+    c.inputs.forEach(inp => html += kv(inp.label, inp.value));
+    html += '<div class="calc-formula">'+esc(c.formula)+'</div>';
+    html += kv("Output", c.output);
+    html += '<p style="font-size:11px;color:var(--text-dimmer);margin-top:10px">Calculated by: <b style="color:#cbd5e1">⚙️ Deterministic Python code</b> — the LLM/evidence provided the inputs; this math is not AI-generated.</p>';
+  } else if (kind === "validation") {
+    title.textContent = "Validation Checklist";
+    step.validation.forEach(v => {
+      html += '<div class="valid-row"><span>'+(v.passed?'✅':'❌')+'</span><div><b>'+esc(v.label)+'</b><br><span style="color:var(--text-dim)">'+esc(v.detail)+'</span></div></div>';
+    });
+  }
+  body.innerHTML = html;
+  overlay.classList.add("open");
+}
+function openHumanDrawer(stepIdx) {
+  const step = steps()[stepIdx];
+  const overlay = document.getElementById("overlay");
+  document.getElementById("drawer-title").textContent = "Human Decision — Not Automated";
+  document.getElementById("drawer-body").innerHTML =
+    '<div class="kv"><div class="k">Summary</div><div class="v human-full">'+esc(step.human_decision.summary)+'</div></div>'
+    + '<div class="kv"><div class="k">Full recorded justification</div><div class="v human-full">'+esc(step.human_decision.justification)+'</div></div>';
+  overlay.classList.add("open");
+}
+function kv(k, v, code) { return '<div class="kv"><div class="k">'+esc(k)+'</div><div class="v'+(code?' code':'')+'">'+esc(v)+'</div></div>'; }
+function sourceCard(r) {
+  const dec = r.decision || "accepted";
+  let html = '<div class="src-card '+dec+'"><span class="src-verdict '+dec+'">'+dec+'</span><div style="font-weight:700;margin:5px 0 3px">'+esc(r.name)+'</div>';
+  if (r.url) html += '<div style="font-size:11px;color:var(--sky);word-break:break-all">'+esc(r.url)+'</div>';
+  html += '<div style="font-size:12px;color:var(--text-dim);margin:6px 0">'+esc(r.excerpt)+'</div>';
+  if (r.extractedValue) html += '<div class="checks"><span class="check pass">Value: '+esc(r.extractedValue)+' '+esc(r.unit||"")+'</span></div>';
+  if (r.geography || r.year) html += '<div style="font-size:11px;color:var(--text-dimmer);margin-top:4px">'+esc(r.geography||"")+' '+(r.year?"· "+r.year:"")+'</div>';
+  if (r.rejectionReason) html += '<div style="font-size:11px;color:var(--rose);margin-top:6px">Rejected: '+esc(r.rejectionReason)+'</div>';
+  html += '</div>';
+  return html;
+}
+function closeDrawer() { document.getElementById("overlay").classList.remove("open"); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+/* ---------- boot ---------- */
+setApproach("usage");
+</script>
+</body>
+</html>

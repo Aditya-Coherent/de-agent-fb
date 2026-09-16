@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Sparkles, ArrowRight, Loader2, AlertTriangle, Download, Plus, Trash2 } from "lucide-react";
-import type { SetupDraft, TaxonomyDraft, UsageBucket, SizingSummary, DemandDriver } from "@/lib/types";
+import type { SetupDraft, TaxonomyDraft, UsageBucket, SizingSummary, DemandDriver, EvidenceStrategy } from "@/lib/types";
 import {
   generateSetupDraft,
   approveSetup,
@@ -40,6 +40,7 @@ export default function DemandUsageWizard() {
   const [taxonomyLoading, setTaxonomyLoading] = useState(false);
   const [taxonomyDraft, setTaxonomyDraft] = useState<TaxonomyDraft | null>(null);
   const [taxonomyApproved, setTaxonomyApproved] = useState(false);
+  const [expandedStrategy, setExpandedStrategy] = useState<Record<string, boolean>>({});
 
   // Phase 3
   const [sizing, setSizing] = useState(false);
@@ -144,11 +145,48 @@ export default function DemandUsageWizard() {
     });
   };
 
+  // Phase 7 (DEMAND_SIDE_EVIDENCE_PLAN.md) -- the strategy is user-editable
+  // before approval, same "edit before approve" pattern as the driver fields
+  // above. Editing here does NOT re-run validation client-side; the
+  // deterministic checks re-run server-side in `approve_taxonomy` and the
+  // refreshed flags come back with the approved checkpoint.
+  const updateStrategy = (bucketName: string, patch: Partial<EvidenceStrategy>) => {
+    if (!taxonomyDraft) return;
+    const driver = taxonomyDraft.drivers[bucketName] || { driver_name: "", unit: "", final_demand_unit: "" };
+    const base: EvidenceStrategy =
+      driver.evidence_strategy || {
+        driver_name: driver.driver_name || "",
+        metric_required: "", physical_unit: driver.final_demand_unit || "", period: "",
+        geography: [], primary_source_types: [], preferred_sources: [], search_query_templates: [],
+        fallback_source_types: [], fallback_queries: [], derivation_path: "", expected_evidence: "",
+        why_this_driver_measures_the_usage: "", strategy_source: "user_edited",
+      };
+    updateDriver(bucketName, { evidence_strategy: { ...base, ...patch } });
+  };
+
+  const toggleStrategy = (bucketName: string) =>
+    setExpandedStrategy((prev) => ({ ...prev, [bucketName]: !prev[bucketName] }));
+
   const removeBucket = (index: number) => {
     if (!taxonomyDraft) return;
     const buckets = [...taxonomyDraft.usage_buckets];
     buckets.splice(index, 1);
     setTaxonomyDraft({ ...taxonomyDraft, usage_buckets: buckets });
+  };
+
+  // Phase 9 (DEMAND_SIDE_EVIDENCE_PLAN.md) -- retaining a bucket flagged
+  // out_of_scope requires a non-empty justification, enforced again
+  // server-side in `approve_taxonomy` (this is a UX convenience, not the
+  // actual gate).
+  const setScopeOverride = (bucketName: string, justification: string) => {
+    if (!taxonomyDraft) return;
+    const scope_overrides = { ...(taxonomyDraft.scope_overrides || {}) };
+    if (justification.trim()) {
+      scope_overrides[bucketName] = justification;
+    } else {
+      delete scope_overrides[bucketName];
+    }
+    setTaxonomyDraft({ ...taxonomyDraft, scope_overrides });
   };
 
   const addBucket = () => {
@@ -290,6 +328,19 @@ export default function DemandUsageWizard() {
                 {taxonomyDraft.coverage_pct != null ? `${taxonomyDraft.coverage_pct.toFixed(1)}%` : "n/a"} (pipeline
                 estimate, not a verified measurement).
               </p>
+              {taxonomyDraft.scope_taxonomy_aggregate?.likely_scope_too_narrow && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-900/50 bg-amber-950/30 p-3 text-xs text-amber-300">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                  <span>
+                    {taxonomyDraft.scope_taxonomy_aggregate.flagged_count}/
+                    {taxonomyDraft.scope_taxonomy_aggregate.total_buckets} usage buckets (
+                    {(taxonomyDraft.scope_taxonomy_aggregate.flagged_ratio * 100).toFixed(0)}%) were flagged
+                    ambiguous/out-of-scope vs. the approved Market Setup scope -- this usually means the SCOPE
+                    STATEMENT itself is too narrow for this taxonomy. Consider going back and revising the scope
+                    rather than editing every bucket below.
+                  </span>
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -297,16 +348,30 @@ export default function DemandUsageWizard() {
                       <th className="pb-2 pr-2 font-medium">Usage</th>
                       <th className="pb-2 pr-2 font-medium">Description</th>
                       <th className="pb-2 pr-2 font-medium">Category</th>
+                      <th className="pb-2 pr-2 font-medium">Scope</th>
                       <th className="pb-2 pr-2 font-medium">Driver</th>
                       <th className="pb-2 pr-2 font-medium">Physical unit</th>
+                      <th className="pb-2 pr-2 font-medium">Evidence strategy</th>
                       <th className="pb-2 font-medium" />
                     </tr>
                   </thead>
                   <tbody>
                     {taxonomyDraft.usage_buckets.map((b, i) => {
                       const driver = taxonomyDraft.drivers[b.name] || { driver_name: "", unit: "", final_demand_unit: "" };
+                      const strategy = driver.evidence_strategy;
+                      const flags = driver.evidence_strategy_flags || [];
+                      const isOpen = !!expandedStrategy[b.name];
+                      const scopeFlag = taxonomyDraft.scope_validation_flags?.[b.name];
+                      const scopeCls = scopeFlag?.classification || "in_scope";
+                      const scopeBadgeCls =
+                        scopeCls === "out_of_scope"
+                          ? "bg-rose-500/20 text-rose-300"
+                          : scopeCls === "ambiguous"
+                            ? "bg-amber-500/20 text-amber-300"
+                            : "bg-emerald-500/10 text-emerald-400";
                       return (
-                        <tr key={i} className="border-t border-white/5 align-top">
+                        <Fragment key={i}>
+                        <tr className="border-t border-white/5 align-top">
                           <td className="py-1.5 pr-2">
                             <input className={inputCls} value={b.name} onChange={(e) => updateBucket(i, { name: e.target.value })} />
                           </td>
@@ -330,6 +395,22 @@ export default function DemandUsageWizard() {
                             </select>
                           </td>
                           <td className="py-1.5 pr-2">
+                            <span
+                              title={scopeFlag ? `${scopeFlag.reason}${scopeFlag.evidence ? ` (evidence: ${scopeFlag.evidence})` : ""}` : "not flagged"}
+                              className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${scopeBadgeCls}`}
+                            >
+                              {scopeCls}
+                            </span>
+                            {scopeCls === "out_of_scope" && (
+                              <input
+                                className={`${inputCls} mt-1`}
+                                placeholder="Justify retaining this out-of-scope usage…"
+                                value={taxonomyDraft.scope_overrides?.[b.name] || ""}
+                                onChange={(e) => setScopeOverride(b.name, e.target.value)}
+                              />
+                            )}
+                          </td>
+                          <td className="py-1.5 pr-2">
                             <input
                               className={inputCls}
                               value={driver.driver_name}
@@ -343,12 +424,154 @@ export default function DemandUsageWizard() {
                               onChange={(e) => updateDriver(b.name, { final_demand_unit: e.target.value, unit: e.target.value })}
                             />
                           </td>
+                          <td className="py-1.5 pr-2">
+                            <button onClick={() => toggleStrategy(b.name)} className={btnSecondary + " px-2 py-1 text-xs"}>
+                              {isOpen ? "Hide" : strategy ? "Edit" : "Add"} strategy
+                              {flags.length > 0 && (
+                                <span className="ml-1 rounded-full bg-amber-500/20 px-1.5 text-amber-300">
+                                  {flags.length}
+                                </span>
+                              )}
+                            </button>
+                          </td>
                           <td className="py-1.5">
                             <button onClick={() => removeBucket(i)} className="text-rose-400 hover:text-rose-300">
                               <Trash2 size={15} />
                             </button>
                           </td>
                         </tr>
+                        {isOpen && (
+                          <tr className="border-t border-white/5 bg-neutral-950/40">
+                            <td colSpan={8} className="space-y-2 p-3">
+                              <p className="text-xs text-neutral-500">
+                                Explicit Evidence Strategy (Phase 7) -- what factual quantity to look for and how to
+                                search for it. This is a search plan, never a market-size estimate; the actual number
+                                still comes from the evidence pipeline.
+                                {flags.length > 0 && (
+                                  <span className="ml-1 text-amber-400">
+                                    {flags.length} validation flag(s): {flags.map((f) => f.code).join(", ")}
+                                  </span>
+                                )}
+                              </p>
+                              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Metric required</span>
+                                  <input
+                                    className={inputCls}
+                                    value={strategy?.metric_required || ""}
+                                    onChange={(e) => updateStrategy(b.name, { metric_required: e.target.value })}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Physical unit</span>
+                                  <input
+                                    className={inputCls}
+                                    value={strategy?.physical_unit || ""}
+                                    onChange={(e) => updateStrategy(b.name, { physical_unit: e.target.value })}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Period</span>
+                                  <input
+                                    className={inputCls}
+                                    placeholder="day | month | quarter | year"
+                                    value={strategy?.period || ""}
+                                    onChange={(e) => updateStrategy(b.name, { period: e.target.value })}
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Preferred sources (comma-separated)</span>
+                                  <input
+                                    className={inputCls}
+                                    value={(strategy?.preferred_sources || []).join(", ")}
+                                    onChange={(e) =>
+                                      updateStrategy(b.name, {
+                                        preferred_sources: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Primary source types (comma-separated)</span>
+                                  <input
+                                    className={inputCls}
+                                    value={(strategy?.primary_source_types || []).join(", ")}
+                                    onChange={(e) =>
+                                      updateStrategy(b.name, {
+                                        primary_source_types: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Search query templates (one per line, use {"{country}"})</span>
+                                  <textarea
+                                    className={inputCls}
+                                    rows={2}
+                                    value={(strategy?.search_query_templates || []).join("\n")}
+                                    onChange={(e) =>
+                                      updateStrategy(b.name, {
+                                        search_query_templates: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Fallback source types (comma-separated)</span>
+                                  <input
+                                    className={inputCls}
+                                    value={(strategy?.fallback_source_types || []).join(", ")}
+                                    onChange={(e) =>
+                                      updateStrategy(b.name, {
+                                        fallback_source_types: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Fallback queries (one per line)</span>
+                                  <textarea
+                                    className={inputCls}
+                                    rows={2}
+                                    value={(strategy?.fallback_queries || []).join("\n")}
+                                    onChange={(e) =>
+                                      updateStrategy(b.name, {
+                                        fallback_queries: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                                      })
+                                    }
+                                  />
+                                </label>
+                                <label className="space-y-1">
+                                  <span className={labelCls}>Derivation path</span>
+                                  <input
+                                    className={inputCls}
+                                    value={strategy?.derivation_path || ""}
+                                    onChange={(e) => updateStrategy(b.name, { derivation_path: e.target.value })}
+                                  />
+                                </label>
+                                <label className="space-y-1 md:col-span-2">
+                                  <span className={labelCls}>Expected evidence</span>
+                                  <input
+                                    className={inputCls}
+                                    value={strategy?.expected_evidence || ""}
+                                    onChange={(e) => updateStrategy(b.name, { expected_evidence: e.target.value })}
+                                  />
+                                </label>
+                                <label className="space-y-1 md:col-span-3">
+                                  <span className={labelCls}>Why this driver measures the usage</span>
+                                  <input
+                                    className={inputCls}
+                                    value={strategy?.why_this_driver_measures_the_usage || ""}
+                                    onChange={(e) =>
+                                      updateStrategy(b.name, { why_this_driver_measures_the_usage: e.target.value })
+                                    }
+                                  />
+                                </label>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
                       );
                     })}
                   </tbody>

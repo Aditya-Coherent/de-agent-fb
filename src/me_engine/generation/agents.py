@@ -11,6 +11,7 @@ import json
 import re
 from typing import Any
 
+from . import segment_definition
 from .db_source import (
     DBEvidence,
     fetch_market_evidence,
@@ -233,7 +234,16 @@ def _shares_global(state, sk, llm, regions, critique, prior):
     near-uniform across geographies; every region is set to the same vector."""
     dim_critique = state.get("dim_critique", {}) or {}
     all_shares: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+    # Desk Research Phase 0 gate (segment_definition.py) -- for any dimension
+    # the user has explicitly defined base-year regional shares for, those
+    # shares are authoritative and REPLACE this LLM call entirely for that
+    # dimension; the LLM is never asked to invent or override them.
+    seg_def = state.get("segment_definition")
+    user_shares = segment_definition.to_root_shares(seg_def) if seg_def else {}
     for dim in sk.nesting:
+        if dim in user_shares:
+            all_shares[dim] = user_shares[dim]
+            continue
         groups = sk.sibling_groups(dim)
         group_spec = {parent: children for parent, children in groups}
         system = (
@@ -267,9 +277,10 @@ def _shares_global(state, sk, llm, regions, critique, prior):
         for region in regions:
             dim_out[region] = {p: dict(v) for p, v in glob.items()}
         all_shares[dim] = dim_out
-    state.setdefault("log", []).append(
-        f"Estimated segment splits across {len(all_shares)} categories (e.g. by product type, by application)"
-    )
+    log_line = f"Estimated segment splits across {len(all_shares)} categories (e.g. by product type, by application)"
+    if user_shares:
+        log_line += f"; {len(user_shares)} of them used the user-approved base-year segment definition verbatim"
+    state.setdefault("log", []).append(log_line)
     return {"shares": all_shares}
 
 
@@ -349,8 +360,16 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
         return _shares_global(state, sk, llm, regions, critique, prior)
 
     all_shares: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+    # Desk Research Phase 0 gate (segment_definition.py) -- same bypass as
+    # `_shares_global`: a dimension the user has defined base-year regional
+    # shares for skips this LLM call entirely.
+    seg_def = state.get("segment_definition")
+    user_shares = segment_definition.to_root_shares(seg_def) if seg_def else {}
 
     for dim in sk.nesting:
+        if dim in user_shares:
+            all_shares[dim] = user_shares[dim]
+            continue
         groups = sk.sibling_groups(dim)
         group_spec = {parent: children for parent, children in groups}
         system = (
@@ -400,10 +419,13 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
         all_shares[dim] = dim_out
 
     filled = sum(1 for d in all_shares.values() for r in d if r != "__global__")
-    state.setdefault("log", []).append(
+    log_line = (
         f"Estimated segment splits across {len(all_shares)} categories, customized for "
         f"{len(regions)} regions ({filled} distinct region-level splits)"
     )
+    if user_shares:
+        log_line += f"; {len(user_shares)} of them used the user-approved base-year segment definition verbatim"
+    state.setdefault("log", []).append(log_line)
     return {"shares": all_shares}
 
 

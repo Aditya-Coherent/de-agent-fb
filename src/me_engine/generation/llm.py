@@ -12,31 +12,57 @@ from openai import OpenAI
 from .config import GenConfig
 
 
+_CACHE_BUSY_TIMEOUT_MS = 30_000  # runtime optimization (2026-08-26): see module note below
+
+
 class GenLLM:
+    """Thread-safety note (runtime optimization, 2026-08-26, added to support
+    Demand-Usage's bounded-parallel evidence acquisition -- `agents.py`):
+    the underlying `openai` SDK client is documented as safe for concurrent
+    use from multiple threads (its HTTP transport pool handles this), so
+    `complete_json` needs NO lock around the actual LLM call itself -- that
+    would defeat the entire purpose of parallelism. The on-disk SQLite cache
+    IS a real concurrency concern: every `_cache_get`/`_cache_put` already
+    opened its own short-lived connection (never shared across calls/threads,
+    so this was never a "one connection touched by many threads" bug), but
+    SQLite's default rollback-journal mode serializes writers and its default
+    5s busy-timeout can raise "database is locked" under genuine concurrent
+    write pressure. WAL mode (readers don't block the writer, and vice versa)
+    + a longer busy_timeout are the minimal, targeted fix -- no redesign, no
+    change to what's cached or how the key is computed, and no behavior
+    change at all for existing single-threaded (Desk Research) callers."""
+
     def __init__(self, config: GenConfig, cache_path: Path | None = None) -> None:
         self._config = config
         self._client = OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout)
         self._cache_path = cache_path
         if cache_path is not None:
             cache_path.parent.mkdir(parents=True, exist_ok=True)
-            with sqlite3.connect(cache_path) as conn:
+            with sqlite3.connect(cache_path, timeout=_CACHE_BUSY_TIMEOUT_MS / 1000) as conn:
+                conn.execute("PRAGMA journal_mode=WAL")
                 conn.execute("CREATE TABLE IF NOT EXISTS cache (k TEXT PRIMARY KEY, v TEXT)")
 
     def _key(self, system: str, user: str) -> str:
         h = hashlib.sha256(f"{self._config.model}\x00{system}\x00{user}".encode("utf-8"))
         return h.hexdigest()
 
+    def _connect(self) -> sqlite3.Connection:
+        # `timeout=` is SQLite's busy-timeout (seconds) -- how long a
+        # connection waits for a lock held by another connection/thread
+        # before raising "database is locked", not a network/HTTP timeout.
+        return sqlite3.connect(self._cache_path, timeout=_CACHE_BUSY_TIMEOUT_MS / 1000)
+
     def _cache_get(self, key: str) -> str | None:
         if self._cache_path is None:
             return None
-        with sqlite3.connect(self._cache_path) as conn:
+        with self._connect() as conn:
             row = conn.execute("SELECT v FROM cache WHERE k=?", (key,)).fetchone()
         return row[0] if row else None
 
     def _cache_put(self, key: str, value: str) -> None:
         if self._cache_path is None:
             return
-        with sqlite3.connect(self._cache_path) as conn:
+        with self._connect() as conn:
             conn.execute("INSERT OR REPLACE INTO cache (k, v) VALUES (?, ?)", (key, value))
 
     def complete_json(self, system: str, user: str, *, retries: int = 3) -> dict:

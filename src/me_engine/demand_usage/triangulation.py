@@ -20,7 +20,7 @@ from typing import Any
 from me_engine.generation.llm import GenLLM
 from me_engine.generation.web_evidence import gather
 
-from . import evidence
+from . import evidence, units
 
 _BENCHMARK_CATEGORIES = (
     "published market-size estimate",
@@ -64,19 +64,37 @@ def triangulation_node(state: dict[str, Any]) -> dict[str, Any]:
         if fact is None:
             continue
 
+        fact_value, fact_unit = fact.get("value"), fact.get("unit")
+        if category == "published market-size estimate" and fact_value is not None:
+            # Correctness-audit fix (2026-08-26, CEMENT_FORENSIC_AUDIT.md
+            # finding F): a monetary benchmark fact sometimes comes back
+            # value/unit-inconsistent (e.g. value already expanded to raw
+            # dollars, unit still says "USD Bn") -- deterministically
+            # normalize to this pipeline's canonical "USD Mn" before it's
+            # ever compared against `total` (which is already USD Mn).
+            # Never a hardcoded number -- see `units.normalize_monetary_value`.
+            normalized_value, normalized_unit = units.normalize_monetary_value(fact_value, fact_unit)
+            if normalized_value is not None and (normalized_value, normalized_unit) != (fact_value, fact_unit):
+                log.append(
+                    f"[triangulation] '{category}': benchmark value/unit normalized from "
+                    f"({fact_value} {fact_unit}) to ({normalized_value:,.1f} {normalized_unit}) before "
+                    "comparison -- original extraction was value/unit-inconsistent."
+                )
+            fact_value, fact_unit = normalized_value, normalized_unit
+
         entry: dict[str, Any] = {
             "category": category,
-            "value": fact.get("value"),
-            "unit": fact.get("unit"),
+            "value": fact_value,
+            "unit": fact_unit,
             "year": fact.get("year"),
             "source": fact.get("source"),
             "citation": fact.get("citation"),
             "evidence_type": fact.get("evidence_type"),
             "confidence": fact.get("confidence"),
         }
-        if category == "published market-size estimate" and fact.get("value"):
+        if category == "published market-size estimate" and fact_value:
             entry["demand_side_estimate_usd_mn"] = total
-            entry["gap_pct"] = round((total - fact["value"]) / fact["value"] * 100.0, 2)
+            entry["gap_pct"] = round((total - fact_value) / fact_value * 100.0, 2)
         benchmarks.append(entry)
 
     large_gap_flags = [

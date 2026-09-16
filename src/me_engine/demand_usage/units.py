@@ -134,3 +134,207 @@ def periods_conflict(a: ParsedUnit, b: ParsedUnit) -> bool:
     Absence of a stated period on either side is never treated as a
     conflict -- that would be inferring, not validating."""
     return bool(a.per_period and b.per_period and a.per_period != b.per_period)
+
+
+# --------------------------------------------------------------------------- #
+# Correctness-audit addendum (2026-08-26, `CEMENT_FORENSIC_AUDIT.md` finding
+# A-3/C): a driver's `final_demand_unit` sometimes stays labeled as the RAW
+# driver's own unit (e.g. "housing units") even after `consumption_unit`
+# (e.g. "metric tons of cement per housing unit") has already converted the
+# quantity into a DIFFERENT physical unit (tons). Downstream, `pricing_node`
+# trusts that stale label and invents a SECOND, redundant conversion factor
+# to bridge back to the same target unit the first conversion already
+# reached -- a silent double-conversion. This is a deterministic, code-level
+# reconciliation of the LABEL only -- it changes no arithmetic, no evidence,
+# no driver/intensity VALUE, only which unit string is attached to the
+# already-computed quantity.
+# --------------------------------------------------------------------------- #
+_PER_SPLIT_RE = re.compile(r"\s+per\s+", re.IGNORECASE)
+
+
+def intensity_target_unit(consumption_unit: str | None) -> str | None:
+    """Extracts the NUMERATOR of a rate-shaped `consumption_unit` string
+    (e.g. "metric tons of cement per housing unit" -> "metric tons of
+    cement"). Returns None for a non-rate-shaped or empty string -- callers
+    must then leave `final_demand_unit` exactly as given (never guess)."""
+    if not consumption_unit or not consumption_unit.strip():
+        return None
+    parts = _PER_SPLIT_RE.split(consumption_unit.strip(), maxsplit=1)
+    if len(parts) != 2:
+        return None
+    numerator = parts[0].strip()
+    return numerator or None
+
+
+def reconcile_final_demand_unit(
+    final_demand_unit: str, driver_unit: str, consumption_unit: str,
+) -> tuple[str, bool]:
+    """Returns (possibly-corrected final_demand_unit, was_corrected).
+
+    Only acts when ALL of these hold, so it can never silently relabel a
+    driver that genuinely needs no conversion:
+      1. `consumption_unit` is a rate-shaped "<X> per <Y>" string (an
+         intensity factor is actually being applied -- see
+         `demand_quantification_node`'s `conversion.apply_conversion`).
+      2. The CURRENT `final_demand_unit` still matches the RAW driver's own
+         unit (`driver_unit`) -- i.e. it was never updated to reflect the
+         conversion that `consumption_unit` describes.
+      3. The intensity's own numerator (X) is a DIFFERENT unit than the raw
+         driver unit -- otherwise there's nothing to reconcile.
+
+    When all three hold, `final_demand_unit` is corrected to X (the
+    intensity's numerator) -- the physically correct label for
+    `driver_value * intensity_value`. Never invents a value, never changes
+    `driver_unit`/`consumption_unit`/`conversion_formula` themselves."""
+    target = intensity_target_unit(consumption_unit)
+    if target is None:
+        return final_demand_unit, False
+    if _normalize_base(final_demand_unit or "") != _normalize_base(driver_unit or ""):
+        return final_demand_unit, False  # already diverges from the raw driver unit -- leave alone
+    if _normalize_base(target) == _normalize_base(final_demand_unit or ""):
+        return final_demand_unit, False  # already correct
+    return target, True
+
+
+# --------------------------------------------------------------------------- #
+# Correctness-audit addendum (2026-08-26, `CEMENT_FORENSIC_AUDIT.md` finding
+# F): a monetary fact extracted with a requested canonical unit (e.g.
+# "USD Mn") sometimes comes back with its `value` ALREADY fully expanded to
+# raw dollars (e.g. 425,500,000,000) but its `unit` field still carrying the
+# SOURCE's own scale word (e.g. "USD Bn", from "$425.50 Billion") -- an
+# internally inconsistent value/unit pair. Deterministic, rule-based
+# normalization: no LLM call, no hardcoded market-specific number.
+# --------------------------------------------------------------------------- #
+_MONETARY_SCALE_TO_MN: dict[str, float] = {
+    "tn": 1_000_000.0, "trillion": 1_000_000.0,
+    "bn": 1_000.0, "billion": 1_000.0,
+    "mn": 1.0, "million": 1.0,
+    "k": 0.001, "thousand": 0.001,
+}
+_MONETARY_SCALE_RE = {
+    token: re.compile(rf"\b{re.escape(token)}\b", re.IGNORECASE) for token in _MONETARY_SCALE_TO_MN
+}
+# A well-formed extraction pairs a COMPACT number with its scale word (e.g.
+# value=425.50, unit="USD Bn"). A value already at or above this magnitude
+# WHILE still carrying a >1x scale word is the signature of the "value was
+# already expanded to raw dollars, unit was not adjusted to match" defect --
+# not a hardcoded threshold for any one market's benchmark, just the point
+# past which "425.50 in billions" stops being a plausible compact figure.
+_ALREADY_EXPANDED_THRESHOLD = 1_000_000.0
+
+
+def normalize_monetary_value(value: float | int | None, unit: str | None) -> tuple[float | None, str]:
+    """Returns (value_in_usd_mn, "USD Mn") -- the canonical unit this
+    pipeline reports everything else in (`market_unit` default). Handles
+    USD / USD Mn / USD Bn / USD Tn (and bare "million"/"billion"/"trillion"/
+    "thousand" scale words) in either direction: a normal compact
+    value+scale-word pair, OR a value already expanded to raw dollars but
+    mislabeled with a scale word. Returns (None, "USD Mn") for a None value
+    -- callers must not treat that as zero."""
+    if value is None:
+        return None, "USD Mn"
+    value = float(value)
+    u = (unit or "").lower()
+
+    scale = None
+    for token, factor in _MONETARY_SCALE_TO_MN.items():
+        if _MONETARY_SCALE_RE[token].search(u):
+            scale = factor
+            break
+
+    if scale is None:
+        # No recognized scale word at all (bare "USD"/"US$"/"$") -- treat the
+        # value as already being in raw, absolute dollars.
+        return value / 1_000_000.0, "USD Mn"
+
+    if scale > 1.0 and abs(value) >= _ALREADY_EXPANDED_THRESHOLD:
+        # The "already expanded to raw dollars, unit not adjusted" defect --
+        # the scale word is stale; the value itself is already absolute
+        # dollars.
+        return value / 1_000_000.0, "USD Mn"
+
+    return value * scale, "USD Mn"
+
+
+# --------------------------------------------------------------------------- #
+# Correctness fix (2026-08-28, live Crude Oil run finding): `pricing_node`'s
+# price-basis conversion factor is DESIGNED to be expressed as
+# "<price_basis_unit> per <final_demand_unit>" (see `_resolve_price_basis`'s
+# own prompt, e.g. "barrels of fuel per vehicle-kilometer") so that
+# `calculate_node` can multiply it straight in:
+#     final_demand_quantity * factor = price_basis_quantity
+# The LLM does not always follow this convention -- verified failure mode:
+# for Crude Oil's Transportation Fuels bucket, the LLM returned "liters of
+# transportation fuel per barrel" (final_unit per price_basis_unit, the
+# OPPOSITE direction) while Lubricants and Greases' factor ("tonnes per
+# liter", i.e. price_basis_unit per final_unit) was already correct. Because
+# only ONE of the two buckets was actually inverted, a blanket "always
+# divide instead of multiply" fix would have broken the correct case while
+# fixing the inverted one. This function detects the ACTUAL direction from
+# the factor's own unit string and returns a value that is always safe to
+# multiply by, regardless of which way the LLM phrased it.
+# --------------------------------------------------------------------------- #
+def _split_rate_unit(unit: str) -> tuple[str, str] | None:
+    """Splits a rate-shaped '<X> per <Y>' string into (X, Y). None if not
+    rate-shaped."""
+    if not unit or not unit.strip():
+        return None
+    parts = _PER_SPLIT_RE.split(unit.strip(), maxsplit=1)
+    if len(parts) != 2:
+        return None
+    x, y = parts[0].strip(), parts[1].strip()
+    return (x, y) if x and y else None
+
+
+def _singularize(word: str) -> str:
+    """Crude, deterministic de-pluralization (strip a trailing 's') -- just
+    enough to make 'tonne' match 'tonnes' and 'barrel' match 'barrels' in a
+    word-overlap check; never claims true morphological correctness."""
+    return word[:-1] if len(word) > 4 and word.endswith("s") else word
+
+
+def _words_overlap(a: str, b: str) -> bool:
+    wa = {_singularize(w) for w in _significant_words_units(a)}
+    wb = {_singularize(w) for w in _significant_words_units(b)}
+    return bool(wa & wb)
+
+
+def _significant_words_units(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z]+", (text or "").lower()) if len(w) > 3}
+
+
+def reconcile_conversion_factor_direction(
+    value: float, factor_unit: str, price_basis_unit: str, final_demand_unit: str,
+) -> tuple[float, bool]:
+    """Returns (value_safe_to_multiply, was_inverted).
+
+    Only inverts (returns `1/value`) when the factor's own unit string is
+    UNAMBIGUOUSLY in the wrong direction -- its numerator overlaps
+    `final_demand_unit` (not `price_basis_unit`) AND its denominator
+    overlaps `price_basis_unit` (not `final_demand_unit`). Any ambiguous,
+    partially-matching, or non-rate-shaped case is left UNCHANGED -- this
+    must never guess-invert a factor it isn't sure about, since that would
+    turn a correct value into a wrong one exactly as easily as the reverse."""
+    if not value:
+        return value, False
+    split = _split_rate_unit(factor_unit)
+    if split is None:
+        return value, False
+    numerator, denominator = split
+
+    numerator_is_final = _words_overlap(numerator, final_demand_unit)
+    numerator_is_basis = _words_overlap(numerator, price_basis_unit)
+    denominator_is_basis = _words_overlap(denominator, price_basis_unit)
+    denominator_is_final = _words_overlap(denominator, final_demand_unit)
+
+    # Already correct (price_basis per final_demand) -- explicitly checked
+    # first so an ambiguous unit that happens to ALSO look invertible is
+    # never flipped when it's already fine.
+    if numerator_is_basis and denominator_is_final:
+        return value, False
+
+    # Unambiguously inverted (final_demand per price_basis).
+    if numerator_is_final and denominator_is_basis and not (numerator_is_basis or denominator_is_final):
+        return (1.0 / value if value else value), True
+
+    return value, False

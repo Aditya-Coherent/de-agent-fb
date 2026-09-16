@@ -29,6 +29,13 @@ class GenConfig:
     min_loop_iters: int
     reward_threshold: float
     per_region_shares: bool
+    # Runtime optimization (2026-08-26, Demand-Usage sizing only) -- bounded
+    # worker count for parallel, independent I/O-bound evidence acquisition
+    # (see `demand_usage/agents.py`). Desk Research does not read this field
+    # at all, so this is purely additive/backward-compatible; defaulted so
+    # every pre-existing `GenConfig(...)` construction (tests, callers) keeps
+    # working unchanged.
+    evidence_workers: int = 8
 
     @classmethod
     def load(cls, project_root: Path | str = ".") -> "GenConfig":
@@ -54,6 +61,7 @@ class GenConfig:
             min_loop_iters=int(os.environ.get("DEAGENT_MIN_LOOP_ITERS", "2")),
             reward_threshold=float(os.environ.get("DEAGENT_REWARD_THRESHOLD", "0.9")),
             per_region_shares=os.environ.get("DEAGENT_PER_REGION_SHARES", "1") == "1",
+            evidence_workers=max(1, int(os.environ.get("EVIDENCE_WORKERS", os.environ.get("DEAGENT_EVIDENCE_WORKERS", "8")))),
         )
 
     @property

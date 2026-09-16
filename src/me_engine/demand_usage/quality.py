@@ -10,12 +10,20 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import evidence
+
 _MIN_PLAUSIBLE_USD_MN = 10.0
 _MAX_PLAUSIBLE_USD_MN = 5_000_000.0
 _LOW_PLAUSIBILITY = 0.60
 _HIGH_ASSUMPTION_SHARE = 0.5
 _LARGE_REFERENCE_DELTA_PCT = 40.0
 _LOW_OBSERVED_SHARE_PCT = 30.0
+# Phase 6 (DEMAND_SIDE_EVIDENCE_PLAN.md): mirrors _HIGH_ASSUMPTION_SHARE's
+# threshold/philosophy for the new `source_found_unverified` tier -- fires
+# when this tier dominates the run, same as an over-reliance on assumptions
+# would, since a run leaning heavily on unverified LLM claims is only
+# marginally better-grounded than one leaning on bare assumptions.
+_HIGH_UNVERIFIED_CLAIM_SHARE = 0.5
 
 
 def compute_provenance_quality_flags(state: dict[str, Any]) -> list[dict[str, str]]:
@@ -30,6 +38,34 @@ def compute_provenance_quality_flags(state: dict[str, Any]) -> list[dict[str, st
                        "range for a global market -- verify before trusting this run.",
         })
 
+    # Phase 9 (DEMAND_SIDE_EVIDENCE_PLAN.md) -- if the taxonomy was approved
+    # despite a high scope/taxonomy flag ratio, that warning must still be
+    # visible at final-report time, not just at the approval gate (by sizing
+    # time the taxonomy is already locked in -- this is informational, never
+    # a reason to alter the calculation itself).
+    scope_agg = state.get("scope_taxonomy_aggregate") or {}
+    if scope_agg.get("likely_scope_too_narrow"):
+        flags.append({
+            "code": "scope_too_narrow_for_taxonomy",
+            "severity": "warning",
+            "message": f"{scope_agg.get('flagged_count', 0)}/{scope_agg.get('total_buckets', 0)} usage "
+                       f"bucket(s) ({float(scope_agg.get('flagged_ratio', 0) or 0):.0%}) were flagged "
+                       "ambiguous/out-of-scope vs. the approved Market Setup scope at the taxonomy "
+                       "approval gate -- the SCOPE STATEMENT itself was likely too narrow for this "
+                       "usage-based taxonomy, not just individual buckets. Approved and sized anyway; "
+                       "review the scope statement, not this run's arithmetic.",
+        })
+
+    scope_overrides = state.get("scope_overrides") or {}
+    if scope_overrides:
+        flags.append({
+            "code": "scope_override_applied",
+            "severity": "info",
+            "message": f"{len(scope_overrides)} usage bucket(s) flagged out_of_scope were explicitly "
+                       f"retained by user override before approval: {list(scope_overrides.keys())}. "
+                       f"{state.get('scope_amendment_text', '')}",
+        })
+
     excluded = state.get("excluded_usage_buckets") or []
     if excluded:
         flags.append({
@@ -42,11 +78,11 @@ def compute_provenance_quality_flags(state: dict[str, Any]) -> list[dict[str, st
         })
 
     quantities = state.get("quantities", {}) or {}
-    counts = {"observed": 0, "derived": 0, "assumption": 0}
+    counts = dict.fromkeys(evidence.PROVENANCE_STATES, 0)
     for per_country in quantities.values():
         for entry in per_country.values():
-            prov = entry.get("provenance", "assumption")
-            counts[prov] = counts.get(prov, 0) + 1
+            prov = entry.get("provenance")
+            counts[prov if prov in counts else "assumption"] += 1
     total_entries = sum(counts.values())
     if total_entries and counts.get("assumption", 0) / total_entries >= _HIGH_ASSUMPTION_SHARE:
         flags.append({
@@ -56,12 +92,21 @@ def compute_provenance_quality_flags(state: dict[str, Any]) -> list[dict[str, st
                        "unlabelled assumptions (no real observed or derived figure found) -- "
                        "this run leans heavily on estimation.",
         })
-    if total_entries and counts.get("observed", 0) == 0:
+    if total_entries and counts.get("verified_observed", 0) == 0:
         flags.append({
             "code": "no_observed_data",
             "severity": "warning",
-            "message": "No country-level figure in this run was directly cited/observed in "
-                       "evidence -- every quantity is derived or assumed.",
+            "message": "No country-level figure in this run was directly cited/verified in "
+                       "evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+        })
+    if total_entries and counts.get("source_found_unverified", 0) / total_entries >= _HIGH_UNVERIFIED_CLAIM_SHARE:
+        flags.append({
+            "code": "high_unverified_claim_share",
+            "severity": "warning",
+            "message": f"{counts['source_found_unverified']}/{total_entries} country/bucket "
+                       "quantities rest on a source the LLM named but code could not independently "
+                       "verify (source_found_unverified) -- more useful than a bare assumption, but "
+                       "never promoted to observed; this run leans heavily on unverified claims.",
         })
 
     validation = state.get("validation", {}) or {}
@@ -115,6 +160,36 @@ def compute_provenance_quality_flags(state: dict[str, Any]) -> list[dict[str, st
             "message": f"An adjacent-industry driver's share factor was out of [0,1] bounds and "
                        f"had to be clamped for: {validation['intensity_clamped_buckets']} -- that "
                        "bucket's driver methodology likely needs a market-specific driver instead.",
+        })
+
+    # Methodology fix (2026-08-26, CRUDE_OIL_METHODOLOGY_FIX) -- "Target
+    # Commodity Integrity" / "Downstream Leakage": a bucket's final_demand_unit
+    # shares no words with the market's own physical_unit, meaning its final
+    # value risks being priced with a downstream product's price instead of
+    # the target commodity's own price. Returned by `calculate_node`, read
+    # from top-level `state`, same pattern as `zero_intensity_rejected_buckets`.
+    if state.get("target_commodity_unit_mismatch_flags"):
+        flags.append({
+            "code": "target_commodity_unit_mismatch",
+            "severity": "critical",
+            "message": "One or more bucket(s) have a final_demand_unit that shares no words with the "
+                       f"market's own target-commodity unit: {state['target_commodity_unit_mismatch_flags']}. "
+                       "This is the signature of a downstream/adjacent product's own unit and price "
+                       "leaking into the target commodity's final value -- review before trusting this run.",
+        })
+
+    # Correctness-audit fix (2026-08-26, CEMENT_FORENSIC_AUDIT.md finding
+    # A-1/C-3) -- read from top-level `state`, not the (separately-scoped)
+    # `validation` dict: `zero_intensity_rejected_buckets` is returned by
+    # `demand_quantification_node`, not `validation_node`.
+    if state.get("zero_intensity_rejected_buckets"):
+        flags.append({
+            "code": "zero_intensity_rejected",
+            "severity": "warning",
+            "message": "An intensity candidate claiming EXACTLY 0.0 was rejected (no strong citation to "
+                       f"justify a genuine zero) for: {state['zero_intensity_rejected_buckets']} -- an "
+                       "explicit assumption fallback was used instead so demand for that bucket was not "
+                       "silently zeroed out.",
         })
 
     coverage_pct = validation.get("coverage_pct")
@@ -227,6 +302,22 @@ def compute_provenance_quality_flags(state: dict[str, Any]) -> list[dict[str, st
             "severity": "info",
             "message": f"Large gap(s) vs. independent external benchmark(s) -- informational only, "
                        f"never used to adjust the bottom-up total: {'; '.join(tri_gap_flags[:2])}",
+        })
+
+    # --- Phase 11 (DEMAND_SIDE_EVIDENCE_PLAN.md) -- generic magnitude/
+    # cross-source validation (driver/intensity/derived-quantity/price
+    # magnitude, country-vs-parent, usage-vs-parent-category, year/period
+    # consistency). Additive alongside the V3 driver-magnitude/triangulation
+    # flags above -- never replaces or silently corrects a value.
+    mv_flags = validation.get("magnitude_validation_flags") or state.get("magnitude_validation_flags") or []
+    if mv_flags:
+        by_check = sorted({f.get("check_type", "") for f in mv_flags})
+        flags.append({
+            "code": "magnitude_cross_validation_discrepancy",
+            "severity": "critical",
+            "message": f"{len(mv_flags)} magnitude/cross-source discrepancy flag(s) across "
+                       f"{by_check} -- flagged for review, original value(s)/source(s) unchanged: "
+                       f"{[f.get('subject_label', f.get('bucket', '')) for f in mv_flags[:4]]}",
         })
 
     return flags

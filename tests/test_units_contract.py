@@ -165,6 +165,35 @@ def test_valid_compound_scale_bucket_calculates_and_normalizes_correctly():
     assert out["total_market_value"] == 20250.0
 
 
+def test_pricing_conversion_factor_multiplies_in_when_present():
+    """Price-basis bridge (spec section 8/12): a bucket priced against a
+    DIFFERENT unit than final_demand_unit carries an evidence-backed
+    conversion factor that must multiply into the value -- e.g. pricing the
+    FUEL behind a vehicle-kilometers demand quantity."""
+    state = _base_state(
+        drivers={"Transportation Fuels": {"unit": "vehicle-km", "final_demand_unit": "vehicle-km"}},
+        quantities={"Transportation Fuels": {"US": {"value": 1000.0}}},
+        prices={"Transportation Fuels": {"asp_usd_per_unit": 100.0}},  # USD per barrel (the price basis)
+    )
+    state["pricing_conversion_factors"] = {"Transportation Fuels": {"value": 0.5, "evidence_type": "verified_observed"}}  # 0.5 barrels/vehicle-km
+    out = agents.calculate_node(state)
+    # 1000 vehicle-km * 0.5 barrels/vehicle-km * $100/barrel / 1e6 = $0.05M
+    assert out["usage_values"]["Transportation Fuels"]["US"] == round(1000.0 * 0.5 * 100.0 / 1_000_000.0, 4)
+
+
+def test_no_conversion_factor_behaves_exactly_as_before():
+    """Absence of a `pricing_conversion_factors` entry (the ordinary case --
+    priced unit == final_demand_unit) must reproduce today's math exactly,
+    i.e. an implicit x1.0 multiplier, never a regression."""
+    state = _base_state(
+        drivers={"Good Bucket": {"unit": "tonnes per year", "final_demand_unit": "tonnes per year"}},
+        quantities={"Good Bucket": {"US": {"value": 10.0}}},
+        prices={"Good Bucket": {"asp_usd_per_unit": 100.0}},
+    )
+    out = agents.calculate_node(state)
+    assert out["usage_values"]["Good Bucket"]["US"] == round(10.0 * 100.0 / 1_000_000.0, 4)
+
+
 def test_mixed_run_excludes_only_the_bad_bucket_not_the_whole_run():
     state = _base_state(
         drivers={

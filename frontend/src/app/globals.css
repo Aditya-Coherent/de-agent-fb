@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Visible (not hidden) thin scrollbar for horizontally-scrollable strips,
+   e.g. the Pipeline Demo step rail -- a default OS scrollbar is easy to
+   miss, so this makes "you can scroll this" obvious at a glance. */
+.demo-rail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+.demo-rail-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.demo-rail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.demo-rail-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+.demo-rail-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}

@@ -1,0 +1,62 @@
+Ran it end-to-end for the Vinegar market — here's real data at exactly that level (country × 6 views), pulled from the cache we generated earlier:
+
+Global Total: $8,500.0M (base year 2026)
+
+Sample — India: $504.9M
+
+Product: Balsamic $20.2M, Red Wine $30.3M, Cider $35.3M, White $171.7M, Rice $90.9M, Others $156.5M
+Source: Organic $75.7M, Synthetic $429.2M
+Flavor: Apple $50.5M, Garlic $101.0M, Lemon $90.9M, Other $262.6M
+Application: Food & Beverages $313.0M, Healthcare $60.6M, Cleaning $70.7M, Agriculture $40.4M, Others $20.2M
+Distribution Channel: Supermarkets $151.5M, Convenience $111.1M, Specialty $75.7M, Online $90.9M, Other $75.7M
+Sales Channel: B2B $227.2M, B2C $277.7M
+Same shape is now filled in for all 17 countries across the 5 regions (U.S., Canada, Mexico, Germany, U.K., France, Italy, Spain, China, India, Japan, South Korea, Australia, Brazil, Argentina, South Africa, Turkey) — each with its own independently-estimated mix, all six views summing exactly back to that country's total, country totals summing exactly to their region, regions summing exactly to the $8,500M global figure.
+
+The (minor, cosmetic) mangled — characters in the terminal output above are just a Windows console encoding artifact — the actual JSON data and the React UI render these correctly.
+
+To see it live in the app: restart your backend (python backend/main.py) and open the "Segmentation Demo" tab — it'll load instantly since this run is cached, and you can click through Region → Country to expand each one's six-view breakdown visually with the bar charts.
+
+
+
+The core reframe
+Revenue = Volume × Price. You never need to ask anyone for "$10.0M." You need Volume and Price, and the revenue falls out as arithmetic. So the question becomes: can we derive 2.5M litres and $4.00/L from hard data? Mostly yes.
+
+Price per litre — this is the easy one, genuinely derivable
+UN Comtrade publishes trade under HS code 2209 — "Vinegar and substitutes for vinegar obtained from acetic acid" — free, per country, per year, with both value (USD) and quantity (kg/litres). Divide them and you get a real unit value $/litre, by trade partner. Balsamic ≈ India's 2209 imports from Italy → a defensible landed price with a source URL.
+Retail price scraping — Amazon India, BigBasket, Blinkit listings for balsamic: extract price + pack size → price-per-litre distribution (median, weighted by review count as a crude volume proxy).
+Landed price × distribution markup ↔ retail price gives you a two-sided sanity check.
+No LLM anywhere in that chain.
+
+Volume — derivable via the classic identity
+Apparent consumption = Domestic Production + Imports − Exports.
+
+This is the standard, auditable market-sizing identity real analysts use. Imports/exports come straight from Comtrade. Production comes from national statistics offices / industry associations (this is the genuine gap for some countries — more below).
+
+Then per-capita consumption = apparent consumption ÷ population, which you sanity-check against neighbours (India's litres/capita should sit in a plausible band vs. other South Asian markets, not 10× off).
+
+Where it gets progressively harder — be honest about this
+Layer	Derivable?	Source
+Price $/L	Easy	Comtrade unit values + retail scraping
+Country total volume	Medium	Comtrade + production stats (production is the gap)
+Product mix (balsamic's share)	Medium-hard	Trade sub-codes, import origin (Italy→balsamic), retail assortment scraping
+Application mix (F&B vs Cleaning)	Hardest	No direct data exists — needs input-output tables, industry ratios, or a modeled allocation
+That last row is the honest catch: nobody publishes "how much vinegar went into cleaning vs. food in India." You cannot derive it from trade data. But you can replace an LLM guess with a documented, parameterized assumption (e.g. food-grade vs. industrial-grade import classification, packaging-size distribution as a proxy — 5L jugs skew industrial/cleaning, 250ml bottles skew retail food). That's defensible in a way "the LLM said 68%" never is.
+
+Where your ML model actually earns its place
+Comtrade covers most countries but not all, and production data is patchy. So:
+
+Build the hard-data pipeline for the countries where Comtrade + production do exist (that's your training set with real labels — not LLM pseudo-labels).
+Fit the regression on those real observations (population, GDP/capita, urbanization, food-industry output → volume).
+Predict only for the gap countries. That's legitimate statistical interpolation across a real dataset — completely different from distilling an LLM's guesses, and it's the defensible answer to "where did this number come from" for the countries with no data.
+The big lever: this machinery already exists in your repo
+The production demand_usage pipeline already has exactly this architecture — evidence_router.py with web_acquirer / pdf_acquirer / tabular_acquirer / api_acquirer, and a provenance system tagging every number as verified_observed / derived / source_found_unverified / assumption. The Segmentation Demo deliberately skipped all of it for speed. Pointing an api_acquirer at Comtrade and a web_acquirer at retail listings is reusing something you already built and tested, not starting over.
+
+The blunt framing for the CEO
+You can eliminate the LLM from magnitudes. You cannot eliminate assumptions — application mix in particular has no published source anywhere. What you can deliver is: every number carries a provenance tag and a source URL, assumptions are explicit and parameterized (so he can challenge or change them), and the audit trail shows exactly which numbers are hard-sourced vs. modeled vs. assumed. That's a much stronger position than "trust the AI," and it's achievable.
+
+Realistic split for vinegar/India once built: price ≈ hard-sourced, volume ≈ hard-sourced, product mix ≈ derived, application mix ≈ modeled assumption. Roughly 70% of the number becomes defensible-with-a-source, 30% stays explicitly modeled.
+
+Want me to scope what a Comtrade-anchored version would take — or map which of the existing acquirers could be pointed at it with least work?
+
+
+Note they sum to 1.22, not 1.00 — that's deliberate. Each product is judged independently, so they're not a share-out of anything. "Balsamic is 20× more a food product than a cleaning product" is the only claim being made.

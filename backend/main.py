@@ -416,8 +416,8 @@ def _run_generation_stream_inner(market: str, source: str, skeleton_choice: str 
     ), path=HISTORY_PATH)
 
     regional = final_state.get("regional") or {}
-    global_anchor = final_state.get("global_anchor_2026") or 0.0
-    # region_total_market_value[region] = global_anchor_2026 * regional[region].value_share
+    global_anchor = final_state.get("global_anchor_2025") or 0.0
+    # region_total_market_value[region] = global_anchor_2025 * regional[region].value_share
     # -- the SAME anchor `market_size_node` already computes (agents.py:203),
     # never a second, competing source of regional totals.
     region_totals = {r: global_anchor * v.get("value_share", 0.0) for r, v in regional.items()}
@@ -428,7 +428,7 @@ def _run_generation_stream_inner(market: str, source: str, skeleton_choice: str 
         "market": market,
         "reward": final_state.get("reward"),
         "iter": final_state.get("iter"),
-        "global_anchor_2026": final_state.get("global_anchor_2026"),
+        "global_anchor_2025": final_state.get("global_anchor_2025"),
         "global_cagr": final_state.get("global_cagr"),
         "regional": final_state.get("regional"),
         "shares": final_state.get("shares"),

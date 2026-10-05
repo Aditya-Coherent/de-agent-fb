@@ -38,7 +38,7 @@ class GenState(TypedDict, total=False):
     # dimension it covers instead of calling the LLM for that dimension.
     segment_definition: dict[str, Any]
     regional: dict[str, dict[str, float]]
-    global_anchor_2026: float
+    global_anchor_2025: float
     global_cagr: float
     geo: dict[str, dict[str, dict[str, float]]]
     shares: dict[str, dict[str, dict[str, float]]]

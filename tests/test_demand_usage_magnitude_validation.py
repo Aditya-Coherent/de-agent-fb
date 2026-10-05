@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import derivation, magnitude_validation as mv
+from me_engine.demandUseCaseCountry_approach2B import derivation, magnitude_validation as mv
 
 
 def _ref(value, unit="barrels per day", source="EIA", geography=None, year=None,

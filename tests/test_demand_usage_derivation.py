@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import pytest
 
-from me_engine.demand_usage import derivation, reference_data
+from me_engine.demandUseCaseCountry_approach2B import derivation, reference_data
 
 
 def _fact(value, status="verified_observed", **extra):

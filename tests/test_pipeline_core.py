@@ -59,7 +59,7 @@ def test_gate1_shares_sum_survives_shared_label_across_dimensions(tmp_path):
             "U.S.": {"share_of_region": 0.7, "cagr": 0.05},
             "Canada": {"share_of_region": 0.3, "cagr": 0.05},
         }},
-        "global_anchor_2026": 1000.0,
+        "global_anchor_2025": 1000.0,
         "global_cagr": 0.05,
     }
     out_path = write_input_sheet(state, tmp_path / "input.xlsx", flat=True)

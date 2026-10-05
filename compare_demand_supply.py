@@ -76,8 +76,10 @@ def _lookup_desk_research_value(market: str, history_path: Path) -> float | None
     rows = read_history(path=history_path, limit=1000)
     market_l = market.strip().lower()
     for row in rows:  # newest first
-        if str(row.get("market_name", "")).strip().lower() == market_l and row.get("global_anchor_2026") is not None:
-            return float(row["global_anchor_2026"])
+        # Rows written before 2026-10-05 carry a 2026 anchor under the old key.
+        value = row.get("global_anchor_2025", row.get("global_anchor_2026"))
+        if str(row.get("market_name", "")).strip().lower() == market_l and value is not None:
+            return float(value)
     return None
 
 
@@ -128,7 +130,9 @@ def _run_company_method(args, config, countries) -> dict | None:
     print()
     print(f"Company-based supply-side total (bottom-up, country-summed): {grand_total:,.1f} USD Mn")
 
-    company_flags = compute_company_quality_flags(per_source, grand_total)
+    company_flags = compute_company_quality_flags(
+        per_source, grand_total, country_breakdown, state.get("per_company_notes", {})
+    )
     _print_flags(company_flags)
 
     return {
@@ -136,6 +140,8 @@ def _run_company_method(args, config, countries) -> dict | None:
         "total_usd_mn": grand_total,
         "log": state.get("log", []),
         "company_data_sources": per_source,
+        "excluded_companies": state.get("excluded_companies", []),
+        "merged_companies": state.get("merged_companies", []),
         "quality_flags": company_flags,
         "country_breakdown": [
             {

@@ -1,7 +1,7 @@
 """Unit-contract regression tests (demand-side pipeline, Tier 1).
 
-Covers `me_engine.demand_usage.units` (pure, deterministic parser) and
-`me_engine.demand_usage.agents.calculate_node`'s use of it as the
+Covers `me_engine.demandUseCaseCountry_approach2B.units` (pure, deterministic parser) and
+`me_engine.demandUseCaseCountry_approach2B.agents.calculate_node`'s use of it as the
 calculation-layer gate: a bucket whose unit contract fails must be excluded
 from the total, never assigned a fallback price/quantity.
 
@@ -14,8 +14,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents
-from me_engine.demand_usage.units import parse_unit_string, periods_conflict, units_share_base
+from me_engine.demandUseCaseCountry_approach2B import agents
+from me_engine.demandUseCaseCountry_approach2B.units import parse_unit_string, periods_conflict, units_share_base
 
 
 # --------------------------------------------------------------------------- #

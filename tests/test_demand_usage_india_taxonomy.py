@@ -3,7 +3,7 @@ tests -- the SECOND user approval gate for the India-only variant.
 
 Mirrors `tests/test_demand_usage_taxonomy.py`'s conventions: `approve_taxonomy`
 is pure validation (no LLM/network); `run_taxonomy_phase` is exercised with
-the real node functions (both the reused `me_engine.demand_usage.agents.*`
+the real node functions (both the reused `me_engine.demandUseCaseCountry_approach2B.agents.*`
 ones and this package's own `actual_use_case_agents.india_actual_use_case_node`)
 but a stubbed LLM/no-web config.
 

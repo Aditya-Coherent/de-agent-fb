@@ -1,0 +1,856 @@
+{
+  "market_name": "Generative AI in Agriculture Market",
+  "generated_at": "2026-09-28T08:22:10.934052+00:00",
+  "randomization": "+/-10-15% applied independently to every numeric field (see randomizer.py)",
+  "source_note": "Field values are synthesized by an LLM from live multi-backend web search results (ddgs: Google/Bing/DuckDuckGo/Mojeek), in the style of a concise AI-Overview-style answer -- NOT a literal scrape of Google's AI Overview UI element (no public API for that exists). See field_agent.py.",
+  "fields": {
+    "porters_five_forces": {
+      "overall_score_out_of_5": 3.89,
+      "forces": {
+        "supplier_power": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "buyer_power": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "competitive_rivalry": {
+          "score_1_5": 3,
+          "label": "High"
+        },
+        "threat_of_new_entrants": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "threat_of_substitutes": {
+          "score_1_5": 3,
+          "label": "Medium"
+        }
+      }
+    },
+    "sub_segments": {
+      "by_top_application": [
+        {
+          "application": "Precision Farming & Crop Monitoring",
+          "sub_segments": [
+            {
+              "name": "AI-Backed Crop Monitoring",
+              "value_usd_mn": null,
+              "cagr_pct": 25.5
+            },
+            {
+              "name": "Yield Prediction & Forecasting",
+              "value_usd_mn": null,
+              "cagr_pct": 33.1
+            },
+            {
+              "name": "Precision Farming Advisory",
+              "value_usd_mn": null,
+              "cagr_pct": 23.9
+            },
+            {
+              "name": "Generative Crop Recommendation Engines",
+              "value_usd_mn": null,
+              "cagr_pct": 31.0
+            },
+            {
+              "name": "Satellite & Drone Imagery Analytics",
+              "value_usd_mn": null,
+              "cagr_pct": 30.5
+            }
+          ]
+        },
+        {
+          "application": "Sustainable Agriculture & Resource Optimization",
+          "sub_segments": [
+            {
+              "name": "Sustainable Farming Planning",
+              "value_usd_mn": null,
+              "cagr_pct": 24.9
+            },
+            {
+              "name": "Irrigation & Water Management",
+              "value_usd_mn": null,
+              "cagr_pct": 30.8
+            },
+            {
+              "name": "Soil Health & Nutrient Optimization",
+              "value_usd_mn": null,
+              "cagr_pct": 30.0
+            },
+            {
+              "name": "Carbon & Emissions Reporting",
+              "value_usd_mn": null,
+              "cagr_pct": 23.1
+            },
+            {
+              "name": "Regenerative Practice Design",
+              "value_usd_mn": null,
+              "cagr_pct": 27.7
+            }
+          ]
+        },
+        {
+          "application": "Agri-Food Insights & Supply Chain",
+          "sub_segments": [
+            {
+              "name": "Generative Market Intelligence Chatbots",
+              "value_usd_mn": null,
+              "cagr_pct": 31.8
+            },
+            {
+              "name": "Proprietary Report Synthesis",
+              "value_usd_mn": null,
+              "cagr_pct": 30.4
+            },
+            {
+              "name": "Demand Forecasting & Pricing",
+              "value_usd_mn": null,
+              "cagr_pct": 23.4
+            },
+            {
+              "name": "Supply Chain Traceability Content",
+              "value_usd_mn": null,
+              "cagr_pct": 28.9
+            },
+            {
+              "name": "Farm-to-Retail Optimization",
+              "value_usd_mn": null,
+              "cagr_pct": 27.3
+            }
+          ]
+        }
+      ]
+    },
+    "end_use_industry": {
+      "applications": [
+        {
+          "name": "Precision Agriculture & Crop Management",
+          "share_pct_of_market": 36,
+          "cagr_2025_2030_pct": 24.8
+        },
+        {
+          "name": "Product Development & Formulation Optimization",
+          "share_pct_of_market": 19,
+          "cagr_2025_2030_pct": 29.4
+        },
+        {
+          "name": "Market Intelligence & Demand Forecasting",
+          "share_pct_of_market": 16,
+          "cagr_2025_2030_pct": 20.9
+        },
+        {
+          "name": "Agricultural Research & Crop Breeding",
+          "share_pct_of_market": 16,
+          "cagr_2025_2030_pct": 30.2
+        },
+        {
+          "name": "Farm Advisory & Extension Services",
+          "share_pct_of_market": 8,
+          "cagr_2025_2030_pct": 25.7
+        },
+        {
+          "name": "Supply Chain & Logistics Optimization",
+          "share_pct_of_market": 6,
+          "cagr_2025_2030_pct": 21.9
+        }
+      ]
+    },
+    "segmentation_grade_form": {
+      "by_grade_or_type": [
+        {
+          "name": "Generative AI Software & Platforms",
+          "share_pct_of_market": 43.6,
+          "value_usd_mn": 722.8
+        },
+        {
+          "name": "Generative AI Services (Consulting, Integration, Support)",
+          "share_pct_of_market": 20.9,
+          "value_usd_mn": 578.6
+        },
+        {
+          "name": "AI-Enabled Hardware & Edge Devices",
+          "share_pct_of_market": 17.8,
+          "value_usd_mn": 304.3
+        },
+        {
+          "name": "Data & Analytics Solutions",
+          "share_pct_of_market": 13.5,
+          "value_usd_mn": 293.1
+        },
+        {
+          "name": "Generative AI Models & APIs",
+          "share_pct_of_market": 8.6,
+          "value_usd_mn": 186.8
+        }
+      ],
+      "by_form": [
+        {
+          "name": "Cloud-Based Deployment",
+          "share_pct_of_market": 40.7,
+          "fastest_growing_cagr_pct": 21.7
+        },
+        {
+          "name": "On-Premise Deployment",
+          "share_pct_of_market": 31.2,
+          "fastest_growing_cagr_pct": 20.0
+        },
+        {
+          "name": "Hybrid Deployment",
+          "share_pct_of_market": 14.0,
+          "fastest_growing_cagr_pct": 19.2
+        },
+        {
+          "name": "Edge/Embedded AI",
+          "share_pct_of_market": 11.2,
+          "fastest_growing_cagr_pct": 30.0
+        }
+      ]
+    },
+    "drivers_restraints": {
+      "drivers": [
+        {
+          "name": "Rising pressure on agriculture from climate change, population growth, and resource constraints",
+          "cagr_contribution_bps": 591
+        },
+        {
+          "name": "Growth in precision agriculture and data-driven farming",
+          "cagr_contribution_bps": 542
+        },
+        {
+          "name": "Generative AI enables scenario simulation and synthetic data generation",
+          "cagr_contribution_bps": 466
+        },
+        {
+          "name": "Improved decision-making through generative AI insights",
+          "cagr_contribution_bps": 317
+        },
+        {
+          "name": "Rising focus on data security in agriculture",
+          "cagr_contribution_bps": 260
+        },
+        {
+          "name": "Increasing adoption of advanced digital tools in farming",
+          "cagr_contribution_bps": 287
+        }
+      ],
+      "restraints": [
+        {
+          "name": "High implementation costs and limited access to advanced technology in developing regions",
+          "cagr_drag_bps": 268
+        },
+        {
+          "name": "Data privacy and security concerns",
+          "cagr_drag_bps": 308
+        },
+        {
+          "name": "Lack of skilled workforce and technical expertise",
+          "cagr_drag_bps": 266
+        },
+        {
+          "name": "Fragmented agricultural data and poor data quality",
+          "cagr_drag_bps": 179
+        },
+        {
+          "name": "Regulatory uncertainty and compliance challenges",
+          "cagr_drag_bps": 149
+        }
+      ]
+    },
+    "derivatives_pricing": {
+      "derivatives": [
+        {
+          "name": "AI-Driven Crop Yield Forecasting & Pricing Intelligence",
+          "value_usd_mn": 1659
+        },
+        {
+          "name": "Generative AI Precision Agriculture Advisory Platforms",
+          "value_usd_mn": 1597
+        },
+        {
+          "name": "Synthetic Farm Imagery & Video Content Generation",
+          "value_usd_mn": 723
+        },
+        {
+          "name": "AI-Generated Market Research & Competitive Landscape Reports",
+          "value_usd_mn": 455
+        },
+        {
+          "name": "Multimodal Agronomy Assistant & Chatbot Services",
+          "value_usd_mn": 855
+        },
+        {
+          "name": "Generative AI Soil & Satellite Imagery Analytics",
+          "value_usd_mn": 870
+        }
+      ],
+      "price_tiers": [
+        {
+          "tier": "Entry / Hobbyist",
+          "price_low_usd_per_unit": 0.0,
+          "price_high_usd_per_unit": 32,
+          "grade": "Consumer-Grade",
+          "principal_buyers": "Individual farmers, students, hobbyist growers"
+        },
+        {
+          "tier": "Professional / Prosumer",
+          "price_low_usd_per_unit": 27,
+          "price_high_usd_per_unit": 171,
+          "grade": "Semi-Professional",
+          "principal_buyers": "Small farm operators, agronomists, independent consultants"
+        },
+        {
+          "tier": "Business / Team",
+          "price_low_usd_per_unit": 223,
+          "price_high_usd_per_unit": 878,
+          "grade": "Commercial",
+          "principal_buyers": "Mid-size agribusinesses, cooperatives, agtech startups"
+        },
+        {
+          "tier": "Enterprise / API",
+          "price_low_usd_per_unit": 1120,
+          "price_high_usd_per_unit": 5651,
+          "grade": "Enterprise",
+          "principal_buyers": "Large agribusinesses, food processors, input suppliers"
+        },
+        {
+          "tier": "Custom / GPU Compute",
+          "price_low_usd_per_unit": 4458,
+          "price_high_usd_per_unit": 28125,
+          "grade": "Infrastructure-Grade",
+          "principal_buyers": "AI infrastructure providers, research institutions, government agencies"
+        }
+      ]
+    },
+    "market_size": {
+      "base_year": 2025,
+      "base_year_value_usd_mn": 948.8,
+      "forecast_year": 2035,
+      "forecast_value_usd_mn": 10352.9,
+      "cagr_pct": 23.6,
+      "historical_usd_mn": {
+        "2020": 107.4,
+        "2021": 182.2,
+        "2022": 247.8,
+        "2023": 403.4,
+        "2024": 748.2
+      },
+      "forecast_series_usd_mn": {
+        "2025": 754.6,
+        "2026": 1241.0,
+        "2027": 1568.7,
+        "2028": 1973.4,
+        "2029": 2493.3,
+        "2030": 3173.4,
+        "2031": 3930.5,
+        "2032": 3862.5,
+        "2033": 6343.9,
+        "2034": 6471.3,
+        "2035": 8210.5
+      }
+    },
+    "competitive_landscape": {
+      "companies": [
+        {
+          "name": "Bayer",
+          "share_pct": 12.7,
+          "positioning_note": "Leverages its crop science database to anchor generative model training for yield prediction and agronomic advisory."
+        },
+        {
+          "name": "Deere & Company",
+          "share_pct": 14.7,
+          "positioning_note": "Sustains equipment-software integration through edge computing deployments on combines and precision machinery."
+        },
+        {
+          "name": "Microsoft",
+          "share_pct": 10.79,
+          "positioning_note": "Provides Azure cloud infrastructure and generative AI tooling underpinning agricultural inference and data platforms."
+        },
+        {
+          "name": "IBM",
+          "share_pct": 9.56,
+          "positioning_note": "Offers Watson-based generative and predictive analytics for weather, soil, and farm operations decision support."
+        },
+        {
+          "name": "Google",
+          "share_pct": 7.02,
+          "positioning_note": "Supplies cloud AI, Vertex AI, and geospatial/vision models for precision farming and crop monitoring."
+        },
+        {
+          "name": "Corteva Agriscience",
+          "share_pct": 6.06,
+          "positioning_note": "Combines seed and agronomy data assets with generative models for crop protection and yield optimization."
+        },
+        {
+          "name": "Syngenta",
+          "share_pct": 7.13,
+          "positioning_note": "Deploys generative AI across digital agronomy platforms and precision agriculture advisory services."
+        },
+        {
+          "name": "Climate LLC",
+          "share_pct": 5.76,
+          "positioning_note": "Delivers digital farming and generative analytics for field-level recommendations and risk management."
+        },
+        {
+          "name": "Trimble",
+          "share_pct": 4.13,
+          "positioning_note": "Integrates generative AI into precision agriculture hardware, guidance, and farm management software."
+        },
+        {
+          "name": "Alibaba Cloud",
+          "share_pct": 3.37,
+          "positioning_note": "Offers one-stop generative AI platform with Qwen models supporting agricultural applications in Asia."
+        },
+        {
+          "name": "Taranis",
+          "share_pct": 3.27,
+          "positioning_note": "Applies AI and generative vision to aerial crop imagery for scouting and yield intelligence."
+        },
+        {
+          "name": "Prospera Technologies",
+          "share_pct": 2.65,
+          "positioning_note": "Uses generative and computer vision AI for irrigation, monitoring, and autonomous farming decisions."
+        }
+      ],
+      "others_share_pct": 12.4
+    },
+    "regulation": {
+      "type": "json_object",
+      "compliance_areas": [
+        {
+          "name": "Data Privacy and Security Compliance (GDPR, CCPA, APAC equivalents)",
+          "cost_pct_of_cogs_low": 2.6,
+          "cost_pct_of_cogs_high": 7.16
+        },
+        {
+          "name": "AI Model Training Data Governance and Cleansing",
+          "cost_pct_of_cogs_low": 3.46,
+          "cost_pct_of_cogs_high": 11.4
+        },
+        {
+          "name": "Regulatory-First Product Design and Certification (NA, EU, APAC)",
+          "cost_pct_of_cogs_low": 2.78,
+          "cost_pct_of_cogs_high": 7.74
+        },
+        {
+          "name": "Good Manufacturing Practice (GMP) and Quality Standards",
+          "cost_pct_of_cogs_low": 2.2,
+          "cost_pct_of_cogs_high": 6.79
+        },
+        {
+          "name": "Generative AI Prohibited Use Policy Enforcement and Auditing",
+          "cost_pct_of_cogs_low": 1.28,
+          "cost_pct_of_cogs_high": 5.57
+        },
+        {
+          "name": "Channel Diversification Compliance (Direct, Distributor, Digital)",
+          "cost_pct_of_cogs_low": 0.87,
+          "cost_pct_of_cogs_high": 4.58
+        },
+        {
+          "name": "AI Ethics and Responsible AI Deployment Reviews",
+          "cost_pct_of_cogs_low": 1.34,
+          "cost_pct_of_cogs_high": 6.07
+        },
+        {
+          "name": "Cross-Border Data Transfer and Localization Compliance",
+          "cost_pct_of_cogs_low": 1.78,
+          "cost_pct_of_cogs_high": 5.62
+        }
+      ]
+    },
+    "investment_priorities": {
+      "opportunities": [
+        {
+          "opportunity": "Generative AI precision irrigation copilot integrating IoT soil sensors and drone imagery to generate real-time watering schedules",
+          "target_segment": "Mid-to-large row-crop farms and irrigation districts in water-stressed regions",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 22,
+          "roi_high_pct": 51,
+          "capital_intensity": "Medium"
+        },
+        {
+          "opportunity": "Generative AI agronomy advisory platform producing localized crop rotation, pest, and yield forecasts for smallholder cooperatives",
+          "target_segment": "Smallholder cooperatives and agri-input retailers in Asia-Pacific",
+          "time_to_market": "18-24 mo",
+          "roi_low_pct": 18,
+          "roi_high_pct": 39,
+          "capital_intensity": "Low-Med"
+        },
+        {
+          "opportunity": "Generative AI marketing and sales copilot for agtech startups and farm-input distributors",
+          "target_segment": "Agtech startups and agricultural input distributors",
+          "time_to_market": "6-12 mo",
+          "roi_low_pct": 26,
+          "roi_high_pct": 68,
+          "capital_intensity": "Low"
+        },
+        {
+          "opportunity": "Generative AI synthetic farm-data and simulation engine for crop model training and risk underwriting",
+          "target_segment": "Crop insurers, reinsurers, and agricultural research institutions",
+          "time_to_market": "18-30 mo",
+          "roi_low_pct": 25,
+          "roi_high_pct": 61,
+          "capital_intensity": "Med-High"
+        },
+        {
+          "opportunity": "Generative AI-driven market and site-selection analytics for agri-land investment and expansion planning",
+          "target_segment": "Agri-investment funds, farmland REITs, and expansion-stage agribusinesses",
+          "time_to_market": "9-15 mo",
+          "roi_low_pct": 16,
+          "roi_high_pct": 36,
+          "capital_intensity": "Low-Med"
+        },
+        {
+          "opportunity": "Generative AI machine-learning module for autonomous machinery vision and variable-rate application",
+          "target_segment": "Autonomous tractor and precision-ag equipment OEMs",
+          "time_to_market": "24-36 mo",
+          "roi_low_pct": 31,
+          "roi_high_pct": 62,
+          "capital_intensity": "High"
+        },
+        {
+          "opportunity": "Generative AI policy and compliance intelligence service mapping regional AI-in-agriculture incentives and data rules",
+          "target_segment": "Multinational agtech vendors entering Asia-Pacific and emerging markets",
+          "time_to_market": "6-12 mo",
+          "roi_low_pct": 13,
+          "roi_high_pct": 39,
+          "capital_intensity": "Low"
+        }
+      ]
+    },
+    "willingness_to_pay": {
+      "consumer_segments": [
+        {
+          "name": "Price-Sensitive Smallholder Farmers",
+          "baseline_usd": 0.0,
+          "with_clinical_evidence_usd": 0.0,
+          "with_premium_positioning_usd": 0.0,
+          "with_top_tier_format_usd": 0.0
+        },
+        {
+          "name": "Mid-Size Commercial Growers",
+          "baseline_usd": 13,
+          "with_clinical_evidence_usd": 28,
+          "with_premium_positioning_usd": 30,
+          "with_top_tier_format_usd": 43
+        },
+        {
+          "name": "Agri-Marketing & Retail Teams",
+          "baseline_usd": 54,
+          "with_clinical_evidence_usd": 89,
+          "with_premium_positioning_usd": 115,
+          "with_top_tier_format_usd": 225
+        },
+        {
+          "name": "AgTech Platform & Enterprise Integrators",
+          "baseline_usd": 176,
+          "with_clinical_evidence_usd": 392,
+          "with_premium_positioning_usd": 665,
+          "with_top_tier_format_usd": 865
+        },
+        {
+          "name": "Regenerative & Therapeutic-Grade Agriculture Programs",
+          "baseline_usd": 555,
+          "with_clinical_evidence_usd": 1032,
+          "with_premium_positioning_usd": 1287,
+          "with_top_tier_format_usd": 2155
+        }
+      ]
+    },
+    "scenarios": {
+      "bear": {
+        "terminal_value_usd_mn": 1321,
+        "cagr_pct": 15.8
+      },
+      "base": {
+        "terminal_value_usd_mn": 2051,
+        "cagr_pct": 26.7
+      },
+      "bull": {
+        "terminal_value_usd_mn": 10241,
+        "cagr_pct": 31.9
+      }
+    },
+    "regional": {
+      "regions": {
+        "North America": {
+          "value_usd_mn": 94.1,
+          "share_pct_of_global": 41.9,
+          "cagr_2025_2030_pct": 25.0,
+          "forecast_value_usd_mn": 329.8,
+          "countries": [
+            {
+              "name": "United States",
+              "value_usd_mn": 59.6
+            },
+            {
+              "name": "Canada",
+              "value_usd_mn": 11.1
+            },
+            {
+              "name": "Mexico",
+              "value_usd_mn": 3.7
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Precision Farming",
+              "share_pct": 40.2
+            },
+            {
+              "name": "Crop Monitoring",
+              "share_pct": 22.4
+            },
+            {
+              "name": "Yield Prediction",
+              "share_pct": 22.1
+            },
+            {
+              "name": "Agricultural Chatbots & Advisory",
+              "share_pct": 10.5
+            },
+            {
+              "name": "Others",
+              "share_pct": 6.93
+            }
+          ]
+        },
+        "Europe": {
+          "value_usd_mn": 48.8,
+          "share_pct_of_global": 20.7,
+          "cagr_2025_2030_pct": 24.1,
+          "forecast_value_usd_mn": 161.7,
+          "countries": [
+            {
+              "name": "Germany",
+              "value_usd_mn": 12.1
+            },
+            {
+              "name": "France",
+              "value_usd_mn": 9.4
+            },
+            {
+              "name": "United Kingdom",
+              "value_usd_mn": 8.6
+            },
+            {
+              "name": "Netherlands",
+              "value_usd_mn": 5.85
+            },
+            {
+              "name": "Italy",
+              "value_usd_mn": 4.76
+            },
+            {
+              "name": "Spain",
+              "value_usd_mn": 3.71
+            },
+            {
+              "name": "Rest of Europe",
+              "value_usd_mn": 3.3
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Precision Farming",
+              "share_pct": 33.1
+            },
+            {
+              "name": "Crop Monitoring",
+              "share_pct": 31.3
+            },
+            {
+              "name": "Yield Prediction",
+              "share_pct": 24.4
+            },
+            {
+              "name": "Agricultural Chatbots & Advisory",
+              "share_pct": 13.6
+            },
+            {
+              "name": "Others",
+              "share_pct": 6.9
+            }
+          ]
+        },
+        "Asia Pacific": {
+          "value_usd_mn": 68.6,
+          "share_pct_of_global": 23.4,
+          "cagr_2025_2030_pct": 35.1,
+          "forecast_value_usd_mn": 267.7,
+          "countries": [
+            {
+              "name": "China",
+              "value_usd_mn": 27.8
+            },
+            {
+              "name": "India",
+              "value_usd_mn": 13.6
+            },
+            {
+              "name": "Japan",
+              "value_usd_mn": 7.64
+            },
+            {
+              "name": "Australia",
+              "value_usd_mn": 6.15
+            },
+            {
+              "name": "South Korea",
+              "value_usd_mn": 4.8
+            },
+            {
+              "name": "Rest of Asia Pacific",
+              "value_usd_mn": 2.57
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Precision Farming",
+              "share_pct": 27.7
+            },
+            {
+              "name": "Crop Monitoring",
+              "share_pct": 22.4
+            },
+            {
+              "name": "Yield Prediction",
+              "share_pct": 26.6
+            },
+            {
+              "name": "Agricultural Chatbots & Advisory",
+              "share_pct": 9.0
+            },
+            {
+              "name": "Others",
+              "share_pct": 9.18
+            }
+          ]
+        },
+        "Latin America": {
+          "value_usd_mn": 20.5,
+          "share_pct_of_global": 8.99,
+          "cagr_2025_2030_pct": 24.1,
+          "forecast_value_usd_mn": 66.1,
+          "countries": [
+            {
+              "name": "Brazil",
+              "value_usd_mn": 10.33
+            },
+            {
+              "name": "Argentina",
+              "value_usd_mn": 5.03
+            },
+            {
+              "name": "Chile",
+              "value_usd_mn": 2.6
+            },
+            {
+              "name": "Colombia",
+              "value_usd_mn": 1.55
+            },
+            {
+              "name": "Rest of Latin America",
+              "value_usd_mn": 0.69
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Precision Farming",
+              "share_pct": 32.2
+            },
+            {
+              "name": "Crop Monitoring",
+              "share_pct": 33.8
+            },
+            {
+              "name": "Yield Prediction",
+              "share_pct": 19.5
+            },
+            {
+              "name": "Agricultural Chatbots & Advisory",
+              "share_pct": 13.7
+            },
+            {
+              "name": "Others",
+              "share_pct": 7.12
+            }
+          ]
+        },
+        "Middle East & Africa": {
+          "value_usd_mn": 7.95,
+          "share_pct_of_global": 4.41,
+          "cagr_2025_2030_pct": 28.2,
+          "forecast_value_usd_mn": 24.2,
+          "countries": [
+            {
+              "name": "South Africa",
+              "value_usd_mn": 3.53
+            },
+            {
+              "name": "Israel",
+              "value_usd_mn": 1.83
+            },
+            {
+              "name": "UAE",
+              "value_usd_mn": 1.3
+            },
+            {
+              "name": "Saudi Arabia",
+              "value_usd_mn": 1.15
+            },
+            {
+              "name": "Rest of MEA",
+              "value_usd_mn": 0.8
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Precision Farming",
+              "share_pct": 28.5
+            },
+            {
+              "name": "Crop Monitoring",
+              "share_pct": 26.4
+            },
+            {
+              "name": "Yield Prediction",
+              "share_pct": 18.0
+            },
+            {
+              "name": "Agricultural Chatbots & Advisory",
+              "share_pct": 16.9
+            },
+            {
+              "name": "Others",
+              "share_pct": 11.0
+            }
+          ]
+        }
+      }
+    }
+  },
+  "log": [
+    "[porters_five_forces] Sec 4 - Porter's Five Forces: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[sub_segments] Sec 7 - High-Growth Sub-Segment Opportunities: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[end_use_industry] Sec 6 - End-Use Industry Analysis: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[segmentation_grade_form] Sec 5 - Segmentation by Grade/Type and Product Form: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[drivers_restraints] Sec 3 - Market Dynamics (Drivers & Restraints): synthesized from 5 web snippets, then randomized every value by +/-10-15%.",
+    "[derivatives_pricing] Sec 8 - Derivatives and Pricing Structure: synthesized from 8 web snippets, then randomized every value by +/-10-15%.",
+    "[market_size] Sec 2 - Global Market Size Outlook: synthesized from 8 web snippets, then randomized every value by +/-10-15%.",
+    "[competitive_landscape] Sec 10 - Competitive Landscape and Market Share: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[regulation] Sec 11 - Regulation and Compliance Overview: synthesized from 9 web snippets, then randomized every value by +/-10-15%.",
+    "[investment_priorities] Sec 13 - Strategic Investment Priorities: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[willingness_to_pay] Sec 12 - End-User Behavior Outlook: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[scenarios] Sec 14 - Scenario Analysis (Bear/Base/Bull): synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[regional] Sec 9 - Regional Market Dynamics and Outlook: synthesized from 15 web snippets, then randomized every value by +/-10-15%."
+  ],
+  "definition_inclusion_exclusion": {
+    "definition": "This market covers AI tools that can create text, reports, recommendations, images or other outputs to help farmers and agricultural businesses.",
+    "inclusions": "Applications: farm advisory, report generation, knowledge assistants, crop recommendations, content generation and agricultural analytics.",
+    "exclusions": "Traditional analytics, rule-based software and AI systems that only predict/classify without generative capabilities.",
+    "source": "Priority 1 Whitepaper 100 Titles_ AgriIQX Platform.xlsx (verbatim, not AI-generated)"
+  }
+}

@@ -1,5 +1,5 @@
 """Write the India-only build-up artifact -- thin, additive wrapper over
-`me_engine.demand_usage.buildup_writer`.
+`me_engine.demandUseCaseCountry_approach2B.buildup_writer`.
 
 `build_report_dict` (the shared function) is called UNCHANGED to get the
 existing flat `build_up_rows` (now one row per Actual Use Case, per country
@@ -26,8 +26,8 @@ from typing import Any, Mapping
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill
 
-from me_engine.demand_usage.buildup_writer import build_report_dict as _build_report_dict_shared
-from me_engine.demand_usage.buildup_writer import write_buildup_workbook as _write_buildup_workbook_shared
+from me_engine.demandUseCaseCountry_approach2B.buildup_writer import build_report_dict as _build_report_dict_shared
+from me_engine.demandUseCaseCountry_approach2B.buildup_writer import write_buildup_workbook as _write_buildup_workbook_shared
 
 
 def build_report_dict(state: Mapping[str, Any]) -> dict[str, Any]:

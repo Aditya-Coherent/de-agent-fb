@@ -79,7 +79,7 @@ def main() -> int:
     if args.save_state:
         dump = {
             "market": args.market,
-            "global_anchor_2026": state.get("global_anchor_2026"),
+            "global_anchor_2025": state.get("global_anchor_2025"),
             "global_cagr": state.get("global_cagr"),
             "regional": state.get("regional"),
             "geo": state.get("geo"),

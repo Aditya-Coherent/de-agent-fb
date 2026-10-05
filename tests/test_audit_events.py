@@ -114,7 +114,7 @@ def test_read_events_missing_file_returns_empty(tmp_path: Path):
 
 
 def test_list_runs_finds_run_with_audit_log_and_progress(tmp_path: Path):
-    from me_engine.demand_usage import checkpoints
+    from me_engine.demandUseCaseCountry_approach2B import checkpoints
 
     market_dir = checkpoints.run_dir("Smartphones", root=tmp_path)
     (market_dir / "audit_log.jsonl").write_text(

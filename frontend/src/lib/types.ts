@@ -34,7 +34,7 @@ export interface GenerateSummary {
   market: string;
   reward: number;
   iter: number;
-  global_anchor_2026: number;
+  global_anchor_2025: number;
   global_cagr: number;
   regional: Record<string, RegionalInfo>;
   shares: Record<string, Record<string, Record<string, Record<string, number>>>>;
@@ -42,7 +42,7 @@ export interface GenerateSummary {
   has_human_sheet: boolean;
   quality_flags: QualityFlag[];
   // Desk Research Phase 0 gate (segment_definition.py): region_total_market_value
-  // (global_anchor_2026 * regional[region].value_share) and the user's
+  // (global_anchor_2025 * regional[region].value_share) and the user's
   // approved base-year segment shares applied to it.
   region_totals_usd_mn?: Record<string, number>;
   segment_value_usd_mn?: Record<string, Record<string, Record<string, number>>>;
@@ -102,7 +102,7 @@ export interface HistoryEntry {
   reward: number | null;
   iterations: number | null;
   geographies: number;
-  global_anchor_2026: number | null;
+  global_anchor_2025: number | null;
   global_cagr: number | null;
   db_evidence_used: boolean;
   web_snippets: number;

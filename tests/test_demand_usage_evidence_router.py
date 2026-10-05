@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import (
+from me_engine.demandUseCaseCountry_approach2B import (
     api_acquirer,
     asset_verifier,
     evidence,
@@ -407,7 +407,7 @@ def test_api_acquirer_rejects_unresolvable_path(monkeypatch):
 # web_acquirer -- full-page-body fetch enrichment (falls back to snippet)
 # --------------------------------------------------------------------------- #
 def test_web_acquirer_falls_back_to_snippet_when_fetch_fails(monkeypatch):
-    import me_engine.demand_usage.web_acquirer as wa
+    import me_engine.demandUseCaseCountry_approach2B.web_acquirer as wa
 
     monkeypatch.setattr(wa, "_fetch_page_text", lambda url: None)
     monkeypatch.setattr(
@@ -425,7 +425,7 @@ def test_web_acquirer_falls_back_to_snippet_when_fetch_fails(monkeypatch):
 
 
 def test_web_acquirer_no_results_is_no_source_found(monkeypatch):
-    import me_engine.demand_usage.web_acquirer as wa
+    import me_engine.demandUseCaseCountry_approach2B.web_acquirer as wa
 
     monkeypatch.setattr(wa.web_search, "search", lambda query, max_results=5: [])
     fact, attempt = wa.acquire(object(), {"source_name": "EIA", "search_query_template": "{country} fuel"}, "US", unit="u", context="ctx")

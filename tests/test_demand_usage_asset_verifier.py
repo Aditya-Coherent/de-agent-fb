@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import pytest
 import requests
 
-from me_engine.demand_usage import asset_verifier
+from me_engine.demandUseCaseCountry_approach2B import asset_verifier
 
 
 class _FakeResponse:

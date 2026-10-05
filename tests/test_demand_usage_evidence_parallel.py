@@ -19,8 +19,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents, evidence_router
-from me_engine.demand_usage.progress import ProgressRecorder, progress_path
+from me_engine.demandUseCaseCountry_approach2B import agents, evidence_router
+from me_engine.demandUseCaseCountry_approach2B.progress import ProgressRecorder, progress_path
 
 
 class _StubConfig:

@@ -4,7 +4,7 @@ per the user's confirmed decision (same philosophy as the non-India
 pipeline's own bucket+driver bundling).
 
 Runs the EXISTING decomposition/validation/coverage/driver agents
-(`me_engine.demand_usage.agents`, unchanged) to discover Major Use Cases,
+(`me_engine.demandUseCaseCountry_approach2B.agents`, unchanged) to discover Major Use Cases,
 then this package's own `actual_use_case_agents.india_actual_use_case_node`
 to discover India Actual Use Cases nested under each retained Major Use
 Case, then reuses `demand_driver_node` UNCHANGED on the flattened
@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_usage import agents
+from me_engine.demandUseCaseCountry_approach2B import agents
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 

@@ -104,11 +104,11 @@ def fetch_market_evidence(neon_url: str, market_name: str) -> DBEvidence | None:
                 WHERE (lower(keyword) LIKE %s OR lower("newsSubject") LIKE %s)
                   AND length(coalesce(segmentation,'')) > 400
                 ORDER BY length(coalesce(segmentation,'')) DESC
-                LIMIT 1
+                LIMIT 25
                 """,  # type: ignore[arg-type]
                 (f"%{term}%", f"%{term}%"),
             )
-            row = cur.fetchone()
+            row = pick_best_report(market_name, term, cur.fetchall())
             if row:
                 break
 
@@ -120,7 +120,7 @@ def fetch_market_evidence(neon_url: str, market_name: str) -> DBEvidence | None:
             ensure_embedded(cur, news_id, keyword or market_name)
         else:
             hit = nearest_report(cur, market_name)
-            if hit:
+            if hit and not geography_narrower(hit[1] or "", market_name):
                 news_id, _keyword, _similarity = hit
                 cur.execute(
                     f'SELECT {_REPORT_COLUMNS} FROM cmi_reports WHERE "newsId" = %s',  # type: ignore[arg-type]
@@ -145,7 +145,9 @@ def fetch_market_evidence_semantic(neon_url: str, market_name: str) -> DBEvidenc
         hit = nearest_report(cur, market_name)
         if not hit:
             return None
-        news_id, _keyword, _similarity = hit
+        news_id, keyword, _similarity = hit
+        if geography_narrower(keyword or "", market_name):
+            return None
         cur.execute(
             f'SELECT {_REPORT_COLUMNS} FROM cmi_reports WHERE "newsId" = %s',  # type: ignore[arg-type]
             (news_id,),
@@ -154,6 +156,57 @@ def fetch_market_evidence_semantic(neon_url: str, market_name: str) -> DBEvidenc
     if not row:
         return None
     return _row_to_evidence(row, market_name)
+
+
+# Geography words that make a report regional ("GCC Medical Gloves Market").
+_GEO_QUALIFIERS = [
+    "gcc", "middle east", "mena", "africa", "europe", "european", "asia pacific", "apac", "asia",
+    "southeast asia", "asean", "north america", "latin america", "south america", "nordic",
+    "u.s.", "us", "usa", "united states", "america", "canada", "mexico", "brazil", "argentina",
+    "u.k.", "uk", "united kingdom", "germany", "france", "italy", "spain", "russia", "turkey",
+    "india", "china", "japan", "south korea", "korea", "taiwan", "indonesia", "vietnam", "thailand",
+    "malaysia", "philippines", "australia", "saudi arabia", "uae", "south africa", "nigeria", "egypt",
+]
+
+
+def geo_qualifiers(text: str) -> set[str]:
+    low = f" {(text or '').lower()} "
+    return {q for q in _GEO_QUALIFIERS if re.search(rf"(?<![a-z]){re.escape(q)}(?![a-z])", low)}
+
+
+def geography_narrower(report_keyword: str, market_name: str) -> bool:
+    """True when the report is about a region/country the requested market
+    doesn't name -- e.g. "GCC Medical Gloves Market" for "Disposable Medical
+    Gloves" (a global market). A request that itself names a region keeps
+    reports for that region."""
+    report_geo = geo_qualifiers(report_keyword)
+    return bool(report_geo) and not (report_geo & geo_qualifiers(market_name))
+
+
+def _norm_title(text: str) -> str:
+    t = re.sub(r"[^a-z0-9 ]", " ", (text or "").lower())
+    t = re.sub(r"\b(global|the|market|industry)\b", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def pick_best_report(market_name: str, term: str, rows: list[tuple]) -> tuple | None:
+    """Rank LIKE candidates: drop reports for a narrower geography, then
+    prefer an exact title match, then a keyword (not just subject-tag) hit,
+    then the richest segmentation (rows arrive longest-first)."""
+    want = _norm_title(market_name)
+    best, best_rank = None, None
+    for order, row in enumerate(rows):
+        keyword = row[1] or ""
+        if geography_narrower(keyword, market_name):
+            continue
+        rank = (
+            0 if _norm_title(keyword) == want else 1,
+            0 if term in (keyword or "").lower() else 1,
+            order,
+        )
+        if best_rank is None or rank < best_rank:
+            best, best_rank = row, rank
+    return best
 
 
 def verify_market_match(market_name: str, narrative: str, llm) -> bool:

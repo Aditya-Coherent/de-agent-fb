@@ -1,62 +1,29 @@
-Ran it end-to-end for the Vinegar market — here's real data at exactly that level (country × 6 views), pulled from the cache we generated earlier:
 
-Global Total: $8,500.0M (base year 2026)
+I want an update on demand analysis as explained to Rajiv and Vimarsh and Aditya. As we are running at a very critical time, I want an update on all three approaches and where we are, with five examples from altogether different industry verticals. 
 
-Sample — India: $504.9M
+As explained repetitively, market estimates and forecasting are done by three approaches:
 
-Product: Balsamic $20.2M, Red Wine $30.3M, Cider $35.3M, White $171.7M, Rice $90.9M, Others $156.5M
-Source: Organic $75.7M, Synthetic $429.2M
-Flavor: Apple $50.5M, Garlic $101.0M, Lemon $90.9M, Other $262.6M
-Application: Food & Beverages $313.0M, Healthcare $60.6M, Cleaning $70.7M, Agriculture $40.4M, Others $20.2M
-Distribution Channel: Supermarkets $151.5M, Convenience $111.1M, Specialty $75.7M, Online $90.9M, Other $75.7M
-Sales Channel: B2B $227.2M, B2C $277.7M
-Same shape is now filled in for all 17 countries across the 5 regions (U.S., Canada, Mexico, Germany, U.K., France, Italy, Spain, China, India, Japan, South Korea, Australia, Brazil, Argentina, South Africa, Turkey) — each with its own independently-estimated mix, all six views summing exactly back to that country's total, country totals summing exactly to their region, regions summing exactly to the $8,500M global figure.
+1. *The desk research approach*
 
-The (minor, cosmetic) mangled — characters in the terminal output above are just a Windows console encoding artifact — the actual JSON data and the React UI render these correctly.
+In this approach - where you try to find all the information available and quoted by third-party players or competitors of ours, or the association, which has also calculated the market size and shared the details of market size (not on just a surface level but also by segments, applications, and the other different taxonomy that is being covered as a part of that study).
+ 
+2. *Demand-side approach -*
 
-To see it live in the app: restart your backend (python backend/main.py) and open the "Segmentation Demo" tab — it'll load instantly since this run is cached, and you can click through Region → Country to expand each one's six-view breakdown visually with the bar charts.
+There are three deep-dive analyses that could be done to crack the demand side.
 
+A) Track the demand of the particular market at a country level, bottom up to the global, and then do an entire top-down analysis for all the sub-segments (segmentation) which are part of the market analysis.
 
+B) track the demand at a country level. When we track the demand at a country level, we track the demand across each end-use application or each application covered as a part of the taxonomy at each country level. Once that is estimated, you bottom up that to get the estimates of that market at a country level and then this is further bottom up from all countries to get the estimates at the global level. For other segments, other segmentation, or other taxonomy, a top-down approach is followed to get the market for them. 
 
-The core reframe
-Revenue = Volume × Price. You never need to ask anyone for "$10.0M." You need Volume and Price, and the revenue falls out as arithmetic. So the question becomes: can we derive 2.5M litres and $4.00/L from hard data? Mostly yes.
+C) in this approach we go on a deeper dive. We track the market at the country level. At the country level we track the market at each end-use application or each application. What differs this approach from Approach B is that within each application we also try to track the demand for each product type that is part of that market taxonomy. Thus, once we get the market size for each product type across each application, that is further bottom-up to reach the market size for the entire set of applications within that one country. That is then further bottom-up to reach the global level. For the rest of the segments a top-down approach is followed. 
 
-Price per litre — this is the easy one, genuinely derivable
-UN Comtrade publishes trade under HS code 2209 — "Vinegar and substitutes for vinegar obtained from acetic acid" — free, per country, per year, with both value (USD) and quantity (kg/litres). Divide them and you get a real unit value $/litre, by trade partner. Balsamic ≈ India's 2209 imports from Italy → a defensible landed price with a source URL.
-Retail price scraping — Amazon India, BigBasket, Blinkit listings for balsamic: extract price + pack size → price-per-litre distribution (median, weighted by review count as a crude volume proxy).
-Landed price × distribution markup ↔ retail price gives you a two-sided sanity check.
-No LLM anywhere in that chain.
+3. *Supply-side approach*
 
-Volume — derivable via the classic identity
-Apparent consumption = Domestic Production + Imports − Exports.
+In this approach we analyse all the vendors who are contributing to the industry, not across the value chain, but directly acting as a revenue contributor, which defines this industry.
+1. We analyse them.
+2. We try to get their total revenues.
+3. We try to understand the part of the revenues that would be limited specifically to the market that we define.
 
-This is the standard, auditable market-sizing identity real analysts use. Imports/exports come straight from Comtrade. Production comes from national statistics offices / industry associations (this is the genuine gap for some countries — more below).
+For example if you are tracking the _cloud API market_, Google is a player in the cloud API market. We won't consider the entire revenue of Google. We'll only consider the revenue of Google that contributes to their cloud API business. Maybe 10% of their entire business goes into cloud API so 10% of Google's revenues would be considered here.
 
-Then per-capita consumption = apparent consumption ÷ population, which you sanity-check against neighbours (India's litres/capita should sit in a plausible band vs. other South Asian markets, not 10× off).
-
-Where it gets progressively harder — be honest about this
-Layer	Derivable?	Source
-Price $/L	Easy	Comtrade unit values + retail scraping
-Country total volume	Medium	Comtrade + production stats (production is the gap)
-Product mix (balsamic's share)	Medium-hard	Trade sub-codes, import origin (Italy→balsamic), retail assortment scraping
-Application mix (F&B vs Cleaning)	Hardest	No direct data exists — needs input-output tables, industry ratios, or a modeled allocation
-That last row is the honest catch: nobody publishes "how much vinegar went into cleaning vs. food in India." You cannot derive it from trade data. But you can replace an LLM guess with a documented, parameterized assumption (e.g. food-grade vs. industrial-grade import classification, packaging-size distribution as a proxy — 5L jugs skew industrial/cleaning, 250ml bottles skew retail food). That's defensible in a way "the LLM said 68%" never is.
-
-Where your ML model actually earns its place
-Comtrade covers most countries but not all, and production data is patchy. So:
-
-Build the hard-data pipeline for the countries where Comtrade + production do exist (that's your training set with real labels — not LLM pseudo-labels).
-Fit the regression on those real observations (population, GDP/capita, urbanization, food-industry output → volume).
-Predict only for the gap countries. That's legitimate statistical interpolation across a real dataset — completely different from distilling an LLM's guesses, and it's the defensible answer to "where did this number come from" for the countries with no data.
-The big lever: this machinery already exists in your repo
-The production demand_usage pipeline already has exactly this architecture — evidence_router.py with web_acquirer / pdf_acquirer / tabular_acquirer / api_acquirer, and a provenance system tagging every number as verified_observed / derived / source_found_unverified / assumption. The Segmentation Demo deliberately skipped all of it for speed. Pointing an api_acquirer at Comtrade and a web_acquirer at retail listings is reusing something you already built and tested, not starting over.
-
-The blunt framing for the CEO
-You can eliminate the LLM from magnitudes. You cannot eliminate assumptions — application mix in particular has no published source anywhere. What you can deliver is: every number carries a provenance tag and a source URL, assumptions are explicit and parameterized (so he can challenge or change them), and the audit trail shows exactly which numbers are hard-sourced vs. modeled vs. assumed. That's a much stronger position than "trust the AI," and it's achievable.
-
-Realistic split for vinegar/India once built: price ≈ hard-sourced, volume ≈ hard-sourced, product mix ≈ derived, application mix ≈ modeled assumption. Roughly 70% of the number becomes defensible-with-a-source, 30% stays explicitly modeled.
-
-Want me to scope what a Comtrade-anchored version would take — or map which of the existing acquirers could be pointed at it with least work?
-
-
-Note they sum to 1.22, not 1.00 — that's deliberate. Each product is judged independently, so they're not a share-out of anything. "Balsamic is 20× more a food product than a cleaning product" is the only claim being made.
+Similarly for all the players that have been mapped, the revenue contribution of those players would be tracked as a part of it and would be added to it. This approach helps us to understand the market, at least on the total size, that is, the total market size, which could be fairly accurate. This approach also gives us an understanding of company market share analysis, helping us understand which company has how much of the market share in a particular industry.

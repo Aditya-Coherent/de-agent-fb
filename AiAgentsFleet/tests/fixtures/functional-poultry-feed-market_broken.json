@@ -1,0 +1,851 @@
+{
+  "market_name": "Functional Poultry Feed Market",
+  "generated_at": "2026-09-28T08:22:06.427031+00:00",
+  "randomization": "+/-10-15% applied independently to every numeric field (see randomizer.py)",
+  "source_note": "Field values are synthesized by an LLM from live multi-backend web search results (ddgs: Google/Bing/DuckDuckGo/Mojeek), in the style of a concise AI-Overview-style answer -- NOT a literal scrape of Google's AI Overview UI element (no public API for that exists). See field_agent.py.",
+  "fields": {
+    "segmentation_grade_form": {
+      "by_grade_or_type": [
+        {
+          "name": "Broiler Feed",
+          "share_pct_of_market": 39,
+          "value_usd_mn": 116290
+        },
+        {
+          "name": "Layer Feed",
+          "share_pct_of_market": 39,
+          "value_usd_mn": 89735
+        },
+        {
+          "name": "Turkey Feed",
+          "share_pct_of_market": 11,
+          "value_usd_mn": 26336
+        },
+        {
+          "name": "Others",
+          "share_pct_of_market": 11,
+          "value_usd_mn": 25843
+        }
+      ],
+      "by_form": [
+        {
+          "name": "Pellets",
+          "share_pct_of_market": 55,
+          "fastest_growing_cagr_pct": 4.65
+        },
+        {
+          "name": "Crumbles",
+          "share_pct_of_market": 29,
+          "fastest_growing_cagr_pct": 5.41
+        },
+        {
+          "name": "Mash",
+          "share_pct_of_market": 23,
+          "fastest_growing_cagr_pct": 3.77
+        },
+        {
+          "name": "Others",
+          "share_pct_of_market": 7,
+          "fastest_growing_cagr_pct": 3.01
+        }
+      ]
+    },
+    "drivers_restraints": {
+      "drivers": [
+        {
+          "name": "Rising demand for functional and premium feed to improve animal health and disease resilience",
+          "cagr_contribution_bps": 159
+        },
+        {
+          "name": "Rapid poultry farm industrialization and rising chicken consumption in Asia-Pacific",
+          "cagr_contribution_bps": 130
+        },
+        {
+          "name": "Growth in feed additives (probiotics, prebiotics, vitamins, minerals) at 8.4% CAGR",
+          "cagr_contribution_bps": 103
+        },
+        {
+          "name": "Urbanization, income growth, and cold-chain expansion boosting per-capita poultry protein demand",
+          "cagr_contribution_bps": 122
+        },
+        {
+          "name": "Operational efficiency and cost management gains across the feed production value chain",
+          "cagr_contribution_bps": 103
+        },
+        {
+          "name": "Environmental sustainability mandates driving adoption of functional feed formulations",
+          "cagr_contribution_bps": 63
+        },
+        {
+          "name": "Expansion of organic and specialty feed segments at 6.5% CAGR",
+          "cagr_contribution_bps": 53
+        }
+      ],
+      "restraints": [
+        {
+          "name": "Strict regulatory frameworks governing feed quality and safety",
+          "cagr_drag_bps": -69
+        },
+        {
+          "name": "Fragmented markets and varying national standards hindering cross-border scaling",
+          "cagr_drag_bps": -79
+        },
+        {
+          "name": "Supply chain disruptions affecting raw material availability and costs",
+          "cagr_drag_bps": -68
+        },
+        {
+          "name": "Regulatory hurdles and compliance costs for novel functional ingredients",
+          "cagr_drag_bps": -56
+        },
+        {
+          "name": "Volatility in cereal and oilseed meal input prices",
+          "cagr_drag_bps": -45
+        }
+      ]
+    },
+    "porters_five_forces": {
+      "overall_score_out_of_5": 3.8,
+      "forces": {
+        "supplier_power": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "buyer_power": {
+          "score_1_5": 5,
+          "label": "High"
+        },
+        "competitive_rivalry": {
+          "score_1_5": 5,
+          "label": "High"
+        },
+        "threat_of_new_entrants": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "threat_of_substitutes": {
+          "score_1_5": 3,
+          "label": "Medium"
+        }
+      }
+    },
+    "derivatives_pricing": {
+      "derivatives": [
+        {
+          "name": "Poultry Feed",
+          "value_usd_mn": 271516
+        },
+        {
+          "name": "Poultry Probiotics",
+          "value_usd_mn": 158060
+        },
+        {
+          "name": "India Poultry Market",
+          "value_usd_mn": 28312
+        },
+        {
+          "name": "Europe Poultry Feed",
+          "value_usd_mn": 30
+        },
+        {
+          "name": "Flame Dried Fishmeal (FD-grade)",
+          "value_usd_mn": 4612
+        }
+      ],
+      "price_tiers": [
+        {
+          "tier": "Economy",
+          "price_low_usd_per_unit": 177,
+          "price_high_usd_per_unit": 394,
+          "grade": "Standard",
+          "principal_buyers": "Small-scale poultry farmers"
+        },
+        {
+          "tier": "Mid-Range",
+          "price_low_usd_per_unit": 389,
+          "price_high_usd_per_unit": 573,
+          "grade": "Premium",
+          "principal_buyers": "Medium-scale commercial farms"
+        },
+        {
+          "tier": "High-End",
+          "price_low_usd_per_unit": 436,
+          "price_high_usd_per_unit": 802,
+          "grade": "Functional",
+          "principal_buyers": "Large integrated poultry operations"
+        },
+        {
+          "tier": "Specialty",
+          "price_low_usd_per_unit": 600,
+          "price_high_usd_per_unit": 1111,
+          "grade": "Organic/Non-GMO",
+          "principal_buyers": "Organic poultry producers"
+        }
+      ]
+    },
+    "end_use_industry": {
+      "applications": [
+        {
+          "name": "Broiler Feed",
+          "share_pct_of_market": 36,
+          "cagr_2025_2030_pct": 4.05
+        },
+        {
+          "name": "Layer Feed",
+          "share_pct_of_market": 34,
+          "cagr_2025_2030_pct": 3.71
+        },
+        {
+          "name": "Breeder Feed",
+          "share_pct_of_market": 12,
+          "cagr_2025_2030_pct": 4.41
+        },
+        {
+          "name": "Turkey Feed",
+          "share_pct_of_market": 8,
+          "cagr_2025_2030_pct": 4.27
+        },
+        {
+          "name": "Duck & Waterfowl Feed",
+          "share_pct_of_market": 6,
+          "cagr_2025_2030_pct": 3.86
+        },
+        {
+          "name": "Specialty & Other Poultry Feed",
+          "share_pct_of_market": 3,
+          "cagr_2025_2030_pct": 5.84
+        }
+      ]
+    },
+    "market_size": {
+      "base_year": 2025,
+      "base_year_value_usd_mn": 58056,
+      "forecast_year": 2035,
+      "forecast_value_usd_mn": 91971,
+      "cagr_pct": 4.17,
+      "historical_usd_mn": {
+        "2020": 35841,
+        "2021": 37983,
+        "2022": 51756,
+        "2023": 53814,
+        "2024": 44832
+      },
+      "forecast_series_usd_mn": {
+        "2025": 45763,
+        "2026": 60576,
+        "2027": 47999,
+        "2028": 67200,
+        "2029": 70952,
+        "2030": 73429,
+        "2031": 58962,
+        "2032": 62222,
+        "2033": 82402,
+        "2034": 87622,
+        "2035": 70204
+      }
+    },
+    "sub_segments": {
+      "by_top_application": [
+        {
+          "application": "Broilers",
+          "sub_segments": [
+            {
+              "name": "Crumbles (starter feed)",
+              "value_usd_mn": null,
+              "cagr_pct": 7.96
+            },
+            {
+              "name": "Antibiotic-free broiler feed",
+              "value_usd_mn": null,
+              "cagr_pct": 7.21
+            },
+            {
+              "name": "Organic broiler feed",
+              "value_usd_mn": null,
+              "cagr_pct": 7.14
+            },
+            {
+              "name": "Feed enzymes & acidifiers",
+              "value_usd_mn": null,
+              "cagr_pct": 6.77
+            },
+            {
+              "name": "Amino acid-fortified feed",
+              "value_usd_mn": null,
+              "cagr_pct": 4.93
+            }
+          ]
+        },
+        {
+          "application": "Layers",
+          "sub_segments": [
+            {
+              "name": "Organic layer feed",
+              "value_usd_mn": null,
+              "cagr_pct": 8.7
+            },
+            {
+              "name": "Omega-3 enriched layer feed",
+              "value_usd_mn": null,
+              "cagr_pct": 8.16
+            },
+            {
+              "name": "Vitamin & antioxidant premixes",
+              "value_usd_mn": null,
+              "cagr_pct": 4.77
+            },
+            {
+              "name": "Antibiotic-free layer feed",
+              "value_usd_mn": null,
+              "cagr_pct": 7.11
+            },
+            {
+              "name": "Specialty breeder flock feed",
+              "value_usd_mn": null,
+              "cagr_pct": 4.43
+            }
+          ]
+        },
+        {
+          "application": "Turkeys",
+          "sub_segments": [
+            {
+              "name": "Organic turkey feed",
+              "value_usd_mn": null,
+              "cagr_pct": 6.13
+            },
+            {
+              "name": "Starter crumbles",
+              "value_usd_mn": null,
+              "cagr_pct": 7.61
+            },
+            {
+              "name": "Antibiotic-free turkey feed",
+              "value_usd_mn": null,
+              "cagr_pct": 6.71
+            },
+            {
+              "name": "High-protein grower feed",
+              "value_usd_mn": null,
+              "cagr_pct": 4.63
+            },
+            {
+              "name": "Feed acidifier blends",
+              "value_usd_mn": null,
+              "cagr_pct": 4.53
+            }
+          ]
+        }
+      ]
+    },
+    "competitive_landscape": {
+      "companies": [
+        {
+          "name": "Charoen Pokphand Foods Public Co. Ltd",
+          "share_pct": 10.57,
+          "positioning_note": "Vertically integrated Asian leader with extensive poultry feed and functional additive portfolio across Southeast Asia and China."
+        },
+        {
+          "name": "Cargill, Incorporated",
+          "share_pct": 9.09,
+          "positioning_note": "Global agribusiness giant leveraging scale, nutritional science expertise, and processing technology to enhance feed efficiency."
+        },
+        {
+          "name": "New Hope Liuhe Co. Ltd",
+          "share_pct": 5.87,
+          "positioning_note": "Major Chinese feed producer with strong domestic poultry feed share and growing functional ingredient adoption."
+        },
+        {
+          "name": "Guangdong HAID Group Co. Ltd",
+          "share_pct": 6.58,
+          "positioning_note": "Leading Chinese aqua and poultry feed player investing in functional feed additives and precision nutrition."
+        },
+        {
+          "name": "Land O'Lakes Inc",
+          "share_pct": 5.31,
+          "positioning_note": "US cooperative with strong North American poultry feed presence, emphasizing vitamin and mineral premix solutions."
+        },
+        {
+          "name": "BASF SE",
+          "share_pct": 4.18,
+          "positioning_note": "Cornerstone of functional feed landscape with deep R&D; launched phytogenic feed additives for poultry gut health in 2023."
+        },
+        {
+          "name": "Evonik Industries AG",
+          "share_pct": 3.59,
+          "positioning_note": "Specialty amino acid and gut-health additive supplier enabling antibiotic-free functional poultry feed formulations."
+        },
+        {
+          "name": "DSM-Firmenich",
+          "share_pct": 3.3,
+          "positioning_note": "Vitamins, enzymes, and probiotics leader supporting functional feed efficiency and sustainability goals."
+        },
+        {
+          "name": "Alltech",
+          "share_pct": 2.75,
+          "positioning_note": "Animal nutrition specialist focused on yeast-derived and natural feed additives for poultry health."
+        },
+        {
+          "name": "Nutreco N.V.",
+          "share_pct": 2.4,
+          "positioning_note": "Global animal nutrition company with functional feed solutions and strong sustainability positioning."
+        },
+        {
+          "name": "Adisseo",
+          "share_pct": 2.06,
+          "positioning_note": "Methionine and specialty feed additive producer advancing functional poultry nutrition."
+        },
+        {
+          "name": "Novus International",
+          "share_pct": 1.3,
+          "positioning_note": "Focused on trace minerals and gut health solutions for antibiotic-free poultry production."
+        }
+      ],
+      "others_share_pct": 40.4
+    },
+    "regional": {
+      "regions": {
+        "North America": {
+          "value_usd_mn": 56729,
+          "share_pct_of_global": 28.2,
+          "cagr_2025_2030_pct": 3.95,
+          "forecast_value_usd_mn": 88030,
+          "countries": [
+            {
+              "name": "United States",
+              "value_usd_mn": 59086
+            },
+            {
+              "name": "Canada",
+              "value_usd_mn": 10067
+            },
+            {
+              "name": "Mexico",
+              "value_usd_mn": 3452
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Broilers",
+              "share_pct": 51
+            },
+            {
+              "name": "Layers",
+              "share_pct": 26
+            },
+            {
+              "name": "Turkeys",
+              "share_pct": 11
+            },
+            {
+              "name": "Ducks",
+              "share_pct": 4
+            },
+            {
+              "name": "Others",
+              "share_pct": 9
+            }
+          ]
+        },
+        "Europe": {
+          "value_usd_mn": 45932,
+          "share_pct_of_global": 17.4,
+          "cagr_2025_2030_pct": 3.41,
+          "forecast_value_usd_mn": 68856,
+          "countries": [
+            {
+              "name": "Germany",
+              "value_usd_mn": 10795
+            },
+            {
+              "name": "France",
+              "value_usd_mn": 8594
+            },
+            {
+              "name": "United Kingdom",
+              "value_usd_mn": 8846
+            },
+            {
+              "name": "Spain",
+              "value_usd_mn": 7796
+            },
+            {
+              "name": "Italy",
+              "value_usd_mn": 6744
+            },
+            {
+              "name": "Netherlands",
+              "value_usd_mn": 4388
+            },
+            {
+              "name": "Others",
+              "value_usd_mn": 4576
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Broilers",
+              "share_pct": 35
+            },
+            {
+              "name": "Layers",
+              "share_pct": 31
+            },
+            {
+              "name": "Turkeys",
+              "share_pct": 11
+            },
+            {
+              "name": "Ducks",
+              "share_pct": 4
+            },
+            {
+              "name": "Others",
+              "share_pct": 9
+            }
+          ]
+        },
+        "Asia Pacific": {
+          "value_usd_mn": 125924,
+          "share_pct_of_global": 36.9,
+          "cagr_2025_2030_pct": 5.11,
+          "forecast_value_usd_mn": 157370,
+          "countries": [
+            {
+              "name": "China",
+              "value_usd_mn": 55256
+            },
+            {
+              "name": "India",
+              "value_usd_mn": 27893
+            },
+            {
+              "name": "Japan",
+              "value_usd_mn": 11337
+            },
+            {
+              "name": "Indonesia",
+              "value_usd_mn": 9134
+            },
+            {
+              "name": "Vietnam",
+              "value_usd_mn": 7792
+            },
+            {
+              "name": "Thailand",
+              "value_usd_mn": 5719
+            },
+            {
+              "name": "Others",
+              "value_usd_mn": 6280
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Broilers",
+              "share_pct": 45
+            },
+            {
+              "name": "Layers",
+              "share_pct": 26
+            },
+            {
+              "name": "Ducks",
+              "share_pct": 9
+            },
+            {
+              "name": "Turkeys",
+              "share_pct": 6
+            },
+            {
+              "name": "Others",
+              "share_pct": 4
+            }
+          ]
+        },
+        "Latin America": {
+          "value_usd_mn": 17739,
+          "share_pct_of_global": 8.77,
+          "cagr_2025_2030_pct": 3.54,
+          "forecast_value_usd_mn": 27301,
+          "countries": [
+            {
+              "name": "Brazil",
+              "value_usd_mn": 10613
+            },
+            {
+              "name": "Mexico",
+              "value_usd_mn": 3498
+            },
+            {
+              "name": "Argentina",
+              "value_usd_mn": 2000
+            },
+            {
+              "name": "Chile",
+              "value_usd_mn": 883
+            },
+            {
+              "name": "Colombia",
+              "value_usd_mn": 1133
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Broilers",
+              "share_pct": 61
+            },
+            {
+              "name": "Layers",
+              "share_pct": 26
+            },
+            {
+              "name": "Turkeys",
+              "share_pct": 4
+            },
+            {
+              "name": "Ducks",
+              "share_pct": 4
+            },
+            {
+              "name": "Others",
+              "share_pct": 4
+            }
+          ]
+        },
+        "Middle East & Africa": {
+          "value_usd_mn": 14319,
+          "share_pct_of_global": 5.29,
+          "cagr_2025_2030_pct": 4.31,
+          "forecast_value_usd_mn": 14061,
+          "countries": [
+            {
+              "name": "Saudi Arabia",
+              "value_usd_mn": 2569
+            },
+            {
+              "name": "South Africa",
+              "value_usd_mn": 2236
+            },
+            {
+              "name": "United Arab Emirates",
+              "value_usd_mn": 2000
+            },
+            {
+              "name": "Egypt",
+              "value_usd_mn": 2000
+            },
+            {
+              "name": "Turkey",
+              "value_usd_mn": 1282
+            },
+            {
+              "name": "Others",
+              "value_usd_mn": 1717
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Broilers",
+              "share_pct": 67
+            },
+            {
+              "name": "Layers",
+              "share_pct": 22
+            },
+            {
+              "name": "Turkeys",
+              "share_pct": 6
+            },
+            {
+              "name": "Ducks",
+              "share_pct": 4
+            },
+            {
+              "name": "Others",
+              "share_pct": 6
+            }
+          ]
+        }
+      }
+    },
+    "willingness_to_pay": {
+      "consumer_segments": [
+        {
+          "name": "Price-Sensitive Smallholder/Backyard Producers",
+          "baseline_usd": 0.39,
+          "with_clinical_evidence_usd": 0.36,
+          "with_premium_positioning_usd": 0.54,
+          "with_top_tier_format_usd": 0.61
+        },
+        {
+          "name": "Cost-Conscious Commercial Broiler/Layer Operations",
+          "baseline_usd": 0.46,
+          "with_clinical_evidence_usd": 0.53,
+          "with_premium_positioning_usd": 0.6,
+          "with_top_tier_format_usd": 0.68
+        },
+        {
+          "name": "Mid-Market Conventional Poultry Farmers",
+          "baseline_usd": 0.6,
+          "with_clinical_evidence_usd": 0.91,
+          "with_premium_positioning_usd": 0.82,
+          "with_top_tier_format_usd": 0.99
+        },
+        {
+          "name": "Premium/Functional Egg & Meat Producers",
+          "baseline_usd": 1.06,
+          "with_clinical_evidence_usd": 1.09,
+          "with_premium_positioning_usd": 1.77,
+          "with_top_tier_format_usd": 2.04
+        },
+        {
+          "name": "Clinical/Therapeutic & Specialty Nutrition Producers",
+          "baseline_usd": 1.54,
+          "with_clinical_evidence_usd": 2.16,
+          "with_premium_positioning_usd": 2.62,
+          "with_top_tier_format_usd": 2.44
+        }
+      ]
+    },
+    "investment_priorities": {
+      "opportunities": [
+        {
+          "opportunity": "Expand pellet-form poultry feed production capacity in emerging markets",
+          "target_segment": "Commercial broiler and layer integrators in Asia-Pacific, Latin America, and Africa",
+          "time_to_market": "18-24 mo",
+          "roi_low_pct": 14,
+          "roi_high_pct": 23,
+          "capital_intensity": "High"
+        },
+        {
+          "opportunity": "Launch corn-dominant complete feed lines with regional grain sourcing partnerships",
+          "target_segment": "Mid-size poultry feed mills and distributors in corn-surplus regions",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 9,
+          "roi_high_pct": 14,
+          "capital_intensity": "Medium"
+        },
+        {
+          "opportunity": "Develop integrated probiotic-enhanced functional feed solutions",
+          "target_segment": "Poultry integrators and premium feed producers seeking antibiotic-free nutrition",
+          "time_to_market": "18-30 mo",
+          "roi_low_pct": 17,
+          "roi_high_pct": 28,
+          "capital_intensity": "Med-High"
+        },
+        {
+          "opportunity": "Form strategic partnerships with probiotic manufacturers and feed producers",
+          "target_segment": "Feed additive suppliers and poultry value-chain integrators",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 16,
+          "roi_high_pct": 25,
+          "capital_intensity": "Low-Med"
+        },
+        {
+          "opportunity": "Build supply-chain resilience and digital traceability for feed inputs",
+          "target_segment": "Large feed producers and export-oriented poultry operations",
+          "time_to_market": "12-24 mo",
+          "roi_low_pct": 9,
+          "roi_high_pct": 13,
+          "capital_intensity": "Medium"
+        },
+        {
+          "opportunity": "Introduce innovative functional feed products targeting gut health and yield",
+          "target_segment": "Premium poultry producers and contract farming networks",
+          "time_to_market": "18-24 mo",
+          "roi_low_pct": 11,
+          "roi_high_pct": 19,
+          "capital_intensity": "Med-High"
+        },
+        {
+          "opportunity": "Establish distribution and last-mile feed sales networks in underserved emerging regions",
+          "target_segment": "Smallholder and semi-commercial poultry farmers",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 8,
+          "roi_high_pct": 19,
+          "capital_intensity": "Low-Med"
+        }
+      ]
+    },
+    "scenarios": {
+      "bear": {
+        "terminal_value_usd_mn": 16383,
+        "cagr_pct": 1.76
+      },
+      "base": {
+        "terminal_value_usd_mn": 18650,
+        "cagr_pct": 3.89
+      },
+      "bull": {
+        "terminal_value_usd_mn": 21901,
+        "cagr_pct": 4.38
+      }
+    },
+    "regulation": {
+      "compliance_areas": [
+        {
+          "name": "Feed Safety Certification (FSSC 22000 / GMP)",
+          "cost_pct_of_cogs_low": 1.66,
+          "cost_pct_of_cogs_high": 3.92
+        },
+        {
+          "name": "Antibiotic Reduction & Probiotic Additive Compliance",
+          "cost_pct_of_cogs_low": 1.78,
+          "cost_pct_of_cogs_high": 3.83
+        },
+        {
+          "name": "Labeling & Product Claims Compliance",
+          "cost_pct_of_cogs_low": 0.43,
+          "cost_pct_of_cogs_high": 1.28
+        },
+        {
+          "name": "Sourcing & Traceability Guidelines",
+          "cost_pct_of_cogs_low": 1.11,
+          "cost_pct_of_cogs_high": 2.84
+        },
+        {
+          "name": "Environmental & Waste Management Compliance",
+          "cost_pct_of_cogs_low": 0.7,
+          "cost_pct_of_cogs_high": 2.25
+        },
+        {
+          "name": "Usage Limits & Additive Registration",
+          "cost_pct_of_cogs_low": 0.79,
+          "cost_pct_of_cogs_high": 1.53
+        },
+        {
+          "name": "Import/Export & Cross-Border Regulatory Compliance",
+          "cost_pct_of_cogs_low": 0.69,
+          "cost_pct_of_cogs_high": 1.4
+        },
+        {
+          "name": "Quality Testing & Laboratory Analysis",
+          "cost_pct_of_cogs_low": 1.35,
+          "cost_pct_of_cogs_high": 2.47
+        }
+      ]
+    }
+  },
+  "log": [
+    "[segmentation_grade_form] Sec 5 - Segmentation by Grade/Type and Product Form: synthesized from 8 web snippets, then randomized every value by +/-10-15%.",
+    "[drivers_restraints] Sec 3 - Market Dynamics (Drivers & Restraints): synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[porters_five_forces] Sec 4 - Porter's Five Forces: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[derivatives_pricing] Sec 8 - Derivatives and Pricing Structure: synthesized from 9 web snippets, then randomized every value by +/-10-15%.",
+    "[end_use_industry] Sec 6 - End-Use Industry Analysis: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[market_size] Sec 2 - Global Market Size Outlook: synthesized from 14 web snippets, then randomized every value by +/-10-15%.",
+    "[sub_segments] Sec 7 - High-Growth Sub-Segment Opportunities: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[competitive_landscape] Sec 10 - Competitive Landscape and Market Share: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[regional] Sec 9 - Regional Market Dynamics and Outlook: synthesized from 14 web snippets, then randomized every value by +/-10-15%.",
+    "[willingness_to_pay] Sec 12 - End-User Behavior Outlook: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[investment_priorities] Sec 13 - Strategic Investment Priorities: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[scenarios] Sec 14 - Scenario Analysis (Bear/Base/Bull): synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[regulation] Sec 11 - Regulation and Compliance Overview: synthesized from 10 web snippets, then randomized every value by +/-10-15%."
+  ],
+  "definition_inclusion_exclusion": {
+    "definition": "This market covers poultry feeds that provide additional health, growth or performance benefits beyond basic nutrition.",
+    "inclusions": "Feed types: gut-health, immunity-support, stress-management and performance feeds; Birds: broilers, layers and breeders.",
+    "exclusions": "Standard/commodity poultry feed, standalone additives and veterinary medicines.",
+    "source": "Priority 1 Whitepaper 100 Titles_ AgriIQX Platform.xlsx (verbatim, not AI-generated)"
+  }
+}

@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2C Demand-Side (Product × Use Case × Country) — Olive Oil</title>
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --panel: #131316;
+    --panel2: #1a1a1f;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f1f1f3;
+    --text-dim: #9a9aa3;
+    --text-dimmer: #64646d;
+    --indigo: #818cf8;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --sky: #38bdf8;
+    --teal: #2dd4bf;
+    --violet: #a78bfa;
+    --slate: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 20% 0%, rgba(99,102,241,0.12), transparent 45%),
+                radial-gradient(circle at 85% 20%, rgba(139,92,246,0.08), transparent 45%),
+                var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 24px 20px 50px; }
+
+  /* ---------- Header ---------- */
+  .hero { text-align: center; margin-bottom: 16px; }
+  .hero h1 {
+    font-size: 24px; font-weight: 800; margin: 0 0 4px;
+    background: linear-gradient(90deg,#f8fafc,#c7c7d9);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { color: var(--text-dim); font-size: 12.5px; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+
+  .legend { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 16px; }
+  .legend .chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border2); border-radius: 999px; padding: 4px 10px; font-size: 10.5px; font-weight: 600; }
+
+  /* ---------- Approach tabs ---------- */
+  .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 10px; }
+  .tab {
+    padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; letter-spacing: .03em;
+    text-transform: uppercase; cursor: pointer; border: 1px solid var(--border); background: var(--panel);
+    color: var(--text-dim); transition: all .15s;
+  }
+  .tab.active.usage { background: rgba(52,211,153,0.16); border-color: rgba(52,211,153,0.4); color: var(--emerald); }
+  .tab.active.desk { background: rgba(99,102,241,0.16); border-color: rgba(99,102,241,0.4); color: var(--indigo); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .approach-desc { text-align: center; font-size: 11px; color: var(--text-dimmer); max-width: 680px; margin: 0 auto 14px; line-height: 1.5; }
+
+  /* ---------- Step rail ---------- */
+  .rail-outer { overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; }
+  .rail { display: flex; align-items: center; gap: 0; min-width: max-content; padding: 4px 2px; }
+  .rail-node { display: flex; flex-direction: column; align-items: center; cursor: pointer; flex-shrink: 0; width: 100px; }
+  .rail-circle {
+    width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; border: 2px solid var(--border2); background: var(--panel2); color: var(--text-dim);
+    transition: all .15s;
+  }
+  .rail-node.current .rail-circle { border-color: var(--indigo); background: rgba(99,102,241,0.22); color: #e0e3ff; box-shadow: 0 0 0 4px rgba(99,102,241,0.12); }
+  .rail-node.visited .rail-circle { border-color: rgba(52,211,153,0.5); color: var(--emerald); }
+  .rail-node:hover .rail-circle { border-color: var(--indigo); }
+  .rail-label { font-size: 9px; text-align: center; color: var(--text-dimmer); margin-top: 5px; line-height: 1.2; max-width: 96px; }
+  .rail-node.current .rail-label { color: var(--text); font-weight: 700; }
+  .rail-line { flex: 1; min-width: 16px; height: 2px; background: var(--border2); margin-top: -18px; }
+  .rail-line.done { background: rgba(52,211,153,0.4); }
+
+  /* ---------- Data Journey strip ---------- */
+  .journey {
+    display: flex; align-items: stretch; gap: 0; overflow-x: auto; margin-bottom: 16px;
+    border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    padding: 12px 10px;
+  }
+  .journey-hdr-wrap { text-align: center; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dimmer); margin-bottom: 8px; }
+  .j-node { flex-shrink: 0; width: 128px; text-align: center; padding: 6px 6px; border-radius: 10px; position: relative; }
+  .j-lbl { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dimmer); }
+  .j-val { font-size: 13px; font-weight: 800; margin-top: 4px; color: var(--text-dimmer); min-height: 16px; }
+  .j-node.filled .j-val { color: var(--text); animation: popIn .35s ease; }
+  .j-node.active { background: rgba(99,102,241,0.14); border: 1px solid rgba(99,102,241,0.4); }
+  .j-node.active .j-lbl { color: #c7d2fe; }
+  .j-node.active .j-val { color: #fff; }
+  .j-arrow { display: flex; align-items: center; justify-content: center; width: 20px; flex-shrink: 0; color: var(--text-dimmer); font-size: 13px; }
+
+  /* ---------- Panel ---------- */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    display: grid; grid-template-columns: 1.35fr 0.65fr; gap: 20px;
+  }
+  @media (max-width: 860px) { .panel { grid-template-columns: 1fr; } }
+
+  @keyframes popIn { from { opacity:0; transform: scale(.9) translateY(4px); } to { opacity:1; transform: scale(1) translateY(0); } }
+  @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  @keyframes flowRight { from { opacity:0; transform: translateX(-8px); } to { opacity:1; transform: translateX(0); } }
+
+  .step-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .step-title { font-size: 18px; font-weight: 800; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 9px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; border: 1px solid; }
+  .badge.real { color: var(--emerald); border-color: rgba(52,211,153,0.35); background: rgba(52,211,153,0.08); }
+  .badge.illustrative { color: var(--amber); border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.08); }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; animation: slideUp .3s ease; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--border2); background: rgba(255,255,255,0.02); }
+  .pill.agent { color: #c7d2fe; border-color: rgba(129,140,248,0.35); background: rgba(129,140,248,0.08); cursor: help; }
+  .pill.agent.code { color: var(--slate); border-color: rgba(148,163,184,0.35); background: rgba(148,163,184,0.08); }
+  .pill .k { text-transform: uppercase; font-size: 8.5px; font-weight: 800; opacity: .6; margin-right: 2px; }
+
+  .src-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; border: 1px solid; cursor: help; }
+  .src-llm { color: #a5b4fc; border-color: rgba(129,140,248,.45); background: rgba(129,140,248,.1); }
+  .src-web { color: #7dd3fc; border-color: rgba(56,189,248,.45); background: rgba(56,189,248,.1); }
+  .src-db { color: #d8b4fe; border-color: rgba(192,132,252,.45); background: rgba(192,132,252,.1); }
+  .src-code { color: #cbd5e1; border-color: rgba(148,163,184,.45); background: rgba(148,163,184,.1); }
+  .src-derived { color: #fde68a; border-color: rgba(250,204,21,.4); background: rgba(250,204,21,.08); }
+  .src-assumption { color: #fda4af; border-color: rgba(251,113,133,.45); background: rgba(251,113,133,.1); }
+  .src-human { color: #ddd6fe; border-color: rgba(167,139,250,.45); background: rgba(167,139,250,.1); }
+
+  /* HERO — big number */
+  .hero-card { border: 1px solid var(--border2); border-radius: 14px; padding: 18px; margin: 10px 0; background: rgba(255,255,255,0.02); text-align: center; animation: popIn .4s ease; }
+  .hero-card.clickable { cursor: pointer; transition: all .15s; }
+  .hero-card.clickable:hover { border-color: rgba(251,191,36,0.5); background: rgba(251,191,36,0.05); }
+  .hero-num { font-size: 38px; font-weight: 900; line-height: 1.1; }
+  .hero-unit { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; font-weight: 600; }
+  .hero-src { margin-top: 10px; }
+  .trace-hint { display: block; margin-top: 8px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: rgba(251,191,36,.85); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .chip-out { border: 1px solid var(--border2); background: var(--panel2); border-radius: 999px; padding: 5px 11px; font-size: 12px; animation: popIn .3s ease backwards; }
+  .chip-lv { border: 1px solid var(--border2); background: var(--panel2); border-radius: 10px; padding: 7px 12px; animation: popIn .3s ease backwards; min-width: 108px; }
+  .chip-lv .l { font-size: 9px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-dimmer); font-weight: 700; margin-bottom: 2px; }
+  .chip-lv .v { font-size: 13.5px; font-weight: 800; color: var(--text); }
+
+  /* CALC FLOW: A x B = Result */
+  .calc-flow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+  .cf-box { border: 1px solid var(--border2); border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 120px; background: rgba(255,255,255,0.02); animation: popIn .4s ease backwards; }
+  .cf-box:nth-of-type(1) { animation-delay: 0s; }
+  .cf-op { font-size: 22px; color: var(--text-dimmer); animation: popIn .4s ease backwards; animation-delay: .2s; }
+  .cf-num { font-size: 22px; font-weight: 900; }
+  .cf-unit { font-size: 10.5px; color: var(--text-dim); margin-top: 3px; }
+  .cf-result { border: 1px solid rgba(52,211,153,.5); background: rgba(52,211,153,.08); border-radius: 12px; padding: 14px 20px; text-align: center; animation: popIn .5s ease backwards; animation-delay: .5s; }
+  .cf-result .cf-num { color: #a7f3d0; font-size: 26px; }
+  .cf-final { text-align: center; margin-top: 10px; animation: popIn .5s ease backwards; animation-delay: .75s; }
+  .cf-final .big { font-size: 34px; font-weight: 900; background: linear-gradient(90deg,#34d399,#6ee7b7); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cf-final .cap { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-dimmer); margin-top: 4px; }
+
+  .callout { border-radius: 10px; padding: 8px 11px; font-size: 11.5px; margin: 8px 0; }
+  .callout.in { border-left: 3px solid var(--amber); background: rgba(251,191,36,0.08); }
+  .callout.out { border-left: 3px solid var(--sky); background: rgba(56,189,248,0.08); cursor: pointer; }
+  .callout .lbl { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; opacity: .85; }
+  .callout.in .lbl { color: var(--amber); } .callout.out .lbl { color: var(--sky); }
+
+  .agg-card { border: 1px solid rgba(45,212,191,0.3); background: rgba(45,212,191,0.05); border-radius: 12px; padding: 14px; margin: 12px 0; animation: popIn .4s ease; }
+  .agg-title { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--teal); margin-bottom: 10px; letter-spacing: .03em; }
+  .agg-rows { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .agg-item { border: 1px solid var(--border2); background: rgba(0,0,0,0.25); border-radius: 8px; padding: 6px 9px; font-size: 11px; animation: flowRight .3s ease backwards; }
+  .agg-item .l { color: var(--text-dimmer); }
+  .agg-item .v { color: var(--text); font-weight: 700; }
+  .agg-plus { color: var(--text-dimmer); font-size: 13px; }
+  .agg-eq { color: var(--teal); font-size: 15px; margin: 0 2px; }
+  .agg-total { border: 1px solid rgba(45,212,191,0.55); background: rgba(45,212,191,0.14); border-radius: 8px; padding: 8px 13px; animation: popIn .5s ease backwards; animation-delay: .4s; }
+  .agg-total .l { color: var(--teal); font-size: 10px; }
+  .agg-total .v { color: #d1fae5; font-weight: 800; font-size: 15px; }
+
+  .tiny-note { font-size: 10.5px; color: var(--text-dimmer); font-style: italic; margin: 4px 0 10px; }
+
+  /* Collapsed evidence */
+  details.evidence-toggle { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+  details.evidence-toggle summary { cursor: pointer; font-size: 11.5px; font-weight: 700; color: var(--text-dim); list-style: none; display: flex; align-items: center; gap: 6px; }
+  details.evidence-toggle summary::-webkit-details-marker { display: none; }
+  details.evidence-toggle summary::before { content: "▸"; transition: transform .15s; }
+  details.evidence-toggle[open] summary::before { transform: rotate(90deg); }
+  details.evidence-toggle summary:hover { color: var(--text); }
+  .ev-btn { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 1px solid var(--border2); background: rgba(255,255,255,0.02); border-radius: 9px; padding: 8px 11px; font-size: 12px; color: #d8d8e0; cursor: pointer; margin: 8px 0 0; transition: all .15s; }
+  .ev-btn:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); }
+  .ev-btn .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ev-btn .view { font-size: 9px; text-transform: uppercase; color: var(--text-dimmer); font-weight: 700; flex-shrink: 0; }
+
+  .human-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px; font-size: 11.5px; font-weight: 700; border: 1px solid rgba(167,139,250,.4); background: rgba(167,139,250,.08); color: #ddd6fe; cursor: pointer; margin-top: 8px; }
+
+  /* ---------- Agent activity mini panel ---------- */
+  .activity-hdr { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dimmer); margin-bottom: 10px; }
+  .activity-list { display: flex; flex-direction: column; gap: 7px; }
+  .activity-item { display: flex; align-items: flex-start; gap: 7px; font-size: 12px; color: var(--text-dim); animation: slideUp .3s ease backwards; }
+  .activity-item .ck { color: var(--emerald); flex-shrink: 0; margin-top: 1px; }
+  .activity-item:nth-child(1){animation-delay:.05s} .activity-item:nth-child(2){animation-delay:.15s}
+  .activity-item:nth-child(3){animation-delay:.25s} .activity-item:nth-child(4){animation-delay:.35s}
+  .activity-item:nth-child(5){animation-delay:.45s}
+  .researcher-flag { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px; font-size: 10.5px; font-weight: 700; border: 1px solid rgba(251,113,133,0.4); background: rgba(251,113,133,0.08); color: var(--rose); cursor: pointer; margin-top: 12px; }
+  .researcher-flag.positive { border-color: rgba(52,211,153,0.45); background: rgba(52,211,153,0.08); color: var(--emerald); }
+
+  /* ---------- Footer nav ---------- */
+  .footer { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .nav-btn { border: 1px solid var(--border2); background: var(--panel2); color: var(--text); border-radius: 10px; padding: 10px 18px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .nav-btn:disabled { opacity: .3; cursor: default; }
+  .nav-btn.primary { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.5); color: #dfe3ff; font-size: 14.5px; padding: 11px 24px; }
+  .progress-wrap { flex: 1; }
+  .progress-track { height: 6px; border-radius: 999px; background: var(--panel2); overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#6366f1,#34d399); border-radius: 999px; transition: width .3s; }
+  .progress-text { font-size: 11px; color: var(--text-dimmer); margin-top: 5px; text-align: center; }
+
+  /* ---------- Modal drawer ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: stretch; justify-content: flex-end; z-index: 50; }
+  .overlay.open { display: flex; }
+  .drawer { width: min(520px, 92vw); background: #0f0f13; border-left: 1px solid var(--border2); height: 100%; overflow-y: auto; padding: 20px; animation: slidein .18s ease; }
+  @keyframes slidein { from { transform: translateX(24px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+  .drawer-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .drawer-hdr h3 { font-size: 15px; margin: 0; }
+  .drawer-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 20px; }
+  .kv { margin-bottom: 12px; }
+  .kv .k { font-size: 10px; text-transform: uppercase; color: var(--text-dimmer); font-weight: 700; margin-bottom: 4px; }
+  .kv .v { font-size: 13px; color: var(--text-dim); line-height: 1.5; white-space: pre-wrap; }
+  .kv .v.code { font-family: ui-monospace, monospace; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 12px; }
+  .src-card { border: 1px solid var(--border2); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+  .src-card.accepted { border-color: rgba(52,211,153,0.35); }
+  .src-card.rejected { border-color: rgba(251,113,133,0.35); }
+  .src-verdict { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .src-verdict.accepted { color: var(--emerald); } .src-verdict.rejected { color: var(--rose); }
+  .checks { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .check { font-size: 10.5px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--border2); }
+  .check.pass { color: var(--emerald); }
+  .calc-formula { font-family: ui-monospace, monospace; font-size: 13px; background: rgba(45,212,191,0.08); border: 1px solid rgba(45,212,191,0.3); border-radius: 8px; padding: 10px; color: #a7f3d0; margin: 8px 0; }
+  .valid-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  .valid-row:last-child { border-bottom: none; }
+  .human-full { font-size: 12.5px; color: var(--text-dim); line-height: 1.6; }
+
+  /* ---------- Final result ---------- */
+  .final-hero { text-align: center; padding: 24px 20px; border: 1px solid rgba(52,211,153,0.3); border-radius: 16px; background: radial-gradient(circle at 50% 0%, rgba(52,211,153,0.1), transparent 70%); margin-bottom: 16px; animation: popIn .5s ease; }
+  .final-hero .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--emerald); font-weight: 800; margin-bottom: 8px; }
+  .final-hero .num { font-size: 42px; font-weight: 900; }
+  .prov-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 16px; }
+  .prov-stat { border: 1px solid var(--border2); border-radius: 10px; padding: 8px 14px; text-align: center; background: rgba(255,255,255,0.02); animation: popIn .4s ease backwards; }
+  .prov-stat .n { font-size: 18px; font-weight: 800; }
+  .prov-stat .l { font-size: 9.5px; text-transform: uppercase; color: var(--text-dimmer); margin-top: 2px; }
+
+  .qf { border-radius: 10px; padding: 11px; margin-bottom: 9px; border: 1px solid; cursor: pointer; font-size: 12px; line-height: 1.5; animation: slideUp .3s ease backwards; }
+  .qf.critical { border-color: rgba(251,113,133,0.4); background: rgba(251,113,133,0.06); }
+  .qf.warning { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.06); }
+  .qf.info { border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.06); }
+  .qf .qf-sev { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
+
+  .status-banner { display:inline-block; margin-top:10px; padding:6px 14px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.02em; }
+  .status-banner.real { background: rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.4); color: var(--emerald); }
+  .status-banner.illustrative { background: rgba(251,191,36,0.10); border:1px solid rgba(251,191,36,0.4); color: var(--amber); }
+  .nav-home { position:absolute; top:16px; left:20px; font-size:11px; color:var(--text-dim); text-decoration:none; border:1px solid var(--border2); padding:5px 10px; border-radius:8px; }
+  .nav-home:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<a class="nav-home" href="index.html">&larr; All approaches</a>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>Approach 2C — Olive Oil: Product Type × Use Case × Country → Global</h1>
+    <p>Inside each application in each country, track demand for each product type; add product types up to the application, applications to the country, countries to global.</p>
+    <div class="status-banner illustrative">Design walkthrough · not yet implemented in code · built on the real Olive Oil 2B run</div>
+  </div>
+
+  <div class="legend">
+    <span class="chip" style="color:#a5b4fc;border-color:rgba(129,140,248,.4)">🧠 LLM</span>
+    <span class="chip" style="color:#7dd3fc;border-color:rgba(56,189,248,.4)">🌐 Web Evidence</span>
+    <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
+    <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
+    <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
+  </div>
+
+  <div class="tabs"><div class="tab active usage">2C · Demand-Side: Product × Use Case × Country</div></div>
+  <div class="approach-desc" id="approach-desc"></div>
+
+  <div class="rail-outer"><div class="rail" id="rail"></div></div>
+
+  <div class="journey-hdr-wrap">Data Journey — how the number is built</div>
+  <div class="journey" id="journey"></div>
+
+  <div class="panel" id="panel"></div>
+
+  <div class="footer">
+    <button class="nav-btn" id="btn-prev" onclick="go(-1)">&larr; Previous</button>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-text" id="progress-text"></div>
+    </div>
+    <button class="nav-btn primary" id="btn-next" onclick="go(1)">Next &rarr;</button>
+  </div>
+
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this) closeDrawer()">
+  <div class="drawer">
+    <div class="drawer-hdr">
+      <h3 id="drawer-title"></h3>
+      <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div id="drawer-body"></div>
+  </div>
+</div>
+
+<script>
+const BADGE_REAL = "Real Recorded Run";
+const STEPS = [
+ {
+  "id": "setup",
+  "name": "Market Setup",
+  "data_tag": "real",
+  "stage": "market",
+  "source": "llm",
+  "data_tag_note": "Reused from the real Olive Oil 2B run (00_setup_approved.json).",
+  "agent": {
+   "name": "Setup Agent (LLM + web)",
+   "role": "Scope, countries, base year and units — identical to 2B."
+  },
+  "inputShort": "Market: Olive Oil",
+  "outputLabel": "14 countries",
+  "reason": "2C starts exactly like 2B.",
+  "output": [
+   "Spain",
+   "Italy",
+   "Greece",
+   "Portugal",
+   "Tunisia",
+   "Turkey",
+   "Morocco",
+   "Syria",
+   "Algeria",
+   "United States",
+   "France",
+   "Germany",
+   "Brazil",
+   "Japan"
+  ],
+  "activity": [
+   "Reusing approved 2B setup"
+  ]
+ },
+ {
+  "id": "usecases",
+  "name": "Use Cases (Applications)",
+  "data_tag": "real",
+  "stage": "usage",
+  "source": "llm",
+  "data_tag_note": "Reused from the real Olive Oil 2B run (01_taxonomy_approved.json).",
+  "agent": {
+   "name": "Taxonomy Agent (LLM) + Scope Validator",
+   "role": "Same use-case decomposition as 2B."
+  },
+  "inputShort": "Approved scope",
+  "outputLabel": "5 use cases",
+  "reason": "2C adds one more level BELOW each use case.",
+  "output": [
+   "Home Cooking and Table Use",
+   "Foodservice and Restaurant Operations",
+   "Processed Food Manufacturing",
+   "Infused and Flavored Olive Oil Production",
+   "Nutraceutical and Pharmaceutical Applications"
+  ],
+  "activity": [
+   "Reusing approved 2B use cases"
+  ]
+ },
+ {
+  "id": "products",
+  "name": "Product Types inside Each Use Case",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "product",
+  "source": "llm",
+  "agent": {
+   "name": "Product-Type Agent (LLM) — the one new node 2C needs",
+   "role": "Lists which product types are used inside each use case (same pattern as the India variant's extra 'Actual Use Case' level)."
+  },
+  "inputShort": "5 use cases",
+  "outputLabel": "5 × 4 product cells",
+  "reason": "Every (use case, product type) pair becomes its own line, sized in every country.",
+  "output": [
+   "Home Cooking and Table Use → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Foodservice and Restaurant Operations → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Processed Food Manufacturing → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Infused and Flavored Olive Oil Production → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Nutraceutical and Pharmaceutical Applications → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil"
+  ],
+  "activity": [
+   "Listing product types per use case",
+   "Checking each product belongs to the market",
+   "Human approval gate"
+  ]
+ },
+ {
+  "id": "mix",
+  "name": "Product Volume Mix per Country",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "quantity",
+  "source": "web",
+  "agent": {
+   "name": "Demand Quantification per Product",
+   "role": "Quantity of each product type inside each use case. Here: the use-case quantity × the product's share in that country (By Product Grade, evidence: web_evidence_backed)."
+  },
+  "inputShort": "Foodservice and Restaurant Operations · Italy",
+  "outputLabel": "Product quantities",
+  "reason": "In a live 2C run, each product's quantity would have its own driver and sources.",
+  "output": [
+   {
+    "l": "Extra Virgin Olive Oil",
+    "v": "55.0% of volume"
+   },
+   {
+    "l": "Virgin Olive Oil",
+    "v": "15.0% of volume"
+   },
+   {
+    "l": "Refined Olive Oil (including blends with virgin)",
+    "v": "22.0% of volume"
+   },
+   {
+    "l": "Olive-Pomace Oil",
+    "v": "8.0% of volume"
+   }
+  ],
+  "activity": [
+   "Splitting Foodservice and Restaurant Operations volume in Italy",
+   "Repeating for every use case and country"
+  ]
+ },
+ {
+  "id": "price",
+  "name": "Price per Product Type",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "price",
+  "source": "assumption",
+  "agent": {
+   "name": "Pricing Agent per Product",
+   "role": "A price per product type. Here: the use case's real 2B price × an illustrative grade ratio."
+  },
+  "inputShort": "Foodservice and Restaurant Operations average price",
+  "outputLabel": "Product prices",
+  "reason": "Product grades sell at very different prices — this is what 2C captures that 2B cannot.",
+  "output": [
+   {
+    "l": "Extra Virgin Olive Oil",
+    "v": "$8,450 per Tonnes (×1.30)"
+   },
+   {
+    "l": "Virgin Olive Oil",
+    "v": "$6,500 per Tonnes (×1.00)"
+   },
+   {
+    "l": "Refined Olive Oil (including blends with virgin)",
+    "v": "$6,500 per Tonnes (×1.00)"
+   },
+   {
+    "l": "Olive-Pomace Oil",
+    "v": "$3,250 per Tonnes (×0.50)"
+   }
+  ],
+  "activity": [
+   "Pricing each product grade",
+   "Labelled illustrative"
+  ]
+ },
+ {
+  "id": "calculation",
+  "name": "Calculation (Product Quantity × Product Price)",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "value",
+  "source": "code",
+  "agent": {
+   "name": "Deterministic Code",
+   "role": "value = quantity × price ÷ 1,000,000, for every country × use case × product cell."
+  },
+  "inputShort": "Extra Virgin Olive Oil · Foodservice and Restaurant Operations · Italy",
+  "outputLabel": "$1,626.6M",
+  "reason": "252 cells calculated this way.",
+  "flowCalc": {
+   "a": {
+    "value": "192,500",
+    "unit": "Tonnes of Extra Virgin Olive Oil",
+    "src": "derived"
+   },
+   "opLabel": "×",
+   "b": {
+    "value": "$8,450",
+    "unit": "per Tonnes",
+    "src": "assumption"
+   },
+   "result": {
+    "value": "$1,626.6M",
+    "src": "code"
+   },
+   "final": {
+    "big": "$1,626.6M",
+    "cap": "Italy · Foodservice and Restaurant Operations · Extra Virgin Olive Oil"
+   }
+  },
+  "activity": [
+   "252 product cells calculated"
+  ]
+ },
+ {
+  "id": "rollup_app",
+  "name": "Products → Use Case (per Country)",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "app",
+  "source": "code",
+  "agent": {
+   "name": "Deterministic Code",
+   "role": "Adds product types into their use case, per country."
+  },
+  "inputShort": "4 products",
+  "outputLabel": "Foodservice and Restaurant Operations, Italy: $2,559.4M",
+  "reason": "First bottom-up rollup level that 2B does not have.",
+  "aggregations": [
+   {
+    "title": "Products → Foodservice and Restaurant Operations (Italy)",
+    "rows": [
+     {
+      "label": "Extra Virgin Olive Oil",
+      "value": "$1,626.6M"
+     },
+     {
+      "label": "Virgin Olive Oil",
+      "value": "$341.2M"
+     },
+     {
+      "label": "Refined Olive Oil (including blends with virgin)",
+      "value": "$500.5M"
+     },
+     {
+      "label": "Olive-Pomace Oil",
+      "value": "$91.0M"
+     }
+    ],
+    "totalLabel": "Foodservice and Restaurant Operations",
+    "total": "$2,559.4M"
+   }
+  ],
+  "activity": [
+   "Summing products per use case"
+  ]
+ },
+ {
+  "id": "rollup_country",
+  "name": "Use Cases → Country → Region → Global",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "global",
+  "source": "code",
+  "agent": {
+   "name": "Deterministic Code",
+   "role": "Use cases into country, countries into region, regions into global."
+  },
+  "inputShort": "14 countries",
+  "outputLabel": "$10.42 Bn",
+  "reason": "Same rollup as 2B, one level deeper underneath.",
+  "aggregations": [
+   {
+    "title": "Use Case A + Use Case B + … → Global",
+    "rows": [
+     {
+      "label": "Home Cooking and Table Use",
+      "value": "$395.1M"
+     },
+     {
+      "label": "Foodservice and Restaurant Operations",
+      "value": "$6,667.9M"
+     },
+     {
+      "label": "Processed Food Manufacturing",
+      "value": "$2,942.3M"
+     },
+     {
+      "label": "Infused and Flavored Olive Oil Production",
+      "value": "$344.7M"
+     },
+     {
+      "label": "Nutraceutical and Pharmaceutical Applications",
+      "value": "$65.3M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   },
+   {
+    "title": "Region A + Region B + … → Global",
+    "rows": [
+     {
+      "label": "North America",
+      "value": "$1,727.9M"
+     },
+     {
+      "label": "Latin America",
+      "value": "$172.3M"
+     },
+     {
+      "label": "Europe",
+      "value": "$7,559.1M"
+     },
+     {
+      "label": "Asia Pacific",
+      "value": "$216.6M"
+     },
+     {
+      "label": "Middle East & Africa",
+      "value": "$708.2M"
+     },
+     {
+      "label": "Rest of World",
+      "value": "$31.4M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   }
+  ],
+  "activity": [
+   "Summing use cases per country",
+   "Summing countries per region",
+   "Global total"
+  ]
+ },
+ {
+  "id": "final_market_size",
+  "name": "Final Market Size",
+  "data_tag": "illustrative",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "stage": "final",
+  "source": "code",
+  "agent": {
+   "name": "Deterministic Code",
+   "role": "Product Type AND Application are both bottom-up tables; any remaining segment (e.g. channel) would be split top-down."
+  },
+  "inputShort": "252 cells",
+  "outputLabel": "$10.42 Bn",
+  "reason": "Both Product Type and Application tables come from the build-up, not from shares.",
+  "big": {
+   "value": "$10.42 Bn",
+   "unit": "illustrative global total"
+  },
+  "aggregations": [
+   {
+    "title": "By Product Type (bottom-up) → Global",
+    "rows": [
+     {
+      "label": "Extra Virgin Olive Oil",
+      "value": "$6,548.5M"
+     },
+     {
+      "label": "Virgin Olive Oil",
+      "value": "$1,433.2M"
+     },
+     {
+      "label": "Refined Olive Oil (including blends with virgin)",
+      "value": "$2,080.9M"
+     },
+     {
+      "label": "Olive-Pomace Oil",
+      "value": "$352.8M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   },
+   {
+    "title": "By Application (bottom-up) → Global",
+    "rows": [
+     {
+      "label": "Home Cooking and Table Use",
+      "value": "$395.1M"
+     },
+     {
+      "label": "Foodservice and Restaurant Operations",
+      "value": "$6,667.9M"
+     },
+     {
+      "label": "Processed Food Manufacturing",
+      "value": "$2,942.3M"
+     },
+     {
+      "label": "Infused and Flavored Olive Oil Production",
+      "value": "$344.7M"
+     },
+     {
+      "label": "Nutraceutical and Pharmaceutical Applications",
+      "value": "$65.3M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   },
+   {
+    "title": "By Extraction Method (top-down) → Global",
+    "rows": [
+     {
+      "label": "Mechanical Extraction (Cold-Pressed / Cold-Extracted)",
+      "value": "$6,714.3M"
+     },
+     {
+      "label": "Mechanical Extraction (Hot-Pressed / Standard)",
+      "value": "$2,641.7M"
+     },
+     {
+      "label": "Chemical Extraction (Refining and Solvent Extraction)",
+      "value": "$1,059.3M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   },
+   {
+    "title": "By Distribution Channel (top-down) → Global",
+    "rows": [
+     {
+      "label": "Supermarkets and Hypermarkets",
+      "value": "$5,187.2M"
+     },
+     {
+      "label": "Specialty Food Stores and Gourmet Retailers",
+      "value": "$1,279.2M"
+     },
+     {
+      "label": "Online Retail",
+      "value": "$1,071.9M"
+     },
+     {
+      "label": "Foodservice and Institutional",
+      "value": "$1,805.1M"
+     },
+     {
+      "label": "Direct from Producer / Bulk Sales",
+      "value": "$1,072.1M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   },
+   {
+    "title": "By Packaging Format (top-down) → Global",
+    "rows": [
+     {
+      "label": "Glass Bottles and Jars",
+      "value": "$4,713.2M"
+     },
+     {
+      "label": "Plastic Bottles and Containers",
+      "value": "$1,916.0M"
+     },
+     {
+      "label": "Metal Cans and Tins",
+      "value": "$1,294.7M"
+     },
+     {
+      "label": "Bulk (Drums, IBCs, Flexitanks)",
+      "value": "$2,491.5M"
+     }
+    ],
+    "totalLabel": "Global",
+    "total": "$10,415.4M"
+   }
+  ],
+  "is_final": true,
+  "activity": [
+   "Building Product Type table",
+   "Building Application table",
+   "Top-down for remaining segments"
+  ]
+ }
+];
+const STAGES = [{"key": "market", "label": "Market"}, {"key": "usage", "label": "Use Cases"}, {"key": "product", "label": "Product Types"}, {"key": "quantity", "label": "Product Qty"}, {"key": "price", "label": "Product Price"}, {"key": "value", "label": "Cell Value"}, {"key": "app", "label": "→ Use Case"}, {"key": "global", "label": "→ Country → Global"}, {"key": "final", "label": "Final"}];
+const qualityFlags = [];
+const APPROACH_DESC = "Market → Countries → Use cases → Product types inside each use case → quantity × price per product → Use case → Country → Region → Global.";
+
+/* =========================================================================
+   RENDER ENGINE
+   ========================================================================= */
+let approach = "usage";
+let index = 0;
+
+function steps() { return STEPS; }
+function stages() { return STAGES; }
+
+function setApproach(a) {
+  approach = a; index = 0;
+  document.getElementById("approach-desc").textContent = APPROACH_DESC;
+  renderRail(); renderJourney(); renderPanel();
+}
+
+function renderRail() {
+  const s = steps();
+  const rail = document.getElementById("rail");
+  rail.innerHTML = "";
+  s.forEach((step, i) => {
+    const node = document.createElement("div");
+    node.className = "rail-node" + (i === index ? " current" : i < index ? " visited" : "");
+    node.onclick = () => { index = i; renderRail(); renderJourney(); renderPanel(); };
+    node.innerHTML = '<div class="rail-circle">'+(i+1)+'</div><div class="rail-label">'+step.name+'</div>';
+    rail.appendChild(node);
+    if (i < s.length - 1) {
+      const line = document.createElement("div");
+      line.className = "rail-line" + (i < index ? " done" : "");
+      rail.appendChild(line);
+    }
+  });
+}
+
+function esc(s){ return (s===undefined||s===null) ? "" : String(s); }
+
+function bigText(st) {
+  if (st.flowCalc) return st.flowCalc.final.big;
+  if (st.big) return st.big.value;
+  if (st.aggregations) return st.aggregations[st.aggregations.length-1].total;
+  if (typeof st.output === "string") return st.output.length > 16 ? st.output.slice(0,16)+"…" : st.output;
+  if (Array.isArray(st.output)) {
+    if (!st.output.length) return "—";
+    const first = st.output[0];
+    if (typeof first === "object" && first !== null) return esc(first.v);
+    return st.output.length + (st.output.length===1?" item":" items");
+  }
+  return "—";
+}
+
+function renderJourney() {
+  const defs = stages();
+  const s = steps();
+  const values = {};
+  for (let i=0;i<=index;i++) { if (s[i].stage) values[s[i].stage] = bigText(s[i]); }
+  const el = document.getElementById("journey");
+  let html = "";
+  defs.forEach((d,i) => {
+    const filled = values[d.key] !== undefined;
+    const active = s[index].stage === d.key;
+    html += '<div class="j-node'+(filled?' filled':'')+(active?' active':'')+'"><div class="j-lbl">'+esc(d.label)+'</div><div class="j-val">'+esc(filled?values[d.key]:"—")+'</div></div>';
+    if (i < defs.length-1) html += '<div class="j-arrow">&#8594;</div>';
+  });
+  el.innerHTML = html;
+}
+
+function srcBadge(source) {
+  const map = {
+    llm:{icon:"🧠", label:"LLM", cls:"src-llm"},
+    web:{icon:"🌐", label:"Web Evidence", cls:"src-web"},
+    db:{icon:"🗄️", label:"Database", cls:"src-db"},
+    code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
+    derived:{icon:"📐", label:"Derived", cls:"src-derived"},
+    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    human:{icon:"👤", label:"Human", cls:"src-human"},
+  };
+  const m = map[source] || map.code;
+  return '<span class="src-badge '+m.cls+'">'+m.icon+' '+m.label+'</span>';
+}
+
+function renderPanel() {
+  const step = steps()[index];
+  const panel = document.getElementById("panel");
+
+  let left = '<div class="step-title-row"><div class="step-title">'+esc(step.name)+'</div>';
+  left += '<span class="badge '+(step.data_tag==="real"?"real":"illustrative")+'">'+(step.data_tag==="real"?(typeof BADGE_REAL!=="undefined"?BADGE_REAL:"Real Recorded Run"):"Illustrative")+'</span></div>';
+  if (step.data_tag_note) left += '<p class="tiny-note">'+esc(step.data_tag_note)+'</p>';
+
+  left += '<div class="meta-row">';
+  if (step.agent) left += '<span class="pill agent'+(step.source==="code"?" code":"")+'" title="'+esc(step.agent.role)+'"><span class="k">Agent</span>'+esc(step.agent.name)+'</span>';
+  if (step.inputShort) left += '<span class="pill"><span class="k">In</span>'+esc(step.inputShort)+'</span>';
+  if (step.outputLabel) left += '<span class="pill"><span class="k">Out</span>'+esc(step.outputLabel)+'</span>';
+  left += srcBadge(step.source);
+  left += '</div>';
+
+  if (step.carried_input) left += '<div class="callout in"><div class="lbl">&#8615; From previous step</div>'+esc(step.carried_input)+'</div>';
+
+  // HERO visual — flowCalc > aggregations > big > chips/box
+  if (step.flowCalc) {
+    const fc = step.flowCalc;
+    left += '<div class="calc-flow">'
+      + '<div class="cf-box"><div class="cf-num">'+esc(fc.a.value)+'</div><div class="cf-unit">'+esc(fc.a.unit)+'</div>'+srcBadge(fc.a.src)+'</div>'
+      + '<div class="cf-op">'+esc(fc.opLabel)+'</div>'
+      + '<div class="cf-box"><div class="cf-num">'+esc(fc.b.value)+'</div><div class="cf-unit">'+esc(fc.b.unit)+'</div>'+srcBadge(fc.b.src)+'</div>'
+      + '<div class="cf-op">=</div>'
+      + '<div class="cf-result"><div class="cf-num">'+esc(fc.result.value)+'</div>'+srcBadge(fc.result.src)+'</div>'
+      + '</div>'
+      + '<div class="cf-final"><div class="big">'+esc(fc.final.big)+'</div><div class="cap">'+esc(fc.final.cap)+'</div></div>';
+  } else if (step.aggregations) {
+    step.aggregations.forEach(a => left += aggBlock(a));
+  } else if (step.big) {
+    const traceable = !!(step.calculation || step.carried_input || step.feeds_into);
+    left += '<div class="hero-card'+(traceable?' clickable':'')+'"'+(traceable?' onclick="onTraceNumber(\''+step.id+'\')"':'')+'>'
+      + '<div class="hero-num">'+esc(step.big.value)+'</div><div class="hero-unit">'+esc(step.big.unit||"")+'</div>'
+      + '<div class="hero-src">'+srcBadge(step.source)+'</div>'
+      + (traceable?'<span class="trace-hint">Click to trace this number ↴</span>':'')
+      + '</div>';
+  } else if (step.bigText) {
+    left += '<div class="hero-card"><div style="font-size:13px;line-height:1.5;color:var(--text-dim)">'+esc(step.bigText)+'</div></div>';
+  } else if (step.output) {
+    left += Array.isArray(step.output)
+      ? '<div class="hero-card"><div class="chips">'+step.output.map((o,i)=>
+          (typeof o === "object" && o !== null)
+            ? '<div class="chip-lv" style="animation-delay:'+(i*.06)+'s"><div class="l">'+esc(o.l)+'</div><div class="v">'+esc(o.v)+'</div></div>'
+            : '<span class="chip-out" style="animation-delay:'+(i*.06)+'s">'+esc(o)+'</span>'
+        ).join("")+'</div></div>'
+      : '<div class="hero-card"><div class="hero-num" style="font-size:24px">'+esc(step.output)+'</div></div>';
+  }
+
+  if (step.feeds_into) left += '<div class="callout out" onclick="onTraceNumber(\''+step.id+'\')"><div class="lbl">&#8615; Passed to next step</div>'+esc(step.feeds_into)+'</div>';
+
+  if (step.human_decision) {
+    left += '<div class="human-pill" onclick="openHumanDrawer('+index+')">👤 Human decision — not automated. Click to read.</div>';
+  }
+
+  // Collapsed evidence
+  const hasEv = step.llm_call || (step.search_queries&&step.search_queries.length) || (step.sources&&step.sources.length) || step.conversion || step.calculation || (step.validation&&step.validation.length);
+  if (hasEv) {
+    left += '<details class="evidence-toggle"><summary>Source Evidence &amp; Detail</summary>';
+    if (step.llm_call) left += evBtn("🧠", "LLM Call — "+step.llm_call.purpose, "llm", index);
+    (step.search_queries||[]).forEach((sq,i) => left += evBtn("🌐", 'Search: "'+sq.query.slice(0,44)+(sq.query.length>44?"…":"")+'"', "search", index, i));
+    (step.sources||[]).forEach((s,i) => left += evBtn("📄", "Source — "+s.name, "source", index, i));
+    if (step.conversion) left += evBtn("↔️", "Unit / price-basis conversion", "conversion", index);
+    if (step.calculation) left += evBtn("∑", "Calculation", "calculation", index);
+    if (step.validation && step.validation.length) left += evBtn("✅", "Validation checklist ("+step.validation.length+")", "validation", index);
+    left += '</details>';
+  }
+
+  if (step.researcher_note) {
+    const pos = !!step.researcher_note.positive;
+    left += '<div class="researcher-flag'+(pos?' positive':'')+'" onclick="alert('+JSON.stringify(step.researcher_note.note).replace(/"/g,"&quot;")+')">'
+      + (pos ? '&#10003; Fix confirmed — click to read' : '&#9888; Needs attention — click to read')
+      + '</div>';
+  }
+
+  // RIGHT: Agent Activity mini panel (or Quality Flags on review step)
+  let right = "";
+  if (step.is_review) {
+    right += '<div class="activity-hdr">'+qualityFlags.length+' Quality Flags — click to jump</div>';
+    qualityFlags.forEach(f => right += '<div class="qf '+f.severity+'" onclick="jumpTo(\''+f.step+'\')"><span class="qf-sev">'+f.severity+'</span>'+esc(f.message)+'</div>');
+  } else {
+    right += '<div class="activity-hdr">Agent Activity</div><div class="activity-list">';
+    (step.activity||[]).forEach(a => right += '<div class="activity-item"><span class="ck">✓</span>'+esc(a)+'</div>');
+    right += '</div>';
+  }
+
+  panel.innerHTML = '<div>'+left+'</div><div>'+right+'</div>';
+
+  if (step.is_final) {
+    panel.innerHTML = '<div style="grid-column:1/-1">'
+      + '<div class="final-hero"><div class="lbl">Final Market Size</div><div class="num">'+esc(bigText(step))+'</div>'
+      + provSummary() + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+      + '<div>'+left+'</div><div>'+right+'</div>'
+      + '</div>'
+      + '<div class="trace-chain" id="trace-chain"></div>'
+      + '</div>';
+    renderTrace();
+  }
+
+  updateFooter();
+}
+
+function provSummary() {
+  const s = steps();
+  const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
+  s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  let html = '<div class="prov-summary">';
+  Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
+  html += '</div>';
+  return html;
+}
+
+function evBtn(icon, label, kind, stepIdx, i) {
+  return '<div class="ev-btn" onclick="event.stopPropagation();openDrawer(\''+kind+'\','+stepIdx+(i!==undefined?','+i:'')+')"><span>'+icon+'</span><span class="grow">'+esc(label)+'</span><span class="view">View</span></div>';
+}
+
+function aggBlock(agg) {
+  let rows = agg.rows.map((r,i)=>
+    (i>0?'<span class="agg-plus">+</span>':'')+
+    '<div class="agg-item" style="animation-delay:'+(i*.05)+'s"><div class="l">'+esc(r.label)+'</div><div class="v">'+esc(r.value)+'</div></div>'
+  ).join("");
+  return '<div class="agg-card"><div class="agg-title">'+esc(agg.title)+'</div><div class="agg-rows">'+rows+
+    '<span class="agg-eq">=</span><div class="agg-total"><div class="l">'+esc(agg.totalLabel)+'</div><div class="v">'+esc(agg.total)+'</div></div></div></div>';
+}
+
+function renderTrace() {
+  const s = steps();
+  const el = document.getElementById("trace-chain");
+  if (!el) return;
+  let html = '<div style="text-align:center;font-size:11px;color:var(--text-dimmer);margin:16px 0 10px;text-transform:uppercase;letter-spacing:.05em">How did we reach this number? Click any step.</div>';
+  html += '<div class="trace-chain-inner" style="display:flex;flex-direction:column;gap:6px">';
+  s.forEach((st,i) => {
+    html += '<div class="trace-node" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border:1px solid var(--border2);border-radius:10px;background:var(--panel2);cursor:pointer;font-size:12.5px" onclick="jumpTo(\''+st.id+'\')"><span style="width:20px;height:20px;border-radius:999px;background:rgba(99,102,241,.2);color:#c7d2fe;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span>'+esc(st.name)+'</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function onTraceNumber(stepId) { jumpTo(stepId); }
+
+function jumpTo(stepId) {
+  const s = steps();
+  const i = s.findIndex(x => x.id === stepId);
+  if (i >= 0) { index = i; renderRail(); renderJourney(); renderPanel(); closeDrawer(); window.scrollTo({top:0, behavior:"smooth"}); }
+}
+
+function go(dir) {
+  const s = steps();
+  index = Math.max(0, Math.min(s.length-1, index+dir));
+  renderRail(); renderJourney(); renderPanel();
+}
+
+function updateFooter() {
+  const s = steps();
+  document.getElementById("btn-prev").disabled = index === 0;
+  document.getElementById("btn-next").disabled = index === s.length-1;
+  document.getElementById("btn-next").textContent = index === s.length-1 ? "Final step" : "Next →";
+  document.getElementById("progress-fill").style.width = ((index+1)/s.length*100)+"%";
+  document.getElementById("progress-text").textContent = "Step "+(index+1)+" of "+s.length+" — "+s[index].name;
+}
+
+/* ---------- Drawer ---------- */
+function openDrawer(kind, stepIdx, subIdx) {
+  const step = steps()[stepIdx];
+  const overlay = document.getElementById("overlay");
+  const title = document.getElementById("drawer-title");
+  const body = document.getElementById("drawer-body");
+  let html = "";
+  if (kind === "llm") {
+    const c = step.llm_call;
+    title.textContent = "LLM Call";
+    html += kv("Purpose", c.purpose);
+    html += kv("Model", c.model);
+    html += kv("Prompt (summary)", c.promptSummary);
+    html += kv("Response (summary)", c.responseSummary);
+    if (c.responseFull) html += kv("Response (full)", c.responseFull, true);
+    html += '<p style="font-size:11px;color:var(--text-dimmer);margin-top:10px">Source: <b style="color:#a5b4fc">🧠 LLM-generated</b> — this text came from a model call, not deterministic code.</p>';
+  } else if (kind === "search") {
+    const sq = step.search_queries[subIdx];
+    title.textContent = "Search Query & Sources";
+    html += kv("Query", sq.query);
+    html += kv("Purpose", sq.purpose);
+    sq.results.forEach(r => { html += sourceCard(r); });
+  } else if (kind === "source") {
+    title.textContent = "Source";
+    html += sourceCard(step.sources[subIdx]);
+  } else if (kind === "conversion") {
+    const c = step.conversion;
+    title.textContent = "Unit / Price-Basis Conversion";
+    html += '<div class="calc-formula">'+esc(c.fromValue)+' '+esc(c.fromUnit)+' × '+esc(c.factor)+' ('+esc(c.factorLabel)+') = '+esc(c.toValue)+' '+esc(c.toUnit)+'</div>';
+    html += kv("Formula", c.formula);
+    html += '<p style="font-size:11px;color:var(--text-dimmer);margin-top:10px">Calculated by: <b style="color:#cbd5e1">⚙️ Deterministic code</b> — the factor may be an LLM assumption, but applying it is pure arithmetic.</p>';
+  } else if (kind === "calculation") {
+    const c = step.calculation;
+    title.textContent = "Calculation";
+    c.inputs.forEach(inp => html += kv(inp.label, inp.value));
+    html += '<div class="calc-formula">'+esc(c.formula)+'</div>';
+    html += kv("Output", c.output);
+    html += '<p style="font-size:11px;color:var(--text-dimmer);margin-top:10px">Calculated by: <b style="color:#cbd5e1">⚙️ Deterministic Python code</b> — the LLM/evidence provided the inputs; this math is not AI-generated.</p>';
+  } else if (kind === "validation") {
+    title.textContent = "Validation Checklist";
+    step.validation.forEach(v => {
+      html += '<div class="valid-row"><span>'+(v.passed?'✅':'❌')+'</span><div><b>'+esc(v.label)+'</b><br><span style="color:var(--text-dim)">'+esc(v.detail)+'</span></div></div>';
+    });
+  }
+  body.innerHTML = html;
+  overlay.classList.add("open");
+}
+function openHumanDrawer(stepIdx) {
+  const step = steps()[stepIdx];
+  const overlay = document.getElementById("overlay");
+  document.getElementById("drawer-title").textContent = "Human Decision — Not Automated";
+  document.getElementById("drawer-body").innerHTML =
+    '<div class="kv"><div class="k">Summary</div><div class="v human-full">'+esc(step.human_decision.summary)+'</div></div>'
+    + '<div class="kv"><div class="k">Full recorded justification</div><div class="v human-full">'+esc(step.human_decision.justification)+'</div></div>';
+  overlay.classList.add("open");
+}
+function kv(k, v, code) { return '<div class="kv"><div class="k">'+esc(k)+'</div><div class="v'+(code?' code':'')+'">'+esc(v)+'</div></div>'; }
+function sourceCard(r) {
+  const dec = r.decision || "accepted";
+  let html = '<div class="src-card '+dec+'"><span class="src-verdict '+dec+'">'+dec+'</span><div style="font-weight:700;margin:5px 0 3px">'+esc(r.name)+'</div>';
+  if (r.url) html += '<div style="font-size:11px;color:var(--sky);word-break:break-all">'+esc(r.url)+'</div>';
+  html += '<div style="font-size:12px;color:var(--text-dim);margin:6px 0">'+esc(r.excerpt)+'</div>';
+  if (r.extractedValue) html += '<div class="checks"><span class="check pass">Value: '+esc(r.extractedValue)+' '+esc(r.unit||"")+'</span></div>';
+  if (r.geography || r.year) html += '<div style="font-size:11px;color:var(--text-dimmer);margin-top:4px">'+esc(r.geography||"")+' '+(r.year?"· "+r.year:"")+'</div>';
+  if (r.rejectionReason) html += '<div style="font-size:11px;color:var(--rose);margin-top:6px">Rejected: '+esc(r.rejectionReason)+'</div>';
+  html += '</div>';
+  return html;
+}
+function closeDrawer() { document.getElementById("overlay").classList.remove("open"); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+
+/* ---------- boot ---------- */
+setApproach("usage"); if (location.hash) { const n = parseInt(location.hash.slice(1)); if (n) { index = n - 1; renderRail(); renderJourney(); renderPanel(); } }
+</script>
+</body>
+</html>

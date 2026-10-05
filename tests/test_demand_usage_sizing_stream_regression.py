@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents, graph as graph_mod, magnitude, magnitude_validation, triangulation
+from me_engine.demandUseCaseCountry_approach2B import agents, graph as graph_mod, magnitude, magnitude_validation, triangulation
 from me_engine.generation.config import GenConfig
 
 
@@ -127,7 +127,7 @@ def test_run_sizing_phase_marks_progress_completed_and_releases_no_lock_itself(m
     """`run_sizing_phase` itself only owns the progress recorder, not the
     lock (lock ownership is the CLI's/backend's job) -- confirms the
     progress file reaches status='completed' with the real final phase."""
-    from me_engine.demand_usage.progress import progress_path
+    from me_engine.demandUseCaseCountry_approach2B.progress import progress_path
     import json
 
     _patch_all_nodes(monkeypatch)
@@ -149,7 +149,7 @@ def test_run_sizing_phase_raises_and_marks_failed_when_validation_node_produces_
 
     import pytest
 
-    from me_engine.demand_usage.progress import progress_path
+    from me_engine.demandUseCaseCountry_approach2B.progress import progress_path
 
     _patch_all_nodes(monkeypatch, validation_output={})  # simulates the bug's symptom directly
     monkeypatch.setattr(graph_mod, "GenLLM", lambda config, cache_path=None: _StubLLM())

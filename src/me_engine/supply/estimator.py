@@ -43,7 +43,12 @@ _GROUNDED_SYSTEM_TMPL = (
     "country to 0. "
     "\n\nBreak the result down by country for exactly these countries: {countries}. It is fine (and "
     "expected) for revenue to be 0 or near-0 in countries where the company has negligible presence. "
-    "Respond ONLY with a JSON object: {{\"country_revenue_usd_mn\": {{\"<country>\": <number>, ...}}, "
+    "\n\nAlso state the market slice explicitly: \"market_fraction\" = the fraction (0-1) of the "
+    "company's TOTAL revenue attributable to '{market}', and \"market_revenue_usd_mn\" = the company's "
+    "revenue in this market summed over the listed countries, in USD millions. Your country figures "
+    "MUST add up to market_revenue_usd_mn (they will be rescaled to it). "
+    "Respond ONLY with a JSON object: {{\"market_fraction\": <0-1 number>, \"market_revenue_usd_mn\": "
+    "<number>, \"country_revenue_usd_mn\": {{\"<country>\": <number>, ...}}, "
     "\"no_real_data\": <true|false>, \"reasoning\": \"<one or two sentences>\"}}"
 )
 
@@ -66,23 +71,49 @@ class CountryBreakdown:
     company_shares: dict[str, float]  # company name -> share of this country's total (0-1)
 
 
-def _ground_company(market_name: str, company: Company, enable_web: bool) -> tuple[str, str, float | None]:
-    """Fetch real data for a company. Returns (grounding_text_for_the_LLM, source_tag, cap)
-    where source_tag is one of "financial_api", "web_evidence", "no_real_data", and `cap`
-    is the company's real total revenue when known (for enforcing in code, not just by
-    asking the LLM nicely, that its derived figure never exceeds the real number)."""
+# Coverage below this would gross named suppliers up >3.3x -- recorded runs used
+# the old 0.05 floor (up to 20x gross-up) and inflated Disposable Medical Gloves
+# to ~4x the published size. A list that really covers <30% of a market isn't a
+# usable supply-side basis anyway; quality.py flags any gross-up above 2x.
+COVERAGE_FLOOR = 0.30
+COVERAGE_CEILING = 0.95
+
+
+def _fmt_segment(seg: dict, currency: str) -> str:
+    usd = seg.get("value_usd_mn")
+    return f"{seg['label']}: {seg['value']:,.0f} {currency}" + (f" (= USD {usd:,.1f} Mn)" if usd is not None else "")
+
+
+def _ground_company(
+    market_name: str, company: Company, enable_web: bool
+) -> tuple[str, str, float | None, list[str]]:
+    """Fetch real data for a company. Returns (grounding_text_for_the_LLM, source_tag, cap, notes)
+    where source_tag is one of "financial_api", "web_evidence", "no_real_data", `cap` is the
+    company's real total revenue in USD Mn when known (for enforcing in code, not just by
+    asking the LLM nicely, that its derived figure never exceeds the real number), and `notes`
+    are quality-note codes (e.g. "fx_unknown:XYZ" when the reporting currency couldn't be
+    converted to USD, so no cap was applied)."""
     financials = fetch_company_revenue(company.name)
     if financials is not None:
+        notes: list[str] = []
+        cur = financials.currency or "(currency not reported)"
+        cap_mn = financials.total_revenue_usd_mn
+        usd_part = (
+            f" = USD {cap_mn:,.1f} Mn (converted at {financials.usd_rate:.6g} USD per {cur})"
+            if cap_mn is not None else
+            " (USD conversion unavailable for this currency -- convert it yourself)"
+        )
         text = (
             f"VERIFIED FINANCIAL DATA (source: Yahoo Finance, ticker {financials.ticker}): "
             f"{financials.matched_name} total annual revenue = "
-            f"{financials.total_revenue:,.0f} {financials.currency or ''} "
+            f"{financials.total_revenue:,.0f} {cur} (raw units, not millions){usd_part} "
             f"(sector: {financials.sector}, industry: {financials.industry}). "
-            "This is the company's TOTAL revenue across all markets/products, not just this one."
+            "This is the company's TOTAL revenue across all markets/products, not just this one. "
+            "All your output figures must be in USD millions."
         )
         if financials.region_segments:
             rows = "; ".join(
-                f"{s['label']}: {s['value']:,.0f}" for s in financials.region_segments.get("segments", [])
+                _fmt_segment(s, cur) for s in financials.region_segments.get("segments", [])
             )
             text += (
                 f"\n\nVERIFIED REAL revenue BY REGION (source: InsightSentry, FY "
@@ -92,7 +123,7 @@ def _ground_company(market_name: str, company: Company, enable_web: bool) -> tup
             )
         if financials.business_segments:
             rows = "; ".join(
-                f"{s['label']}: {s['value']:,.0f}" for s in financials.business_segments.get("segments", [])
+                _fmt_segment(s, cur) for s in financials.business_segments.get("segments", [])
             )
             text += (
                 f"\n\nVERIFIED REAL revenue BY PRODUCT/BUSINESS LINE (source: InsightSentry, FY "
@@ -100,13 +131,13 @@ def _ground_company(market_name: str, company: Company, enable_web: bool) -> tup
                 f"business line(s) actually correspond to the market '{market_name}', instead of "
                 "guessing what fraction of the company is in this market."
             )
-        # Company_revenue is in USD Mn (per the prompt below); yfinance's totalRevenue
-        # is a raw amount, so convert to the same "millions" scale before using it as
-        # a cap. No currency conversion yet -- treated as a same-order-of-magnitude cap,
-        # fine for EUR/GBP/USD; not precise for currencies like JPY/INR with a very
-        # different numeric scale. Flagging rather than silently overclaiming precision.
-        cap_mn = financials.total_revenue / 1_000_000
-        return text, "financial_api", cap_mn
+        # The cap is in USD Mn, like the LLM's output; yfinance's totalRevenue is a raw
+        # amount in the company's reporting currency, converted by financials.py.
+        # Unknown currency -> no cap at all (a wrong-currency cap is worse than none:
+        # MYR 2,188 Mn read as USD 2,188 Mn let Hartalega's estimate run ~4.5x high).
+        if cap_mn is None:
+            notes.append(f"fx_unknown:{financials.currency or 'none'}")
+        return text, "financial_api", cap_mn, notes
 
     if enable_web:
         snippets = web_search.gather(
@@ -115,26 +146,78 @@ def _ground_company(market_name: str, company: Company, enable_web: bool) -> tup
         )
         if snippets:
             text = "REAL WEB-SEARCH EVIDENCE:\n" + "\n".join(f"- {s}" for s in snippets)
-            return text, "web_evidence", None
+            return text, "web_evidence", None, []
 
-    return "NO REAL DATA was found for this company from any source.", "no_real_data", None
+    return "NO REAL DATA was found for this company from any source.", "no_real_data", None, []
+
+
+def _float_or_none(value) -> float | None:
+    try:
+        return float(value) if value is not None and value != "" else None
+    except (TypeError, ValueError):
+        return None
+
+
+def reconcile_market_slice(
+    revenue: dict[str, float], data: dict, cap: float | None
+) -> tuple[dict[str, float], list[str]]:
+    """Make the per-country figures agree with the LLM's own stated market slice.
+
+    Real failure: the LLM reasoned "~2% of revenue ~= $600M" and then output
+    country figures summing to $6,450M. So the stated `market_revenue_usd_mn`
+    is the anchor -- clamped to `market_fraction x total revenue` (and to the
+    total itself) when the real USD total is known -- and the country split is
+    rescaled to sum to it. Missing fields fall back to the old behaviour (raw
+    country figures, still capped at the real total) with a note."""
+    notes: list[str] = []
+    fraction = _float_or_none(data.get("market_fraction"))
+    if fraction is not None:
+        fraction = min(1.0, max(0.0, fraction))
+    stated = _float_or_none(data.get("market_revenue_usd_mn"))
+    market_rev = max(0.0, stated) if stated is not None else None
+    if fraction is None or stated is None:
+        notes.append("missing_market_slice")
+
+    if cap is not None:
+        bound = cap * fraction if fraction is not None else cap
+        if market_rev is None and fraction is not None:
+            market_rev = bound
+        elif market_rev is not None and market_rev > bound:
+            market_rev = bound
+            notes.append("market_revenue_clamped")
+
+    total = sum(revenue.values())
+    if market_rev is not None and total > 0 and abs(total - market_rev) > 1e-6:
+        scale = market_rev / total
+        revenue = {c: v * scale for c, v in revenue.items()}
+        notes.append("rescaled_to_market_revenue")
+
+    # Final hard guardrail, whatever the LLM said: never above the real total.
+    if cap is not None:
+        total = sum(revenue.values())
+        if total > cap:
+            scale = cap / total if total > 0 else 0.0
+            revenue = {c: v * scale for c, v in revenue.items()}
+    return revenue, notes
 
 
 def estimate_company_countries(
     llm: GenLLM, market_name: str, company: Company, countries: list[str], enable_web: bool
-) -> tuple[dict[str, float], str]:
-    """Returns (revenue_by_country, source_tag) -- source_tag tells you whether this
-    was grounded in real financial data, real web evidence, or neither.
+) -> tuple[dict[str, float], str, list[str]]:
+    """Returns (revenue_by_country, source_tag, notes) -- source_tag tells you whether
+    this was grounded in real financial data, real web evidence, or neither; notes are
+    quality-note codes for `quality.compute_company_quality_flags`.
 
-    Two guardrails enforced in CODE, not just by asking the LLM nicely:
+    Guardrails enforced in CODE, not just by asking the LLM nicely:
     - No real data at all -> the LLM is never called; zeros are returned directly.
-    - Real total revenue known -> the LLM's derived country-sum is clamped so it can
-      never exceed that real number, no matter what the LLM outputs.
+    - The country split is rescaled to the LLM's own stated market revenue, which is
+      clamped to market_fraction x the real USD total when that is known
+      (`reconcile_market_slice`) -- and never exceeds the real total, no matter what.
     """
-    grounding_text, source, cap = _ground_company(market_name, company, enable_web)
+    grounding_text, source, cap, notes = _ground_company(market_name, company, enable_web)
 
     if source == "no_real_data":
-        return {c: 0.0 for c in countries}, "no_real_data"
+        return {c: 0.0 for c in countries}, "no_real_data", notes
 
     facts_line = ", ".join(f"{k}: {v}" for k, v in company.facts.items()) or "none"
     system = _GROUNDED_SYSTEM_TMPL.format(market=market_name, countries=", ".join(countries))
@@ -143,18 +226,12 @@ def estimate_company_countries(
     )
     data = llm.complete_json(system, user)
     if data.get("no_real_data"):
-        return {c: 0.0 for c in countries}, "no_real_data"
+        return {c: 0.0 for c in countries}, "no_real_data", notes
 
     raw = data.get("country_revenue_usd_mn") or {}
-    revenue = {c: max(0.0, float(raw.get(c, 0.0) or 0.0)) for c in countries}
-
-    if cap is not None:
-        total = sum(revenue.values())
-        if total > cap:
-            scale = cap / total if total > 0 else 0.0
-            revenue = {c: v * scale for c, v in revenue.items()}
-
-    return revenue, source
+    revenue = {c: max(0.0, _float_or_none(raw.get(c)) or 0.0) for c in countries}
+    revenue, slice_notes = reconcile_market_slice(revenue, data, cap)
+    return revenue, source, notes + slice_notes
 
 
 def estimate_coverage_by_country(
@@ -165,4 +242,7 @@ def estimate_coverage_by_country(
     user = f"Market: {market_name}\nCountries and named-supplier combined revenue:\n{lines}"
     data = llm.complete_json(COVERAGE_SYSTEM, user)
     raw = data.get("coverage_fraction") or {}
-    return {c: min(0.95, max(0.05, float(raw.get(c, 0.6) or 0.6))) for c in countries}
+    return {
+        c: min(COVERAGE_CEILING, max(COVERAGE_FLOOR, _float_or_none(raw.get(c)) or 0.6))
+        for c in countries
+    }

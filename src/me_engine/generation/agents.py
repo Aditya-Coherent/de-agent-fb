@@ -83,6 +83,77 @@ def _extract_cited_value_mn(cited_text: str) -> float | None:
     return number * _UNIT_TO_MN[m.group(2).lower()]
 
 
+_CAGR_RE = re.compile(r"CAGR[^0-9%]{0,40}?(\d{1,2}(?:\.\d+)?)\s*%|(\d{1,2}(?:\.\d+)?)\s*%\s*CAGR", re.IGNORECASE)
+_VALUE_YEAR_RE = re.compile(
+    r"(?:USD|US\$|\$)\s*([\d,]+(?:\.\d+)?)\s*(trillion|billion|million|bn|mn)\b[^.;]{0,25}?\b(?:in|by)\s+(20\d\d)",
+    re.IGNORECASE,
+)
+
+
+def _extract_cited_value_for_year(cited_text: str, year: int) -> float | None:
+    """US$ Mn value the citation states for `year` ('USD 13.61 billion in 2026')."""
+    for v, unit, y in _VALUE_YEAR_RE.findall(cited_text or ""):
+        if int(y) == year:
+            return float(v.replace(",", "")) * _UNIT_TO_MN[unit.lower()]
+    return None
+
+
+def _extract_cited_cagr(cited_text: str) -> float | None:
+    """The growth rate a cited figure states: an explicit 'CAGR of X%', or the
+    rate implied by two dated values ('$26.5 billion in 2026 to $40.7 billion
+    in 2033'). None when neither is present."""
+    if not cited_text:
+        return None
+    m = _CAGR_RE.search(cited_text)
+    if m:
+        rate = float(m.group(1) or m.group(2)) / 100
+        return rate if 0 < rate < 0.6 else None
+    points = []
+    for v, unit, year in _VALUE_YEAR_RE.findall(cited_text):
+        points.append((int(year), float(v.replace(",", "")) * _UNIT_TO_MN[unit.lower()]))
+    points = sorted(set(points))
+    # The last two dated values span the forecast window ("from $26.5B in 2026
+    # to $40.7B in 2033"); an earlier actual-year value is not part of it.
+    if len(points) >= 2 and points[-1][0] > points[-2][0] and points[-2][1] > 0:
+        (y0, v0), (y1, v1) = points[-2], points[-1]
+        rate = (v1 / v0) ** (1 / (y1 - y0)) - 1
+        return rate if 0 < rate < 0.6 else None
+    return None
+
+
+def _evidence_values_mn(state: dict[str, Any]) -> list[float]:
+    """Every market-size figure ("USD 15.2 billion", "$900 million", ...) stated
+    anywhere in the DB narrative or web snippets, in US$ Mn."""
+    text = _evidence_brief(state)
+    values = []
+    for m in _CITED_VALUE_RE.finditer(text):
+        try:
+            values.append(float(m.group(1).replace(",", "")) * _UNIT_TO_MN[m.group(2).lower()])
+        except ValueError:
+            continue
+    return [v for v in values if v > 0]
+
+
+def _fix_unit_scale(anchor_mn: float, evidence_mn: list[float]) -> tuple[float, str]:
+    """Catch a billions-vs-millions slip even when the LLM cited nothing.
+
+    Compares the LLM's number with the median of every figure in the
+    evidence. Only a gap of roughly 1000x (300x-3000x) is treated as a unit
+    slip and rescaled; any smaller disagreement is a real estimation
+    difference and is left alone.
+    """
+    if not evidence_mn or anchor_mn <= 0:
+        return anchor_mn, ""
+    ordered = sorted(evidence_mn)
+    median = ordered[len(ordered) // 2]
+    ratio = median / anchor_mn
+    if 300 <= ratio <= 3000:
+        return anchor_mn * 1000, f" [rescaled from ${anchor_mn:,.1f}M -- value was in billions; evidence median ${median:,.0f}M]"
+    if 1 / 3000 <= ratio <= 1 / 300:
+        return anchor_mn / 1000, f" [rescaled from ${anchor_mn:,.0f}M -- value was 1000x too large; evidence median ${median:,.0f}M]"
+    return anchor_mn, ""
+
+
 # --------------------------------------------------------------------------- #
 # nodes
 # --------------------------------------------------------------------------- #
@@ -125,7 +196,7 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
     dim_snippets: dict[str, list[str]] = {}
     if cfg.enable_web:
         queries = [
-            f"{sk.market_name} size 2026 2033 CAGR forecast",
+            f"{sk.market_name} size 2025 2033 CAGR forecast",
             f"{sk.market_name} regional share North America Europe Asia Pacific",
             f"{sk.market_name} market segmentation components pricing",
         ]
@@ -165,7 +236,7 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
         "You are a market-sizing analyst. Real-data-grounded rule: first check whether the "
         "evidence below contains an EXPLICITLY CITED market-size and/or CAGR figure (a specific "
         "number attributed to a real source — a report, an article, a forecast — not a vague "
-        "mention). If it does, your global_value_2026 and global_cagr MUST be derived from and "
+        "mention). If it does, your global_value_2025 and global_cagr MUST be derived from and "
         "consistent with that real cited figure (adjusting for year/scope differences with "
         "reasoning is fine; inventing a disconnected number is not). Set \"grounded\": true and "
         "name the cited figure in your reasoning. If NO explicitly cited figure exists anywhere "
@@ -178,10 +249,10 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
     )
     refine = ""
     critique = state.get("market_critique", "")
-    prior_anchor = state.get("global_anchor_2026")
+    prior_anchor = state.get("global_anchor_2025")
     if critique and prior_anchor is not None:
         refine = (
-            f"\nPREVIOUS ATTEMPT: global_value_2026={prior_anchor}, "
+            f"\nPREVIOUS ATTEMPT: global_value_2025={prior_anchor}, "
             f"global_cagr={state.get('global_cagr')}, regions={json.dumps(state.get('regional', {}), ensure_ascii=False)}\n"
             f"REVIEWER CRITIQUE: {critique}\n"
             "Apply the critique concretely — adjust the named number(s) in the stated "
@@ -189,7 +260,8 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
         )
     user = (
         f"Market: {sk.market_name}\nRegions: {regions}\n\n{_evidence_brief(state)}{refine}\n\n"
-        'Return JSON: {"global_value_2026": number, "global_cagr": number, "grounded": <true|false>, '
+        "global_value_2025 is in US$ MILLIONS (e.g. USD 15.2 billion -> 15200; USD 850 million -> 850).\n"
+        'Return JSON: {"global_value_2025": number, "global_cagr": number, "grounded": <true|false>, '
         '"cited_figure": "<the real figure you grounded on, or empty string if none>", '
         '"regions": {"<region>": {"value_share": number, "cagr": number}}}'
     )
@@ -201,7 +273,7 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
     for r in regions:
         cagr = float(regional_raw.get(r, {}).get("cagr", data.get("global_cagr", 0.1)) or 0.1)
         regional[r] = {"value_share": shares[r], "cagr": round(min(0.45, max(0.01, cagr)), 4)}
-    global_anchor = float(data.get("global_value_2026", 0.0) or 0.0) or 1000.0
+    global_anchor = float(data.get("global_value_2025", 0.0) or 0.0) or 1000.0
     global_cagr = round(min(0.45, max(0.01, float(data.get("global_cagr", 0.1) or 0.1))), 4)
     grounded = bool(data.get("grounded"))
     cited = str(data.get("cited_figure") or "").strip()
@@ -218,13 +290,39 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
         if cited_value_mn and cited_value_mn > 0 and not (0.5 * cited_value_mn <= global_anchor <= 2.0 * cited_value_mn):
             correction_note = f" [corrected from ${global_anchor:,.0f}M -- unit mismatch vs cited figure]"
             global_anchor = cited_value_mn
+    if not correction_note:
+        global_anchor, correction_note = _fix_unit_scale(global_anchor, _evidence_values_mn(state))
 
-    note = f"grounded on: {cited}{correction_note}" if grounded and cited else "no cited figure found — ungrounded estimate"
+    # A grounded run must keep the cited growth rate: the reviewer critique
+    # loop otherwise drifts it (seen: cited 6.3% ended at 4.8%).
+    if grounded:
+        cited_cagr = _extract_cited_cagr(cited)
+        if cited_cagr is not None and abs(global_cagr - cited_cagr) > 0.005:
+            correction_note += f" [CAGR {global_cagr:.1%} reset to cited {cited_cagr:.1%}]"
+            global_cagr = round(cited_cagr, 4)
+
+    # Same drift for the value itself (seen: cited "USD 13.61 billion in 2026"
+    # ended at $19,000M). The anchor year is 2025 (the ME pipeline reads it as
+    # the 2025 value): use a cited 2025 figure, else a cited 2026 figure taken
+    # back one year at the CAGR.
+    if grounded and "unit mismatch" not in correction_note:
+        cited_2025 = _extract_cited_value_for_year(cited, 2025)
+        cited_2026 = _extract_cited_value_for_year(cited, 2026)
+        target, why = None, ""
+        if cited_2025:
+            target, why = cited_2025, "cited 2025 figure"
+        elif cited_2026:
+            target, why = cited_2026 / (1 + global_cagr), "cited 2026 figure ÷ (1 + CAGR)"
+        if target and abs(global_anchor - target) / target > 0.05:
+            correction_note += f" [value ${global_anchor:,.0f}M reset to {why}]"
+            global_anchor = round(target, 1)
+
+    note = (f"grounded on: {cited}" if grounded and cited else "no cited figure found — ungrounded estimate") + correction_note
     state.setdefault("log", []).append(
-        f"Estimated total market size: ${global_anchor:,.0f}M for 2026, growing {global_cagr:.1%} per year ({note})"
+        f"Estimated total market size: ${global_anchor:,.0f}M for 2025, growing {global_cagr:.1%} per year ({note})"
     )
     return {
-        "regional": regional, "global_anchor_2026": global_anchor, "global_cagr": global_cagr,
+        "regional": regional, "global_anchor_2025": global_anchor, "global_cagr": global_cagr,
         "market_size_grounded": grounded,
     }
 
@@ -503,7 +601,7 @@ def brain_node(state: dict[str, Any]) -> dict[str, Any]:
     )
     user = (
         f"Market: {sk.market_name}\n"
-        f"Global 2026 value: {state.get('global_anchor_2026')} US$ Mn, CAGR {state.get('global_cagr')}\n"
+        f"Global 2025 value: {state.get('global_anchor_2025')} US$ Mn, CAGR {state.get('global_cagr')}\n"
         f"Regional split: {json.dumps(regional, ensure_ascii=False)}\n\n{_evidence_brief(state)}\n\n"
         'Return JSON: {"artifacts": [{"topic": str, "question": str, "answer": str, '
         '"drivers": [str], "current_events": [str]}]}'
@@ -604,7 +702,7 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
         )
         user = (
             f"Market: {sk.market_name}\nIteration: {it}\n"
-            f"Global value 2026: {state.get('global_anchor_2026')} US$ Mn, "
+            f"Global value 2025: {state.get('global_anchor_2025')} US$ Mn, "
             f"CAGR: {state.get('global_cagr')}\n"
             f"Regional: {json.dumps(regional, ensure_ascii=False)}\n"
             f"ASP: {json.dumps(state.get('asp', {}), ensure_ascii=False)[:2000]}\n"
@@ -670,7 +768,7 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
         update["best_state"] = {
             "shares": shares,
             "regional": regional,
-            "global_anchor_2026": state.get("global_anchor_2026"),
+            "global_anchor_2025": state.get("global_anchor_2025"),
             "global_cagr": state.get("global_cagr"),
             "market_size_grounded": state.get("market_size_grounded"),
             "geo": state.get("geo"),

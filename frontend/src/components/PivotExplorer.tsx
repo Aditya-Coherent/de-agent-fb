@@ -23,7 +23,7 @@ export default function PivotExplorer({ summary }: { summary: GenerateSummary })
   const grid = useMemo(() => {
     return regions.map((region) => {
       const regionInfo = summary.regional[region];
-      const regionValue = summary.global_anchor_2026 * regionInfo.value_share;
+      const regionValue = summary.global_anchor_2025 * regionInfo.value_share;
       const regionRoot = dimMap[region]?.["__root__"] || globalRoot;
       const cells = segments.map((seg) => {
         const share = regionRoot[seg] ?? globalRoot[seg] ?? 0;

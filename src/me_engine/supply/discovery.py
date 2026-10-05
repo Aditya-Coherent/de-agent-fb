@@ -23,22 +23,31 @@ from .companies import Company
 _SCOPE_SYSTEM = (
     "You are a market-research analyst. Given a market name (and optionally a country), "
     "identify the industry vertical and 3-5 short search terms useful for finding companies "
-    "that sell into this market. Respond ONLY with a JSON object: "
+    "that manufacture (or own the brands of) the products in this market. Respond ONLY with a JSON object: "
     '{"industry_vertical": "<short label>", "search_terms": ["<term>", ...]}'
 )
 
 _COMPANY_SYSTEM = (
     "You are a market-research analyst building a rough (not exhaustive) list of companies "
-    "that sell into a given market. Use the web evidence snippets if present, and otherwise "
+    "that MANUFACTURE (or own the brands of) the products in a given market -- the companies whose "
+    "own revenue makes up this market's size. Use the web evidence snippets if present, and otherwise "
     "your own knowledge of well-known and mid-size players in this space — do not skip major "
     "global players just because they weren't in the search results. Only include a company if "
     "you are reasonably confident it is a real, specific business (not a generic placeholder "
     "like 'Avocado Oil Chile' invented just to fill a country slot) — fewer real companies is "
     "better than padding with invented ones. Include each company's country/HQ and its real "
-    "website domain if known. Skip pure retailers/supermarkets unless the market itself is "
-    'retail. Respond ONLY with a JSON object: {"companies": [{"name": "...", "country": "...", '
+    "website domain if known. Do NOT list distributors, wholesalers, resellers, group purchasing "
+    "organisations or retailers (they re-sell the manufacturers' product, so counting them double "
+    "counts the market); if you mention one anyway, mark its role honestly. List each corporate "
+    "group ONCE under its parent company -- not separately as the parent, its subsidiaries, its "
+    "regional arms and its brands -- and give every company's owning parent company: the operating "
+    "company that owns this brand/subsidiary, not a private-equity or investment holder (empty string "
+    "if it is itself the parent / independent). "
+    'Respond ONLY with a JSON object: {"companies": [{"name": "...", "country": "...", '
     '"likely_website": "<domain, or empty string if unsure>", "functionality": "<one short '
-    'phrase>"}, ...]} with between 15 and 40 companies.'
+    'phrase>", "role": "<manufacturer|brand_owner|distributor|retailer|other>", '
+    '"parent_company": "<owning parent company, or empty string>"}, ...]} with between 15 and '
+    "40 companies."
 )
 
 
@@ -55,7 +64,11 @@ def discover_companies(
 ) -> list[Company]:
     """Rough, fast company discovery for one market (optionally scoped to one
     country) — a handful of LLM/search calls, not a multi-phase crawl.
-    Returns `Company` objects ready for `estimator.estimate_supply_side`."""
+    Returns `Company` objects ready for `graph.run_supply_side`, each carrying
+    `role` and `parent_company` facts -- the graph's screen step uses those to
+    drop distributors/retailers and collapse parent/brand duplicates
+    (`companies.screen_companies`), so a saved-and-reloaded list is screened
+    the same way."""
     llm = GenLLM(config, cache_path=cache_path)
     scope = _compile_scope(llm, market_name, country)
     terms = [str(t) for t in (scope.get("search_terms") or [market_name])][:3]

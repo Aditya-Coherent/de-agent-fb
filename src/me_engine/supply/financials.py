@@ -21,6 +21,29 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from functools import lru_cache
+
+from .companies import name_similarity
+
+# Minimum token similarity between the searched company name and a Yahoo
+# result's long/short name. Yahoo's search is fuzzy and its first EQUITY hit
+# was confirmed wrong in real runs ("Borges" -> Borgestad ASA, a Norwegian
+# refractories firm; "Xingyu" -> Changzhou Xingyu Automotive Lighting) --
+# those then got capped/estimated as if they were olive-oil/glove makers.
+_MIN_NAME_SIMILARITY = 0.6
+
+# Fallback USD-per-unit rates (approximate, 2025-26 levels) for when the live
+# yfinance FX quote is unavailable. A rough rate is fine here: it only feeds
+# a revenue CAP and the LLM's grounding text, and being off by a few percent
+# is nothing next to the 4.5x error of treating MYR 2,188 Mn as USD 2,188 Mn.
+_STATIC_USD_PER_UNIT = {
+    "USD": 1.0, "EUR": 1.08, "GBP": 1.27, "CHF": 1.12, "SEK": 0.094, "DKK": 0.145,
+    "JPY": 0.0067, "CNY": 0.138, "KRW": 0.00073, "INR": 0.012, "MYR": 0.22, "THB": 0.028,
+    "IDR": 0.000062, "SGD": 0.74, "HKD": 0.128, "TWD": 0.031, "AUD": 0.66, "CAD": 0.73,
+    "BRL": 0.18, "MXN": 0.055, "ZAR": 0.054,
+}
+# Yahoo quotes some listings in minor units (pence, cents).
+_MINOR_UNITS = {"GBP": ("GBP", 0.01), "GBX": ("GBP", 0.01), "ZAC": ("ZAR", 0.01), "ILA": ("ILS", 0.01)}
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,20 +54,83 @@ class CompanyFinancials:
     currency: str | None
     sector: str | None
     industry: str | None
-    region_segments: dict | None = None    # {"date": year, "segments": [{"label": region, "value": revenue}, ...]}
+    region_segments: dict | None = None    # {"date": year, "segments": [{"label": region, "value": revenue, "value_usd_mn": ...}, ...]}
     business_segments: dict | None = None  # same shape, by product/business line
+    usd_rate: float | None = None          # USD per 1 unit of `currency`; None = unknown currency, do not cap
+
+    @property
+    def total_revenue_usd_mn(self) -> float | None:
+        if self.usd_rate is None:
+            return None
+        return self.total_revenue * self.usd_rate / 1_000_000
+
+
+def _live_fx_rate(currency: str) -> float | None:
+    """USD per 1 unit of `currency` from Yahoo's "<CUR>USD=X" quote."""
+    import yfinance as yf
+
+    try:
+        rate = yf.Ticker(f"{currency}USD=X").fast_info["last_price"]
+    except Exception:  # noqa: BLE001 - any lookup failure means "use the fallback"
+        return None
+    return float(rate) if rate and rate > 0 else None
+
+
+@lru_cache(maxsize=64)
+def usd_rate(currency: str | None) -> float | None:
+    """USD per 1 unit of a reported currency: live yfinance quote, else the
+    static fallback table. None when the currency is missing/unknown -- the
+    caller must then NOT use the figure as a USD cap (and should flag it)."""
+    if not currency:
+        return None
+    cur = currency.strip()
+    factor = 1.0
+    if cur == "GBp" or cur.upper() in ("GBX", "ZAC", "ILA"):
+        cur, factor = _MINOR_UNITS["GBP" if cur == "GBp" else cur.upper()]
+    cur = cur.upper()
+    if cur == "USD":
+        return factor
+    static = _STATIC_USD_PER_UNIT.get(cur)
+    live = _live_fx_rate(cur)
+    # Reject a live quote wildly off the static level (bad/garbled symbol).
+    if live is not None and (static is None or 0.5 * static <= live <= 2 * static):
+        return live * factor
+    return static * factor if static is not None else None
+
+
+def _to_usd_segments(segments: dict | None, rate: float | None) -> dict | None:
+    """Copy of an InsightSentry segment block with a `value_usd_mn` per row
+    (None when the currency is unknown). Values are in the same raw reporting
+    currency/units as yfinance's totalRevenue."""
+    if not segments:
+        return segments
+    rows = []
+    for seg in segments.get("segments", []) or []:
+        try:
+            value = float(seg.get("value"))
+        except (TypeError, ValueError):
+            continue
+        rows.append({**seg, "value": value, "value_usd_mn": value * rate / 1_000_000 if rate else None})
+    return {**segments, "segments": rows}
 
 
 def _lookup_ticker(company_name: str) -> dict | None:
-    """Best-match ticker for a company name via Yahoo Finance search."""
+    """Best-match ticker for a company name via Yahoo Finance search --
+    only accepted when the listed name actually matches the company (see
+    `_MIN_NAME_SIMILARITY`); otherwise None, i.e. "not publicly listed"."""
     import yfinance as yf
 
     try:
         quotes = yf.Search(company_name, max_results=5).quotes
     except Exception:  # noqa: BLE001 - any lookup failure means "no match"
         return None
-    equities = [q for q in quotes if q.get("quoteType") == "EQUITY"]
-    return equities[0] if equities else None
+    for q in quotes:
+        if q.get("quoteType") != "EQUITY":
+            continue
+        names = [q.get("longname"), q.get("shortname")]
+        if max((name_similarity(company_name, n) for n in names if n), default=0.0) >= _MIN_NAME_SIMILARITY:
+            return q
+    return None
 
 
 def _insightsentry_headers() -> dict | None:
@@ -142,14 +228,17 @@ def fetch_company_revenue(company_name: str) -> CompanyFinancials | None:
 
     matched_name = match.get("longname") or match.get("shortname") or company_name
     region_segments, business_segments = _fetch_segments(matched_name)
+    currency = info.get("financialCurrency")
+    rate = usd_rate(currency)
 
     return CompanyFinancials(
         ticker=ticker,
         matched_name=matched_name,
         total_revenue=float(revenue),
-        currency=info.get("financialCurrency"),
+        currency=currency,
         sector=info.get("sector"),
         industry=info.get("industry"),
-        region_segments=region_segments,
-        business_segments=business_segments,
+        region_segments=_to_usd_segments(region_segments, rate),
+        business_segments=_to_usd_segments(business_segments, rate),
+        usd_rate=rate,
     )

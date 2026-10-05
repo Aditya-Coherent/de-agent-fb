@@ -1,0 +1,823 @@
+{
+  "market_name": "Agricultural Biostimulants Market",
+  "generated_at": "2026-09-28T08:22:14.453458+00:00",
+  "randomization": "+/-10-15% applied independently to every numeric field (see randomizer.py)",
+  "source_note": "Field values are synthesized by an LLM from live multi-backend web search results (ddgs: Google/Bing/DuckDuckGo/Mojeek), in the style of a concise AI-Overview-style answer -- NOT a literal scrape of Google's AI Overview UI element (no public API for that exists). See field_agent.py.",
+  "fields": {
+    "segmentation_grade_form": {
+      "by_grade_or_type": [
+        {
+          "name": "Acid-Based Biostimulants",
+          "share_pct_of_market": 35,
+          "value_usd_mn": 2028
+        },
+        {
+          "name": "Extract-Based Biostimulants",
+          "share_pct_of_market": 33,
+          "value_usd_mn": 1312
+        },
+        {
+          "name": "Seaweed Extracts",
+          "share_pct_of_market": 23,
+          "value_usd_mn": 873
+        },
+        {
+          "name": "Microbial Biostimulants",
+          "share_pct_of_market": 11,
+          "value_usd_mn": 449
+        }
+      ],
+      "by_form": [
+        {
+          "name": "Liquid",
+          "share_pct_of_market": 78,
+          "fastest_growing_cagr_pct": 9.65
+        },
+        {
+          "name": "Dry",
+          "share_pct_of_market": 26,
+          "fastest_growing_cagr_pct": 8.5
+        }
+      ]
+    },
+    "drivers_restraints": {
+      "drivers": [
+        {
+          "name": "Shift toward sustainable crop production and regenerative agriculture",
+          "cagr_contribution_bps": 695
+        },
+        {
+          "name": "Improved nutrient use efficiency and fertilizer optimization",
+          "cagr_contribution_bps": 411
+        },
+        {
+          "name": "Soil health management and soil microbiome enhancement",
+          "cagr_contribution_bps": 394
+        },
+        {
+          "name": "Climate-resilient farming and abiotic stress tolerance",
+          "cagr_contribution_bps": 341
+        },
+        {
+          "name": "Broad commercial adoption in fruits, vegetables, row crops, and turf",
+          "cagr_contribution_bps": 247
+        },
+        {
+          "name": "Rising demand for crop productivity, yield, and quality",
+          "cagr_contribution_bps": 278
+        },
+        {
+          "name": "Regulatory support and policy push for bio-based inputs",
+          "cagr_contribution_bps": 202
+        }
+      ],
+      "restraints": [
+        {
+          "name": "Inconsistent product formulations and variable field efficacy",
+          "cagr_drag_bps": 246
+        },
+        {
+          "name": "Fragmented and unclear regulatory frameworks across regions",
+          "cagr_drag_bps": 227
+        },
+        {
+          "name": "Limited farmer awareness and understanding of mode of action",
+          "cagr_drag_bps": 195
+        },
+        {
+          "name": "High cost relative to conventional agrochemicals",
+          "cagr_drag_bps": 143
+        },
+        {
+          "name": "Lack of standardized efficacy testing and certification",
+          "cagr_drag_bps": 123
+        },
+        {
+          "name": "Competition from established fertilizers and crop protection products",
+          "cagr_drag_bps": 101
+        }
+      ]
+    },
+    "sub_segments": {
+      "by_top_application": [
+        {
+          "application": "Foliar Application",
+          "sub_segments": [
+            {
+              "name": "Seaweed Extract-Based Foliar Biostimulants",
+              "value_usd_mn": 1298,
+              "cagr_pct": 10.3
+            },
+            {
+              "name": "Microbial Foliar Biostimulants",
+              "value_usd_mn": 880,
+              "cagr_pct": 10.9
+            },
+            {
+              "name": "Humic & Fulvic Acid Foliar Biostimulants",
+              "value_usd_mn": 683,
+              "cagr_pct": 12.2
+            },
+            {
+              "name": "Amino Acid & Protein Hydrolysate Foliar Biostimulants",
+              "value_usd_mn": 470,
+              "cagr_pct": 12.8
+            },
+            {
+              "name": "Precision-Agriculture Foliar Biostimulant Inputs",
+              "value_usd_mn": 276,
+              "cagr_pct": 12.2
+            }
+          ]
+        },
+        {
+          "application": "Soil Treatment",
+          "sub_segments": [
+            {
+              "name": "Microbial Soil Inoculants",
+              "value_usd_mn": 611,
+              "cagr_pct": 11.0
+            },
+            {
+              "name": "Humic & Fulvic Acid Soil Amendments",
+              "value_usd_mn": 457,
+              "cagr_pct": 12.7
+            },
+            {
+              "name": "Seaweed Extract Soil Biostimulants",
+              "value_usd_mn": 364,
+              "cagr_pct": 13.0
+            },
+            {
+              "name": "Amino Acid-Based Soil Biostimulants",
+              "value_usd_mn": 317,
+              "cagr_pct": 9.2
+            },
+            {
+              "name": "Precision-Agriculture Soil Application Inputs",
+              "value_usd_mn": 163,
+              "cagr_pct": 11.4
+            }
+          ]
+        },
+        {
+          "application": "Seed Treatment",
+          "sub_segments": [
+            {
+              "name": "Microbial Seed Treatment Biostimulants",
+              "value_usd_mn": 396,
+              "cagr_pct": 11.6
+            },
+            {
+              "name": "Seaweed Extract Seed Treatment Biostimulants",
+              "value_usd_mn": 182,
+              "cagr_pct": 10.5
+            },
+            {
+              "name": "Humic & Fulvic Acid Seed Treatment Biostimulants",
+              "value_usd_mn": 133,
+              "cagr_pct": 9.6
+            },
+            {
+              "name": "Amino Acid Seed Treatment Biostimulants",
+              "value_usd_mn": 124,
+              "cagr_pct": 9.9
+            },
+            {
+              "name": "Precision-Agriculture Seed Treatment Inputs",
+              "value_usd_mn": 69,
+              "cagr_pct": 15.5
+            }
+          ]
+        }
+      ]
+    },
+    "end_use_industry": {
+      "applications": [
+        {
+          "name": "Foliar Treatment",
+          "share_pct_of_market": 47.9,
+          "cagr_2025_2030_pct": 9.6
+        },
+        {
+          "name": "Soil Treatment",
+          "share_pct_of_market": 24.4,
+          "cagr_2025_2030_pct": 11.7
+        },
+        {
+          "name": "Seed Treatment",
+          "share_pct_of_market": 12.5,
+          "cagr_2025_2030_pct": 10.69
+        },
+        {
+          "name": "Fertigation",
+          "share_pct_of_market": 9.99,
+          "cagr_2025_2030_pct": 12.7
+        },
+        {
+          "name": "Row Crops & Cereals",
+          "share_pct_of_market": 4.44,
+          "cagr_2025_2030_pct": 9.3
+        },
+        {
+          "name": "Other Applications",
+          "share_pct_of_market": 3.43,
+          "cagr_2025_2030_pct": 8.57
+        }
+      ]
+    },
+    "market_size": {
+      "base_year": 2025,
+      "base_year_value_usd_mn": 4152,
+      "forecast_year": 2035,
+      "forecast_value_usd_mn": 12724,
+      "cagr_pct": 10.4,
+      "historical_usd_mn": {
+        "2020": 2160,
+        "2021": 2375,
+        "2022": 2665,
+        "2023": 3126,
+        "2024": 3418
+      },
+      "forecast_series_usd_mn": {
+        "2025": 5509,
+        "2026": 6145,
+        "2027": 5205,
+        "2028": 7625,
+        "2029": 6581,
+        "2030": 7569,
+        "2031": 8196,
+        "2032": 12098,
+        "2033": 10336,
+        "2034": 14661,
+        "2035": 17018
+      }
+    },
+    "porters_five_forces": {
+      "overall_score_out_of_5": 2.99,
+      "forces": {
+        "supplier_power": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "buyer_power": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "competitive_rivalry": {
+          "score_1_5": 3,
+          "label": "High"
+        },
+        "threat_of_new_entrants": {
+          "score_1_5": 3,
+          "label": "Medium"
+        },
+        "threat_of_substitutes": {
+          "score_1_5": 5,
+          "label": "High"
+        }
+      }
+    },
+    "derivatives_pricing": {
+      "derivatives": [
+        {
+          "name": "Biostimulants Market (2025 estimate)",
+          "value_usd_mn": 3460
+        },
+        {
+          "name": "Agricultural Biostimulants Market (2025 estimate)",
+          "value_usd_mn": 3364
+        },
+        {
+          "name": "Biostimulants Market (2026 estimate)",
+          "value_usd_mn": 4340
+        },
+        {
+          "name": "Biostimulants Market (2031 projection)",
+          "value_usd_mn": 7677
+        }
+      ],
+      "price_tiers": [
+        {
+          "tier": "Commodity/Standard",
+          "price_low_usd_per_unit": 561,
+          "price_high_usd_per_unit": 1654,
+          "grade": "Standard agricultural grade",
+          "principal_buyers": "Large-scale commodity crop farmers"
+        },
+        {
+          "tier": "Mid-Grade",
+          "price_low_usd_per_unit": 1688,
+          "price_high_usd_per_unit": 3340,
+          "grade": "Certified organic or enhanced formulation",
+          "principal_buyers": "Specialty crop growers and organic farms"
+        },
+        {
+          "tier": "Premium",
+          "price_low_usd_per_unit": 2607,
+          "price_high_usd_per_unit": 4471,
+          "grade": "High-concentration or proprietary blend",
+          "principal_buyers": "High-value crop producers and greenhouse operations"
+        },
+        {
+          "tier": "Specialty",
+          "price_low_usd_per_unit": 4252,
+          "price_high_usd_per_unit": 7061,
+          "grade": "Research-grade or custom microbial consortia",
+          "principal_buyers": "Research institutions and premium horticulture"
+        }
+      ]
+    },
+    "willingness_to_pay": {
+      "consumer_segments": [
+        {
+          "name": "Price-Sensitive Smallholder Farmers",
+          "baseline_usd": 14,
+          "with_clinical_evidence_usd": 16,
+          "with_premium_positioning_usd": 25,
+          "with_top_tier_format_usd": 25
+        },
+        {
+          "name": "Conventional Row-Crop Farmers",
+          "baseline_usd": 32,
+          "with_clinical_evidence_usd": 36,
+          "with_premium_positioning_usd": 59,
+          "with_top_tier_format_usd": 72
+        },
+        {
+          "name": "Organic and Regenerative Producers",
+          "baseline_usd": 40,
+          "with_clinical_evidence_usd": 75,
+          "with_premium_positioning_usd": 75,
+          "with_top_tier_format_usd": 91
+        },
+        {
+          "name": "Precision Agriculture Adopters",
+          "baseline_usd": 55,
+          "with_clinical_evidence_usd": 79,
+          "with_premium_positioning_usd": 102,
+          "with_top_tier_format_usd": 124
+        },
+        {
+          "name": "High-Value Specialty and Therapeutic Crop Growers",
+          "baseline_usd": 84,
+          "with_clinical_evidence_usd": 128,
+          "with_premium_positioning_usd": 155,
+          "with_top_tier_format_usd": 253
+        }
+      ]
+    },
+    "competitive_landscape": {
+      "companies": [
+        {
+          "name": "BASF",
+          "share_pct": 8.29,
+          "positioning_note": "Global leader leveraging broad crop-science portfolio and strategic partnerships to scale biostimulant offerings across major regions."
+        },
+        {
+          "name": "UPL",
+          "share_pct": 7.15,
+          "positioning_note": "Strong position through acquisitions and integrated biosolutions platform, expanding in Latin America and Asia-Pacific."
+        },
+        {
+          "name": "Valagro (Syngenta)",
+          "share_pct": 6.78,
+          "positioning_note": "Specialized biostimulant innovator under Syngenta ownership, with premium product lines and global distribution reach."
+        },
+        {
+          "name": "Yara International",
+          "share_pct": 5.82,
+          "positioning_note": "Leverages crop nutrition expertise and digital farming tools to embed biostimulants in sustainable agriculture programs."
+        },
+        {
+          "name": "Koppert",
+          "share_pct": 4.72,
+          "positioning_note": "Biologicals pioneer with strong European footprint and growing presence in high-value horticulture markets."
+        },
+        {
+          "name": "Isagro",
+          "share_pct": 5.46,
+          "positioning_note": "Regional specialist in Mediterranean and specialty crops, focusing on product innovation and licensing partnerships."
+        },
+        {
+          "name": "Bioiberica",
+          "share_pct": 4.65,
+          "positioning_note": "Plant health specialist with proprietary biostimulant technologies, strong in Europe and expanding globally."
+        },
+        {
+          "name": "Atlántica Agrícola",
+          "share_pct": 3.32,
+          "positioning_note": "Spanish innovator with broad biostimulant portfolio, targeting sustainable agriculture and export markets."
+        },
+        {
+          "name": "Sumitomo Chemical",
+          "share_pct": 3.79,
+          "positioning_note": "Diversified chemical player investing in biostimulant R&D and strategic alliances to capture growth in Asia."
+        },
+        {
+          "name": "FMC Corporation",
+          "share_pct": 2.54,
+          "positioning_note": "Expanding biologicals portfolio through acquisitions and partnerships, focusing on integrated crop solutions."
+        },
+        {
+          "name": "Novozymes",
+          "share_pct": 2.3,
+          "positioning_note": "Microbial technology leader applying enzyme and fermentation expertise to develop next-generation biostimulants."
+        },
+        {
+          "name": "Arysta LifeScience",
+          "share_pct": 2.55,
+          "positioning_note": "Regional player with established biostimulant lines, leveraging distribution networks in emerging markets."
+        }
+      ],
+      "others_share_pct": 33.1
+    },
+    "regulation": {
+      "type": "json_object",
+      "compliance_areas": [
+        {
+          "name": "Product Registration & Dossier Preparation",
+          "cost_pct_of_cogs_low": 3.12,
+          "cost_pct_of_cogs_high": 6.2
+        },
+        {
+          "name": "Efficacy & Field Trial Validation",
+          "cost_pct_of_cogs_low": 2.14,
+          "cost_pct_of_cogs_high": 4.81
+        },
+        {
+          "name": "Multi-Jurisdiction Regulatory Affairs & Local Agent Fees",
+          "cost_pct_of_cogs_low": 1.72,
+          "cost_pct_of_cogs_high": 4.03
+        },
+        {
+          "name": "Labeling, Claims Substantiation & CE-Marking Compliance",
+          "cost_pct_of_cogs_low": 1.33,
+          "cost_pct_of_cogs_high": 3.92
+        },
+        {
+          "name": "Safety, Toxicity & Environmental Testing",
+          "cost_pct_of_cogs_low": 1.72,
+          "cost_pct_of_cogs_high": 2.63
+        },
+        {
+          "name": "Standards Certification (CEN/TC 455) & Quality Audits",
+          "cost_pct_of_cogs_low": 0.87,
+          "cost_pct_of_cogs_high": 2.23
+        },
+        {
+          "name": "Regulatory Monitoring & Framework Adaptation",
+          "cost_pct_of_cogs_low": 0.89,
+          "cost_pct_of_cogs_high": 1.74
+        },
+        {
+          "name": "Legal, Documentation & Submission Fees",
+          "cost_pct_of_cogs_low": 0.79,
+          "cost_pct_of_cogs_high": 2.04
+        }
+      ]
+    },
+    "regional": {
+      "regions": {
+        "North America": {
+          "value_usd_mn": 1797,
+          "share_pct_of_global": 29.9,
+          "cagr_2025_2030_pct": 9.9,
+          "forecast_value_usd_mn": 2610,
+          "countries": [
+            {
+              "name": "United States",
+              "value_usd_mn": 1341
+            },
+            {
+              "name": "Canada",
+              "value_usd_mn": 231
+            },
+            {
+              "name": "Mexico",
+              "value_usd_mn": 182
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Foliar",
+              "share_pct": 47
+            },
+            {
+              "name": "Soil Treatment",
+              "value_usd_mn": 0.0,
+              "share_pct": 43
+            },
+            {
+              "name": "Seed Treatment",
+              "share_pct": 14
+            },
+            {
+              "name": "Fertigation",
+              "share_pct": 9
+            }
+          ]
+        },
+        "Europe": {
+          "value_usd_mn": 1298,
+          "share_pct_of_global": 27.4,
+          "cagr_2025_2030_pct": 9.0,
+          "forecast_value_usd_mn": 2725,
+          "countries": [
+            {
+              "name": "Germany",
+              "value_usd_mn": 368
+            },
+            {
+              "name": "France",
+              "value_usd_mn": 244
+            },
+            {
+              "name": "United Kingdom",
+              "value_usd_mn": 215
+            },
+            {
+              "name": "Spain",
+              "value_usd_mn": 163
+            },
+            {
+              "name": "Italy",
+              "value_usd_mn": 152
+            },
+            {
+              "name": "Netherlands",
+              "value_usd_mn": 107
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Foliar",
+              "share_pct": 51
+            },
+            {
+              "name": "Soil Treatment",
+              "share_pct": 40
+            },
+            {
+              "name": "Seed Treatment",
+              "share_pct": 13
+            },
+            {
+              "name": "Fertigation",
+              "share_pct": 7
+            }
+          ]
+        },
+        "Asia Pacific": {
+          "value_usd_mn": 1977,
+          "share_pct_of_global": 41.7,
+          "cagr_2025_2030_pct": 11.1,
+          "forecast_value_usd_mn": 2858,
+          "countries": [
+            {
+              "name": "China",
+              "value_usd_mn": 548
+            },
+            {
+              "name": "India",
+              "value_usd_mn": 543
+            },
+            {
+              "name": "Japan",
+              "value_usd_mn": 225
+            },
+            {
+              "name": "South Korea",
+              "value_usd_mn": 169
+            },
+            {
+              "name": "Australia",
+              "value_usd_mn": 136
+            },
+            {
+              "name": "Thailand",
+              "value_usd_mn": 88
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Foliar",
+              "share_pct": 35
+            },
+            {
+              "name": "Soil Treatment",
+              "share_pct": 42
+            },
+            {
+              "name": "Seed Treatment",
+              "share_pct": 12
+            },
+            {
+              "name": "Fertigation",
+              "share_pct": 9
+            }
+          ]
+        },
+        "Latin America": {
+          "value_usd_mn": 691,
+          "share_pct_of_global": 11.4,
+          "cagr_2025_2030_pct": 13.3,
+          "forecast_value_usd_mn": 933,
+          "countries": [
+            {
+              "name": "Brazil",
+              "value_usd_mn": 304
+            },
+            {
+              "name": "Argentina",
+              "value_usd_mn": 106
+            },
+            {
+              "name": "Chile",
+              "value_usd_mn": 53
+            },
+            {
+              "name": "Colombia",
+              "value_usd_mn": 57
+            },
+            {
+              "name": "Peru",
+              "value_usd_mn": 27
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Foliar",
+              "share_pct": 50
+            },
+            {
+              "name": "Soil Treatment",
+              "share_pct": 32
+            },
+            {
+              "name": "Seed Treatment",
+              "share_pct": 13
+            },
+            {
+              "name": "Fertigation",
+              "share_pct": 9
+            }
+          ]
+        },
+        "Middle East & Africa": {
+          "value_usd_mn": 338,
+          "share_pct_of_global": 6.96,
+          "cagr_2025_2030_pct": 8.9,
+          "forecast_value_usd_mn": 707,
+          "countries": [
+            {
+              "name": "Saudi Arabia",
+              "value_usd_mn": 80
+            },
+            {
+              "name": "South Africa",
+              "value_usd_mn": 71
+            },
+            {
+              "name": "United Arab Emirates",
+              "value_usd_mn": 69
+            },
+            {
+              "name": "Egypt",
+              "value_usd_mn": 47
+            },
+            {
+              "name": "Kuwait",
+              "value_usd_mn": 27
+            },
+            {
+              "name": "Qatar",
+              "value_usd_mn": 22
+            }
+          ],
+          "application_mix_pct": [
+            {
+              "name": "Foliar",
+              "share_pct": 53
+            },
+            {
+              "name": "Soil Treatment",
+              "share_pct": 37
+            },
+            {
+              "name": "Seed Treatment",
+              "share_pct": 11
+            },
+            {
+              "name": "Fertigation",
+              "share_pct": 7
+            }
+          ]
+        }
+      }
+    },
+    "investment_priorities": {
+      "opportunities": [
+        {
+          "opportunity": "Microbial biostimulant product line for row crops",
+          "target_segment": "Broadacre row-crop growers (corn, soy, wheat)",
+          "time_to_market": "18-24 mo",
+          "roi_low_pct": 20,
+          "roi_high_pct": 28,
+          "capital_intensity": "Med-High"
+        },
+        {
+          "opportunity": "Humic and fulvic acid soil-health blends",
+          "target_segment": "Specialty crop and horticulture growers",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 17,
+          "roi_high_pct": 23,
+          "capital_intensity": "Medium"
+        },
+        {
+          "opportunity": "Seaweed extract foliar stress-tolerance formulations",
+          "target_segment": "Climate-stressed regions (drought/salinity-affected farms)",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 16,
+          "roi_high_pct": 27,
+          "capital_intensity": "Low-Med"
+        },
+        {
+          "opportunity": "Seed-applied biostimulant coatings for nutrient use efficiency",
+          "target_segment": "Seed companies and seed-treatment providers",
+          "time_to_market": "24-36 mo",
+          "roi_low_pct": 22,
+          "roi_high_pct": 40,
+          "capital_intensity": "High"
+        },
+        {
+          "opportunity": "Amino acid and protein hydrolysate biostimulant portfolio",
+          "target_segment": "Integrated agrochemical distributors and retailers",
+          "time_to_market": "12-18 mo",
+          "roi_low_pct": 11,
+          "roi_high_pct": 19,
+          "capital_intensity": "Low-Med"
+        },
+        {
+          "opportunity": "Biological input platform with strategic partnership and licensing model",
+          "target_segment": "Agrochemical majors seeking sustainable portfolio expansion",
+          "time_to_market": "18-30 mo",
+          "roi_low_pct": 25,
+          "roi_high_pct": 34,
+          "capital_intensity": "Med-High"
+        },
+        {
+          "opportunity": "Eco-friendly crop solution R&D targeting soil health restoration",
+          "target_segment": "Regenerative and organic-certified farming operations",
+          "time_to_market": "24-36 mo",
+          "roi_low_pct": 14,
+          "roi_high_pct": 34,
+          "capital_intensity": "High"
+        },
+        {
+          "opportunity": "Geographic expansion into emerging agricultural markets",
+          "target_segment": "Latin America, Asia-Pacific, and Africa crop input channels",
+          "time_to_market": "18-24 mo",
+          "roi_low_pct": 19,
+          "roi_high_pct": 32,
+          "capital_intensity": "Medium"
+        }
+      ]
+    },
+    "scenarios": {
+      "bear": {
+        "terminal_value_usd_mn": 8524,
+        "cagr_pct": 5.86
+      },
+      "base": {
+        "terminal_value_usd_mn": 12561,
+        "cagr_pct": 8.12
+      },
+      "bull": {
+        "terminal_value_usd_mn": 15959,
+        "cagr_pct": 14.0
+      }
+    }
+  },
+  "log": [
+    "[segmentation_grade_form] Sec 5 - Segmentation by Grade/Type and Product Form: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[drivers_restraints] Sec 3 - Market Dynamics (Drivers & Restraints): synthesized from 9 web snippets, then randomized every value by +/-10-15%.",
+    "[sub_segments] Sec 7 - High-Growth Sub-Segment Opportunities: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[end_use_industry] Sec 6 - End-Use Industry Analysis: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[market_size] Sec 2 - Global Market Size Outlook: synthesized from 13 web snippets, then randomized every value by +/-10-15%.",
+    "[porters_five_forces] Sec 4 - Porter's Five Forces: synthesized from 5 web snippets, then randomized every value by +/-10-15%.",
+    "[derivatives_pricing] Sec 8 - Derivatives and Pricing Structure: synthesized from 9 web snippets, then randomized every value by +/-10-15%.",
+    "[willingness_to_pay] Sec 12 - End-User Behavior Outlook: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[competitive_landscape] Sec 10 - Competitive Landscape and Market Share: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[regulation] Sec 11 - Regulation and Compliance Overview: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[regional] Sec 9 - Regional Market Dynamics and Outlook: synthesized from 15 web snippets, then randomized every value by +/-10-15%.",
+    "[investment_priorities] Sec 13 - Strategic Investment Priorities: synthesized from 10 web snippets, then randomized every value by +/-10-15%.",
+    "[scenarios] Sec 14 - Scenario Analysis (Bear/Base/Bull): synthesized from 10 web snippets, then randomized every value by +/-10-15%."
+  ],
+  "definition_inclusion_exclusion": {
+    "definition": "This market covers products applied to crops or soil to help plants grow better, use nutrients more efficiently or handle stress.",
+    "inclusions": "Products: seaweed extracts, humic substances, amino acids, microbial and non-microbial biostimulants; Applications: seed, soil and foliar.",
+    "exclusions": "Conventional fertilizers, pesticides and seeds without biostimulant functionality.",
+    "source": "Priority 1 Whitepaper 100 Titles_ AgriIQX Platform.xlsx (verbatim, not AI-generated)"
+  }
+}

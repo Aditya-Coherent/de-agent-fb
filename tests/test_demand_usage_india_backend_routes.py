@@ -25,8 +25,8 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "backend"))
 
 import demand_usage_india_routes as routes  # noqa: E402
-from me_engine.demand_usage import checkpoints as non_india_checkpoints  # noqa: E402
-from me_engine.demand_usage import run_lock  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import checkpoints as non_india_checkpoints  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import run_lock  # noqa: E402
 from me_engine.demand_usage_india import checkpoints  # noqa: E402
 
 
@@ -157,7 +157,7 @@ def test_download_before_sizing_is_404(client):
 
 # --------------------------------------------------------------------------- #
 # Market-level sizing lock -- shared with the non-India pipeline's own lock
-# FILE LOCATION (both keyed via `me_engine.demand_usage.checkpoints.run_dir`),
+# FILE LOCATION (both keyed via `me_engine.demandUseCaseCountry_approach2B.checkpoints.run_dir`),
 # but suffixed distinctly (" (India)") so an India run never collides with a
 # concurrent non-India run for the same market name, or vice versa.
 # --------------------------------------------------------------------------- #

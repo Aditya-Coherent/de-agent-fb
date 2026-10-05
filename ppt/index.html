@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Market Estimation — All Approaches</title>
+<style>
+body{margin:0;background:#0a0a0c;color:#f1f1f3;font-family:-apple-system,"Segoe UI",Inter,Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 20px} h1{font-size:26px;margin:0 0 6px} p{color:#9a9aa3;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:22px 0}
+.card{display:block;text-decoration:none;color:inherit;background:#131316;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px}
+.card:hover{border-color:#818cf8} .card.off{opacity:.45} .num{font-size:22px;font-weight:800;color:#818cf8}
+.name{font-size:13px;font-weight:700;margin:6px 0 10px;line-height:1.4} .st{font-size:10.5px;font-weight:700;text-transform:uppercase}
+.st.ok{color:#34d399} .st.ill{color:#fbbf24}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px} th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+th{color:#9a9aa3;font-size:11px;text-transform:uppercase} h2{font-size:15px;margin-top:30px} a{color:#818cf8}
+</style></head><body><div class="wrap">
+<h1>Market Estimation — Three Approaches</h1>
+<p>Click an approach to walk through how its number is built, step by step, on the Olive Oil market. Generated 2026-10-05.</p>
+<div class="grid"><a class="card" href="1_Desk_Research_Walkthrough.html"><div class="num">1</div><div class="name">Desk Research</div><div class="st ok">Implemented</div></a><a class="card" href="2A_Demand_Country_Total_Walkthrough.html"><div class="num">2A</div><div class="name">Demand: Country Total → Global, segments top-down</div><div class="st ok">Implemented</div></a><a class="card" href="2B_Demand_UseCase_Country_Walkthrough.html"><div class="num">2B</div><div class="name">Demand: Use Case × Country → Global, other segments top-down</div><div class="st ok">Implemented</div></a><a class="card" href="2C_Demand_Product_UseCase_Country_Walkthrough.html"><div class="num">2C</div><div class="name">Demand: Product × Use Case × Country → Global</div><div class="st ill"></div></a><a class="card" href="2C_Vinegar_India_White_Vinegar_Walkthrough.html"><div class="num">2C</div><div class="name">Vinegar, India: white vinegar × use case (cakes, ketchup, mayo) — sourced inputs</div><div class="st ill"></div></a><a class="card" href="3_Supply_Side_Walkthrough.html"><div class="num">3</div><div class="name">Supply-Side: vendor revenue</div><div class="st ok">Implemented</div></a></div>
+<h2>Five-industry examples (global, USD)</h2>
+<table><tr><th>Market</th><th>Vertical</th><th>1 Desk Research</th><th>2A Demand</th><th>2B Demand</th><th>3 Supply: companies</th><th>3 Supply: web evidence</th></tr><tr><td>Disposable Medical Gloves</td><td>Healthcare</td><td>$15.25 Bn (2025)</td><td>$13.80 Bn ⚠</td><td>failed</td><td>pending rerun</td><td>—</td></tr><tr><td>Olive Oil</td><td>Food & Beverages</td><td>$14.62 Bn (2025)</td><td>$10.50 Bn</td><td>$9.26 Bn ⚠</td><td>$8.21 Bn</td><td>$14.00 Bn</td></tr><tr><td>Urea Fertilizer</td><td>Agriculture & Chemicals</td><td>$31.24 Bn (2025)</td><td>$55.31 Bn</td><td>pending rerun</td><td>pending rerun</td><td>—</td></tr></table>
+<p>⚠ = critical quality flags; that total is not usable until the flagged inputs are fixed. Full detail per market: <code>approaches/examples/</code> (EXAMPLES_SUMMARY.md / .xlsx).</p>
+<h2>Earlier walkthroughs (historical — made before the October fixes; the problems they show have since been fixed)</h2><ul><li><a href="0_Original_CrudeOil_UsageBased_vs_DeskResearch_Walkthrough.html">0_Original_CrudeOil_UsageBased_vs_DeskResearch_Walkthrough.html</a></li><li><a href="India_Vinegar_Nested_Demand_Model.html">India_Vinegar_Nested_Demand_Model.html</a></li><li><a href="Vinegar_Italy_Usage_Based_Model.html">Vinegar_Italy_Usage_Based_Model.html</a></li><li><a href="Vinegar_Segmentation_Walkthrough.html">Vinegar_Segmentation_Walkthrough.html</a></li><li><a href="Where_Do_Our_Numbers_Come_From.docx">Where_Do_Our_Numbers_Come_From.docx</a></li></ul>
+</div></body></html>

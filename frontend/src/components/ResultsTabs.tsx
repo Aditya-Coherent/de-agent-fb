@@ -91,7 +91,7 @@ export default function ResultsTabs({
                   <td className="py-2 text-neutral-400">{pct(info.value_share)}</td>
                   <td className="py-2 text-neutral-400">{pct(info.cagr)}</td>
                   <td className="py-2 tabular-nums text-neutral-400">
-                    {(summary.global_anchor_2026 * info.value_share).toLocaleString(undefined, {
+                    {(summary.global_anchor_2025 * info.value_share).toLocaleString(undefined, {
                       maximumFractionDigits: 1,
                     })}
                   </td>

@@ -25,12 +25,12 @@ def compute_demand_quality_flags(state: dict[str, Any]) -> list[dict[str, str]]:
     correctness, just the absence of a known red flag."""
     flags: list[dict[str, str]] = []
 
-    anchor = state.get("global_anchor_2026")
+    anchor = state.get("global_anchor_2025")
     if anchor is not None and not (_MIN_PLAUSIBLE_USD_MN <= float(anchor) <= _MAX_PLAUSIBLE_USD_MN):
         flags.append({
             "code": "implausible_market_size",
             "severity": "critical",
-            "message": f"Global 2026 value (${float(anchor):,.0f}M) is outside a plausible range for "
+            "message": f"Global 2025 value (${float(anchor):,.0f}M) is outside a plausible range for "
                        "a global market -- verify before trusting this run.",
         })
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents
+from me_engine.demandUseCaseCountry_approach2B import agents
 
 
 class _StubLLM:
@@ -275,7 +275,7 @@ def test_pricing_node_flags_invalid_price_basis_unit(monkeypatch):
 
 
 def test_build_report_dict_surfaces_price_evidence_strategy_and_normalization():
-    from me_engine.demand_usage import buildup_writer
+    from me_engine.demandUseCaseCountry_approach2B import buildup_writer
 
     state = {
         "usage_buckets": [{"name": "Cement Production", "description": "d"}],

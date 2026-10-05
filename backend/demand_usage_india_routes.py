@@ -24,11 +24,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from me_engine.demand_usage import run_lock
-from me_engine.demand_usage.correctness_gate import run_pre_write_gate
-from me_engine.demand_usage.graph import build_sizing_graph, sizing_init_state
-from me_engine.demand_usage.progress import NODE_NAMES, ProgressRecorder
-from me_engine.demand_usage.quality import compute_provenance_quality_flags
+from me_engine.demandUseCaseCountry_approach2B import run_lock
+from me_engine.demandUseCaseCountry_approach2B.correctness_gate import run_pre_write_gate
+from me_engine.demandUseCaseCountry_approach2B.graph import build_sizing_graph, sizing_init_state
+from me_engine.demandUseCaseCountry_approach2B.progress import NODE_NAMES, ProgressRecorder
+from me_engine.demandUseCaseCountry_approach2B.quality import compute_provenance_quality_flags
 from me_engine.demand_usage_india import aggregation, checkpoints, setup, taxonomy
 from me_engine.demand_usage_india.buildup_writer import write_buildup_json, write_buildup_workbook
 from me_engine.generation.config import GenConfig
@@ -45,7 +45,7 @@ router = APIRouter(prefix="/api/demand-usage-india", tags=["demand-usage-india"]
 # unaffected, so a CLI `approve-*` call can still pick up where the API left off.
 _DUI_RUNS: dict[str, dict[str, Any]] = {}
 
-# The market-level sizing lock (`me_engine.demand_usage.run_lock`) is keyed
+# The market-level sizing lock (`me_engine.demandUseCaseCountry_approach2B.run_lock`) is keyed
 # purely by market NAME -- shared, on purpose, with the non-India pipeline's
 # own lock file location. Suffixing the lock's own key keeps an India run
 # from colliding with a concurrent non-India run (or vice versa) for the

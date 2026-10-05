@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import units
+from me_engine.demandUseCaseCountry_approach2B import units
 
 
 def test_inverted_factor_from_real_transportation_fuels_case_is_corrected():
@@ -86,7 +86,7 @@ def test_zero_value_is_never_divided():
 
 
 def test_pricing_node_applies_the_correction_and_logs_it(monkeypatch):
-    from me_engine.demand_usage import agents, evidence_router, pricing_strategy
+    from me_engine.demandUseCaseCountry_approach2B import agents, evidence_router, pricing_strategy
 
     class _Cfg:
         enable_web = True

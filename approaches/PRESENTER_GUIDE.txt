@@ -1,0 +1,364 @@
+HOW EACH APPROACH WORKS
+Step by step, the same as the walkthrough pages in the ppt folder
+Example market: Olive Oil (real run)
+
+BASE YEAR: 2025 for every approach. All values below are 2025 values.
+
+Open ppt/index.html next to this file. The step numbers and names below are the
+ones shown on each page.
+
+
+====================================================================
+APPROACH 1: DESK RESEARCH
+====================================================================
+
+WHAT THE BRIEF ASKS FOR
+Find all the information already published by third parties, competitors or
+associations who have calculated the market size: not just the total, but also
+the split by segments, applications and the other taxonomy covered in the study.
+
+HOW OURS MATCHES
+Same idea. We find the published report for the market, take its market size
+and its full taxonomy (segments, applications, regions, countries), and split
+the total by all of them.
+
+STEPS (page: 1_Desk_Research_Walkthrough.html, 9 steps)
+
+1. Research & Evidence Gathering
+   Find the matching report in the CMI report database and pull live web
+   results. An LLM confirms the report is about this market. A regional report
+   (for example "GCC Gloves") is rejected when the market is global.
+
+2. Report Taxonomy (Skeleton)
+   Take the report's segment list (Product Type, Application, Distribution
+   Channel ...) and its regions and countries. These are labels only, no numbers.
+
+3. Market Size + CAGR
+   The 2025 (base year) global value and the growth rate (CAGR).
+   - If a source states the figure, we use it. A 2026-only figure is taken
+     back one year using the CAGR.
+   - Code checks the units (billions vs millions).
+
+4. Region & Country Split
+   The total is split into regions, then countries.
+
+5. Segment Shares
+   Every segment dimension is split (shares add up to 100%).
+
+6. Prices
+   A price for each product (used later to turn value into volume).
+
+7. Validation (Review Score)
+   Two checks are combined into one score:
+   - Consistency (code): do all shares add up to 100%, and do the regions add up?
+   - Plausibility (LLM judge): do the numbers make sense?
+   If the score is below 90%, go back to step 3 and redo steps 3 to 6 with
+   the reviewer's comments. At least 2 and at most 4 passes. The best pass is
+   kept.
+
+8. Justification (Brain)
+   A written explanation of why the numbers make sense.
+
+9. Final Market Size -> Input Sheet -> ME Workbook
+   The result is written into the Input Sheet. The ME pipeline then expands it
+   to Value, ASP and Volume for 2021 to 2033.
+
+OLIVE OIL RESULT
+- Scores by pass: 82%, 84%, 82%, 83%.
+- None reached 90%, so the loop stopped after 4 passes and kept pass 2.
+- Final: $14.6B (2025), split across 5 regions, 23 countries and 3 segment
+  types.
+- Note: this run found no published figure, so the value is an estimate.
+
+
+====================================================================
+APPROACH 2A: DEMAND SIDE - COUNTRY TOTAL, THEN SEGMENTS TOP-DOWN
+====================================================================
+
+WHAT THE BRIEF ASKS FOR
+Track the demand of the market at country level, add it up (bottom up) to
+global, then do a top-down analysis for all the sub-segments.
+
+HOW OURS MATCHES
+Exactly that. One demand number per country (quantity x price), countries
+added up to global, then every segment split top-down from the country totals.
+
+STEPS (page: 2A_Demand_Country_Total_Walkthrough.html, 15 steps)
+
+1. Market Setup
+   Market, list of countries, base year, unit (for example tonnes).
+
+2. Scope Statement
+   What is inside and outside this market.
+
+3. Geography
+   The approved list of countries, each mapped to its region.
+
+4. Total-Demand Driver
+   What we measure in each country. For olive oil this is consumption in
+   tonnes (production + imports - exports).
+
+5. Evidence Search & Retrieval
+   For each country, try sources in order: statistics offices, FAO, trade data,
+   industry bodies. Each number gets a label:
+   - verified (found in a source)
+   - derived (calculated from verified numbers)
+   - assumption (no source found)
+
+6. Quantity per Country
+   The demand number for every country, each with its label.
+
+7. Pricing
+   The price per unit (olive oil: $4,200 per tonne).
+
+8. Calculation (Quantity x Price)
+   Country value = quantity x price. Done by code, not by the LLM.
+
+9. Country -> Region -> Global
+   Countries are added into regions, and regions into the global total.
+
+10. Cross-Check vs Published Estimates
+   Our total is compared with market sizes published online. This only raises
+   a warning; it never changes our number.
+
+11. Segment Taxonomy
+   The segments to split: Product Type, Application, Distribution Channel,
+   Form.
+
+12. Segment Shares per Country
+   The share of each segment in each country, from web-backed estimates. In
+   every country the shares must add up to 100%.
+
+13. Top-Down Split (Country Total x Share)
+   Segment value = country total x segment share. Done for every country and
+   every segment.
+
+14. Final Market Size
+   Global, regions, countries, plus one table per segment. Every table adds
+   back to the same global total.
+
+15. Review as Market Researcher
+   Automatic warnings that point to anything suspicious.
+
+OLIVE OIL RESULT
+- 14 countries: Spain $2.1B, Italy $2.1B, US $1.6B, Greece $1.05B and others.
+- Global total: $10.5B.
+- A published report says $13.5B (22% gap).
+- 20% of inputs are verified; the rest are estimates.
+
+
+====================================================================
+APPROACH 2B: DEMAND SIDE - APPLICATION x COUNTRY, OTHER SEGMENTS TOP-DOWN
+====================================================================
+
+WHAT THE BRIEF ASKS FOR
+Track demand at country level, across each end-use application in each
+country. Add the applications up to the country, and the countries up to
+global. Other segments are done top-down.
+
+HOW OURS MATCHES
+Exactly that. Demand is measured for each application in each country,
+applications are added up to the country, and countries to global. The
+application table stays bottom-up; the other segments are split top-down.
+
+STEPS (page: 2B_Demand_UseCase_Country_Walkthrough.html, 16 steps)
+
+1 to 3. Market Setup, Scope Statement, Geography
+   Same as 2A.
+
+4. Use-Case Taxonomy
+   The end-use applications. For olive oil: Home Cooking, Foodservice,
+   Processed Food, Infused Oils, Nutraceutical/Pharma. A scope check removes
+   any application that does not really use this product.
+
+5. Demand Driver per Use Case
+   What we measure for each application. For example, foodservice = meals per
+   year x oil per meal. Two applications are never allowed to share one driver.
+
+6. Evidence Search & Retrieval
+   Same as 2A, done for every application in every country.
+
+7. Quantity per Use Case x Country
+   The demand number for every application in every country.
+
+8. Pricing
+   The price per unit for each application. Code catches a box price applied
+   to single items, and price outliers.
+
+9. Calculation (Quantity x Price)
+   Value per application per country. Done by code. Unit conversions (for
+   example litres to tonnes) are also done by code.
+
+10. Use Cases -> Country -> Region -> Global
+   Applications are added into the country, countries into regions, regions
+   into global.
+
+11. Cross-Check vs Published Estimates
+   Same as 2A.
+
+12 to 14. Segment Taxonomy, Segment Shares per Country, Top-Down Split
+   The other segments (Grade, Extraction Method, Channel, Packaging) are split
+   top-down, the same way as in 2A. The application table stays bottom-up.
+
+15. Final Market Size
+   Every table adds back to the same global total.
+
+16. Review as Market Researcher
+   Automatic warnings.
+
+OLIVE OIL RESULT
+- 5 applications x 14 countries, global total $9.3B.
+- WARNING: foodservice is 64% ($5.9B) and home cooking only $0.34B. That
+  looks wrong, and the system flagged it.
+- All inputs in this run are estimates. Treat this as the weakest olive oil
+  number.
+
+
+====================================================================
+APPROACH 2C: DEMAND SIDE - PRODUCT TYPE x APPLICATION x COUNTRY
+====================================================================
+
+WHAT THE BRIEF ASKS FOR
+Like B, but inside each application also track demand for each product type.
+Product types add up to the application, applications to the country,
+countries to global. The rest of the segments are done top-down.
+
+HOW OURS MATCHES
+Shown as two walkthrough pages, not run as a pipeline.
+
+PAGE 1: 2C_Demand_Product_UseCase_Country_Walkthrough.html (olive oil, 9 steps)
+1. Market Setup
+2. Use Cases (Applications)
+3. Product Types inside Each Use Case (Extra Virgin, Virgin, Refined, Pomace)
+4. Product Volume Mix per Country
+5. Price per Product Type
+6. Calculation (Product Quantity x Product Price)
+7. Products -> Use Case (per Country)
+8. Use Cases -> Country -> Region -> Global
+9. Final Market Size
+The quantities come from the real 2B run. The price differences between
+grades are illustrative.
+
+PAGE 2: 2C_Vinegar_India_White_Vinegar_Walkthrough.html (11 steps, inputs
+checked online)
+1. Market Setup: white vinegar, India
+2. Trade Check: imports and exports are tiny, so India makes its own vinegar
+3. Top-Down Anchor: the total white vinegar used in India (about 291,000
+   tonnes)
+4. White Vinegar Use Cases: which uses have published data and which don't
+5. Use Case: Ketchup = 1.2 million t of ketchup x 8% vinegar x 70%
+6. Use Case: Mayonnaise = mayonnaise volume x 5.4% vinegar
+7. Use Case: Cakes = 378,000 t of cakes x 39.5% eggless x 2% vinegar
+   = 2,987 t of vinegar
+8. Price -> Revenue: tonnes x Rs 42.25 per litre
+9. Reconciliation: these 3 uses explain 28% of India's white vinegar; the
+   rest has no published data
+10. Result: white vinegar in cakes in India is about Rs 12.5 crore
+    (US$1.5M)
+11. Source Audit: every input listed with its website and whether it was
+    verified
+
+WHY IT IS HARD
+- Vinegar doses in recipes and adoption rates are rarely published.
+- The number of cells explodes: product types x applications x countries.
+- Each cell is small, so researching it can cost more than it is worth.
+
+
+====================================================================
+APPROACH 3: SUPPLY SIDE
+====================================================================
+
+WHAT THE BRIEF ASKS FOR
+Analyse the companies that earn revenue directly in this industry (not across
+the whole value chain):
+1. analyse them
+2. get their total revenue
+3. keep only the part of their revenue that comes from this market (Google:
+   only its cloud API revenue, not all of Google)
+Then add them up. This also gives company market shares.
+
+HOW OURS MATCHES
+Exactly those three steps, then the sum, then the company market shares.
+
+STEPS (page: 3_Supply_Side_Walkthrough.html, 9 steps)
+
+1. Vendor Discovery
+   Find the companies in this market (LLM + web). Check each website, to catch
+   made-up names.
+
+2. Screening: Direct Revenue Contributors Only
+   - Remove distributors and retailers: they resell other companies'
+     products, so they would be counted twice.
+   - Merge brands into their parent company.
+
+3. Company Total Revenue
+   Real revenue from financial data (Yahoo Finance, InsightSentry), converted
+   to US dollars.
+
+4. Revenue Attributable to This Market, per Country
+   Only the part of each company's revenue that comes from this market, split
+   by country. It is capped by the company's real revenue.
+
+5. Gross-Up for Vendors Not Named
+   In each country, estimate what share of the market the named companies
+   cover, then divide by that share. This adds the companies we did not name.
+   The share is never allowed below 30%.
+
+6. Company Market Shares
+   Each company's revenue divided by the market total.
+
+7. Cross-Check: Published Market Sizes
+   The middle value of market sizes quoted online (no LLM involved).
+
+8. Final Market Size
+   All countries added up.
+
+9. Review as Market Researcher
+   Automatic warnings.
+
+OLIVE OIL RESULT
+- 33 companies after merging brands. For example, Bertolli, Carbonell,
+  Carapelli and Sasso are counted once, under Deoleo.
+- 17 countries, total $8.2B. Published figures say $14.0B.
+- Top shares: Aceites del Sur 14%, Sovena 12%, Deoleo 10%.
+- Only 2 of 33 companies have public financial data; most are private.
+
+
+====================================================================
+OLIVE OIL: ALL APPROACHES TOGETHER
+====================================================================
+
+Desk Research ............ $14.6B   (estimate this run; another run cited a higher figure)
+2A Country total ......... $10.5B   (published report: $13.5B)
+2B Application x country . $9.3B    (flagged: use-case split looks wrong)
+Supply, companies ........ $8.2B
+Supply, published figures  $14.0B
+
+The approaches measure the market from different sides. Where they cluster
+($9B to $14B) is the most believable range.
+
+
+====================================================================
+THINGS TO SAY UPFRONT
+====================================================================
+
+1. When no source exists, the LLM makes an estimate. Every number carries a
+   label saying whether it is verified, derived or an assumption.
+2. Results can change between runs, when web search finds different sources.
+3. All the arithmetic (quantity x price, sums, splits) is done by code, never
+   by the LLM.
+4. The warnings only flag a number for a person to check. They never change
+   the number on their own.
+
+
+====================================================================
+FIVE EXAMPLE MARKETS - STATUS
+====================================================================
+
+Olive Oil ............. all 4 approaches done
+Medical Gloves ........ Desk Research and 2A done; 2B and Supply pending
+Urea Fertilizer ....... Desk Research and 2A done; 2B and Supply pending
+Automotive Tires ...... pending
+Smartphones ........... pending
+
+The pending runs need LLM credit; the DeepSeek account ran out.

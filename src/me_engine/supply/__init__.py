@@ -1,7 +1,7 @@
 """Supply-side market-size estimator.
 
 Independent methodology, next to `me_engine.generation` (Desk Research /
-secondary research) and `me_engine.demand_usage` (Demand-Side / bottom-up
+secondary research) and `me_engine.demandUseCaseCountry_approach2B` (Demand-Side / bottom-up
 usage-based): given a list of known companies/distributors in a market,
 estimate each one's market-specific revenue (LLM + web evidence, since real
 market share is rarely public), gross up for the unlisted long tail, and

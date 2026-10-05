@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import magnitude
+from me_engine.demandUseCaseCountry_approach2B import magnitude
 
 
 class _StubConfig:

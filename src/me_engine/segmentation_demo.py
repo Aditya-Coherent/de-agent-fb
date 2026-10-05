@@ -37,12 +37,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_usage.checkpoints import slugify
+from me_engine.demandUseCaseCountry_approach2B.checkpoints import slugify
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 
 # Where the full result (including every step's request/response) is
-# persisted -- reuses `demand_usage.checkpoints.slugify` (read-only import,
+# persisted -- reuses `demandUseCaseCountry_approach2B.checkpoints.slugify` (read-only import,
 # never modifies that module) purely for a consistent market-name-to-slug
 # convention across the app.
 _OUTPUT_DIR = Path("output") / "segmentation_demo"

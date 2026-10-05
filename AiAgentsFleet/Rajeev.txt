@@ -1,0 +1,20 @@
+1. Section 12 (End User Behavior) is mostly empty in 3 reports
+
+Section 12 should show how much different customers are willing to pay. For example, small farmers might pay USD 5 while premium buyers pay USD 20.
+
+For shrimp, poultry and GenAI, the internet search found no such price information. So instead of a chart, those reports only have a short note saying the data wasn't available. Biostimulants does have this data.
+
+What I offered: search again for just this one topic in those 3 markets, using better search words. It's small: about 3 AI calls.
+
+2. The writing is simpler than in your Vitamin C template
+
+Your template has expert-style sentences, such as:
+- "80% of production comes from 4 Chinese provinces"
+- "FDA and EFSA rules make approval harder in Europe"
+- "Asia produces. The West consumes. Africa fortifies."
+
+That kind of insight needs an expert or an AI to write it. Earlier you chose "Template-style from data only", so I wrote the sentences from our numbers only, for example "Asia Pacific is 67% of the market and grows 10.7% a year." The numbers are correct, but the text is plainer and has no named laws, company news or deeper insights.
+
+What I offered: let the AI write richer text for each section, based on our numbers and the web pages already collected. That's about 15 AI calls per market.
+
+Nothing is broken, and the reports are complete as they are. Tell me if you want either improvement, both, or neither.

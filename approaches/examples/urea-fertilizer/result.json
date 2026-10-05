@@ -1,0 +1,203 @@
+{
+  "market": "Urea Fertilizer",
+  "vertical": "Agriculture & Chemicals",
+  "started_at": "2026-10-05T07:34:17+00:00",
+  "log": [
+    "[2026-10-04T07:59:33+00:00] 1 Desk Research: start",
+    "[2026-10-04T08:02:17+00:00] 1 Desk Research: ok in 2.7 min",
+    "[2026-10-04T08:02:17+00:00] 2A Demand: start",
+    "[2026-10-04T08:13:00+00:00] 2A Demand: ok in 10.7 min",
+    "[2026-10-04T10:48:58+00:00] 2B Demand: start",
+    "[2026-10-04T11:41:36+00:00] 2B Demand: ok in 52.6 min",
+    "[2026-10-04T11:41:36+00:00] 3 Supply-Side: start",
+    "[2026-10-04T11:55:34+00:00] 3 Supply-Side: ok in 14.0 min",
+    "[2026-10-05T07:34:17+00:00] 1 Desk Research: start",
+    "[2026-10-05T07:36:46+00:00] 1 Desk Research: ok in 2.5 min",
+    "[2026-10-05T07:36:46+00:00] 2A Demand: start",
+    "[2026-10-05T07:46:06+00:00] 2A Demand: ok in 9.3 min"
+  ],
+  "1_desk_research": {
+    "global_cagr": 0.047,
+    "regional": {
+      "North America": {
+        "value_share": 0.14,
+        "cagr": 0.038
+      },
+      "Latin America": {
+        "value_share": 0.1,
+        "cagr": 0.048
+      },
+      "Europe": {
+        "value_share": 0.18,
+        "cagr": 0.035
+      },
+      "Asia Pacific": {
+        "value_share": 0.51,
+        "cagr": 0.052
+      },
+      "Middle East": {
+        "value_share": 0.04,
+        "cagr": 0.045
+      },
+      "Africa": {
+        "value_share": 0.03,
+        "cagr": 0.055
+      }
+    },
+    "reward": 0.8389,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\urea-fertilizer\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 2.5,
+    "global_usd_mn_2026_original": 32710.0,
+    "global_usd_mn": 31241.6,
+    "anchor_year": 2025
+  },
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers finished urea (granular, prilled, and liquid urea) sold as a nitrogen fertilizer commodity, valued at the point it leaves the producer or is supplied through distribution, whether destined for agricultural application or industrial/technical use such as urea-ammonium nitrate solutions, DEF/AdBlue, and urea-based resins. Upstream inputs (natural gas, ammonia, carbon dioxide, hydrogen) are excluded as separately valued commodities and are treated only as cost/intensity drivers, while downstream outcomes such as crop yields, harvested grain, and finished industrial end-products are likewise outside the market boundary. Downstream end-use demand (e.g., wheat or cereal acreage and application rates, DEF consumption, resin production volumes) is not itself valued here but is used as an intermediate signal to derive how much urea those usages require. Urea used as an animal feed additive or in non-fertilizer pharmaceutical/cosmetic applications is included only where it is the same finished urea commodity; unrelated nitrogen products (ammonium nitrate, UAN blends priced as distinct products, ammonia) are out of scope.",
+      "geography": [
+        "China",
+        "India",
+        "United States",
+        "Brazil",
+        "Russia",
+        "Indonesia",
+        "Pakistan",
+        "Turkey",
+        "Egypt",
+        "Iran",
+        "France",
+        "Germany",
+        "Vietnam",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "tonnes of urea"
+    },
+    "driver": {
+      "driver_name": "National urea fertilizer apparent consumption volume",
+      "unit": "Tonnes of urea per year",
+      "final_demand_unit": "Tonnes",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 55314.7,
+    "regions_usd_mn": {
+      "North America": 3850.0,
+      "Latin America": 1190.0,
+      "Europe": 2800.0,
+      "Asia Pacific": 29624.7,
+      "Middle East & Africa": 2100.0,
+      "Rest of World": 15750.0
+    },
+    "countries_usd_mn": {
+      "China": 17500.0,
+      "India": 6650.0,
+      "United States": 3850.0,
+      "Brazil": 1190.0,
+      "Russia": 1120.0,
+      "Indonesia": 2520.0,
+      "Pakistan": 2324.7,
+      "Turkey": 525.0,
+      "Egypt": 1225.0,
+      "Iran": 875.0,
+      "France": 735.0,
+      "Germany": 420.0,
+      "Vietnam": 630.0,
+      "Rest of World": 15750.0
+    },
+    "segments": [
+      {
+        "dimension": "By Product Form",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Granular Urea": 30194.906,
+          "Prilled Urea": 17926.874,
+          "Liquid Urea": 3151.841,
+          "Urea Briquettes": 2545.088,
+          "Others": 1495.991
+        }
+      },
+      {
+        "dimension": "By Crop Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Cereals and Grains": 30384.97,
+          "Oilseeds and Pulses": 7918.764,
+          "Fruits and Vegetables": 9727.305,
+          "Commercial Crops": 5071.073,
+          "Others": 2212.588
+        }
+      },
+      {
+        "dimension": "By Fertilizers Technology",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Uncoated and Untreated Urea": 37867.76,
+          "Neem Coated Urea": 3622.5,
+          "Sulfur Coated Urea": 4139.485,
+          "Polymer-Coated Urea": 6667.22,
+          "Others": 3017.735
+        }
+      },
+      {
+        "dimension": "By End-use Application",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Field Crop Fertilization": 33743.64,
+          "Horticulture Crop Fertilization": 6025.523,
+          "Plantation Crop Fertilization": 4796.085,
+          "Pasture and Forage Fertilization": 3196.088,
+          "Fertilizers Blending": 5298.776,
+          "Others": 2254.588
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Direct Sales": 18747.925,
+          "Indirect Sales": 36566.775
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 13.3,
+      "derived": 13.3,
+      "source_found_unverified": 0.0,
+      "assumption": 73.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 10/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] low_observed_share: Only 13% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 4 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\urea-fertilizer\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\urea-fertilizer\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\urea-fertilizer",
+    "status": "ok",
+    "minutes": 9.3
+  },
+  "2B_demand_usecase_country": {
+    "status": "pending rerun",
+    "note": "previous result (2026-10-04T11:41:36) used code from before the fixes"
+  },
+  "3_supply_side": {
+    "status": "pending rerun",
+    "note": "previous result (2026-10-04T11:55:34) used code from before the fixes"
+  },
+  "finished_at": "2026-10-05T07:46:06+00:00"
+}

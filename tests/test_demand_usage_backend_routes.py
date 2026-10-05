@@ -32,7 +32,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "backend"))
 
 import demand_usage_routes as routes  # noqa: E402
-from me_engine.demand_usage import checkpoints, run_lock  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import checkpoints, run_lock  # noqa: E402
 
 
 @pytest.fixture()

@@ -19,7 +19,7 @@ own without touching this module):
         "scope_override"               -- a user justified retaining an
                                           out-of-scope bucket at approval time
 
-    stage values in use today (also see `me_engine.demand_usage.progress.NODE_NAMES`):
+    stage values in use today (also see `me_engine.demandUseCaseCountry_approach2B.progress.NODE_NAMES`):
         "setup", "taxonomy", "taxonomy_approval", "evidence_search",
         "fact_extraction", "derivation", "magnitude_check",
         "demand_quantification", "pricing", "calculate",

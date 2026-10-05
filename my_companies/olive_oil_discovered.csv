@@ -1,0 +1,42 @@
+#,Company,country,likely_website,functionality,role,verification,parent_company
+=== Manufacturers (40) ===
+1,Deoleo,Spain,deoleo.com,Olive oil production and brand ownership,manufacturer,Website reachable (HTTP 200),
+2,Sovena,Portugal,sovena.com,Olive oil production and packaging,manufacturer,"Website unreachable (HTTP 465) — possibly generic/placeholder, verify manually",
+3,Mueloliva,Spain,mueloliva.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",
+4,Borges International Group,Spain,borges.com,Olive oil and food products,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",
+5,Gallo,Portugal,gallo.pt,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",Gallo Worldwide
+6,Grupo Ybarra,Spain,ybarra.es,Olive oil and food products,manufacturer,Website reachable (HTTP 200),
+7,Carbonell,Spain,carbonell.es,Olive oil brand,brand_owner,Website reachable (HTTP 200),Deoleo
+8,Bertolli,Italy,bertolli.com,Olive oil brand,brand_owner,Website reachable (HTTP 200),Deoleo
+9,Filippo Berio,Italy,filippoberio.com,Olive oil production and brand,manufacturer,Website reachable (HTTP 200),SALOV North America
+10,Colavita,Italy,colavita.com,Olive oil production and brand,manufacturer,Website reachable (HTTP 200),
+11,Monini,Italy,monini.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+12,Mazzola,Italy,mazzola.it,Olive oil production,manufacturer,Website reachable (HTTP 200),
+13,Olio Carapelli,Italy,carapelli.com,Olive oil production,manufacturer,Website reachable (HTTP 200),Deoleo
+14,Olio Sasso,Italy,sasso.it,Olive oil production,manufacturer,"Website unreachable (ConnectTimeout) — possibly generic/placeholder, verify manually",Deoleo
+15,Pompeian,United States,pompeian.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+16,California Olive Ranch,United States,californiaoliveranch.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+17,Lucini Italia,United States,lucini.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+18,Cobram Estate,Australia,cobramestate.com.au,Olive oil production,manufacturer,Website reachable (HTTP 200),Cobram Estate Olives Limited
+19,Boundary Bend,Australia,boundarybend.com.au,Olive oil production,manufacturer,Website reachable (HTTP 200),Cobram Estate Olives Limited
+20,Jupiter Group,Greece,jupitergroup.gr,Olive oil production and packaging,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",
+21,Minerva,Greece,minerva.com.gr,Olive oil production,manufacturer,Website reachable (HTTP 200),
+22,Terra Creta,Greece,terracreta.gr,Olive oil production,manufacturer,Website reachable (HTTP 200),
+23,Gaea,Greece,gaea.gr,Olive oil production,manufacturer,Website reachable (HTTP 200),
+24,Sesajal,Mexico,sesajal.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+25,Borges Agricultural & Industrial Nuts,Spain,bainuts.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",Borges International Group
+26,Aceites del Sur,Spain,aceitesdelsur.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",
+27,Aceites Toledo,Spain,aceitestoledo.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+28,Hojiblanca,Spain,hojiblanca.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",Deoleo
+29,Jaencoop,Spain,jaencoop.com,Olive oil production,manufacturer,Website reachable (HTTP 202),
+30,Olivarera de Mora,Spain,olivarerdemora.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",
+31,Barton Olive Oil Co,United States,bartoliveoil.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",
+32,Enzo Olive Oil Company,United States,enzooliveoil.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+33,McEvoy Ranch,United States,mcevoyranch.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+34,Texas Olive Ranch,United States,texasoliveranch.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+35,Olio Roi,Italy,olioroi.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+36,Frantoio Franci,Italy,frantoiofranci.it,Olive oil production,manufacturer,Website reachable (HTTP 200),
+37,Ravida,Italy,ravida.it,Olive oil production,manufacturer,Website reachable (HTTP 200),
+38,Terra Medi,Greece,terramedi.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+39,Laconiko,Greece,laconiko.com,Olive oil production,manufacturer,Website reachable (HTTP 200),
+40,Kalamata Olive Oil,Greece,kalamataoliveoil.com,Olive oil production,manufacturer,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually",

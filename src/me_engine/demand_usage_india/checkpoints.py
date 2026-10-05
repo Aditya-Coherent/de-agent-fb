@@ -1,7 +1,7 @@
 """Shared draft/approved JSON checkpoint I/O for the India-only demand-usage
 phase gates.
 
-Thin mirror of `me_engine.demand_usage.checkpoints` -- same `slugify`/
+Thin mirror of `me_engine.demandUseCaseCountry_approach2B.checkpoints` -- same `slugify`/
 `run_dir`/`write_json`/`read_json` contract -- but rooted at
 `output/demand_usage_india/<slug>/` (a fully separate tree from
 `output/demand_usage/<slug>/`), so an India run for a market never collides

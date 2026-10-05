@@ -1,0 +1,196 @@
+{
+  "inputs": {
+    "comtrade_imports_t": {
+      "value": 1225.0,
+      "unit": "t",
+      "status": "verified",
+      "found": "1,224,998 kg imported, CIF US$1,873,026 (HS 2209, India, 2024)",
+      "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=699&period=2024&cmdCode=2209&flowCode=M&partnerCode=0",
+      "source": "UN Comtrade (live API)"
+    },
+    "comtrade_exports_t": {
+      "value": 963.0,
+      "unit": "t",
+      "status": "verified",
+      "found": "963,026 kg exported, FOB US$858,031 (HS 2209, India, 2024; weight estimated by Comtrade)",
+      "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=699&period=2024&cmdCode=2209&flowCode=X&partnerCode=0",
+      "source": "UN Comtrade (live API)"
+    },
+    "india_vinegar_usd_mn": {
+      "value": 301.61,
+      "unit": "US$ Mn",
+      "status": "verified",
+      "found": "India vinegar market size for 2024: US$ 301.61 million (to US$ 454.64 Mn by 2031)",
+      "url": "https://www.gii.tw/report/qyr1697967-global-india-vinegar-market-report-forecast.html",
+      "source": "QYResearch (via GII)"
+    },
+    "synthetic_share": {
+      "value": 0.8,
+      "unit": "share",
+      "status": "assumption",
+      "found": "Synthetic segment held ~80% (79.9%) of the GLOBAL vinegar market in 2024 — applied to India here; no India split is published",
+      "url": "https://www.gminsights.com/industry-analysis/vinegar-market",
+      "source": "Global Market Insights"
+    },
+    "usd_inr": {
+      "value": 83.67,
+      "unit": "INR per USD",
+      "status": "verified",
+      "found": "The average level of USD/INR for 2024 was 83.6713",
+      "url": "https://www.poundsterlinglive.com/history/USD-INR-2024",
+      "source": "Pound Sterling Live (2024 USD/INR history)"
+    },
+    "retail_price_inr_l": {
+      "value": 70.0,
+      "unit": "₹ per litre",
+      "status": "range",
+      "found": "₹42.25/L bulk (1,000 L MOQ, Hyderabad) to ₹98/L consumer bottle (₹60 per 610 ml, Ajmer); ₹70 is the midpoint used to turn market VALUE into VOLUME",
+      "url": "https://m.indiamart.com/impcat/synthetic-vinegar.html",
+      "source": "IndiaMART / GlobalLinker listings"
+    },
+    "bulk_price_inr_l": {
+      "value": 42.25,
+      "unit": "₹ per litre",
+      "status": "verified",
+      "found": "Wholesale synthetic vinegar ₹42.25/litre, minimum order 1,000 litres (Hyderabad)",
+      "url": "https://www.globallinker.com/products/synthetic-vinegar-8622282",
+      "source": "GlobalLinker listing"
+    },
+    "ketchup_t": {
+      "value": 1200000.0,
+      "unit": "t",
+      "status": "verified",
+      "found": "India consumption of tomato ketchup and tomato sauces reached 1.2 million tons in 2024 (production 1.3 million tons)",
+      "url": "https://www.indexbox.io/blog/tomato-ketchup-world-market-overview-2024-4/",
+      "source": "IndexBox"
+    },
+    "ketchup_dose": {
+      "value": 0.08,
+      "unit": "share of product weight",
+      "status": "range",
+      "found": "Commercial ketchup contains 6–8% vinegar (7–12% in some formulation guides); 8% used",
+      "url": "https://spice.alibaba.com/spice-basics/how-tomato-ketchup-is-made",
+      "source": "Ketchup formulation guides"
+    },
+    "ketchup_adoption": {
+      "value": 0.7,
+      "unit": "share of volume",
+      "status": "assumption",
+      "found": "No published figure. Some Indian tomato sauces use acetic acid instead of vinegar; 70% assumed to use vinegar",
+      "url": "",
+      "source": "Assumption"
+    },
+    "mayo_usd_mn": {
+      "value": 428.0,
+      "unit": "US$ Mn",
+      "status": "verified",
+      "found": "The India mayonnaise market size reached USD 428.0 Million in 2024",
+      "url": "https://www.imarcgroup.com/india-mayonnaise-market",
+      "source": "IMARC Group"
+    },
+    "mayo_price_inr_kg": {
+      "value": 180.0,
+      "unit": "₹ per kg",
+      "status": "assumption",
+      "found": "₹100 per 875 g pack wholesale (≈ ₹114/kg, IndiaMART); retail packs sell higher. ₹180/kg assumed for value-to-volume",
+      "url": "https://www.indiamart.com/didwaniasales/veg-mayonnaise.html",
+      "source": "IndiaMART listing + assumption"
+    },
+    "mayo_dose": {
+      "value": 0.054,
+      "unit": "share of product weight",
+      "status": "verified",
+      "found": "Formulation: 65% oil, 10% egg, 5.4% vinegar, 1.5% salt, 1% sugar, 1% spices, 16% water",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7931383/",
+      "source": "Peer-reviewed mayonnaise-type sauce study (PMC7931383, Table 5)"
+    },
+    "cake_t": {
+      "value": 378000.0,
+      "unit": "t",
+      "status": "verified",
+      "found": "India cake market volume 378 thousand MT in 2025 (another edition of the same publisher quotes 455 thousand t)",
+      "url": "https://www.kenresearch.com/industry-reports/india-cake-market.md",
+      "source": "Ken Research"
+    },
+    "eggless_usd_mn": {
+      "value": 940.5,
+      "unit": "US$ Mn",
+      "status": "verified",
+      "found": "India eggless cakes market: USD 940.5 million in 2026",
+      "url": "https://www.futuremarketinsights.com/reports/india-eggless-cakes-market",
+      "source": "Future Market Insights"
+    },
+    "cake_usd_mn": {
+      "value": 2380.0,
+      "unit": "US$ Mn",
+      "status": "verified",
+      "found": "India cake market size (2026): USD 2.38 Billion",
+      "url": "https://www.mordorintelligence.com/industry-reports/india-cake-market",
+      "source": "Mordor Intelligence"
+    },
+    "cake_dose": {
+      "value": 0.02,
+      "unit": "share of batter weight",
+      "status": "derived",
+      "found": "Eggless sponge recipe: 1 tbsp (≈15 g) white vinegar in ≈730 g batter (1.5 cups flour, 1 cup sugar, 1 cup milk, ¼ cup oil, cocoa, soda) = 2.0%",
+      "url": "https://cookingandme.com/eggless-chocolate-sponge-cake-eggless-recipes/",
+      "source": "Recipe (home scale)"
+    }
+  },
+  "eggless_share": 0.39516806722689074,
+  "anchor_t": 291292.1804228571,
+  "rows": [
+    {
+      "id": "uc_ketchup",
+      "name": "Ketchup & tomato sauces",
+      "host_label": "Ketchup & tomato sauce consumed",
+      "host_t": 1200000.0,
+      "host_key": "ketchup_t",
+      "dose": 0.08,
+      "dose_key": "ketchup_dose",
+      "adopt": 0.7,
+      "adopt_key": "ketchup_adoption",
+      "adopt_label": "share made with vinegar",
+      "vinegar_t": 67200.0,
+      "litres": 66534653.46534654,
+      "inr": 2811089108.910891,
+      "usd_mn": 33.59733606921108
+    },
+    {
+      "id": "uc_mayo",
+      "name": "Mayonnaise",
+      "host_label": "Mayonnaise (US$428 Mn ÷ ₹180/kg)",
+      "host_t": 198948.66666666666,
+      "host_key": "mayo_usd_mn",
+      "dose": 0.054,
+      "dose_key": "mayo_dose",
+      "adopt": 1.0,
+      "adopt_key": null,
+      "adopt_label": "all mayonnaise uses vinegar",
+      "vinegar_t": 10743.228,
+      "litres": 10636859.405940594,
+      "inr": 449407309.9009901,
+      "usd_mn": 5.371188118811881
+    },
+    {
+      "id": "uc_cake",
+      "name": "Cakes (eggless)",
+      "host_label": "Cakes produced",
+      "host_t": 378000.0,
+      "host_key": "cake_t",
+      "dose": 0.02,
+      "dose_key": "cake_dose",
+      "adopt": 0.39516806722689074,
+      "adopt_key": null,
+      "adopt_label": "eggless share (vinegar + soda replaces egg)",
+      "vinegar_t": 2987.470588235294,
+      "litres": 2957891.671520093,
+      "inr": 124970923.12172394,
+      "usd_mn": 1.493616865324775
+    }
+  ],
+  "sized_t": 80930.69858823529,
+  "residual_t": 210361.4818346218,
+  "sized_inr_cr": 338.5467341933605,
+  "built": "2026-10-05"
+}

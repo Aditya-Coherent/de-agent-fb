@@ -1,0 +1,42 @@
+#,Company,country,likely_website,functionality,verification
+=== Manufacturers (40) ===
+1,Ansell,Australia,ansell.com,Manufacturer of medical gloves and protective solutions,Website reachable (HTTP 200)
+2,Top Glove,Malaysia,topglove.com,World's largest manufacturer of disposable gloves,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+3,Hartalega,Malaysia,hartalega.com.my,Leading producer of nitrile medical gloves,Website reachable (HTTP 200)
+4,Supermax,Malaysia,supermax.com.my,Manufacturer of disposable medical gloves,Website reachable (HTTP 200)
+5,Kossan Rubber Industries,Malaysia,kossan.com.my,Manufacturer of disposable gloves and rubber products,Website reachable (HTTP 307)
+6,Riverstone Resources,Malaysia,riverstone.com.my,Cleanroom and medical glove manufacturer,Website reachable (HTTP 200)
+7,Cardinal Health,USA,cardinalhealth.com,Distributor and manufacturer of medical gloves,"Website unreachable (ReadTimeout) — possibly generic/placeholder, verify manually"
+8,Medline Industries,USA,medline.com,Manufacturer and distributor of medical gloves,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+9,Kimberly-Clark,USA,kimberly-clark.com,Producer of medical gloves under Kimtech and KleenGuard brands,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+10,Halyard Health,USA,halyardhealth.com,Manufacturer of surgical and exam gloves,Website reachable (HTTP 200)
+11,Semperit,Austria,semperitgroup.com,Manufacturer of medical gloves and industrial rubber products,Website reachable (HTTP 200)
+12,Mölnlycke Health Care,Sweden,molnlycke.com,Manufacturer of surgical gloves and wound care products,Website reachable (HTTP 200)
+13,Paul Hartmann,Germany,hartmann.info,Manufacturer of medical gloves and healthcare products,Website reachable (HTTP 200)
+14,B. Braun,Germany,bbraun.com,Manufacturer of medical gloves and surgical instruments,Website reachable (HTTP 200)
+15,Medline International,Germany,medline.eu,"European division of Medline, supplying medical gloves","Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+16,INTCO Medical,China,intcomedical.com,Manufacturer of disposable medical gloves,Website reachable (HTTP 200)
+17,Hongray,China,hongray.com,Manufacturer of nitrile and latex medical gloves,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+18,Bluesail Medical,China,bluesailmedical.com,Manufacturer of disposable medical gloves,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+19,Zhonghong Medical,China,zhonghongmedical.com,Manufacturer of medical gloves and disposable products,Website reachable (HTTP 200)
+20,Xingyu,China,xingyuglove.com,Manufacturer of disposable gloves,Website reachable (HTTP 200)
+21,Cureguard,China,cureguard.com,Manufacturer of medical gloves,Website reachable (HTTP 200)
+22,Fitone,China,fitoneglove.com,Manufacturer of disposable gloves,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+23,Changzhou Xingrong,China,xingrongglove.com,Manufacturer of disposable gloves,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+24,AdvaCare Pharma,USA,advacarepharma.com,Manufacturer of medical disposables including gloves,Website reachable (HTTP 200)
+25,Hopemed Industries Inc,USA,hopemed.com,Supplier of disposable nitrile and vinyl gloves,"Website unreachable (ConnectTimeout) — possibly generic/placeholder, verify manually"
+26,"TITANS MEDICARE, INC",USA,titansmedicare.com,Supplier of nitrile medical gloves,Website reachable (HTTP 200)
+27,Mid-America Glove Company,USA,midamericaglove.com,Manufacturer of gloves including nitrile palm coated,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+28,School Health,USA,schoolhealth.com,Distributor of medical supplies including exam gloves,Website reachable (HTTP 200)
+29,MedPride,USA,medpride.com,Brand of disposable medical gloves and supplies,Website reachable (HTTP 200)
+30,Dynarex,USA,dynarex.com,Manufacturer of disposable medical gloves,Website reachable (HTTP 200)
+31,McKesson,USA,mckesson.com,Distributor of medical gloves and supplies,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+32,Henry Schein,USA,henryschein.com,Distributor of medical and dental gloves,Website reachable (HTTP 200)
+33,Sri Trang Gloves,Thailand,sritranggloves.com,Manufacturer of disposable gloves,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+34,Thai Rubber Latex Group,Thailand,thairubberlatex.com,Manufacturer of latex gloves,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+35,Rubberex,Malaysia,rubberex.com,Manufacturer of disposable gloves,Website reachable (HTTP 200)
+36,Smart Glove,Malaysia,smartglove.com.my,Manufacturer of nitrile and latex gloves,Website reachable (HTTP 200)
+37,Careplus Group,Malaysia,careplus.com.my,Manufacturer of disposable medical gloves,Website reachable (HTTP 200)
+38,UG Healthcare,Singapore,ughealthcare.com,Manufacturer of disposable gloves,Website reachable (HTTP 200)
+39,Medline Asia,Singapore,medlineasia.com,Regional distributor of medical gloves,Website reachable (HTTP 200)
+40,Asma Rubber Products,India,asmarubber.com,Manufacturer of disposable gloves,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"

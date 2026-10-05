@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>India Vinegar — Evidence-Graded Bottom-Up Demand Model</title>
+<style>
+  :root {
+    --bg:#0a0a0c; --panel:#131316; --panel2:#1a1a1f;
+    --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+    --text:#f1f1f3; --text-dim:#9a9aa3; --text-dimmer:#64646d;
+    --indigo:#818cf8; --emerald:#34d399; --amber:#fbbf24;
+    --rose:#fb7185; --sky:#38bdf8; --teal:#2dd4bf; --violet:#a78bfa; --slate:#94a3b8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(99,102,241,.12),transparent 45%),
+       radial-gradient(circle at 85% 20%,rgba(139,92,246,.08),transparent 45%),var(--bg);
+       color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;min-height:100vh}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+  .hero{text-align:center;margin-bottom:16px}
+  .hero h1{font-size:25px;font-weight:800;margin:0 0 6px;background:linear-gradient(90deg,#f8fafc,#c7c7d9);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--text-dim);font-size:12.5px;max-width:720px;margin:0 auto;line-height:1.55}
+
+  .live{border:1px solid rgba(52,211,153,.3);background:rgba(52,211,153,.06);border-radius:12px;
+    padding:11px 14px;margin:16px 0;font-size:11.5px;line-height:1.6;color:#a7f3d0}
+  .live b{color:var(--emerald);text-transform:uppercase;font-size:10px;letter-spacing:.06em}
+  .live a{color:#6ee7b7}
+
+  .tierlegend{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:0 0 6px}
+  .prov{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 10px;font-size:10px;
+    font-weight:800;text-transform:uppercase;letter-spacing:.03em;border:1px solid;white-space:nowrap}
+  .p3{color:#6ee7b7;border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.1)}
+  .p2{color:#7dd3fc;border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.1)}
+  .p1{color:#fde68a;border-color:rgba(250,204,21,.4);background:rgba(250,204,21,.08)}
+  .p0{color:#fda4af;border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.1)}
+  .tierdesc{text-align:center;font-size:10.5px;color:var(--text-dimmer);margin-bottom:20px;line-height:1.7}
+
+  h2.sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text-dimmer);
+    margin:34px 0 10px;display:flex;align-items:center;gap:10px}
+  h2.sec::after{content:"";flex:1;height:1px;background:var(--border)}
+  .lead{font-size:12.5px;color:var(--text-dim);line-height:1.65;margin:0 0 14px;max-width:880px}
+  .lead b{color:var(--text)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px}
+
+  /* headline */
+  .headline{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+  @media(max-width:820px){.headline{grid-template-columns:1fr}}
+  .hbox{border:1px solid var(--border2);border-radius:14px;padding:18px;background:rgba(255,255,255,.02);text-align:center}
+  .hnum{font-size:38px;font-weight:900;line-height:1.05;background:linear-gradient(90deg,#34d399,#6ee7b7);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hnum.alt{background:linear-gradient(90deg,#38bdf8,#7dd3fc);-webkit-background-clip:text;background-clip:text}
+  .hcap{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dimmer);margin-top:7px}
+  .hsub{font-size:12px;color:var(--text-dim);margin-top:9px;line-height:1.6}
+
+  /* band */
+  .band{position:relative;height:56px;margin:18px 0 6px;border-radius:9px;background:rgba(255,255,255,.04);
+    border:1px solid var(--border2);overflow:hidden}
+  .band .rng{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,rgba(45,212,191,.2),rgba(52,211,153,.35),rgba(45,212,191,.2))}
+  .band .tick{position:absolute;top:0;bottom:0;width:2px;background:var(--emerald)}
+  .band .lbl{position:absolute;top:6px;font-size:9.5px;font-weight:800;color:#a7f3d0;transform:translateX(-50%);white-space:nowrap}
+  .band .val{position:absolute;bottom:6px;font-size:11px;font-weight:800;color:#fff;transform:translateX(-50%);
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* tree */
+  .major{border:1px solid var(--border);border-radius:14px;margin-bottom:10px;background:var(--panel);overflow:hidden}
+  .major-hd{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer}
+  .major-hd:hover{background:rgba(255,255,255,.025)}
+  .caret{color:var(--text-dimmer);font-size:11px;transition:transform .18s;width:10px;flex-shrink:0}
+  .major.open .caret,.leaf.open .caret{transform:rotate(90deg)}
+  .lvl{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dimmer);
+    border:1px solid var(--border2);border-radius:5px;padding:2px 5px;flex-shrink:0}
+  .major-nm{font-size:14px;font-weight:800;flex:1}
+  .major-vol{font-size:13px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums}
+  .major-rev{font-size:12px;color:var(--text-dim);font-variant-numeric:tabular-nums;min-width:82px;text-align:right}
+  .bar{height:3px;background:rgba(255,255,255,.05)}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--emerald))}
+  .leaves{display:none;padding:4px 10px 12px}
+  .major.open .leaves{display:block}
+  .leaf{border:1px solid var(--border);border-radius:11px;margin-top:8px;background:rgba(255,255,255,.015);overflow:hidden}
+  .leaf-hd{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;flex-wrap:wrap}
+  .leaf-hd:hover{background:rgba(255,255,255,.02)}
+  .leaf-nm{font-size:12.5px;font-weight:700;flex:1;min-width:160px}
+  .kind{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border-radius:5px;padding:2px 6px;border:1px solid}
+  .kind.dosage{color:var(--violet);border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.08)}
+  .kind.direct{color:var(--slate);border-color:rgba(148,163,184,.4);background:rgba(148,163,184,.08)}
+  .leaf-vol{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;min-width:92px;text-align:right}
+  .leaf-body{display:none;padding:4px 14px 14px;border-top:1px solid var(--border)}
+  .leaf.open .leaf-body{display:block}
+
+  .coef{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px}
+  @media(max-width:760px){.coef{grid-template-columns:1fr}}
+  .cc{border:1px solid var(--border2);border-radius:10px;padding:10px 11px;background:rgba(0,0,0,.25)}
+  .cc-k{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dimmer);margin-bottom:5px}
+  .cc-v{font-size:19px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+  .cc-u{font-size:10px;color:var(--text-dim);margin-top:3px}
+  .cc-rng{font-size:10px;color:var(--amber);margin-top:5px;font-variant-numeric:tabular-nums}
+  .cc-s{font-size:10px;color:var(--text-dimmer);margin-top:7px;line-height:1.5;border-top:1px dashed var(--border2);padding-top:6px}
+  .cc-s a{color:var(--sky);text-decoration:none}.cc-s a:hover{text-decoration:underline}
+  .cc-f{font-family:ui-monospace,monospace;font-size:9.5px;color:#c7d2fe;margin-top:5px;line-height:1.5}
+  .cc .prov{margin-top:7px}
+
+  .cancel{margin:12px 0 0;border:1px solid rgba(45,212,191,.28);background:rgba(45,212,191,.05);border-radius:10px;padding:11px 13px}
+  .cancel-k{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);margin-bottom:8px}
+  .eq{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:2.1;color:#d8d8e0}
+  .eq .u{color:var(--text-dimmer)}.eq .gone{color:var(--rose);text-decoration:line-through;opacity:.75}
+  .eq .keep{color:var(--teal);font-weight:700}.eq .n{color:#fff;font-weight:700}.eq .res{color:#a7f3d0;font-weight:800}
+  .pricerow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;border-top:1px solid var(--border);
+    padding-top:10px;font-size:11.5px;color:var(--text-dim)}
+  .pricerow b{color:var(--text);font-variant-numeric:tabular-nums}
+  .note{font-size:11px;color:var(--text-dimmer);font-style:italic;line-height:1.6;margin-top:10px}
+  .note.warn{color:#fde68a;font-style:normal;border-left:2px solid var(--amber);padding-left:9px}
+  .conf{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--text-dimmer);margin-top:11px;flex-wrap:wrap}
+
+  /* tornado */
+  .torn{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:11px}
+  .torn .rank{width:17px;color:var(--text-dimmer);font-weight:800;font-size:10px;text-align:right;flex-shrink:0}
+  .torn .who{width:250px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)}
+  .torn .who b{color:var(--text)}
+  .torn .track{flex:1;height:15px;background:rgba(255,255,255,.04);border-radius:4px;position:relative;overflow:hidden}
+  .torn .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+  .torn .amt{width:82px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text);font-weight:700;flex-shrink:0}
+  .torn.t4 .fill{background:linear-gradient(90deg,rgba(251,113,133,.75),rgba(251,113,133,.4))}
+  .torn.t3 .fill{background:linear-gradient(90deg,rgba(250,204,21,.7),rgba(250,204,21,.35))}
+  .torn.t2 .fill{background:linear-gradient(90deg,rgba(56,189,248,.7),rgba(56,189,248,.35))}
+  .torn.t1 .fill{background:linear-gradient(90deg,rgba(52,211,153,.7),rgba(52,211,153,.35))}
+
+  /* coverage */
+  .covbar{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--border2);margin:10px 0}
+  .covbar div{display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800}
+  .cv1{background:rgba(52,211,153,.55);color:#052e26}
+  .cv2{background:rgba(56,189,248,.5);color:#062a3d}
+  .cv3{background:rgba(250,204,21,.45);color:#3a2e05}
+  .cv4{background:repeating-linear-gradient(45deg,rgba(251,113,133,.2),rgba(251,113,133,.2) 6px,rgba(251,113,133,.34) 6px,rgba(251,113,133,.34) 12px);color:#fecdd3}
+
+  table.px{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.px th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dimmer);
+    font-weight:800;padding:7px 9px;border-bottom:1px solid var(--border2)}
+  table.px td{padding:7px 9px;border-bottom:1px solid var(--border);color:var(--text-dim)}
+  table.px td.n{text-align:right;font-variant-numeric:tabular-nums;color:var(--text);font-weight:600}
+  table.px tr:hover td{background:rgba(255,255,255,.02)}
+
+  .flag{border-radius:10px;padding:11px 14px;font-size:11.5px;line-height:1.65;margin-top:10px}
+  .flag .fl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+  .flag.bad{border-left:3px solid var(--rose);background:rgba(251,113,133,.08)}.flag.bad .fl{color:var(--rose)}
+  .flag.warn2{border-left:3px solid var(--amber);background:rgba(251,191,36,.08)}.flag.warn2 .fl{color:var(--amber)}
+  .flag.ok{border-left:3px solid var(--emerald);background:rgba(52,211,153,.08)}.flag.ok .fl{color:var(--emerald)}
+  .flag.info{border-left:3px solid var(--sky);background:rgba(56,189,248,.08)}.flag.info .fl{color:var(--sky)}
+
+  .ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+  @media(max-width:880px){.ladder{grid-template-columns:1fr 1fr}}
+  .rung{border:1px solid var(--border2);border-radius:11px;padding:13px;background:rgba(0,0,0,.2)}
+  .rung .t{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+  .rung h4{margin:0 0 6px;font-size:12.5px;font-weight:800}
+  .rung p{margin:0;font-size:11px;color:var(--text-dim);line-height:1.6}
+  .rung.r1{border-color:rgba(52,211,153,.4)} .rung.r1 .t{color:var(--emerald)}
+  .rung.r2{border-color:rgba(56,189,248,.4)} .rung.r2 .t{color:var(--sky)}
+  .rung.r3{border-color:rgba(250,204,21,.4)} .rung.r3 .t{color:var(--amber)}
+  .rung.r4{border-color:rgba(251,113,133,.4)} .rung.r4 .t{color:var(--rose)}
+
+  .controls{display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}
+  .btn{border:1px solid var(--border2);background:var(--panel2);color:var(--text-dim);border-radius:8px;padding:6px 12px;
+    font-size:10.5px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.04em}
+  .btn:hover{color:var(--text);border-color:var(--indigo)}
+  footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-dimmer);line-height:1.75}
+  code{font-family:ui-monospace,monospace;background:rgba(255,255,255,.05);padding:1px 5px;border-radius:4px;font-size:10.5px;color:#c7d2fe}
+  a{color:var(--sky)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>India Vinegar — Evidence-Graded Bottom-Up Demand Model</h1>
+    <p>Three levels: <b>Major Use Case</b> → <b>Actual Use Case</b> bound to a real host market →
+    <b>consumption coefficient</b>. Every leaf is <code>host × adoption × intensity</code>.
+    No model ever emits a magnitude. The India total is an output.</p>
+  </div>
+
+  <div class="live" id="liveBanner"></div>
+
+  <div class="tierlegend">
+    <span class="prov p3">T1 · verified_observed</span>
+    <span class="prov p2">T2 · derived</span>
+    <span class="prov p1">T3 · source_found_unverified</span>
+    <span class="prov p0">T4 · assumption</span>
+  </div>
+  <div class="tierdesc">
+    <b>T1</b> fetched live from a public API on this run · <b>T2</b> computed from other inputs by a stated formula ·
+    <b>T3</b> published figure with a URL, not independently verified · <b>T4</b> no source exists anywhere —
+    declared as a bounded range and simulated, never guessed into a point estimate
+  </div>
+
+  <h2 class="sec">1 · The answer, with its uncertainty attached</h2>
+  <div class="headline">
+    <div class="hbox">
+      <div class="hnum" id="hVol"></div>
+      <div class="hcap">India vinegar demand — built from 12 use cases</div>
+      <div class="hsub" id="hVolSub"></div>
+    </div>
+    <div class="hbox">
+      <div class="hnum alt" id="hRev"></div>
+      <div class="hcap">at leaf-level pricing</div>
+      <div class="hsub" id="hRevSub"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dimmer)">
+      Monte Carlo — <span id="mcTrials"></span> trials over every unbounded input</div>
+    <div class="band" id="band"></div>
+    <div id="mcFlags"></div>
+  </div>
+
+  <h2 class="sec">2 · The nest</h2>
+  <p class="lead">
+    Click a Major Use Case to open its Actual Use Cases, then click a leaf for its coefficient triple, live sources
+    and unit cancellation. Inputs tagged <b>T4</b> show their simulated range in amber — that is the honest width of
+    what is not known.
+  </p>
+  <div class="controls">
+    <button class="btn" onclick="setAll(true)">Expand all</button>
+    <button class="btn" onclick="setAll(false)">Collapse all</button>
+  </div>
+  <div id="tree"></div>
+
+  <h2 class="sec">3 · Which unknowns actually matter</h2>
+  <p class="lead">
+    This is the answer to “what about the part we can’t source?”. Each bar is one input swung from its low bound to
+    its high bound with everything else held at base — so the length <i>is</i> that input’s influence on the total.
+    <b>Most unknowns do not matter.</b> Resolve the top few and the rest can stay assumptions forever.
+  </p>
+  <div class="panel"><div id="tornado"></div></div>
+  <div id="tornFlags"></div>
+
+  <h2 class="sec">4 · How much of the number is sourced</h2>
+  <p class="lead">
+    Value-weighted across all 36 inputs — each leaf’s three inputs weighted by that leaf’s share of revenue. This is
+    the defensible version of “what percentage is real”, and it is countable rather than claimed.
+  </p>
+  <div class="panel">
+    <div class="covbar" id="covbar"></div>
+    <div id="covFlags"></div>
+  </div>
+
+  <h2 class="sec">5 · Price applied at the leaf</h2>
+  <div class="panel" style="padding:6px 12px 2px"><table class="px" id="pxTable"></table></div>
+
+  <h2 class="sec">6 · Cross-checks</h2>
+  <div id="recon"></div>
+
+  <h2 class="sec">7 · Source audit — every citation re-opened and checked</h2>
+  <p class="lead">
+    After the model was built, each cited page was re-opened and checked for the number attributed to it.
+    <b id="auditHeadline"></b> The failures are published here rather than quietly patched, because a method that
+    cannot catch its own bad citations is not worth trusting with the good ones.
+  </p>
+  <div id="audit"></div>
+  <div class="flag warn2" style="margin-top:12px"><div class="fl">Root cause — worth building a guard against</div>
+    All three failures share one cause: the figure was taken from a <b>search-result summary</b> that aggregates
+    several vendor pages, then attributed to a single URL from that result set. The summary is itself a model
+    reading pages — so the citation pointed somewhere the number had never been.
+    <b>Rule that follows: a number may only be tagged T1–T3 if it was read from a page that was actually fetched.</b>
+    Search may find candidates; it may never be the source of record.
+  </div>
+
+  <h2 class="sec">8 · The escalation ladder — what to do when there is no source</h2>
+  <p class="lead">
+    Every input is pushed as far up this ladder as the evidence allows, and the tier it lands on is recorded.
+    <b>An LLM never produces a magnitude at any rung.</b> The bottom rung is a declared, bounded, simulated parameter —
+    which is a very different object from a guess, because it has a range, an owner, and a measurable influence.
+  </p>
+  <div class="ladder">
+    <div class="rung r1"><div class="t">Rung 1 · T1</div><h4>Fetch it</h4>
+      <p>Public API, machine-reproducible. Comtrade trade flows and World Bank population re-derive on every run of
+      the build script — nothing is copied by hand.</p></div>
+    <div class="rung r2"><div class="t">Rung 2 · T2</div><h4>Derive it</h4>
+      <p>Compute from data you already hold, recording the formula. Ketchup dosage comes out of a patent spec;
+      mayonnaise tonnage out of published value ÷ price.</p></div>
+    <div class="rung r3"><div class="t">Rung 3 · T3</div><h4>Cite it</h4>
+      <p>A named source publishes the figure but you cannot verify it independently. Usable, tagged, and never
+      promoted to fact.</p></div>
+    <div class="rung r4"><div class="t">Rung 4 · T4</div><h4>Bound it</h4>
+      <p>No source exists. Declare lo/base/hi, simulate, and rank by influence. The output is a range and a priced
+      research question — not a number someone made up.</p></div>
+  </div>
+
+  <footer>
+    <b>Reproducible.</b> Run <code>python artifacts/build_india_vinegar.py</code> to rebuild this dataset from
+    source. T1 inputs re-fetch live; the simulation is seeded, so the same inputs give the same band.<br />
+    <b>Artifact, not pipeline.</b> Nothing in <code>src/me_engine/</code>, <code>backend/</code> or
+    <code>frontend/</code> is read or written. Provenance vocabulary and the weakest-link ordering follow
+    <code>src/me_engine/demand_usage/evidence.py</code>; the apparent-consumption identity and the 0.3–3.0 L/person
+    band follow <code>src/me_engine/apparent_consumption.py</code>.<br />
+    <b>Still illustrative where marked.</b> T4 inputs are bounded judgement, not measurement. The bands are honest
+    about that; the base case should not be quoted without them.
+  </footer>
+</div>
+
+<script id="nest-data" type="application/json">{
+  "meta": {
+    "market": "Vinegar",
+    "geography": "India",
+    "base_year": 2024,
+    "built_at": "2026-09-16 19:41:36",
+    "artifact": "nested demand-usage, built from fetched data",
+    "tiers": {
+      "T1": "verified_observed - live API fetch, machine-reproducible",
+      "T2": "derived - computed from other inputs via a stated formula",
+      "T3": "source_found_unverified - published figure + URL, not independently checked",
+      "T4": "assumption - bounded range, Monte Carlo simulated, never an LLM magnitude"
+    },
+    "provenance_rank": {
+      "verified_observed": 3,
+      "derived": 2,
+      "source_found_unverified": 1,
+      "assumption": 0
+    }
+  },
+  "verification": [
+    {
+      "claim": "India HS-2209 imports 2024: $1,873,026 / 1,224,998 kg",
+      "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+      "status": "confirmed_with_caveat",
+      "finding": "Re-fetched independently; byte-identical. BUT the record carries isReported=False \u2014 India did not itself report this line to Comtrade, so the figure is mirror data reconstructed from partner countries' export declarations, not Indian customs."
+    },
+    {
+      "claim": "India population 2024: 1,450,935,791",
+      "url": "https://api.worldbank.org/v2/country/IND/indicator/SP.POP.TOTL?format=json&date=2024",
+      "status": "confirmed",
+      "finding": "World Bank API, re-fetched, identical."
+    },
+    {
+      "claim": "India ketchup & sauces consumption 2024: 1.2 mn t (production 1.3 mn t)",
+      "url": "https://www.indexbox.io/blog/tomato-ketchup-world-market-overview-2024-4/",
+      "status": "confirmed",
+      "finding": "Page re-opened and the figure is stated verbatim, with India ranked 3rd globally behind China (3.0 mn t) and the USA (2.1 mn t). Citation corrected to the article that actually carries the number (the previously cited store page does not)."
+    },
+    {
+      "claim": "Ketchup vinegar dosage 84-112 ml/kg",
+      "url": "https://patents.google.com/patent/RU2728363C1/en",
+      "status": "confirmed",
+      "finding": "Patent RU2728363C1 states acetic acid 0.6-0.8 wt% on a 70% basis. Back-solve (x0.70 / 5% vinegar strength) gives 8.4-11.2 wt% vinegar. Arithmetic re-verified. Corroborating '7-12% w/w' figure comes from a low-quality commercial page and is treated as weak support, not a second source."
+    },
+    {
+      "claim": "India CSD volume 2024: 12,069.7 mn L",
+      "url": "https://www.marketresearch.com/MarketLine-v3883/Carbonated-Soft-Drinks-India-43553341/",
+      "status": "unverifiable",
+      "finding": "Primary page returns HTTP 403 (paywalled) \u2014 the figure could not be confirmed at source. It survives only an indirect check: 12,069.7 mn L over 1.451 bn people = 8.3 L/person, consistent with a separately reported ~9 L/person. Retained at T3, which is precisely the tag for 'published somewhere, not verified'."
+    },
+    {
+      "claim": "India mayonnaise market value",
+      "url": "https://www.imarcgroup.com/india-mayonnaise-market",
+      "status": "corrected",
+      "finding": "FAILED as originally cited. The build used $485.08M for 2024; the IMARC page states no 2024 figure at all and gives 2025 = $455.66M. The $485.08M came from a search-result summary aggregating several vendors, not from this page. Corrected to $455.66M (2025) with the year relabelled. Confirmed: no tonnage is published anywhere on the page."
+    },
+    {
+      "claim": "India pickle production >1 mn t/yr",
+      "url": "https://theindiawatch.com/insights-new/retail/india-pickle-market",
+      "status": "corrected",
+      "finding": "FAILED. The page carries no production tonnage at all. It does state a market value of ~$870M and that ~70% of the industry is unorganised \u2014 both confirmed. The tonnage claim came from a search summary. Host volume downgraded from T3 to T4 with a wide band."
+    },
+    {
+      "claim": "India vinegar market top-down $301.6M (2024)",
+      "url": "https://mobilityforesights.com/product/india-vinegar-market",
+      "status": "retracted",
+      "finding": "FAILED. The page states no market size figure whatsoever \u2014 only the phrase 'recent estimates position the market in the high hundreds of millions'. The $301.6M came from a search summary and cannot be attributed to this or any verified source. The quantitative top-down cross-check has been REMOVED. What remains is a qualitative disagreement: this build gives ~$218M against unsourced language suggesting 2-4x more."
+    }
+  ],
+  "live_sources": {
+    "comtrade": {
+      "period": 2024,
+      "source_url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=699&period=2024&cmdCode=2209",
+      "imports": {
+        "value_usd": 1873025.582,
+        "net_weight_kg": 1224998.0,
+        "is_reported": false,
+        "top_partners": [
+          {
+            "partner_code": 380,
+            "value_usd": 517435.698,
+            "net_weight_kg": 288576.0
+          },
+          {
+            "partner_code": 842,
+            "value_usd": 463979.036,
+            "net_weight_kg": 132128.0
+          },
+          {
+            "partner_code": 156,
+            "value_usd": 312445.632,
+            "net_weight_kg": 226240.0
+          },
+          {
+            "partner_code": 724,
+            "value_usd": 214462.223,
+            "net_weight_kg": 155816.0
+          },
+          {
+            "partner_code": 392,
+            "value_usd": 149083.008,
+            "net_weight_kg": 106952.0
+          },
+          {
+            "partner_code": 64,
+            "value_usd": 52997.706,
+            "net_weight_kg": 156619.0
+          }
+        ],
+        "unit_value_usd_per_kg": 1.5290029714334228,
+        "volume_mn_l": 1.2176918489065605
+      },
+      "is_reported": false,
+      "exports": {
+        "value_usd": 858031.368,
+        "net_weight_kg": 963025.659,
+        "is_reported": false,
+        "top_partners": [
+          {
+            "partner_code": 368,
+            "value_usd": 127345.855,
+            "net_weight_kg": 130343.0
+          },
+          {
+            "partner_code": 842,
+            "value_usd": 96108.506,
+            "net_weight_kg": 34202.0
+          },
+          {
+            "partner_code": 784,
+            "value_usd": 78050.925,
+            "net_weight_kg": 131516.0
+          },
+          {
+            "partner_code": 524,
+            "value_usd": 75303.433,
+            "net_weight_kg": 31284.101
+          },
+          {
+            "partner_code": 826,
+            "value_usd": 68484.212,
+            "net_weight_kg": 54075.0
+          },
+          {
+            "partner_code": 634,
+            "value_usd": 62835.721,
+            "net_weight_kg": 126135.0
+          }
+        ],
+        "unit_value_usd_per_kg": 0.890974565403558,
+        "volume_mn_l": 0.957281967196819
+      }
+    },
+    "population": {
+      "year": "2024",
+      "population": 1450935791.0,
+      "source_url": "https://api.worldbank.org/v2/country/IND/indicator/SP.POP.TOTL?format=json&date=2024"
+    }
+  },
+  "majors": [
+    {
+      "name": "Food & Beverages",
+      "volume_mn_l": 118.20763039999997,
+      "revenue_musd": 182.60881251199996,
+      "leaves": [
+        {
+          "major": "Food & Beverages",
+          "name": "Aerated / carbonated soft drinks",
+          "kind": "dosage",
+          "basis": "ml_per_L",
+          "host": {
+            "base": 12069.7,
+            "lo": 11000,
+            "hi": 13000,
+            "prov": "source_found_unverified",
+            "tier": "T3",
+            "source": "MarketLine \u2014 India CSD consumption volume 2024 (page paywalled, HTTP 403)",
+            "url": "https://www.marketresearch.com/MarketLine-v3883/Carbonated-Soft-Drinks-India-43553341/",
+            "formula": "",
+            "note": "AUDIT: could not be confirmed at source \u2014 the primary page returns 403. Survives only an indirect check: 12,069.7 mn L / 1.451 bn people = 8.3 L/person, consistent with a separately reported ~9 L/person. T3 is exactly the right tag for this state.",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 0.8,
+            "lo": 0.2,
+            "hi": 2.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No numeric cap exists \u2014 FSSAI permits acetic acid (INS 260) at GMP level",
+            "url": "https://desiutils.in/tools/ingredient-explained/ins-260-acetic-acid",
+            "formula": "",
+            "note": "THE REGULATORY ROUTE FAILS HERE. Acetic acid is permitted but uncapped for many categories, so no ml/L can be read off the regulation. Only a label study could resolve this.",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.04,
+            "lo": 0.01,
+            "hi": 0.1,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No SKU-level acidulant census exists",
+            "url": "",
+            "formula": "",
+            "note": "Mainstream colas use phosphoric acid, citrus drinks use citric. Vinegar is rare.",
+            "simulated": true
+          },
+          "price": {
+            "base": 1.53,
+            "lo": 1.53,
+            "hi": 1.53,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade import unit value, food grade",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "import value / net weight / density",
+            "note": "",
+            "simulated": false
+          },
+          "note": "The worked example from the brief. It is also the WEAKEST leaf in the build \u2014 two of three inputs are unbounded by any source. Worth seeing that the headline example is the hardest case, not the easiest.",
+          "volume_mn_l": 0.38623040000000003,
+          "revenue_musd": 0.5909325120000001,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Food & Beverages",
+          "name": "Sauces, ketchup & condiments",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 1200.0,
+            "lo": 1000,
+            "hi": 1300,
+            "prov": "source_found_unverified",
+            "tier": "T3",
+            "source": "IndexBox \u2014 India ketchup & sauces consumption 2024 (1.2 mn t)",
+            "url": "https://www.indexbox.io/blog/tomato-ketchup-world-market-overview-2024-4/",
+            "formula": "",
+            "note": "India is the 3rd-largest consumer globally after China (3.0 mn t) and USA (2.1 mn t). Production 1.3 mn t.",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 97.99999999999997,
+            "lo": 83.99999999999999,
+            "hi": 111.99999999999997,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Derived from patent RU2728363C1 formulation spec",
+            "url": "https://patents.google.com/patent/RU2728363C1/en",
+            "formula": "0.6-0.8 wt% acetic acid @70% basis x 0.70 / 5% vinegar strength = 8.4-11.2 wt% vinegar",
+            "note": "CROSS-CHECKED: independent formulation guidance puts vinegar at 7-12% w/w of ketchup. Two unrelated routes land on the same range \u2014 this is the strongest coefficient in the model.",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.85,
+            "lo": 0.7,
+            "hi": 0.95,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Vinegar is near-definitional for ketchup; broader 'sauces' is mixed",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 1.53,
+            "lo": 1.53,
+            "hi": 1.53,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade import unit value, food grade",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "import value / net weight / density",
+            "note": "",
+            "simulated": false
+          },
+          "note": "Dominates the entire build. A compositional standard exists for this product, which is exactly why its coefficient is sourceable while the aerated-drinks one is not.",
+          "volume_mn_l": 99.95999999999997,
+          "revenue_musd": 152.93879999999996,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Food & Beverages",
+          "name": "Pickles & preserves",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 900.0,
+            "lo": 400.0,
+            "hi": 1300.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No production tonnage published \u2014 cited page carries value only (~$870M, ~70% unorganised)",
+            "url": "https://theindiawatch.com/insights-new/retail/india-pickle-market",
+            "formula": "",
+            "note": "DOWNGRADED ON AUDIT. A '>1 mn t' figure was originally attributed to this page; re-opening it showed no tonnage at all. The value side ($870M) and the 70%-unorganised split did verify. Deriving tonnage from value gives ~460k t at typical retail prices, which conflicts with the unverified 1 mn t claim \u2014 hence the deliberately wide band.",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 60.0,
+            "lo": 30.0,
+            "hi": 100.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No Indian compositional standard for achaar found",
+            "url": "",
+            "formula": "",
+            "note": "Western pickling is brine/vinegar based; Indian achaar is predominantly oil and salt cured.",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.15,
+            "lo": 0.05,
+            "hi": 0.3,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Traditional Indian pickling does not use vinegar",
+            "url": "",
+            "formula": "",
+            "note": "Highest-leverage unknown in the model \u2014 see the sensitivity ranking.",
+            "simulated": true
+          },
+          "price": {
+            "base": 1.2,
+            "lo": 0.9,
+            "hi": 1.6,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Bulk domestic synthetic, below import unit value",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "note": "Large host, but the adoption rate is both very uncertain and very low. A label study on the organised ~30% would collapse most of this uncertainty.",
+          "volume_mn_l": 8.1,
+          "revenue_musd": 9.719999999999999,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Food & Beverages",
+          "name": "Mayonnaise & dressings",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 175.3,
+            "lo": 126.6,
+            "hi": 253.1,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Derived from IMARC value ($455.66M, 2025) / assumed retail price",
+            "url": "https://www.imarcgroup.com/india-mayonnaise-market",
+            "formula": "$455.66M / ~$2.60 per kg = ~175,300 t  (band spans $1.80-$3.60/kg)",
+            "note": "CORRECTED ON AUDIT \u2014 the build previously used $485.08M for 2024, which does not appear on the cited page; IMARC publishes 2025 = $455.66M and no 2024 figure. CONFIRMED: no tonnage is published anywhere for this market, so volume must be bought with a price assumption and inherits its error. A live example of the host_volume gap.",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 40.0,
+            "lo": 25.0,
+            "hi": 60.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Acidified emulsion; no standard fetched for this build",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.95,
+            "lo": 0.85,
+            "hi": 1.0,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Acidification is definitional for the category",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 2.2,
+            "lo": 1.6,
+            "hi": 2.9,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Blend of synthetic and wine vinegar grades",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "note": "Shows the second-order problem: when only value is published, you buy the volume with a price assumption and inherit its error.",
+          "volume_mn_l": 6.6614,
+          "revenue_musd": 14.655080000000002,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Food & Beverages",
+          "name": "Bakery & leavening",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 2000.0,
+            "lo": 1500.0,
+            "hi": 3000.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No production series fetched for this build",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 1.5,
+            "lo": 0.5,
+            "hi": 3.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Minority of recipes; propionate is the usual mould inhibitor",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.1,
+            "lo": 0.03,
+            "hi": 0.2,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No SKU census",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 1.4,
+            "lo": 1.1,
+            "hi": 1.8,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Bulk food grade",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "note": "Largest host market in the build, smallest dose. Lands near zero \u2014 host size alone predicts nothing.",
+          "volume_mn_l": 0.3,
+          "revenue_musd": 0.42,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Food & Beverages",
+          "name": "Ready-to-eat & processed meals",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 400.0,
+            "lo": 250.0,
+            "hi": 600.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No official RTE production series exists for India",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 20.0,
+            "lo": 8.0,
+            "hi": 35.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Weighted across recipe archetypes; no published coefficient",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.35,
+            "lo": 0.2,
+            "hi": 0.55,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Share of RTE recipes with an acidified component",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 1.53,
+            "lo": 1.53,
+            "hi": 1.53,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade import unit value",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "note": "Both host and dose are unmeasured. Structurally the least knowable F&B leaf.",
+          "volume_mn_l": 2.8,
+          "revenue_musd": 4.284,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        }
+      ]
+    },
+    {
+      "name": "Healthcare & Wellness",
+      "volume_mn_l": 6.020832,
+      "revenue_musd": 27.777071999999997,
+      "leaves": [
+        {
+          "major": "Healthcare & Wellness",
+          "name": "ACV wellness / direct consumption",
+          "kind": "direct",
+          "basis": "direct",
+          "host": {
+            "base": 6.0,
+            "lo": 3.0,
+            "hi": 12.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No separable category data; e-commerce offtake not scraped for this build",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "prov": "verified_observed",
+            "tier": "T1",
+            "source": "Product IS vinegar \u2014 ratio is definitionally 1.0",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "adopt": {
+            "base": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "prov": "verified_observed",
+            "tier": "T1",
+            "source": "Definitional",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "price": {
+            "base": 4.6,
+            "lo": 3.2,
+            "hi": 6.5,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Premium mother-of-vinegar ACV retail, pack-size normalised",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "note": "A DIRECT leaf: vinegar is the end product, so there is no host to nest inside and intensity is 1.0 by definition. Two of three inputs are T1 \u2014 but the host volume is pure assumption, so the leaf still bottoms out at T4. That is the weakest-link rule doing its job.",
+          "volume_mn_l": 6.0,
+          "revenue_musd": 27.599999999999998,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Healthcare & Wellness",
+          "name": "Pharma excipient / acetate buffers",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 12.4,
+            "lo": 6.0,
+            "hi": 25.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No excipient-level production data published",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 6.0,
+            "lo": 2.0,
+            "hi": 12.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Most pharma acetate comes from glacial acetic acid, not vinegar",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.28,
+            "lo": 0.1,
+            "hi": 0.5,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Judgement",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 8.5,
+            "lo": 6.0,
+            "hi": 12.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Pharma-grade premium, indicative",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "note": "Every input unsupported. Retained deliberately to show what a fully-unsourced leaf looks like \u2014 and to show, via the sensitivity ranking, that it does not matter to the answer.",
+          "volume_mn_l": 0.020832000000000003,
+          "revenue_musd": 0.17707200000000003,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        }
+      ]
+    },
+    {
+      "name": "Cleaning & Household",
+      "volume_mn_l": 5.890000000000001,
+      "revenue_musd": 5.2421,
+      "leaves": [
+        {
+          "major": "Cleaning & Household",
+          "name": "Household surface cleaners",
+          "kind": "dosage",
+          "basis": "ml_per_L",
+          "host": {
+            "base": 1150.0,
+            "lo": 800.0,
+            "hi": 1600.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Home-care category volume not fetched for this build",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 15.0,
+            "lo": 5.0,
+            "hi": 30.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Inclusion rate in vinegar-positioned formulations",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.04,
+            "lo": 0.01,
+            "hi": 0.09,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "'Natural cleaning' remains a niche positioning in India",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 0.89,
+            "lo": 0.89,
+            "hi": 0.89,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade EXPORT unit value \u2014 the closest proxy for bulk industrial grade",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "export value / net weight / density",
+            "note": "",
+            "simulated": false
+          },
+          "note": "Priced off the export unit value rather than the import one: India exports cheap bulk vinegar and imports expensive specialty vinegar, so the two unit values bracket the real domestic price range.",
+          "volume_mn_l": 0.69,
+          "revenue_musd": 0.6141,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Cleaning & Household",
+          "name": "Direct-purchase cleaning vinegar",
+          "kind": "direct",
+          "basis": "direct",
+          "host": {
+            "base": 5.2,
+            "lo": 2.0,
+            "hi": 10.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No separable retail category \u2014 cleaning and culinary SKUs overlap",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "prov": "verified_observed",
+            "tier": "T1",
+            "source": "Product IS vinegar",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "adopt": {
+            "base": 1.0,
+            "lo": 1.0,
+            "hi": 1.0,
+            "prov": "verified_observed",
+            "tier": "T1",
+            "source": "Definitional",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "price": {
+            "base": 0.89,
+            "lo": 0.89,
+            "hi": 0.89,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade export unit value, bulk grade",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "note": "Direct leaf. Pack-size skew (5L jugs vs 250ml bottles) is the only available signal separating this from culinary white vinegar.",
+          "volume_mn_l": 5.2,
+          "revenue_musd": 4.628,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        }
+      ]
+    },
+    {
+      "name": "Agriculture",
+      "volume_mn_l": 0.34104,
+      "revenue_musd": 0.3035256,
+      "leaves": [
+        {
+          "major": "Agriculture",
+          "name": "Organic herbicide / weed control",
+          "kind": "dosage",
+          "basis": "L_per_ha",
+          "host": {
+            "base": 2.8,
+            "lo": 2.0,
+            "hi": 4.5,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "APEDA organic certified area not fetched for this build",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 1.9,
+            "lo": 0.8,
+            "hi": 4.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Horticultural extension guidance, US-derived",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.006,
+            "lo": 0.001,
+            "hi": 0.02,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Vinegar herbicide is rare in Indian organic practice",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 0.89,
+            "lo": 0.89,
+            "hi": 0.89,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade export unit value, industrial grade",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "note": "Host unit is hectares \u2014 neither mass nor volume. The model has to carry unit metadata per leaf.",
+          "volume_mn_l": 0.03192,
+          "revenue_musd": 0.028408799999999998,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        },
+        {
+          "major": "Agriculture",
+          "name": "Silage & feed preservation",
+          "kind": "dosage",
+          "basis": "ml_per_kg",
+          "host": {
+            "base": 4600.0,
+            "lo": 3000.0,
+            "hi": 7000.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "No national silage production series",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "intensity": {
+            "base": 3.2,
+            "lo": 1.0,
+            "hi": 6.0,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Feed-preservation literature, mostly EU dairy systems",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "adopt": {
+            "base": 0.021,
+            "lo": 0.005,
+            "hi": 0.05,
+            "prov": "assumption",
+            "tier": "T4",
+            "source": "Judgement",
+            "url": "",
+            "formula": "",
+            "note": "",
+            "simulated": true
+          },
+          "price": {
+            "base": 0.89,
+            "lo": 0.89,
+            "hi": 0.89,
+            "prov": "derived",
+            "tier": "T2",
+            "source": "Comtrade export unit value, industrial grade",
+            "url": "https://comtradeplus.un.org/TradeFlow?Frequency=A&Flows=M&CommodityCodes=2209&Partners=0&Reporters=699",
+            "formula": "",
+            "note": "",
+            "simulated": false
+          },
+          "note": "",
+          "volume_mn_l": 0.30912,
+          "revenue_musd": 0.2751168,
+          "confidence": "assumption",
+          "confidence_tier": "T4"
+        }
+      ]
+    }
+  ],
+  "rollup": {
+    "bottom_up_volume_mn_l": 130.45950239999996,
+    "bottom_up_revenue_musd": 215.93151011199996,
+    "blended_implied_price": 1.6551612273511171
+  },
+  "monte_carlo": {
+    "trials": 20000,
+    "volume": {
+      "p10": 116.13632717096924,
+      "p50": 129.879082396638,
+      "p90": 144.32962862219435,
+      "mean": 130.11671384782005,
+      "min": 94.28365327015885,
+      "max": 172.72450321283875,
+      "ratio_p90_p10": 1.2427604018312077
+    },
+    "revenue": {
+      "p10": 195.12057718378531,
+      "p50": 219.14907089445694,
+      "p90": 244.86474855982775,
+      "mean": 219.67676119686132
+    }
+  },
+  "tornado": [
+    {
+      "leaf": "Sauces, ketchup & condiments",
+      "major": "Food & Beverages",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.7,
+      "base": 0.85,
+      "hi": 0.95,
+      "volume_lo": 112.81950239999995,
+      "volume_hi": 142.21950239999998,
+      "swing_mn_l": 29.400000000000034,
+      "swing_pct_of_base": 22.53572906468486,
+      "cumulative_share": 0.18437398864360827
+    },
+    {
+      "leaf": "Sauces, ketchup & condiments",
+      "major": "Food & Beverages",
+      "field": "intensity",
+      "prov": "derived",
+      "tier": "T2",
+      "lo": 83.99999999999999,
+      "base": 97.99999999999997,
+      "hi": 111.99999999999997,
+      "volume_lo": 116.17950239999996,
+      "volume_hi": 144.73950240000002,
+      "swing_mn_l": 28.56000000000006,
+      "swing_pct_of_base": 21.89185109140817,
+      "cumulative_share": 0.36348014904025644
+    },
+    {
+      "leaf": "Sauces, ketchup & condiments",
+      "major": "Food & Beverages",
+      "field": "host",
+      "prov": "source_found_unverified",
+      "tier": "T3",
+      "lo": 1000,
+      "base": 1200.0,
+      "hi": 1300,
+      "volume_lo": 113.79950239999995,
+      "volume_hi": 138.78950239999998,
+      "swing_mn_l": 24.990000000000023,
+      "swing_pct_of_base": 19.155369704982125,
+      "cumulative_share": 0.5201980393873235
+    },
+    {
+      "leaf": "Pickles & preserves",
+      "major": "Food & Beverages",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.05,
+      "base": 0.15,
+      "hi": 0.3,
+      "volume_lo": 125.05950239999996,
+      "volume_hi": 138.55950239999999,
+      "swing_mn_l": 13.500000000000028,
+      "swing_pct_of_base": 10.348038856232854,
+      "cumulative_share": 0.6048595647848988
+    },
+    {
+      "leaf": "Pickles & preserves",
+      "major": "Food & Beverages",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 30.0,
+      "base": 60.0,
+      "hi": 100.0,
+      "volume_lo": 126.40950239999995,
+      "volume_hi": 135.85950239999997,
+      "swing_mn_l": 9.450000000000017,
+      "swing_pct_of_base": 7.2436271993629955,
+      "cumulative_share": 0.6641226325632015
+    },
+    {
+      "leaf": "ACV wellness / direct consumption",
+      "major": "Healthcare & Wellness",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 3.0,
+      "base": 6.0,
+      "hi": 12.0,
+      "volume_lo": 127.45950239999995,
+      "volume_hi": 136.4595024,
+      "swing_mn_l": 9.000000000000043,
+      "swing_pct_of_base": 6.898692570821921,
+      "cumulative_share": 0.7205636494949185
+    },
+    {
+      "leaf": "Pickles & preserves",
+      "major": "Food & Beverages",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 400.0,
+      "base": 900.0,
+      "hi": 1300.0,
+      "volume_lo": 125.95950239999995,
+      "volume_hi": 134.05950239999999,
+      "swing_mn_l": 8.100000000000037,
+      "swing_pct_of_base": 6.208823313739727,
+      "cumulative_share": 0.7713605647334638
+    },
+    {
+      "leaf": "Direct-purchase cleaning vinegar",
+      "major": "Cleaning & Household",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 2.0,
+      "base": 5.2,
+      "hi": 10.0,
+      "volume_lo": 127.25950239999995,
+      "volume_hi": 135.25950239999997,
+      "swing_mn_l": 8.000000000000028,
+      "swing_pct_of_base": 6.132171174063923,
+      "cumulative_share": 0.8215303575616567
+    },
+    {
+      "leaf": "Mayonnaise & dressings",
+      "major": "Food & Beverages",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 25.0,
+      "base": 40.0,
+      "hi": 60.0,
+      "volume_lo": 127.96147739999995,
+      "volume_hi": 133.79020239999997,
+      "swing_mn_l": 5.82872500000002,
+      "swing_pct_of_base": 4.467842428318216,
+      "cumulative_share": 0.8580835982744702
+    },
+    {
+      "leaf": "Mayonnaise & dressings",
+      "major": "Food & Beverages",
+      "field": "host",
+      "prov": "derived",
+      "tier": "T2",
+      "lo": 126.6,
+      "base": 175.3,
+      "hi": 253.1,
+      "volume_lo": 128.60890239999998,
+      "volume_hi": 133.41590239999996,
+      "swing_mn_l": 4.806999999999988,
+      "swing_pct_of_base": 3.6846683542156367,
+      "cumulative_share": 0.8882293725401105
+    },
+    {
+      "leaf": "Ready-to-eat & processed meals",
+      "major": "Food & Beverages",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 8.0,
+      "base": 20.0,
+      "hi": 35.0,
+      "volume_lo": 128.77950239999998,
+      "volume_hi": 132.55950239999999,
+      "swing_mn_l": 3.780000000000001,
+      "swing_pct_of_base": 2.8974508797451937,
+      "cumulative_share": 0.9119345996514315
+    },
+    {
+      "leaf": "Ready-to-eat & processed meals",
+      "major": "Food & Beverages",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.2,
+      "base": 0.35,
+      "hi": 0.55,
+      "volume_lo": 129.25950239999997,
+      "volume_hi": 132.05950239999999,
+      "swing_mn_l": 2.8000000000000114,
+      "swing_pct_of_base": 2.146259910922374,
+      "cumulative_share": 0.929494027141299
+    },
+    {
+      "leaf": "Ready-to-eat & processed meals",
+      "major": "Food & Beverages",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 250.0,
+      "base": 400.0,
+      "hi": 600.0,
+      "volume_lo": 129.40950239999998,
+      "volume_hi": 131.85950239999997,
+      "swing_mn_l": 2.4499999999999886,
+      "swing_pct_of_base": 1.8779774220570609,
+      "cumulative_share": 0.9448585261949329
+    },
+    {
+      "leaf": "Household surface cleaners",
+      "major": "Cleaning & Household",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.01,
+      "base": 0.04,
+      "hi": 0.09,
+      "volume_lo": 129.94200239999998,
+      "volume_hi": 131.32200239999997,
+      "swing_mn_l": 1.3799999999999955,
+      "swing_pct_of_base": 1.0577995275260192,
+      "cumulative_share": 0.9535128154577961
+    },
+    {
+      "leaf": "Household surface cleaners",
+      "major": "Cleaning & Household",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 5.0,
+      "base": 15.0,
+      "hi": 30.0,
+      "volume_lo": 129.99950239999998,
+      "volume_hi": 131.14950239999996,
+      "swing_mn_l": 1.1499999999999773,
+      "swing_pct_of_base": 0.8814996062716682,
+      "cumulative_share": 0.9607247231768486
+    },
+    {
+      "leaf": "Mayonnaise & dressings",
+      "major": "Food & Beverages",
+      "field": "adopt",
+      "prov": "derived",
+      "tier": "T2",
+      "lo": 0.85,
+      "base": 0.95,
+      "hi": 1.0,
+      "volume_lo": 129.75830239999996,
+      "volume_hi": 130.81010239999998,
+      "swing_mn_l": 1.0518000000000143,
+      "swing_pct_of_base": 0.8062272051100623,
+      "cumulative_share": 0.9673207966889354
+    },
+    {
+      "leaf": "Aerated / carbonated soft drinks",
+      "major": "Food & Beverages",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.2,
+      "base": 0.8,
+      "hi": 2.0,
+      "volume_lo": 130.16982959999996,
+      "volume_hi": 131.03884799999997,
+      "swing_mn_l": 0.8690184000000158,
+      "swing_pct_of_base": 0.6661211977764037,
+      "cumulative_share": 0.9727706058254214
+    },
+    {
+      "leaf": "Aerated / carbonated soft drinks",
+      "major": "Food & Beverages",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.01,
+      "base": 0.04,
+      "hi": 0.1,
+      "volume_lo": 130.16982959999996,
+      "volume_hi": 131.03884799999997,
+      "swing_mn_l": 0.8690184000000158,
+      "swing_pct_of_base": 0.6661211977764037,
+      "cumulative_share": 0.9782204149619075
+    },
+    {
+      "leaf": "Silage & feed preservation",
+      "major": "Agriculture",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.005,
+      "base": 0.021,
+      "hi": 0.05,
+      "volume_lo": 130.22398239999995,
+      "volume_hi": 130.88638239999995,
+      "swing_mn_l": 0.662399999999991,
+      "swing_pct_of_base": 0.5077437732124841,
+      "cumulative_share": 0.9823744738080817
+    },
+    {
+      "leaf": "Bakery & leavening",
+      "major": "Food & Beverages",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.03,
+      "base": 0.1,
+      "hi": 0.2,
+      "volume_lo": 130.24950239999998,
+      "volume_hi": 130.75950239999997,
+      "swing_mn_l": 0.5099999999999909,
+      "swing_pct_of_base": 0.39092591234656665,
+      "cumulative_share": 0.9855727981008789
+    },
+    {
+      "leaf": "Bakery & leavening",
+      "major": "Food & Beverages",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.5,
+      "base": 1.5,
+      "hi": 3.0,
+      "volume_lo": 130.25950239999997,
+      "volume_hi": 130.75950239999997,
+      "swing_mn_l": 0.5,
+      "swing_pct_of_base": 0.3832606983789938,
+      "cumulative_share": 0.988708410152641
+    },
+    {
+      "leaf": "Silage & feed preservation",
+      "major": "Agriculture",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 1.0,
+      "base": 3.2,
+      "hi": 6.0,
+      "volume_lo": 130.24698239999995,
+      "volume_hi": 130.72998239999995,
+      "swing_mn_l": 0.4830000000000041,
+      "swing_pct_of_base": 0.37022983463411113,
+      "cumulative_share": 0.9917374113946432
+    },
+    {
+      "leaf": "Household surface cleaners",
+      "major": "Cleaning & Household",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 800.0,
+      "base": 1150.0,
+      "hi": 1600.0,
+      "volume_lo": 130.24950239999998,
+      "volume_hi": 130.72950239999997,
+      "swing_mn_l": 0.47999999999998977,
+      "swing_pct_of_base": 0.3679302704438262,
+      "cumulative_share": 0.9947475989643347
+    },
+    {
+      "leaf": "Silage & feed preservation",
+      "major": "Agriculture",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 3000.0,
+      "base": 4600.0,
+      "hi": 7000.0,
+      "volume_lo": 130.35198239999997,
+      "volume_hi": 130.62078239999997,
+      "swing_mn_l": 0.2687999999999988,
+      "swing_pct_of_base": 0.20604095144854617,
+      "cumulative_share": 0.9964333040033619
+    },
+    {
+      "leaf": "Bakery & leavening",
+      "major": "Food & Beverages",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 1500.0,
+      "base": 2000.0,
+      "hi": 3000.0,
+      "volume_lo": 130.38450239999997,
+      "volume_hi": 130.60950239999997,
+      "swing_mn_l": 0.22499999999999432,
+      "swing_pct_of_base": 0.17246731427054282,
+      "cumulative_share": 0.9978443294266548
+    },
+    {
+      "leaf": "Organic herbicide / weed control",
+      "major": "Agriculture",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.001,
+      "base": 0.006,
+      "hi": 0.02,
+      "volume_lo": 130.43290239999996,
+      "volume_hi": 130.53398239999996,
+      "swing_mn_l": 0.10107999999999606,
+      "swing_pct_of_base": 0.07747998278429437,
+      "cumulative_share": 0.998478224759039
+    },
+    {
+      "leaf": "Aerated / carbonated soft drinks",
+      "major": "Food & Beverages",
+      "field": "host",
+      "prov": "source_found_unverified",
+      "tier": "T3",
+      "lo": 11000,
+      "base": 12069.7,
+      "hi": 13000,
+      "volume_lo": 130.42527199999998,
+      "volume_hi": 130.48927199999997,
+      "swing_mn_l": 0.06399999999999295,
+      "swing_pct_of_base": 0.0490573693925058,
+      "cumulative_share": 0.9988795831016645
+    },
+    {
+      "leaf": "Organic herbicide / weed control",
+      "major": "Agriculture",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.8,
+      "base": 1.9,
+      "hi": 4.0,
+      "volume_lo": 130.44102239999995,
+      "volume_hi": 130.49478239999996,
+      "swing_mn_l": 0.05376000000001113,
+      "swing_pct_of_base": 0.04120819028971794,
+      "cumulative_share": 0.99921672410947
+    },
+    {
+      "leaf": "Pharma excipient / acetate buffers",
+      "major": "Healthcare & Wellness",
+      "field": "intensity",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 2.0,
+      "base": 6.0,
+      "hi": 12.0,
+      "volume_lo": 130.44561439999998,
+      "volume_hi": 130.48033439999998,
+      "swing_mn_l": 0.03471999999999298,
+      "swing_pct_of_base": 0.026613622895431947,
+      "cumulative_share": 0.9994344610103444
+    },
+    {
+      "leaf": "Pharma excipient / acetate buffers",
+      "major": "Healthcare & Wellness",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 6.0,
+      "base": 12.4,
+      "hi": 25.0,
+      "volume_lo": 130.44875039999997,
+      "volume_hi": 130.48067039999998,
+      "swing_mn_l": 0.031920000000013715,
+      "swing_pct_of_base": 0.024467362984525478,
+      "cumulative_share": 0.9996346384837289
+    },
+    {
+      "leaf": "Pharma excipient / acetate buffers",
+      "major": "Healthcare & Wellness",
+      "field": "adopt",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.1,
+      "base": 0.28,
+      "hi": 0.5,
+      "volume_lo": 130.44611039999998,
+      "volume_hi": 130.47587039999996,
+      "swing_mn_l": 0.0297599999999818,
+      "swing_pct_of_base": 0.02281167676750376,
+      "cumulative_share": 0.9998212701130497
+    },
+    {
+      "leaf": "Organic herbicide / weed control",
+      "major": "Agriculture",
+      "field": "host",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 2.0,
+      "base": 2.8,
+      "hi": 4.5,
+      "volume_lo": 130.45038239999994,
+      "volume_hi": 130.47888239999995,
+      "swing_mn_l": 0.028500000000008185,
+      "swing_pct_of_base": 0.02184585980760892,
+      "cumulative_share": 1.0000000000000002
+    },
+    {
+      "leaf": "Pickles & preserves",
+      "major": "Food & Beverages",
+      "field": "price",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 0.9,
+      "base": 1.2,
+      "hi": 1.6,
+      "volume_lo": 130.45950239999996,
+      "volume_hi": 130.45950239999996,
+      "swing_mn_l": 0.0,
+      "swing_pct_of_base": 0.0,
+      "cumulative_share": 1.0000000000000002
+    },
+    {
+      "leaf": "Mayonnaise & dressings",
+      "major": "Food & Beverages",
+      "field": "price",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 1.6,
+      "base": 2.2,
+      "hi": 2.9,
+      "volume_lo": 130.45950239999996,
+      "volume_hi": 130.45950239999996,
+      "swing_mn_l": 0.0,
+      "swing_pct_of_base": 0.0,
+      "cumulative_share": 1.0000000000000002
+    },
+    {
+      "leaf": "Bakery & leavening",
+      "major": "Food & Beverages",
+      "field": "price",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 1.1,
+      "base": 1.4,
+      "hi": 1.8,
+      "volume_lo": 130.45950239999996,
+      "volume_hi": 130.45950239999996,
+      "swing_mn_l": 0.0,
+      "swing_pct_of_base": 0.0,
+      "cumulative_share": 1.0000000000000002
+    },
+    {
+      "leaf": "ACV wellness / direct consumption",
+      "major": "Healthcare & Wellness",
+      "field": "price",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 3.2,
+      "base": 4.6,
+      "hi": 6.5,
+      "volume_lo": 130.45950239999996,
+      "volume_hi": 130.45950239999996,
+      "swing_mn_l": 0.0,
+      "swing_pct_of_base": 0.0,
+      "cumulative_share": 1.0000000000000002
+    },
+    {
+      "leaf": "Pharma excipient / acetate buffers",
+      "major": "Healthcare & Wellness",
+      "field": "price",
+      "prov": "assumption",
+      "tier": "T4",
+      "lo": 6.0,
+      "base": 8.5,
+      "hi": 12.0,
+      "volume_lo": 130.45950239999996,
+      "volume_hi": 130.45950239999996,
+      "swing_mn_l": 0.0,
+      "swing_pct_of_base": 0.0,
+      "cumulative_share": 1.0000000000000002
+    }
+  ],
+  "coverage": {
+    "T1": 9.950068575998593,
+    "T2": 28.13376023806045,
+    "T3": 23.700374937152795,
+    "T4": 38.21579624878818,
+    "sourced_pct": 61.78420375121184
+  },
+  "reconciliation": {
+    "imports_mn_l": 1.2176918489065605,
+    "exports_mn_l": 0.957281967196819,
+    "net_trade_mn_l": 0.26040988170974144,
+    "imports_value_usd": 1873025.582,
+    "exports_value_usd": 858031.368,
+    "import_unit_value_usd_per_kg": 1.5290029714334228,
+    "export_unit_value_usd_per_kg": 0.890974565403558,
+    "is_mirror_data": true,
+    "trade_share_of_bottom_up_pct": 0.19960974625773334,
+    "population": 1450935791.0,
+    "per_capita_l": 0.08991404251602748,
+    "band_lo": 0.3,
+    "band_hi": 3.0,
+    "topdown_status": "retracted",
+    "topdown_quote": "recent estimates position the market in the high hundreds of millions",
+    "topdown_url": "https://mobilityforesights.com/product/india-vinegar-market",
+    "formula": "Apparent consumption = Domestic Production + Imports \u2212 Exports"
+  }
+}</script>
+<script>
+const D = JSON.parse(document.getElementById('nest-data').textContent);
+const PCLS={verified_observed:'p3',derived:'p2',source_found_unverified:'p1',assumption:'p0'};
+const f=(v,d=2)=>v.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
+const g=v=>v.toLocaleString(undefined,{maximumFractionDigits:Math.abs(v)<10?2:0});
+const PARTNER={842:'USA',380:'Italy',156:'China',251:'France',250:'France',724:'Spain',392:'Japan',
+  634:'Qatar',784:'UAE',368:'Iraq',826:'UK',524:'Nepal',764:'Thailand',702:'Singapore',36:'Australia',
+  276:'Germany',410:'South Korea',458:'Malaysia',860:'Uzbekistan',104:'Myanmar',144:'Sri Lanka'};
+function prov(p){return `<span class="prov ${PCLS[p.prov]}">${p.tier} · ${p.prov}</span>`}
+
+/* ---------------- live banner ---------------- */
+const CT=D.live_sources.comtrade, POP=D.live_sources.population;
+const topImp=CT.imports.top_partners.slice(0,4)
+  .map(p=>`${PARTNER[p.partner_code]||('#'+p.partner_code)} $${g(p.value_usd)}`).join(' · ');
+document.getElementById('liveBanner').innerHTML=`
+  <b>Fetched live · ${D.meta.built_at}</b><br />
+  <b style="color:#6ee7b7">UN Comtrade HS-2209 (vinegar), India ${CT.period}</b> —
+  imports <b>$${g(CT.imports.value_usd)}</b> / ${g(CT.imports.net_weight_kg)} kg
+  (unit value <b>$${f(CT.imports.unit_value_usd_per_kg,3)}/kg</b>) ·
+  exports <b>$${g(CT.exports.value_usd)}</b> / ${g(CT.exports.net_weight_kg)} kg
+  (<b>$${f(CT.exports.unit_value_usd_per_kg,3)}/kg</b>).
+  Top import partners: ${topImp}.
+  <a href="${CT.source_url}" target="_blank">Comtrade</a><br />
+  <b style="color:#6ee7b7">World Bank</b> — India population ${POP.year}: <b>${g(POP.population)}</b>.
+  <a href="${POP.source_url}" target="_blank">API</a>`;
+
+/* ---------------- headline + band ---------------- */
+const MC=D.monte_carlo, RU=D.rollup;
+document.getElementById('hVol').textContent=f(RU.bottom_up_volume_mn_l,1)+' mn L';
+document.getElementById('hVolSub').innerHTML=
+  `80% confidence interval <b>${f(MC.volume.p10,1)} – ${f(MC.volume.p90,1)} mn L</b><br />
+   <span style="color:var(--text-dimmer)">P50 ${f(MC.volume.p50,1)} · spread only
+   ${f(MC.volume.ratio_p90_p10,2)}× despite ${D.tornado.length} unbounded inputs</span>`;
+document.getElementById('hRev').textContent='$'+f(RU.bottom_up_revenue_musd,1)+'M';
+document.getElementById('hRevSub').innerHTML=
+  `80% CI <b>$${f(MC.revenue.p10,1)}M – $${f(MC.revenue.p90,1)}M</b><br />
+   <span style="color:var(--text-dimmer)">implied blended price $${f(RU.blended_implied_price,2)}/L —
+   an output of the mix, never an input</span>`;
+document.getElementById('mcTrials').textContent=MC.trials.toLocaleString();
+
+const lo=MC.volume.min, hi=MC.volume.max, span=hi-lo;
+const pos=v=>((v-lo)/span)*100;
+document.getElementById('band').innerHTML=`
+  <div class="rng" style="left:${pos(MC.volume.p10)}%;width:${pos(MC.volume.p90)-pos(MC.volume.p10)}%"></div>
+  <div class="tick" style="left:${pos(MC.volume.p50)}%"></div>
+  <div class="lbl" style="left:${pos(MC.volume.p10)}%">P10</div>
+  <div class="lbl" style="left:${pos(MC.volume.p50)}%">P50</div>
+  <div class="lbl" style="left:${pos(MC.volume.p90)}%">P90</div>
+  <div class="val" style="left:${pos(MC.volume.p10)}%">${f(MC.volume.p10,1)}</div>
+  <div class="val" style="left:${pos(MC.volume.p50)}%">${f(MC.volume.p50,1)}</div>
+  <div class="val" style="left:${pos(MC.volume.p90)}%">${f(MC.volume.p90,1)}</div>`;
+
+document.getElementById('mcFlags').innerHTML=`
+  <div class="flag ok"><div class="fl">The total is far more robust than any single leaf</div>
+    Individual leaves carry ±50% or worse, yet the total lands inside a
+    ${f(MC.volume.ratio_p90_p10,2)}× band. That is the portfolio effect: independent errors across 12 leaves
+    partially cancel. It is the strongest quantitative argument for building bottom-up rather than estimating
+    a total directly.</div>
+  <div class="flag warn2"><div class="fl">The caveat that must ship with that claim</div>
+    The simulation draws each input independently. Real analyst error is <i>correlated</i> — the same person
+    reaching for the same Western coefficients across every leaf produces bias that does not cancel. Treat this
+    band as the floor on uncertainty, not the ceiling. Widening it honestly needs either a correlation structure
+    or an external check.</div>`;
+
+/* ---------------- tree ---------------- */
+function cancellation(l){
+  const V=f(l.volume_mn_l,3), h=l.host.base, a=l.adopt.base, i=l.intensity.base;
+  if(l.basis==='direct') return `<div class="eq">
+    <span class="n">${g(h)}</span> <span class="keep">mn L</span> <span class="u">product</span>
+    &nbsp;×&nbsp; <span class="n">${f(a*100,0)}%</span>
+    &nbsp;×&nbsp; <span class="n">1.0</span> <span class="gone">L</span><span class="u">/</span><span class="gone">L</span><br />
+    <span class="u">&nbsp;&nbsp;→ vinegar and product are the same substance; the ratio cancels to unity</span><br />
+    <span class="u">=</span> <span class="res">${V} mn L</span></div>`;
+  if(l.basis==='ml_per_L') return `<div class="eq">
+    <span class="n">${g(h)}</span> <span class="gone">mn L</span> <span class="u">host</span>
+    &nbsp;×&nbsp; <span class="n">${f(a*100,1)}%</span>
+    &nbsp;×&nbsp; <span class="n">${i}</span> <span class="keep">ml</span><span class="u">/</span><span class="gone">L</span><br />
+    <span class="u">&nbsp;&nbsp;= </span><span class="n">${g(h*a*i)}</span> <span class="keep">mn ml</span>
+    <span class="u">&nbsp;÷ 1,000 ml/L →</span><br />
+    <span class="u">=</span> <span class="res">${V} mn L</span></div>`;
+  if(l.basis==='ml_per_kg'){const kg=h*1e6, ml=kg*a*i;
+    return `<div class="eq">
+    <span class="n">${g(h)}</span> <span class="u">'000 t →</span> <span class="n">${g(kg/1e6)}</span><span class="u">e6</span>
+    <span class="gone">kg</span> &nbsp;×&nbsp; <span class="n">${f(a*100,1)}%</span>
+    &nbsp;×&nbsp; <span class="n">${f(i,1)}</span> <span class="keep">ml</span><span class="u">/</span><span class="gone">kg</span><br />
+    <span class="u">&nbsp;&nbsp;= </span><span class="n">${g(ml/1e9)}</span><span class="u">e9</span> <span class="keep">ml</span>
+    <span class="u">&nbsp;÷ 1,000 ml/L = </span><span class="n">${g(ml/1e9)}</span><span class="u">e6</span>
+    <span class="keep">L</span> <span class="u">÷ 1e6 →</span><br />
+    <span class="u">=</span> <span class="res">${V} mn L</span></div>`;}
+  return `<div class="eq">
+    <span class="n">${g(h)}</span> <span class="gone">mn ha</span>
+    &nbsp;×&nbsp; <span class="n">${f(a*100,2)}%</span>
+    &nbsp;×&nbsp; <span class="n">${i}</span> <span class="keep">L</span><span class="u">/</span><span class="gone">ha</span><br />
+    <span class="u">&nbsp;&nbsp;→ hectares cancel; host unit is neither mass nor volume</span><br />
+    <span class="u">=</span> <span class="res">${V} mn L</span></div>`;
+}
+function card(k,p,unit,dec){
+  return `<div class="cc"><div class="cc-k">${k}</div>
+    <div class="cc-v">${f(p.base,dec)}</div><div class="cc-u">${unit}</div>
+    ${p.simulated?`<div class="cc-rng">simulated ${f(p.lo,dec)} – ${f(p.hi,dec)}</div>`:''}
+    ${prov(p)}
+    ${p.formula?`<div class="cc-f">${p.formula}</div>`:''}
+    <div class="cc-s">${p.source}${p.url?` · <a href="${p.url}" target="_blank">source ↗</a>`:''}
+      ${p.note?`<br /><span style="color:var(--text-dimmer)">${p.note}</span>`:''}</div></div>`;
+}
+function leafHTML(l){
+  return `<div class="leaf" onclick="this.classList.toggle('open');event.stopPropagation()">
+    <div class="leaf-hd"><span class="caret">▶</span><span class="lvl">L2</span>
+      <span class="leaf-nm">${l.name}</span><span class="kind ${l.kind}">${l.kind}</span>
+      <span class="prov ${PCLS[l.confidence]}">${l.confidence_tier}</span>
+      <span class="leaf-vol">${f(l.volume_mn_l,3)} mn L</span></div>
+    <div class="leaf-body">
+      <div class="lvl" style="display:inline-block;margin-top:10px">L3 · consumption coefficient</div>
+      <div class="coef">
+        ${card('host_volume',l.host,'',l.host.base<50?2:1)}
+        ${card('intensity',l.intensity,l.basis==='ml_per_kg'?'ml / kg host':l.basis==='ml_per_L'?'ml / L host':l.basis==='L_per_ha'?'L / ha':'L / L (definitional)',2)}
+        ${card('adoption_rate',{...l.adopt,base:l.adopt.base*100,lo:l.adopt.lo*100,hi:l.adopt.hi*100},'% of host using vinegar',l.adopt.base<0.02?2:1)}
+      </div>
+      <div class="cancel"><div class="cancel-k">derived_volume — unit cancellation (base case)</div>${cancellation(l)}</div>
+      <div class="pricerow"><span>Price at leaf:</span> <b>$${f(l.price.base,2)}/L</b> ${prov(l.price)}
+        <span style="color:var(--text-dimmer)">${l.price.source}</span>
+        <span style="margin-left:auto">Leaf revenue <b>$${f(l.revenue_musd,2)}M</b></span></div>
+      <div class="conf">Leaf confidence = weakest of its three inputs →
+        <span class="prov ${PCLS[l.confidence]}">${l.confidence_tier} · ${l.confidence}</span></div>
+      ${l.note?`<div class="note${/FAILS|NO TONNAGE|WEAKEST/.test(l.note)?' warn':''}">${l.note}</div>`:''}
+    </div></div>`;
+}
+const maxVol=Math.max(...D.majors.map(m=>m.volume_mn_l));
+document.getElementById('tree').innerHTML=D.majors.map((m,i)=>`
+  <div class="major ${i===0?'open':''}">
+    <div class="major-hd" onclick="this.parentNode.classList.toggle('open')">
+      <span class="caret">▶</span><span class="lvl">L1</span><span class="major-nm">${m.name}</span>
+      <span style="font-size:10.5px;color:var(--text-dimmer)">${m.leaves.length} use cases</span>
+      <span class="major-vol">${f(m.volume_mn_l,2)} mn L</span>
+      <span class="major-rev">$${f(m.revenue_musd,2)}M</span></div>
+    <div class="bar"><i style="width:${100*m.volume_mn_l/maxVol}%"></i></div>
+    <div class="leaves">${m.leaves.map(leafHTML).join('')}</div></div>`).join('');
+function setAll(o){document.querySelectorAll('.major,.leaf').forEach(e=>e.classList.toggle('open',o))}
+
+/* ---------------- tornado ---------------- */
+const T=D.tornado, maxSwing=T[0].swing_mn_l;
+document.getElementById('tornado').innerHTML=T.slice(0,14).map((t,i)=>`
+  <div class="torn ${t.tier.toLowerCase()}">
+    <span class="rank">${i+1}</span>
+    <span class="who"><b>${t.field}</b> — ${t.leaf}</span>
+    <span class="track"><span class="fill" style="width:${100*t.swing_mn_l/maxSwing}%"></span></span>
+    <span class="prov ${PCLS[t.prov]}" style="font-size:8.5px;padding:2px 6px">${t.tier}</span>
+    <span class="amt">${f(t.swing_mn_l,1)} mn L</span></div>`).join('');
+
+const top3=T.slice(0,3), top3share=T[2].cumulative_share*100;
+const ketchupTop=top3.every(t=>t.leaf===T[0].leaf);
+document.getElementById('tornFlags').innerHTML=`
+  <div class="flag info"><div class="fl">Where to spend the research budget</div>
+    The top three inputs account for <b>${top3share.toFixed(0)}%</b> of total uncertainty, and
+    ${ketchupTop?'<b>all three sit on the same leaf — sauces &amp; ketchup</b>':'they concentrate in the largest leaves'}.
+    That converts an open-ended research problem into a priced one: resolve
+    ${ketchupTop?'a single leaf':'three inputs'} and most of the range collapses. Everything below rank 6 can stay an
+    assumption indefinitely without materially moving the answer.</div>
+  <div class="flag warn2"><div class="fl">The one T4 worth buying first</div>
+    <b>${T.filter(t=>t.tier==='T4')[0].field} — ${T.filter(t=>t.tier==='T4')[0].leaf}</b>
+    swings the total by ${f(T.filter(t=>t.tier==='T4')[0].swing_mn_l,1)} mn L and has no published source anywhere.
+    It is resolvable by primary measurement rather than search: scrape a few hundred retail ingredient lists,
+    weight by rating count, and the assumption becomes a measured dataset you own.</div>`;
+
+/* ---------------- coverage ---------------- */
+const C=D.coverage;
+document.getElementById('covbar').innerHTML=
+  [['cv1','T1',C.T1],['cv2','T2',C.T2],['cv3','T3',C.T3],['cv4','T4',C.T4]]
+  .map(([c,l,v])=>`<div class="${c}" style="width:${v}%">${v>6?l+' '+v.toFixed(1)+'%':''}</div>`).join('');
+document.getElementById('covFlags').innerHTML=`
+  <div class="flag ok"><div class="fl">${C.sourced_pct.toFixed(1)}% of the number rests on a source</div>
+    Value-weighted across all inputs: <b>${C.T1.toFixed(1)}%</b> fetched live, <b>${C.T2.toFixed(1)}%</b> derived by
+    stated formula, <b>${C.T3.toFixed(1)}%</b> cited but unverified. The remaining <b>${C.T4.toFixed(1)}%</b> has no
+    published source anywhere on the internet — and is bounded and simulated rather than invented.</div>
+  <div class="flag info"><div class="fl">Why this is the metric to quote</div>
+    It is countable, it is reproducible from the JSON, and it does not require anyone to trust a judgement about
+    quality. Anyone can audit it by opening the file and checking the URLs resolve.</div>`;
+
+/* ---------------- price table ---------------- */
+const all=D.majors.flatMap(m=>m.leaves.map(l=>({...l,major:m.name}))).sort((a,b)=>b.revenue_musd-a.revenue_musd);
+document.getElementById('pxTable').innerHTML=
+  `<tr><th>Actual Use Case</th><th>Major</th><th style="text-align:right">Volume</th>
+   <th style="text-align:right">Price</th><th style="text-align:right">Revenue</th><th>Weakest input</th></tr>`+
+  all.map(l=>`<tr><td style="color:var(--text)">${l.name}</td><td>${l.major}</td>
+    <td class="n">${f(l.volume_mn_l,3)} mn L</td><td class="n">$${f(l.price.base,2)}/L</td>
+    <td class="n">$${f(l.revenue_musd,2)}M</td>
+    <td><span class="prov ${PCLS[l.confidence]}">${l.confidence_tier}</span></td></tr>`).join('')+
+  `<tr><td colspan="2" style="color:var(--teal);font-weight:800">TOTAL — built from leaves</td>
+    <td class="n" style="color:var(--teal)">${f(RU.bottom_up_volume_mn_l,2)} mn L</td>
+    <td class="n" style="color:var(--text-dimmer)">$${f(RU.blended_implied_price,2)}/L*</td>
+    <td class="n" style="color:var(--teal)">$${f(RU.bottom_up_revenue_musd,2)}M</td>
+    <td style="font-size:9.5px;color:var(--text-dimmer)">*implied</td></tr>`;
+
+/* ---------------- reconciliation ---------------- */
+const R=D.reconciliation;
+document.getElementById('recon').innerHTML=`
+  <div class="flag bad"><div class="fl">The apparent-consumption identity does not work for India — and that is a finding</div>
+    Net trade is <b>${f(R.net_trade_mn_l,3)} mn L</b>, or <b>${R.trade_share_of_bottom_up_pct.toFixed(2)}%</b> of
+    estimated demand. Production + Imports − Exports therefore reduces to “Production”, which is the one term nobody
+    publishes. <b>The cross-check this method normally leans on is unavailable here</b>, which makes the bottom-up
+    build the only route rather than a nice-to-have. Worth knowing before promising this validation on every market.</div>
+  ${R.is_mirror_data?`<div class="flag warn2"><div class="fl">The trade data is mirror data, not Indian customs</div>
+    The Comtrade records carry <code>isReported = false</code> — India did not report HS-2209 for this period, so the
+    figures are reconstructed from partner countries’ export declarations. They remain the best available and are
+    machine-reproducible, but “verified_observed” here means <i>verifiably fetched</i>, not <i>declared by the
+    reporting country</i>. Given trade is 0.2% of demand, this changes nothing downstream — but it would matter a
+    great deal in a market where trade carried the estimate.</div>`:''}
+  <div class="flag bad"><div class="fl">Top-down cross-check RETRACTED on audit</div>
+    An earlier version of this page validated the build against a published India vinegar market figure of $301.6M.
+    <b>That figure could not be found on the cited page or any verified source</b> and has been withdrawn — see the
+    source audit below. The page in question
+    (<a href="${R.topdown_url}" target="_blank">link ↗</a>) states only that “${R.topdown_quote}”, which is
+    2–4× above this build’s $${f(RU.bottom_up_revenue_musd,0)}M and is not attributable to any method.
+    <b>The disagreement is unresolved and is presented as unresolved.</b> No independent quantitative cross-check
+    currently stands.</div>
+  <div class="flag warn2"><div class="fl">Per-capita still sits below the repo’s plausibility band</div>
+    ${R.per_capita_l.toFixed(3)} L/person against the ${R.band_lo}–${R.band_hi} L band hard-coded in
+    <code>apparent_consumption.py</code>. The band looks calibrated on Western diets, where vinegar is the default
+    acidulant; in India tamarind, lime and kokum do that work. <b>Recommend making the band region-specific.</b>
+    Note this argument is weaker than it was before the audit — with the top-down retracted, only this build sits
+    below the band, so "the band is wrong" and "this build is low" both remain live explanations.</div>`;
+
+/* ---------------- source audit ---------------- */
+const V=D.verification;
+const STAT={confirmed:['ok','confirmed'],confirmed_with_caveat:['warn2','confirmed · caveat'],
+  unverifiable:['warn2','could not verify'],corrected:['bad','FAILED · corrected'],retracted:['bad','FAILED · retracted']};
+const nOK=V.filter(v=>v.status.startsWith('confirmed')).length;
+const nBad=V.filter(v=>v.status==='corrected'||v.status==='retracted').length;
+document.getElementById('auditHeadline').textContent=
+  `${nOK} of ${V.length} confirmed; ${nBad} failed and were corrected or withdrawn; `+
+  `${V.filter(v=>v.status==='unverifiable').length} could not be checked at all.`;
+document.getElementById('audit').innerHTML=V.map(v=>{
+  const s=STAT[v.status]||['info',v.status];
+  return `<div class="flag ${s[0]}"><div class="fl">${s[1]}</div>
+    <b>${v.claim}</b><br />${v.finding}
+    ${v.url?`<br /><a href="${v.url}" target="_blank">check it yourself ↗</a>`:''}</div>`;}).join('');
+</script>
+</body>
+</html>

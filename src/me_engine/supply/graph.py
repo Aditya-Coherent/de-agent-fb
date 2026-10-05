@@ -6,7 +6,12 @@ total" method sitting next to it — a single total is just `Σ(country_total)`
 over this same breakdown.
 
 Flow:
-    geography -> companies_revenue -> coverage -> aggregate -> END
+    screen -> geography -> companies_revenue -> coverage -> aggregate -> END
+
+`screen` drops distributors/retailers and collapses parent/brand duplicates
+(`companies.screen_companies`) before any revenue is estimated, so the same
+product is never summed twice; what it removed is kept in the state
+(`excluded_companies` / `merged_companies`) for the report.
 
 Own state, own nodes — separate from the Desk Research graph
 (`me_engine.generation.graph`). Only reuses the generic `Company` sourcing
@@ -23,7 +28,7 @@ from langgraph.graph import END, StateGraph
 
 from ..generation.config import GenConfig
 from ..generation.llm import GenLLM
-from .companies import Company
+from .companies import Company, screen_companies
 from .estimator import CountryBreakdown, estimate_company_countries, estimate_coverage_by_country
 from .geography import discover_countries
 
@@ -36,11 +41,24 @@ class SupplySideState(TypedDict, total=False):
     countries: list[str]
     per_company_country_revenue: dict[str, dict[str, float]]
     per_company_source: dict[str, str]  # company -> "financial_api" | "web_evidence" | "no_real_data"
+    per_company_notes: dict[str, list[str]]  # company -> quality-note codes from the estimator
+    excluded_companies: list[dict]  # {"name", "role", "reason"} -- distributors/retailers dropped
+    merged_companies: list[dict]    # {"kept", "merged", "reason"} -- parent/brand duplicates collapsed
     named_totals: dict[str, float]
     coverage_fraction: dict[str, float]
     country_breakdown: list[CountryBreakdown]
     grand_total_usd_mn: float
     log: list[str]
+
+
+def screen_node(state: SupplySideState) -> dict:
+    kept, excluded, merged = screen_companies(state["companies"])
+    n_merged = sum(len(m["merged"]) for m in merged)
+    log = state.get("log", []) + [
+        f"[screen] kept {len(kept)} of {len(state['companies'])} companies "
+        f"({len(excluded)} distributor/retailer excluded, {n_merged} parent/brand duplicates merged)"
+    ]
+    return {"companies": kept, "excluded_companies": excluded, "merged_companies": merged, "log": log}
 
 
 def geography_node(state: SupplySideState) -> dict:
@@ -57,10 +75,15 @@ def companies_revenue_node(state: SupplySideState) -> dict:
     config: GenConfig = state["config"]
     per_company: dict[str, dict[str, float]] = {}
     per_source: dict[str, str] = {}
+    per_notes: dict[str, list[str]] = {}
     for c in state["companies"]:
-        revenue, source = estimate_company_countries(llm, state["market_name"], c, countries, config.enable_web)
+        revenue, source, notes = estimate_company_countries(
+            llm, state["market_name"], c, countries, config.enable_web
+        )
         per_company[c.name] = revenue
         per_source[c.name] = source
+        if notes:
+            per_notes[c.name] = notes
 
     counts = {"financial_api": 0, "web_evidence": 0, "no_real_data": 0}
     for src in per_source.values():
@@ -70,7 +93,12 @@ def companies_revenue_node(state: SupplySideState) -> dict:
         f"(grounded: {counts['financial_api']} financial-data, {counts['web_evidence']} web-evidence, "
         f"{counts['no_real_data']} no real data found)"
     ]
-    return {"per_company_country_revenue": per_company, "per_company_source": per_source, "log": log}
+    return {
+        "per_company_country_revenue": per_company,
+        "per_company_source": per_source,
+        "per_company_notes": per_notes,
+        "log": log,
+    }
 
 
 def coverage_node(state: SupplySideState) -> dict:
@@ -117,12 +145,14 @@ def aggregate_node(state: SupplySideState) -> dict:
 
 def build_graph():
     g = StateGraph(SupplySideState)
+    g.add_node("screen", screen_node)
     g.add_node("geography", geography_node)
     g.add_node("companies_revenue", companies_revenue_node)
     g.add_node("coverage", coverage_node)
     g.add_node("aggregate", aggregate_node)
 
-    g.set_entry_point("geography")
+    g.set_entry_point("screen")
+    g.add_edge("screen", "geography")
     g.add_edge("geography", "companies_revenue")
     g.add_edge("companies_revenue", "coverage")
     g.add_edge("coverage", "aggregate")

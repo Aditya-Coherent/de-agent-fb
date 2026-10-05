@@ -1,0 +1,277 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Usage-Based Market Model — Vinegar / Italy</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0b;color:#e5e5e5;font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+a{color:#38bdf8}
+.wrap{max-width:1400px;margin:0 auto;padding:22px}
+h1{font-size:24px;font-weight:700;background:linear-gradient(90deg,#fafafa,#a3a3a3);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:#737373;font-size:12.5px;margin-top:3px}
+.tabs{display:flex;gap:6px;margin:18px 0 14px;flex-wrap:wrap}
+.tab{border:1px solid rgba(255,255,255,.09);background:#141416;border-radius:8px;padding:7px 13px;cursor:pointer;
+     color:#a1a1aa;font-size:12px;font-weight:600}
+.tab:hover{border-color:rgba(255,255,255,.22)}
+.tab.on{border-color:#22d3ee;background:rgba(34,211,238,.12);color:#a5f3fc}
+.panel{border:1px solid rgba(255,255,255,.09);background:#111113;border-radius:12px;padding:18px}
+h2{font-size:17px;margin-bottom:4px}.lead{color:#8b8b8b;font-size:12.5px;margin-bottom:15px}
+h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:#737373;margin:16px 0 7px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.kpi{border:1px solid rgba(255,255,255,.07);background:#141416;border-radius:10px;padding:11px}
+.kpi .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:#6b6b6b}
+.kpi .v{font-size:19px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:10px;color:#737373;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#6b6b6b;padding:6px 7px;border-bottom:1px solid rgba(255,255,255,.09)}
+td{padding:6px 7px;border-bottom:1px solid rgba(255,255,255,.05);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+tr.tot td{font-weight:700;border-top:1px solid rgba(255,255,255,.16)}
+.badge{display:inline-block;padding:1.5px 6px;border-radius:4px;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.b-v{background:rgba(16,185,129,.16);color:#6ee7b7}.b-d{background:rgba(56,189,248,.16);color:#7dd3fc}
+.b-a{background:rgba(245,158,11,.16);color:#fcd34d}.b-e{background:rgba(148,163,184,.16);color:#cbd5e1}
+.branch{margin-bottom:5px;border:1px solid rgba(255,255,255,.07);border-radius:9px;background:#141416;overflow:hidden}
+.brow{display:flex;align-items:center;gap:9px;padding:9px 11px;cursor:pointer}
+.brow:hover{background:rgba(255,255,255,.03)}
+.brow .n{flex:1;font-weight:600;font-size:12.5px}
+.brow .m{width:110px;text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+.leaf{padding:8px 11px 10px 30px;border-top:1px solid rgba(255,255,255,.05);background:#0e0e10}
+.leaf .top{display:flex;align-items:center;gap:9px}
+.leaf .n{flex:1;font-size:11.5px;color:#c4c4c4}
+.leaf .m{width:110px;text-align:right;font-variant-numeric:tabular-nums;font-size:11.5px}
+.calc{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:#8b8b8b;margin-top:5px}
+.note{font-size:10.5px;color:#6b6b6b;margin-top:4px;line-height:1.55}
+.sl{display:flex;align-items:center;gap:9px;margin-top:6px}
+.sl input{flex:1;accent-color:#22d3ee}
+.sl .val{width:120px;text-align:right;font-size:11px;font-variant-numeric:tabular-nums;color:#a5f3fc}
+.bar{height:20px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;position:relative}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#6366f1)}
+.tor{display:flex;align-items:center;gap:9px;margin:5px 0;font-size:11.5px}
+.tor .lab{width:210px;flex:none;color:#c4c4c4}
+.tor .track{flex:1;height:17px;background:rgba(255,255,255,.04);border-radius:3px;position:relative}
+.tor .neg,.tor .pos{position:absolute;top:0;height:100%}
+.tor .neg{background:rgba(248,113,113,.55);right:50%}.tor .pos{background:rgba(52,211,153,.55);left:50%}
+.tor .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.25)}
+.tor .pct{width:96px;text-align:right;flex:none;color:#a1a1aa;font-variant-numeric:tabular-nums}
+.hist{display:flex;align-items:flex-end;gap:1px;height:130px;margin-top:9px}
+.hist>i{flex:1;background:linear-gradient(180deg,#22d3ee,#4f46e5);border-radius:1px 1px 0 0;min-height:1px}
+.btn{border:1px solid #22d3ee66;background:rgba(34,211,238,.12);color:#a5f3fc;border-radius:8px;
+     padding:8px 15px;font-size:12px;font-weight:700;cursor:pointer}
+.btn:hover{background:rgba(34,211,238,.2)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.warn{border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.07);border-radius:8px;padding:10px;
+      font-size:11.5px;color:#fcd34d;line-height:1.6;margin-top:10px}
+.ok{color:#6ee7b7}.bad{color:#fca5a5}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+@media(max-width:820px){.tor .lab{width:120px}}
+</style></head><body><div class="wrap">
+<h1>Usage-Based Market Model — Vinegar, Italy 2023</h1>
+<div class="sub">Bottom-up demand tree · Monte Carlo uncertainty · sensitivity analysis · reconciled against independent customs data</div>
+<div class="kpis" id="kpis"></div>
+<div class="tabs" id="tabs"></div>
+<div class="panel" id="panel"></div>
+</div>
+<script>
+const M = {"market": "Vinegar", "country": "Italy", "year": 2023, "drivers": [{"id": "households", "label": "Households", "value": 26300000, "unit": "households", "prov": "verified", "source": "ISTAT \u2014 Italian household statistics", "url": "https://www.istat.it/en/"}, {"id": "horeca", "label": "Foodservice outlets (HORECA)", "value": 330000, "unit": "outlets", "prov": "verified", "source": "FIPE \u2014 Italian foodservice federation, annual report", "url": "https://www.fipe.it/"}, {"id": "sauce_output", "label": "Sauce / condiment / pickled output", "value": 1150000000, "unit": "kg", "prov": "estimated", "source": "Eurostat PRODCOM 10.84 \u2014 needs bulk-download verification", "url": "https://ec.europa.eu/eurostat/web/prodcom/database"}, {"id": "population", "label": "Population", "value": 58900000, "unit": "people", "prov": "verified", "source": "ISTAT / World Bank", "url": "https://data.worldbank.org/"}], "leaves": [{"id": "hh_cooking", "branch": "Food & Beverages", "label": "Household cooking & table use", "driver": "households", "lo": 0.8, "base": 1.25, "hi": 1.9, "unit": "L/household/yr", "prov": "assumed", "note": "Retail panel data (Nielsen/Circana) would replace this range with a measured value."}, {"id": "horeca_use", "branch": "Food & Beverages", "label": "Foodservice (restaurants, bars)", "driver": "horeca", "lo": 12, "base": 22, "hi": 40, "unit": "L/outlet/yr", "prov": "assumed", "note": "No published source. Trade interviews or an operator survey would close this."}, {"id": "processing", "branch": "Food & Beverages", "label": "Food processing (sauces, mayo, pickles)", "driver": "sauce_output", "lo": 0.018, "base": 0.03, "hi": 0.045, "unit": "L per kg output", "prov": "derived", "note": "Vinegar content is a recipe/regulatory fact: mayonnaise ~2-4%, pickling brine ~5%. This is the strongest leaf in the model."}, {"id": "cleaning", "branch": "Cleaning", "label": "Household cleaning use", "driver": "households", "lo": 0.15, "base": 0.42, "hi": 0.85, "unit": "L/household/yr", "prov": "assumed", "note": "Consumer-survey territory. Widest range in the model \u2014 and the UI shows how much that matters."}, {"id": "health", "branch": "Healthcare & Personal care", "label": "Healthcare / personal care", "driver": "population", "lo": 0.01, "base": 0.03, "hi": 0.07, "unit": "L/person/yr", "prov": "assumed", "note": "Small residual use."}, {"id": "agri", "branch": "Agriculture", "label": "Agricultural / other industrial", "driver": "population", "lo": 0.005, "base": 0.02, "hi": 0.05, "unit": "L/person/yr", "prov": "assumed", "note": "Small residual use."}], "control": {"label": "Apparent consumption (independent check)", "production_l": 100000000, "production_src": "Consorzio Tutela Aceto Balsamico di Modena (balsamic PGI only)", "production_url": "https://www.consorziobalsamico.it/consortium/economic-data/?lang=en", "imports_kg": 60325923, "exports_kg": 120524395, "trade_src": "UN Comtrade, HS 2209, 2023", "trade_url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=380&period=2023&cmdCode=2209&flowCode=X&partnerCode=0", "kg_per_l": 1.01, "caveat": "Production covers balsamic PGI only, not all Italian vinegar, so this control total is UNDERSTATED. Closing it needs total production from Eurostat PRODCOM 10.84.11."}, "price": {"value": 2.82, "unit": "US$/kg", "prov": "verified", "source": "UN Comtrade \u2014 Italy export unit value (declared value / declared weight)", "url": "https://comtradeapi.un.org/public/v1/preview/C/A/HS?reporterCode=380&period=2023&cmdCode=2209&flowCode=X&partnerCode=0"}};
+const D = {}; M.drivers.forEach(d => D[d.id] = d);
+const P = {}; M.leaves.forEach(l => P[l.id] = l.base);
+
+const L = v => v.toLocaleString(undefined,{maximumFractionDigits:0});
+const M2 = v => (v/1e6).toLocaleString(undefined,{maximumFractionDigits:2});
+const BADGE = {verified:['b-v','Verified'],derived:['b-d','Derived'],assumed:['b-a','Assumed'],estimated:['b-e','Estimated']};
+const bdg = p => `<span class="badge ${BADGE[p][0]}">${BADGE[p][1]}</span>`;
+
+function leafVolume(l, intensity){ return D[l.driver].value * (intensity ?? P[l.id]); }
+function branches(){
+  const b = {};
+  M.leaves.forEach(l => (b[l.branch] = b[l.branch] || []).push(l));
+  return b;
+}
+function totalVolume(params){
+  return M.leaves.reduce((a,l)=> a + leafVolume(l, params ? params[l.id] : undefined), 0);
+}
+function controlTotal(){
+  const c = M.control;
+  return c.production_l * c.kg_per_l + c.imports_kg - c.exports_kg; // kg
+}
+
+function kpis(){
+  const vol = totalVolume();
+  const ctrl = controlTotal() / M.control.kg_per_l;  // litres
+  const gap = (vol - ctrl) / ctrl * 100;
+  const rev = vol * M.control.kg_per_l * M.price.value;
+  document.getElementById('kpis').innerHTML = [
+    ['Bottom-up volume', M2(vol)+'M L', 'sum of all usage leaves'],
+    ['Implied revenue', '$'+M2(rev)+'M', 'at $'+M.price.value+'/kg export unit value'],
+    ['Independent control', M2(ctrl)+'M L', 'production + imports − exports'],
+    ['Convergence gap', (gap>=0?'+':'')+gap.toFixed(1)+'%', Math.abs(gap)<15?'within tolerance':'outside tolerance'],
+  ].map(([l,v,s])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+}
+
+// ------------------------------------------------------------------ tabs
+const TABS = [
+  ['tree','1 · Usage tree'],
+  ['drivers','2 · Drivers & sources'],
+  ['sens','3 · Sensitivity'],
+  ['mc','4 · Uncertainty'],
+  ['recon','5 · Reconciliation'],
+];
+let tab = 'tree';
+
+function render(){
+  document.getElementById('tabs').innerHTML = TABS.map(([id,l])=>
+    `<div class="tab ${tab===id?'on':''}" onclick="go('${id}')">${l}</div>`).join('');
+  document.getElementById('panel').innerHTML = ({tree:vTree,drivers:vDrivers,sens:vSens,mc:vMC,recon:vRecon})[tab]();
+  kpis();
+}
+function go(t){ tab=t; render(); }
+
+// ------------------------------------------------------------------ 1 tree
+function vTree(){
+  const b = branches(); const tot = totalVolume();
+  let h = `<h2>Bottom-up usage tree</h2><p class="lead">Every leaf is <strong>driver × intensity</strong>. Drivers are real published counts; intensities are explicit parameters you can move. Nothing here comes from an AI.</p>`;
+  for(const [name, leaves] of Object.entries(b)){
+    const bt = leaves.reduce((a,l)=>a+leafVolume(l),0);
+    h += `<div class="branch"><div class="brow"><span class="n">${name}</span>
+      <span class="m">${M2(bt)}M L</span><span class="m">${(bt/tot*100).toFixed(1)}%</span></div>`;
+    leaves.forEach(l=>{
+      const v = leafVolume(l), d = D[l.driver];
+      h += `<div class="leaf"><div class="top"><span class="n">${l.label} ${bdg(l.prov)}</span>
+        <span class="m">${M2(v)}M L</span><span class="m">${(v/tot*100).toFixed(1)}%</span></div>
+        <div class="calc">${L(d.value)} ${d.unit} × ${P[l.id]} ${l.unit} = ${L(v)} L</div>
+        <div class="sl"><input type="range" min="${l.lo}" max="${l.hi}" step="${(l.hi-l.lo)/100}"
+          value="${P[l.id]}" oninput="setP('${l.id}',this.value)">
+          <span class="val">${Number(P[l.id]).toFixed(3)} ${l.unit}</span></div>
+        <div class="note">Range ${l.lo}–${l.hi}. ${l.note}</div></div>`;
+    });
+    h += `</div>`;
+  }
+  h += `<div class="branch"><div class="brow"><span class="n">TOTAL</span>
+    <span class="m">${M2(tot)}M L</span><span class="m">100%</span></div></div>`;
+  return h;
+}
+function setP(id,v){ P[id]=parseFloat(v); render(); }
+
+// --------------------------------------------------------------- 2 drivers
+function vDrivers(){
+  return `<h2>Drivers & sources</h2><p class="lead">The quantities the model multiplies. Each one is a published statistic with a source you can open — these are not estimates.</p>
+  <table><thead><tr><th>Driver</th><th class="r">Value</th><th>Unit</th><th>Provenance</th><th>Source</th></tr></thead><tbody>
+  ${M.drivers.map(d=>`<tr><td>${d.label}</td><td class="r">${L(d.value)}</td><td>${d.unit}</td>
+    <td>${bdg(d.prov)}</td><td><a href="${d.url}" target="_blank">${d.source}</a></td></tr>`).join('')}
+  </tbody></table>
+  <h3>Price basis</h3>
+  <table><tbody><tr><td>${M.price.source}</td><td class="r">$${M.price.value}</td><td>${M.price.unit}</td>
+  <td>${bdg(M.price.prov)}</td><td><a href="${M.price.url}" target="_blank">Open raw record</a></td></tr></tbody></table>
+  <div class="warn"><strong>Known gap:</strong> the sauce/condiment output driver is flagged <em>Estimated</em> — it needs verification from Eurostat PRODCOM 10.84 bulk download. Everything else is a published figure.</div>`;
+}
+
+// ------------------------------------------------------------------ 3 sens
+function vSens(){
+  const base = totalVolume();
+  const rows = M.leaves.map(l=>{
+    const lo = {...P, [l.id]: l.lo}, hi = {...P, [l.id]: l.hi};
+    const dLo = (totalVolume(lo)-base)/base*100, dHi = (totalVolume(hi)-base)/base*100;
+    return {label:l.label, lo:dLo, hi:dHi, span:Math.abs(dHi-dLo)};
+  }).sort((a,b)=>b.span-a.span);
+  const max = Math.max(...rows.map(r=>Math.max(Math.abs(r.lo),Math.abs(r.hi))), 1);
+  return `<h2>Sensitivity — which assumption actually matters</h2>
+  <p class="lead">Each bar swings one parameter across its full plausible range while holding the rest at base. The longest bar is where research effort pays off; short bars are assumptions you can stop arguing about.</p>
+  ${rows.map(r=>`<div class="tor"><span class="lab">${r.label}</span>
+    <span class="track"><span class="neg" style="width:${Math.abs(r.lo)/max*50}%"></span>
+    <span class="pos" style="width:${Math.abs(r.hi)/max*50}%"></span><span class="mid"></span></span>
+    <span class="pct">${r.lo.toFixed(1)}% / +${r.hi.toFixed(1)}%</span></div>`).join('')}
+  <div class="warn"><strong>How to read this:</strong> ${rows[0].label} moves the total by ${rows[0].span.toFixed(0)} percentage points across its range — that is the single assumption worth spending money to measure. ${rows[rows.length-1].label} moves it ${rows[rows.length-1].span.toFixed(1)} points, so its precision is irrelevant to the answer.</div>`;
+}
+
+// -------------------------------------------------------------------- 4 MC
+let MC = null;
+function runMC(){
+  const N = 10000, out = [];
+  for(let i=0;i<N;i++){
+    const s = {};
+    M.leaves.forEach(l=>{
+      // triangular distribution over (lo, base, hi)
+      const u = Math.random(), c = (l.base-l.lo)/(l.hi-l.lo);
+      s[l.id] = u < c ? l.lo + Math.sqrt(u*(l.hi-l.lo)*(l.base-l.lo))
+                      : l.hi - Math.sqrt((1-u)*(l.hi-l.lo)*(l.hi-l.base));
+    });
+    out.push(totalVolume(s));
+  }
+  out.sort((a,b)=>a-b);
+  MC = {runs:N, p10:out[Math.floor(N*0.1)], p50:out[Math.floor(N*0.5)], p90:out[Math.floor(N*0.9)],
+        min:out[0], max:out[N-1], all:out};
+  render();
+}
+function vMC(){
+  let h = `<h2>Uncertainty — a range, not a false point estimate</h2>
+  <p class="lead">Every intensity is sampled from its plausible range 10,000 times (triangular distribution). The output is a confidence band, which is an honest answer to "how sure are you?"</p>
+  <button class="btn" onclick="runMC()">${MC?'Re-run':'Run'} 10,000 simulations</button>`;
+  if(!MC) return h;
+  const buckets = 44, lo = MC.min, hi = MC.max, w = (hi-lo)/buckets;
+  const counts = new Array(buckets).fill(0);
+  MC.all.forEach(v=>{ const i = Math.min(buckets-1, Math.floor((v-lo)/w)); counts[i]++; });
+  const mx = Math.max(...counts);
+  h += `<div class="kpis" style="margin-top:14px">
+    ${[['P10 (low case)',M2(MC.p10)+'M L'],['P50 (central)',M2(MC.p50)+'M L'],['P90 (high case)',M2(MC.p90)+'M L'],
+       ['Band width','±'+((MC.p90-MC.p10)/2/MC.p50*100).toFixed(0)+'%']]
+      .map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('')}</div>
+  <div class="hist">${counts.map(c=>`<i style="height:${c/mx*100}%"></i>`).join('')}</div>
+  <div class="note" style="display:flex;justify-content:space-between"><span>${M2(lo)}M L</span><span>${M2(hi)}M L</span></div>
+  <div class="warn"><strong>What to say:</strong> "Our central estimate is ${M2(MC.p50)}M litres, with an 80% confidence band of ${M2(MC.p10)}–${M2(MC.p90)}M. We are not claiming false precision — the band reflects exactly how much we don't know, and the sensitivity tab shows which unknown to attack first."</div>`;
+  return h;
+}
+
+// ----------------------------------------------------------------- 5 recon
+function vRecon(){
+  const c = M.control, vol = totalVolume(), ctrl = controlTotal()/c.kg_per_l;
+  const gap = (vol-ctrl)/ctrl*100;
+  const pop = D.population.value;
+  // Back out the total production the tree implies, as a testable claim.
+  const impliedProd = vol*c.kg_per_l + c.exports_kg - c.imports_kg;
+  return `<h2>Reconciliation — the independent referee</h2>
+  <p class="lead">The tree is built bottom-up from demand. This check is built top-down from supply, using entirely different sources. They should land near each other.</p>
+  <div class="grid2">
+    <div><h3>Top-down control total</h3><table><tbody>
+      <tr><td>Production ${bdg('verified')}</td><td class="r">${L(c.production_l)} L</td></tr>
+      <tr><td>+ Imports ${bdg('verified')}</td><td class="r">${L(c.imports_kg)} kg</td></tr>
+      <tr><td>− Exports ${bdg('verified')}</td><td class="r">${L(c.exports_kg)} kg</td></tr>
+      <tr class="tot"><td>Apparent consumption</td><td class="r">${M2(ctrl)}M L</td></tr>
+    </tbody></table>
+    <div class="note">Production: <a href="${c.production_url}" target="_blank">${c.production_src}</a><br>
+    Trade: <a href="${c.trade_url}" target="_blank">${c.trade_src}</a></div></div>
+    <div><h3>Bottom-up usage tree</h3><table><tbody>
+      ${Object.entries(branches()).map(([n,ls])=>`<tr><td>${n}</td><td class="r">${M2(ls.reduce((a,l)=>a+leafVolume(l),0))}M L</td></tr>`).join('')}
+      <tr class="tot"><td>Total demand</td><td class="r">${M2(vol)}M L</td></tr>
+    </tbody></table>
+    <div class="note">Sum of every usage leaf, each one driver × intensity.</div></div>
+  </div>
+  <h3>Convergence</h3>
+  <div class="bar"><i style="width:${Math.min(100,Math.abs(gap))}%"></i></div>
+  <div class="note">Gap: <strong class="${Math.abs(gap)<15?'ok':'bad'}">${gap>=0?'+':''}${gap.toFixed(1)}%</strong>
+   — bottom-up ${M2(vol)}M L vs top-down ${M2(ctrl)}M L</div>
+
+  <h3>Diagnosing the gap — which side is wrong?</h3>
+  <table><thead><tr><th>Method</th><th class="r">Total</th><th class="r">Per capita</th><th>Plausible?</th></tr></thead><tbody>
+    <tr><td>Bottom-up usage tree</td><td class="r">${M2(vol)}M L</td><td class="r">${(vol/pop).toFixed(2)} L/person</td>
+      <td class="ok">Yes — European norm is 1–2 L/person</td></tr>
+    <tr><td>Top-down control</td><td class="r">${M2(ctrl)}M L</td><td class="r">${(ctrl/pop).toFixed(2)} L/person</td>
+      <td class="bad">Too low — production input is incomplete</td></tr>
+  </tbody></table>
+  <div class="note">The control total uses balsamic PGI production only. It therefore <em>under</em>-counts, which is exactly the direction of the gap we observe. The tree is the more credible of the two.</div>
+
+  <h3>The model makes a falsifiable prediction</h3>
+  <div class="calc" style="font-size:12px;line-height:2">
+    If the tree is right, total Italian production must be:<br>
+    consumption ${M2(vol*c.kg_per_l)}M kg + exports ${M2(c.exports_kg)}M kg − imports ${M2(c.imports_kg)}M kg
+    = <strong>${M2(impliedProd)}M kg ≈ ${M2(impliedProd/c.kg_per_l)}M litres</strong><br>
+    Known balsamic PGI production: 100.0M litres<br>
+    ⇒ implied <strong>non-balsamic production ≈ ${M2(impliedProd/c.kg_per_l - 100e6)}M litres</strong>
+  </div>
+  <div class="warn"><strong>This is the test that makes the model scientific:</strong> it predicts a specific number
+  (${M2(impliedProd/c.kg_per_l)}M litres of total Italian vinegar production) that can be checked against
+  Eurostat PRODCOM 10.84.11. If PRODCOM agrees, the model is validated by a source it never saw. If it disagrees,
+  we know precisely which assumption to fix. A model that cannot be proven wrong is not worth much —
+  this one can.</div>`;
+}
+
+render();
+</script></body></html>

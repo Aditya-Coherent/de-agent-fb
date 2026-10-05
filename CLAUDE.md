@@ -1,4 +1,10 @@
 <!-- code-review-graph MCP tools -->
+## Project orientation
+
+Read `PROJECT_STRUCTURE.md` first. It maps every folder, the three market-sizing
+approaches (Desk Research, Demand-Side usage-based + India variant, Supply-Side),
+the root scripts, the backend/frontend, and `output/`.
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the

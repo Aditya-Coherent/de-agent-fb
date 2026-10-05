@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import asset_verifier, pdf_acquirer, web_search
+from me_engine.demandUseCaseCountry_approach2B import asset_verifier, pdf_acquirer, web_search
 
 
 def _ok_verification(url: str, content: bytes = b"%PDF-fake") -> asset_verifier.AssetVerification:

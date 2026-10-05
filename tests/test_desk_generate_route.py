@@ -182,7 +182,7 @@ class _StubGraph:
     def stream(self, init, config=None, stream_mode=None):
         final = {
             **init,
-            "reward": 1.0, "iter": 1, "global_anchor_2026": 100.0, "global_cagr": 0.1,
+            "reward": 1.0, "iter": 1, "global_anchor_2025": 100.0, "global_cagr": 0.1,
             "regional": {r: {"value_share": 1.0 / 5, "cagr": 0.1} for r in
                          ["North America", "Europe", "Asia Pacific", "Latin America", "Middle East & Africa"]},
             "shares": {"By Installation": {"__global__": {"__root__": {"Flooring": 0.6, "Wall Cladding": 0.4}}}},

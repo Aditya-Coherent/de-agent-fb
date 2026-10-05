@@ -9,10 +9,10 @@ be neither a smoke test nor reproducible. Instead this script imports and
 calls the pipeline's actual, unmodified functions -- the same ones
 `demand_usage_pipeline.py` calls -- on synthetically-assembled state:
 
-    me_engine.demand_usage.agents._FINANCIAL_ACTIVITY_TERMS   (deterministic
-    me_engine.demand_usage.agents._INVENTORY_RESERVE_TERMS     classifiers used
+    me_engine.demandUseCaseCountry_approach2B.agents._FINANCIAL_ACTIVITY_TERMS   (deterministic
+    me_engine.demandUseCaseCountry_approach2B.agents._INVENTORY_RESERVE_TERMS     classifiers used
                                                                  by usage_validation_node)
-    me_engine.demand_usage.agents.calculate_node               (deterministic
+    me_engine.demandUseCaseCountry_approach2B.agents.calculate_node               (deterministic
                                                                  calculation +
                                                                  unit-contract gate)
 
@@ -23,7 +23,7 @@ every other record. "duplicate_usage" is the one case that's inherently about
 TWO records together, so it's checked separately as a structural pass over
 the raw dataset, not through calculate_node.
 
-Zero lines of `me_engine.demand_usage` are modified by this script or to
+Zero lines of `me_engine.demandUseCaseCountry_approach2B` are modified by this script or to
 accommodate this dataset.
 
 Usage:
@@ -41,7 +41,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from me_engine.demand_usage import agents  # noqa: E402  (path insert above)
+from me_engine.demandUseCaseCountry_approach2B import agents  # noqa: E402  (path insert above)
 
 _REQUIRED_IDENTITY_FIELDS = ["market_name", "country", "usage_bucket"]
 

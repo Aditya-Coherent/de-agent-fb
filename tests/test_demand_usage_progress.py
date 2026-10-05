@@ -13,8 +13,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents
-from me_engine.demand_usage.progress import ProgressRecorder, progress_path
+from me_engine.demandUseCaseCountry_approach2B import agents
+from me_engine.demandUseCaseCountry_approach2B.progress import ProgressRecorder, progress_path
 
 
 def _read(path: Path) -> dict:

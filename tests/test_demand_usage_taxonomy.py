@@ -17,7 +17,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import taxonomy
+from me_engine.demandUseCaseCountry_approach2B import taxonomy
 
 
 def _valid_draft(**overrides) -> dict:
@@ -112,7 +112,7 @@ class _StubConfig:
 
 
 def test_run_taxonomy_phase_bundles_usage_and_drivers_from_approved_setup(tmp_path, monkeypatch):
-    import me_engine.demand_usage.taxonomy as taxonomy_mod
+    import me_engine.demandUseCaseCountry_approach2B.taxonomy as taxonomy_mod
 
     monkeypatch.setattr(taxonomy_mod, "GenLLM", lambda config, cache_path=None: _StubLLM())
 
@@ -134,7 +134,7 @@ def test_run_taxonomy_phase_bundles_usage_and_drivers_from_approved_setup(tmp_pa
     # Scope -> Taxonomy validation ran and produced a flag record (spec section 9).
     assert draft["scope_validation_flags"]["Transportation Fuels"]["classification"] == "in_scope"
     # Never re-derived scope/geography -- Phase 2 read them from approved setup.
-    from me_engine.demand_usage import checkpoints
+    from me_engine.demandUseCaseCountry_approach2B import checkpoints
     on_disk = checkpoints.read_json(checkpoints.taxonomy_draft_path("Crude Oil", root=tmp_path))
     assert on_disk == draft
 
@@ -144,7 +144,7 @@ def test_run_taxonomy_phase_bundles_usage_and_drivers_from_approved_setup(tmp_pa
 # without ever auto-removing them, and without any hardcoded exclusion list.
 # --------------------------------------------------------------------------- #
 def test_scope_validation_flags_out_of_scope_bucket_without_removing_it():
-    from me_engine.demand_usage import agents
+    from me_engine.demandUseCaseCountry_approach2B import agents
 
     class _ScopeLLM:
         def complete_json(self, system, user):
@@ -170,7 +170,7 @@ def test_scope_validation_flags_out_of_scope_bucket_without_removing_it():
 
 
 def test_scope_validation_defaults_missing_verdict_to_in_scope():
-    from me_engine.demand_usage import agents
+    from me_engine.demandUseCaseCountry_approach2B import agents
 
     class _EmptyLLM:
         def complete_json(self, system, user):
@@ -186,7 +186,7 @@ def test_scope_validation_defaults_missing_verdict_to_in_scope():
 
 
 def test_scope_validation_survives_llm_call_failure():
-    from me_engine.demand_usage import agents
+    from me_engine.demandUseCaseCountry_approach2B import agents
 
     class _ThrowingLLM:
         def complete_json(self, system, user):

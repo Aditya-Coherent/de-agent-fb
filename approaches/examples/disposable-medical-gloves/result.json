@@ -1,0 +1,180 @@
+{
+  "market": "Disposable Medical Gloves",
+  "vertical": "Healthcare",
+  "started_at": "2026-10-05T07:22:29+00:00",
+  "log": [
+    "[2026-10-03T08:15:54+00:00] 1 Desk Research: start",
+    "[2026-10-03T08:17:21+00:00] 1 Desk Research: ok in 1.4 min",
+    "[2026-10-03T08:17:21+00:00] 2A Demand: start",
+    "[2026-10-03T08:22:33+00:00] 2A Demand: ok in 5.2 min",
+    "[2026-10-04T07:08:10+00:00] 1 Desk Research: start",
+    "[2026-10-04T07:09:55+00:00] 1 Desk Research: ok in 1.7 min",
+    "[2026-10-04T07:09:55+00:00] 2B Demand: start",
+    "[2026-10-04T07:51:49+00:00] 2B Demand: ok in 41.9 min",
+    "[2026-10-04T07:51:49+00:00] 3 Supply-Side: start",
+    "[2026-10-04T07:59:30+00:00] 3 Supply-Side: ok in 7.7 min",
+    "[2026-10-05T07:13:18+00:00] 1 Desk Research: start",
+    "[2026-10-05T07:14:50+00:00] 1 Desk Research: ok in 1.5 min",
+    "[2026-10-05T07:14:50+00:00] 2A Demand: start",
+    "[2026-10-05T07:22:10+00:00] 2A Demand: ok in 7.3 min",
+    "[2026-10-05T07:22:29+00:00] 2B Demand: start",
+    "[2026-10-05T08:12:29+00:00] 2B Demand: failed in 50.0 min"
+  ],
+  "1_desk_research": {
+    "global_cagr": 0.166,
+    "regional": {
+      "North America": {
+        "value_share": 0.42,
+        "cagr": 0.085
+      },
+      "Latin America": {
+        "value_share": 0.06,
+        "cagr": 0.1
+      },
+      "Europe": {
+        "value_share": 0.22,
+        "cagr": 0.09
+      },
+      "Asia Pacific": {
+        "value_share": 0.24,
+        "cagr": 0.115
+      },
+      "Middle East": {
+        "value_share": 0.04,
+        "cagr": 0.1
+      },
+      "Africa": {
+        "value_share": 0.02,
+        "cagr": 0.1
+      }
+    },
+    "reward": 0.796,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\disposable-medical-gloves\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 1.5,
+    "global_usd_mn_2026_original": 15000.0,
+    "global_usd_mn": 15249.5,
+    "anchor_year": 2025
+  },
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers disposable medical gloves — single-use examination, surgical, and procedure gloves made from natural rubber latex, nitrile, vinyl/PVC, or other elastomers — that are sold for use in healthcare settings (hospitals, clinics, diagnostic labs, dental practices, long-term care, home healthcare, and emergency/EMS) and in medical-adjacent regulated settings where gloves are worn for infection control. It excludes non-medical disposable gloves (food handling, janitorial, industrial, beauty, and consumer household gloves), reusable/durable medical gloves, and glove accessories such as liners or dispensers, which are separately valued markets. Gloves used in food processing or industrial applications are out of scope even when physically identical to medical SKUs, because they are not valued as medical commodities; however, healthcare end-use demand signals (e.g., procedure volumes, hospital admissions, surgery counts, and infection-control glove utilization rates) are legitimate intermediate evidence for deriving how many medical gloves are required, and their use as an input does not place any healthcare usage outside scope.",
+      "geography": [
+        "United States",
+        "China",
+        "Japan",
+        "Germany",
+        "France",
+        "United Kingdom",
+        "India",
+        "Brazil",
+        "Italy",
+        "Canada",
+        "South Korea",
+        "Spain",
+        "Mexico",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "gloves (single pieces)"
+    },
+    "driver": {
+      "driver_name": "National apparent consumption of disposable medical gloves",
+      "unit": "Units",
+      "final_demand_unit": "Units",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 13800.0,
+    "regions_usd_mn": {
+      "North America": 4750.0,
+      "Latin America": 650.0,
+      "Europe": 2100.0,
+      "Asia Pacific": 3300.0,
+      "Rest of World": 3000.0
+    },
+    "countries_usd_mn": {
+      "United States": 4500.0,
+      "China": 1250.0,
+      "Japan": 750.0,
+      "Germany": 600.0,
+      "France": 450.0,
+      "United Kingdom": 425.0,
+      "India": 1000.0,
+      "Brazil": 400.0,
+      "Italy": 350.0,
+      "Canada": 250.0,
+      "South Korea": 300.0,
+      "Spain": 275.0,
+      "Mexico": 250.0,
+      "Rest of World": 3000.0
+    },
+    "segments": [
+      {
+        "dimension": "By Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Natural Rubber Gloves": 2987.25,
+          "Nitrile Gloves": 6059.5,
+          "Vinyl Gloves": 2293.5,
+          "Neoprene Gloves": 625.25,
+          "Polyethylene Gloves": 1282.5,
+          "Others": 552.0
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Examination": 10133.0,
+          "Surgical": 3667.0
+        }
+      },
+      {
+        "dimension": "By Form",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Powdered": 1030.25,
+          "Non-powdered": 12769.75
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 6.7,
+      "derived": 0.0,
+      "source_found_unverified": 0.0,
+      "assumption": 93.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 13/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[critical] target_commodity_unit_mismatch: One or more bucket(s) have a final_demand_unit that shares no words with the market's own target-commodity unit: [\"'Total Disposable Medical Gloves demand': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\"]. This is the signature of a downstream/adjacent product's own unit and price leaking into the target commodity's final value -- review before trusting this run.",
+      "[warning] low_observed_share: Only 7% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 1 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\disposable-medical-gloves\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\disposable-medical-gloves\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\disposable-medical-gloves",
+    "status": "ok",
+    "minutes": 7.3
+  },
+  "2B_demand_usecase_country": {
+    "status": "failed",
+    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 5967ec99-1b2c-4a7a-bb05-f493e3a715a3)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 273, in <lambda>\n    result[\"2B_demand_usecase_country\"] = _timed(lambda: run_2b(market, out_dir, cfg), log, \"2B Demand\")\n                                                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 201, in run_2b\n    segmentation.approve_segments(segmentation.run_segments_phase(market, cfg, cache_path=CACHE))\n                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandUseCaseCountry_approach2B\\segmentation.py\", line 77, in run_segments_phase\n    draft = segments.build_segments_draft(\n        llm=llm or GenLLM(config, cache_path=cache_path),\n    ...<7 lines>...\n        search=search,\n    )\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 253, in build_segments_draft\n    dims = propose_dimensions(llm, config, market_name, scope, exclude_application=bool(bottom_up_dimensions))\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 152, in propose_dimensions\n    if dims and not report_taxonomy_fits(llm, market_name, scope, dims):\n                    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 144, in report_taxonomy_fits\n    data = llm.complete_json(_PROPOSE_SYSTEM, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 5967ec99-1b2c-4a7a-bb05-f493e3a715a3)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
+    "minutes": 50.0
+  },
+  "3_supply_side": {
+    "status": "pending rerun",
+    "note": "previous result (2026-10-04T07:59:30) used code from before the fixes"
+  },
+  "finished_at": "2026-10-05T08:12:29+00:00"
+}

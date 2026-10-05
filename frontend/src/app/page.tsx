@@ -330,7 +330,7 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <MetricCard
                   label="Global 2026 (US$ Mn)"
-                  value={summary.global_anchor_2026.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                  value={summary.global_anchor_2025.toLocaleString(undefined, { maximumFractionDigits: 1 })}
                   accent="indigo"
                 />
                 <MetricCard label="Global CAGR" value={`${(summary.global_cagr * 100).toFixed(1)}%`} accent="violet" />

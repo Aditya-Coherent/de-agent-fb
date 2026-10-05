@@ -10,7 +10,7 @@ integration point takes an OPTIONAL `emitter` parameter that is a no-op when
 `None`, so no existing caller or test is affected.
 
 Currently supports the `"usage_based"` demand-side pipeline
-(`me_engine.demand_usage`). A `"desk_research"` approach value is reserved
+(`me_engine.demandUseCaseCountry_approach2B`). A `"desk_research"` approach value is reserved
 for a future pipeline but not implemented here.
 """
 from __future__ import annotations

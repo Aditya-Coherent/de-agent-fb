@@ -1,0 +1,42 @@
+#,Company,country,likely_website,functionality,verification
+=== Manufacturers (40) ===
+1,"CF Industries Holdings, Inc.",United States,cfindustries.com,"Produces and distributes nitrogen fertilizers, including urea",Website reachable (HTTP 200)
+2,Nutrien Ltd.,Canada,nutrien.com,"Produces and distributes potash, nitrogen, and phosphate fertilizers",Website reachable (HTTP 200)
+3,Yara International ASA,Norway,yara.com,Produces and sells nitrogen-based fertilizers and industrial chemicals,Website reachable (HTTP 200)
+4,OCI N.V.,Netherlands,oci.nl,"Produces nitrogen fertilizers, including urea and ammonia","Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+5,Qatar Fertiliser Company (QAFCO),Qatar,qafco.com,Produces ammonia and urea fertilizers,"Website unreachable (ConnectTimeout) — possibly generic/placeholder, verify manually"
+6,SABIC,Saudi Arabia,sabic.com,Produces fertilizers including urea and ammonia,"Website unreachable (HTTP 406) — possibly generic/placeholder, verify manually"
+7,EuroChem Group AG,Switzerland,eurochemgroup.com,"Produces nitrogen, phosphate, and potash fertilizers",Website reachable (HTTP 200)
+8,Acron Group,Russia,acron.ru,Produces nitrogen and phosphate fertilizers,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+9,PhosAgro,Russia,phosagro.com,Produces phosphate-based fertilizers and urea,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+10,ICL Group Ltd.,Israel,icl-group.com,Produces fertilizers and specialty chemicals,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+11,Coromandel International Limited,India,coromandel.biz,"Produces and markets fertilizers, including urea","Website unreachable (HTTP 406) — possibly generic/placeholder, verify manually"
+12,Chambal Fertilisers and Chemicals Limited,India,chambalfertilisers.com,Produces urea and other fertilizers,Website reachable (HTTP 200)
+13,Rashtriya Chemicals and Fertilizers Limited (RCF),India,rcfltd.com,Produces urea and complex fertilizers,Website reachable (HTTP 200)
+14,National Fertilizers Limited (NFL),India,nationalfertilizers.com,Produces urea and other fertilizers,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+15,Petronas Chemicals Group Berhad,Malaysia,petronaschemicals.com,Produces urea and other petrochemicals,Website reachable (HTTP 200)
+16,PT Pupuk Indonesia (Persero),Indonesia,pupuk-indonesia.com,"Produces and distributes fertilizers, including urea",Website reachable (HTTP 200)
+17,Sinochem Group,China,sinochem.com,"Produces and trades fertilizers, including urea","Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+18,China National Chemical Corporation (ChemChina),China,chemchina.com,Produces fertilizers and agrochemicals,"Website unreachable (ConnectTimeout) — possibly generic/placeholder, verify manually"
+19,"Hubei Yihua Chemical Industry Co., Ltd.",China,hbyh.com,Produces urea and other chemical fertilizers,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+20,"Sichuan Lutianhua Co., Ltd.",China,lutianhua.com,Produces urea and nitrogen fertilizers,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+21,"Yunnan Yuntianhua Co., Ltd.",China,yyth.com.cn,"Produces urea, phosphate, and compound fertilizers","Website unreachable (ConnectTimeout) — possibly generic/placeholder, verify manually"
+22,"Koch Fertilizer, LLC",United States,kochfertilizer.com,"Produces and distributes nitrogen fertilizers, including urea",Website reachable (HTTP 200)
+23,"LSB Industries, Inc.",United States,lsbindustries.com,Produces nitrogen fertilizers and industrial chemicals,Website reachable (HTTP 200)
+24,Mosaic Company,United States,mosaicco.com,Produces potash and phosphate fertilizers,Website reachable (HTTP 200)
+25,Bunge Limited,United States,bunge.com,Distributes fertilizers and agricultural commodities,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+26,Helm AG,Germany,helm-ag.de,Distributes fertilizers and chemicals,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+27,Borealis AG,Austria,borealisgroup.com,"Produces nitrogen fertilizers, including urea",Website reachable (HTTP 200)
+28,Grupa Azoty S.A.,Poland,grupaazoty.com,"Produces nitrogen fertilizers, including urea","Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+29,Achema AB,Lithuania,achema.lt,Produces nitrogen fertilizers and other chemicals,"Website unreachable (ReadError) — possibly generic/placeholder, verify manually"
+30,Fertiberia S.A.,Spain,fertiberia.com,Produces nitrogen fertilizers and urea,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+31,Sociedad Química y Minera de Chile (SQM),Chile,sqm.com,Produces specialty plant nutrients and fertilizers,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+32,Profertil S.A.,Argentina,profertil.com.ar,Produces urea and ammonia,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+33,Fauji Fertilizer Company Limited,Pakistan,ffc.com.pk,Produces urea and other fertilizers,"Website unreachable (HTTP 403) — possibly generic/placeholder, verify manually"
+34,Engro Fertilizers Limited,Pakistan,engrofertilizers.com,Produces urea and other fertilizers,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+35,Indorama Corporation,Singapore,indorama.com,Produces fertilizers including urea,Website reachable (HTTP 200)
+36,K+S AG,Germany,k-plus-s.com,Produces potash and magnesium fertilizers,Website reachable (HTTP 200)
+37,Haifa Group,Israel,haifa-group.com,Produces specialty fertilizers including urea,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+38,Sinofert Holdings Limited,China,sinofert.com,"Distributes and produces fertilizers, including urea","Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"
+39,"Kingenta Ecological Engineering Group Co., Ltd.",China,kingenta.com,Produces compound fertilizers and urea,Website reachable (HTTP 200)
+40,Wengfu Group,China,wengfu.com,Produces phosphate and compound fertilizers,"Website unreachable (ConnectError) — possibly generic/placeholder, verify manually"

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import typing
 
-from me_engine.demand_usage.evidence import VerificationStatus, legacy_evidence_type
+from me_engine.demandUseCaseCountry_approach2B.evidence import VerificationStatus, legacy_evidence_type
 
 
 def test_verification_status_has_exactly_four_values() -> None:

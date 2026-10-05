@@ -22,19 +22,19 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from me_engine.audit import store as audit_store
-from me_engine.demand_usage import checkpoints, run_lock
+from me_engine.demandUseCaseCountry_approach2B import checkpoints, run_lock
 
 router = APIRouter(prefix="/api/audit", tags=["audit"])
 
 # Overridable root for the demand-usage output tree (mirrors the `root`
-# parameter every `me_engine.demand_usage.checkpoints`/`me_engine.audit.store`
+# parameter every `me_engine.demandUseCaseCountry_approach2B.checkpoints`/`me_engine.audit.store`
 # function already accepts) -- tests monkeypatch this module attribute to
 # point every route at a temp directory instead of the real `output/` tree.
 # `None` means "use the real, on-disk default" (unchanged behavior).
 ROOT: Path | None = None
 
 # Fixed, linear stage order for the timeline endpoint -- mirrors
-# `me_engine.demand_usage.progress.NODE_NAMES` for Phase 3, prefixed with
+# `me_engine.demandUseCaseCountry_approach2B.progress.NODE_NAMES` for Phase 3, prefixed with
 # the two approval-gated phases that precede it (setup, taxonomy/
 # taxonomy_approval) which are not LangGraph nodes and so carry no
 # stage_start/stage_end events of their own today.
@@ -63,7 +63,7 @@ def _json_safe(value: Any) -> Any:
 
 
 def _read_progress(market: str, root: Path | None = None) -> dict[str, Any] | None:
-    from me_engine.demand_usage.progress import progress_path
+    from me_engine.demandUseCaseCountry_approach2B.progress import progress_path
 
     path = progress_path(market, root)
     if not path.exists():

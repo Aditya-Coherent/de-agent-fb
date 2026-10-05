@@ -1,7 +1,7 @@
 """Append-only JSONL audit trail storage.
 
 Directory convention is reused, not reinvented: every demand-usage run's
-on-disk home is `me_engine.demand_usage.checkpoints.run_dir(market, root)`
+on-disk home is `me_engine.demandUseCaseCountry_approach2B.checkpoints.run_dir(market, root)`
 (one directory per market, e.g. `output/demand_usage/<slug>/`) -- this
 module's `audit_log.jsonl` lives right alongside `00_setup_approved.json`,
 `01_taxonomy_approved.json`, `02_sizing.progress.json`, and `.size.lock` in
@@ -36,7 +36,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_usage import checkpoints
+from me_engine.demandUseCaseCountry_approach2B import checkpoints
 
 from .events import AuditEvent
 from .redact import redact_secrets

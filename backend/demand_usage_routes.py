@@ -1,6 +1,6 @@
 """FastAPI routes for the Demand-Side (Usage-Based) three-phase pipeline.
 
-Thin adapter over `me_engine.demand_usage.*` (unchanged pipeline logic lives
+Thin adapter over `me_engine.demandUseCaseCountry_approach2B.*` (unchanged pipeline logic lives
 there) -- mirrors the `/api/generate` SSE pattern already in `main.py` for
 the long-running Phase 3 (sizing) step; Phases 1/2 are a handful of LLM
 calls each, so they're plain request/response, not streamed.
@@ -21,11 +21,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
-from me_engine.demand_usage import checkpoints, run_lock, run_report, setup, taxonomy
-from me_engine.demand_usage.buildup_writer import write_buildup_json, write_buildup_workbook
-from me_engine.demand_usage.graph import build_sizing_graph, sizing_init_state
-from me_engine.demand_usage.progress import NODE_NAMES, ProgressRecorder
-from me_engine.demand_usage.quality import compute_provenance_quality_flags
+from me_engine.demandUseCaseCountry_approach2B import checkpoints, run_lock, run_report, setup, taxonomy
+from me_engine.demandUseCaseCountry_approach2B.buildup_writer import write_buildup_json, write_buildup_workbook
+from me_engine.demandUseCaseCountry_approach2B.graph import build_sizing_graph, sizing_init_state
+from me_engine.demandUseCaseCountry_approach2B.progress import NODE_NAMES, ProgressRecorder
+from me_engine.demandUseCaseCountry_approach2B.quality import compute_provenance_quality_flags
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 
@@ -218,7 +218,7 @@ def _run_sizing_stream_inner(run_id: str):
         # Never silently accept an incomplete/broken final state -- same
         # hard-vs-soft gate the CLI path uses (correctness-audit addendum,
         # 2026-08-26, `CEMENT_FORENSIC_AUDIT.md`); see `correctness_gate.py`.
-        from me_engine.demand_usage.correctness_gate import run_pre_write_gate
+        from me_engine.demandUseCaseCountry_approach2B.correctness_gate import run_pre_write_gate
 
         hard_failures, gate_soft_flags = run_pre_write_gate(final_state)
         if not final_state.get("validation"):

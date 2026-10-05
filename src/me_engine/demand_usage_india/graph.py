@@ -2,7 +2,7 @@
 new sizing logic at all.
 
 `build_sizing_graph()`/`sizing_init_state()` are re-exported UNCHANGED from
-`me_engine.demand_usage.graph` -- Phase 3's nodes (`demand_quantification`,
+`me_engine.demandUseCaseCountry_approach2B.graph` -- Phase 3's nodes (`demand_quantification`,
 `pricing`, `calculate`, `driver_magnitude_validation`, `triangulation`,
 `magnitude_cross_validation`, `validation`) already operate generically over
 "a list of buckets" x "a list of countries", reading only `name`/
@@ -18,7 +18,7 @@ the same final state.
 
 Known, deliberate limitation (documented, not fixed here): `run_sizing_phase`
 internally names its progress-recorder/on-disk-artifact paths off
-`approved_setup["market_name"]` via `me_engine.demand_usage.checkpoints`
+`approved_setup["market_name"]` via `me_engine.demandUseCaseCountry_approach2B.checkpoints`
 (NOT this package's own `checkpoints.py`) -- so the ephemeral
 `02_sizing.progress.json` milestone file for an India run lands under
 `output/demand_usage/<slug>/`, the SAME tree a non-India run for the same
@@ -37,8 +37,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_usage.graph import build_sizing_graph, sizing_init_state
-from me_engine.demand_usage.graph import run_sizing_phase as _run_sizing_phase_shared
+from me_engine.demandUseCaseCountry_approach2B.graph import build_sizing_graph, sizing_init_state
+from me_engine.demandUseCaseCountry_approach2B.graph import run_sizing_phase as _run_sizing_phase_shared
 from me_engine.generation.config import GenConfig
 
 from . import aggregation

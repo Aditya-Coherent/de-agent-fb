@@ -16,7 +16,7 @@ for p in (str(ROOT / "src"), str(ROOT), str(ROOT / "backend")):
 import audit_routes  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from main import app  # noqa: E402
-from me_engine.demand_usage import checkpoints  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import checkpoints  # noqa: E402
 
 client = TestClient(app)
 

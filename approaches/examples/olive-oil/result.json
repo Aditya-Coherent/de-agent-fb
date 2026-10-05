@@ -1,0 +1,402 @@
+{
+  "market": "Olive Oil",
+  "vertical": "Food & Beverages",
+  "started_at": "2026-10-05T06:56:43+00:00",
+  "log": [
+    "[2026-10-03T08:15:54+00:00] 1 Desk Research: start",
+    "[2026-10-03T08:17:38+00:00] 1 Desk Research: ok in 1.7 min",
+    "[2026-10-03T08:17:38+00:00] 2A Demand: start",
+    "[2026-10-03T08:23:32+00:00] 2A Demand: ok in 5.9 min",
+    "[2026-10-03T08:23:32+00:00] 2B Demand: start",
+    "[2026-10-03T08:52:35+00:00] 2B Demand: ok in 29.1 min",
+    "[2026-10-04T06:59:43+00:00] 1 Desk Research: start",
+    "[2026-10-04T07:02:07+00:00] 1 Desk Research: ok in 2.4 min",
+    "[2026-10-04T07:02:07+00:00] 3 Supply-Side: start",
+    "[2026-10-04T07:08:09+00:00] 3 Supply-Side: ok in 6.0 min",
+    "[2026-10-04T12:02:09+00:00] 1 Desk Research: start",
+    "[2026-10-04T12:04:13+00:00] 1 Desk Research: ok in 2.1 min",
+    "[2026-10-04T12:04:13+00:00] 2A Demand: start",
+    "[2026-10-04T12:14:16+00:00] 2A Demand: ok in 10.0 min",
+    "[2026-10-04T13:33:53+00:00] 2B Demand: start",
+    "[2026-10-04T14:43:21+00:00] 2B Demand: ok in 69.5 min",
+    "[2026-10-05T06:47:04+00:00] 3 Supply-Side: start",
+    "[2026-10-05T06:53:37+00:00] 3 Supply-Side: ok in 6.6 min",
+    "[2026-10-05T06:56:43+00:00] 2B Demand: start",
+    "[2026-10-05T07:32:02+00:00] 2B Demand: ok in 35.3 min"
+  ],
+  "1_desk_research": {
+    "global_cagr": 0.04,
+    "regional": {
+      "North America": {
+        "value_share": 0.18,
+        "cagr": 0.05
+      },
+      "Latin America": {
+        "value_share": 0.07,
+        "cagr": 0.045
+      },
+      "Europe": {
+        "value_share": 0.52,
+        "cagr": 0.035
+      },
+      "Asia Pacific": {
+        "value_share": 0.16,
+        "cagr": 0.06
+      },
+      "Middle East & Africa": {
+        "value_share": 0.07,
+        "cagr": 0.05
+      }
+    },
+    "reward": 0.844,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\olive-oil\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 2.1,
+    "global_usd_mn_2026_original": 15200.0,
+    "global_usd_mn": 14615.4,
+    "anchor_year": 2025
+  },
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers olive oil as a finished edible commodity — virgin, extra virgin, and processed/refined olive oil — valued at the point of first sale or consumption, whether sold in bulk or packaged for retail, foodservice, or industrial food use. It excludes non-olive edible oils (palm, sunflower, rapeseed, coconut, mustard), olive-derived non-oil products (table olives, olive pomace, olive leaf extract), and olive oil used as an input to separately valued markets such as cosmetics, pharmaceuticals, and personal-care formulations, which are not priced as part of this market. Downstream end-use demand — including foodservice frying volumes, retail packaged-oil sales, and industrial food-manufacturing usage — is used only as an intermediate signal to derive how much olive oil those usages require, and never as a separately valued commodity within this market. Olive oil used in cosmetics or pharmaceuticals is out of scope only where it is not valued as olive oil at all; where such usage is simply an end-use of the same edible-grade oil, it remains in scope.",
+      "geography": [
+        "Spain",
+        "Italy",
+        "Greece",
+        "Portugal",
+        "Tunisia",
+        "Turkey",
+        "Morocco",
+        "United States",
+        "France",
+        "Germany",
+        "United Kingdom",
+        "Brazil",
+        "Japan",
+        "Australia"
+      ],
+      "base_year": 2025,
+      "physical_unit": "Tonnes"
+    },
+    "driver": {
+      "driver_name": "Apparent domestic consumption of olive oil",
+      "unit": "Tonnes",
+      "final_demand_unit": "Tonnes",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 10495.8,
+    "regions_usd_mn": {
+      "North America": 1600.2,
+      "Latin America": 420.0,
+      "Europe": 7333.2,
+      "Asia Pacific": 428.4,
+      "Middle East & Africa": 714.0
+    },
+    "countries_usd_mn": {
+      "Spain": 2100.0,
+      "Italy": 2100.0,
+      "Greece": 1050.0,
+      "Portugal": 256.2,
+      "Tunisia": 210.0,
+      "Turkey": 756.0,
+      "Morocco": 504.0,
+      "United States": 1600.2,
+      "France": 462.0,
+      "Germany": 294.0,
+      "United Kingdom": 315.0,
+      "Brazil": 420.0,
+      "Japan": 231.0,
+      "Australia": 197.4
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Extra Virgin Olive Oil": 6143.844,
+          "Virgin Olive Oil": 1469.79,
+          "Refined Olive Oil": 2024.022,
+          "Olive Pomace Oil": 858.144
+        }
+      },
+      {
+        "dimension": "By Application / End-Use",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Retail (Home Cooking & Table Use)": 5830.02,
+          "Foodservice": 1500.87,
+          "Industrial Food Manufacturing": 1939.35,
+          "Cosmetics & Personal Care": 840.294,
+          "Pharmaceuticals": 385.266
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "assumption",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Supermarkets/Hypermarkets": 4520.376,
+          "Specialty Stores": 1411.452,
+          "Online Retail": 1088.85,
+          "Foodservice Direct": 2036.244,
+          "Industrial Direct": 1438.878
+        }
+      },
+      {
+        "dimension": "By Form",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Packaged (Retail-Ready)": 6311.97,
+          "Bulk (Unpackaged)": 4183.83
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 20.0,
+      "derived": 0.0,
+      "source_found_unverified": 0.0,
+      "assumption": 80.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 11/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] low_observed_share: Only 20% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 2 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\olive-oil\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\olive-oil\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\olive-oil",
+    "status": "ok",
+    "minutes": 10.0
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers olive oil as a finished edible commodity: liquid fat obtained solely from the fruit of Olea europaea (Olea europaea L.) by mechanical or chemical extraction, across all commercial grades (extra virgin, virgin, refined/lampante, and olive-pomace oil) as defined by IOC and Codex Alimentarius standards, valued at the point of production/consumption. It excludes table olives, olive-based cosmetics and soaps, olive leaf extracts, and non-olive vegetable/seed oils, which are separately valued markets. Olive oil used as an input to downstream products (canned fish, sauces, bakery, prepared foods, foodservice) remains in scope, because that usage is a direct demand for olive oil itself; the downstream finished goods are not valued here. Upstream olive growing and olive pomace/residue processing are not separately valued, though olive harvest volumes and crush yields are legitimate intermediate evidence for deriving olive oil output.",
+      "geography": [
+        "Spain",
+        "Italy",
+        "Greece",
+        "Portugal",
+        "Tunisia",
+        "Turkey",
+        "Morocco",
+        "Syria",
+        "Algeria",
+        "United States",
+        "France",
+        "Germany",
+        "Brazil",
+        "Japan"
+      ],
+      "base_year": 2025,
+      "physical_unit": "Tonnes"
+    },
+    "use_cases": [
+      "Home Cooking and Table Use",
+      "Foodservice and Restaurant Operations",
+      "Processed Food Manufacturing",
+      "Infused and Flavored Olive Oil Production",
+      "Nutraceutical and Pharmaceutical Applications"
+    ],
+    "use_cases_dropped_out_of_scope": [
+      "Cosmetic and Personal Care Applications"
+    ],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 9256.9769,
+    "regions_usd_mn": {
+      "North America": 1476.825,
+      "Latin America": 144.7625,
+      "Europe": 6781.6138,
+      "Asia Pacific": 185.125,
+      "Middle East & Africa": 640.3876,
+      "Rest of World": 28.263
+    },
+    "countries_usd_mn": {
+      "Spain": 1906.57,
+      "Italy": 3212.7225,
+      "Greece": 96.6688,
+      "Portugal": 542.47,
+      "Tunisia": 245.9463,
+      "Turkey": 520.78,
+      "Morocco": 136.7425,
+      "Syria": 28.263,
+      "Algeria": 257.6988,
+      "United States": 1476.825,
+      "France": 468.275,
+      "Germany": 34.1275,
+      "Brazil": 144.7625,
+      "Japan": 185.125
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Home Cooking and Table Use": 342.5469,
+          "Foodservice and Restaurant Operations": 5947.5,
+          "Processed Food Manufacturing": 2604.0,
+          "Infused and Flavored Olive Oil Production": 306.15,
+          "Nutraceutical and Pharmaceutical Applications": 56.78
+        }
+      },
+      {
+        "dimension": "By Product Grade",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Extra Virgin Olive Oil": 5037.3124,
+          "Virgin Olive Oil": 1433.2119,
+          "Refined Olive Oil (including blends with virgin)": 2080.8735,
+          "Olive-Pomace Oil": 705.5791
+        }
+      },
+      {
+        "dimension": "By Extraction Method",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Mechanical Extraction (Cold-Pressed / Cold-Extracted)": 5959.2254,
+          "Mechanical Extraction (Hot-Pressed / Standard)": 2357.5117,
+          "Chemical Extraction (Refining and Solvent Extraction)": 940.2398
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Supermarkets and Hypermarkets": 4606.5234,
+          "Specialty Food Stores and Gourmet Retailers": 1132.7292,
+          "Online Retail": 949.3779,
+          "Foodservice and Institutional": 1608.7255,
+          "Direct from Producer / Bulk Sales": 959.6209
+        }
+      },
+      {
+        "dimension": "By Packaging Format",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Glass Bottles and Jars": 4179.3857,
+          "Plastic Bottles and Containers": 1700.357,
+          "Metal Cans and Tins": 1149.2532,
+          "Bulk (Drums, IBCs, Flexitanks)": 2227.981
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 0.0,
+      "assumption": 100.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 70/70 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (53%) is below the usual bar.",
+      "[warning] usage_bucket_overlap: Possible double-counting between usage buckets: Home Cooking and Table Use ~ Foodservice and Restaurant Operations (similarity 0.88); Home Cooking and Table Use ~ Processed Food Manufacturing (similarity 0.83); Foodservice and Restaurant Operations ~ Processed Food Manufacturing (similarity 0.85)",
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Foodservice and Restaurant Operations' alone is 64% of the total across 5 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Soap Manufacturing (Traditional and Industrial) (reasoning_only, confidence 80%) -- Traditional olive oil soap (e.g., Castile soap, Aleppo soap, Marseille soap) is a major historical and ongoing physical use of olive oil, distinct from cosmetic and personal care applications which typically refer to skincare and hair care products. Soap production consumes significant volumes of olive oil, especially lower-grade oils, and is not represented in the existing buckets.; Animal Feed and Pet Food (reasoning_only, confidence 70%) -- Olive oil and its by-products (such as olive pomace) are used as feed ingredients for livestock and pets, providing energy and fatty acids. This represents a distinct physical application not covered by the existing buckets, which focus on human consumption and industrial food manufacturing.; Industrial Non-Food Applications (Lubricants, Textiles, etc.) (reasoning_only, confidence 60%) -- Olive oil has traditional and niche industrial uses, such as a lubricant for machinery, in textile processing, and in lamp oil. While small in volume today, these applications still represent physical consumption not captured by the existing buckets.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Processed Food Manufacturing' driver total\"]"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\olive-oil\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\olive-oil\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\olive-oil",
+    "status": "ok",
+    "minutes": 35.3
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 8208.176036552992,
+    "evidence_method_global_usd_mn": 14000.0,
+    "top_companies_global_share": [
+      {
+        "company": "Aceites del Sur",
+        "share": 0.1382
+      },
+      {
+        "company": "Sovena",
+        "share": 0.1235
+      },
+      {
+        "company": "Deoleo",
+        "share": 0.0984
+      },
+      {
+        "company": "Gallo",
+        "share": 0.0518
+      },
+      {
+        "company": "Borges International Group",
+        "share": 0.0353
+      },
+      {
+        "company": "Jaencoop",
+        "share": 0.035
+      },
+      {
+        "company": "Filippo Berio",
+        "share": 0.0305
+      },
+      {
+        "company": "Monini",
+        "share": 0.029
+      },
+      {
+        "company": "Sesajal",
+        "share": 0.0201
+      },
+      {
+        "company": "California Olive Ranch",
+        "share": 0.0182
+      }
+    ],
+    "countries": [
+      "Spain",
+      "Italy",
+      "Greece",
+      "Tunisia",
+      "Turkey",
+      "Morocco",
+      "Portugal",
+      "Syria",
+      "Algeria",
+      "Argentina",
+      "United States",
+      "France",
+      "Rest of Europe",
+      "Rest of Middle East & North Africa",
+      "Rest of Americas",
+      "Rest of Asia-Pacific",
+      "Rest of Sub-Saharan Africa"
+    ],
+    "flags": [
+      "mostly_soft_estimates: Only 2/33 companies had real financial data -- most of this total is still LLM-estimated from web snippets, not hard-capped.",
+      "high_gross_up: 7 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (Rest of Asia-Pacific 3.3x, Rest of Sub-Saharan Africa 3.3x, Syria 2.5x, Algeria 2.5x, Rest of Europe 2.5x) -- most of those countries' totals is an LLM coverage guess, not company revenue.",
+      "disagrees_with_desk_research: Company-based total differs from the Desk Research total by 46% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way."
+    ],
+    "report_json": "approaches\\examples\\olive-oil\\3_supply_side.json",
+    "status": "ok",
+    "minutes": 6.6
+  },
+  "finished_at": "2026-10-05T07:32:02+00:00"
+}

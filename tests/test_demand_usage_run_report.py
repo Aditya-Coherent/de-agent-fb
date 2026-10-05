@@ -15,8 +15,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import run_report
-from me_engine.demand_usage.progress import ProgressRecorder
+from me_engine.demandUseCaseCountry_approach2B import run_report
+from me_engine.demandUseCaseCountry_approach2B.progress import ProgressRecorder
 
 
 def _fake_progress(market: str, root: Path, *, source: str = "cli") -> None:

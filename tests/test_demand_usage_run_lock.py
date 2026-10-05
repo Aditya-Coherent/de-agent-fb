@@ -16,7 +16,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import run_lock
+from me_engine.demandUseCaseCountry_approach2B import run_lock
 
 
 def test_first_run_acquires_lock(tmp_path):

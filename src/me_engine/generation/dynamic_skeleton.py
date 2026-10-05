@@ -17,8 +17,12 @@ from __future__ import annotations
 import html
 import re
 
-from .db_source import DBEvidence, fetch_market_evidence, fetch_market_evidence_semantic, verify_market_match
-from .skeleton import Skeleton
+from dataclasses import replace
+
+from .db_source import (
+    DBEvidence, fetch_market_evidence, fetch_market_evidence_semantic, geo_qualifiers, verify_market_match,
+)
+from .skeleton import REGIONS, Skeleton
 
 _REGION_TITLE = re.compile(r"region|geograph", re.I)
 
@@ -249,4 +253,18 @@ def load_skeleton_from_db(market_name: str, cfg) -> tuple[Skeleton | None, DBEvi
             sk = None
     if sk is None:
         sk = build_skeleton_from_html(market_name, ev.raw_segmentation)
+    if sk is not None:
+        sk = ensure_global_geography(sk, market_name)
     return sk, ev
+
+
+def ensure_global_geography(sk: Skeleton, market_name: str) -> Skeleton:
+    """A global market must keep a global geography even if the matched
+    report covered one region (e.g. a GCC-only report gave 'GCC' as the
+    whole world). Markets that name a region keep the report's geography."""
+    if geo_qualifiers(market_name):
+        return sk
+    if len(sk.regions) >= 3:
+        return sk
+    regions = {r: list(cs) for r, cs in REGIONS.items()}
+    return replace(sk, regions=regions, geographies=[c for cs in regions.values() for c in cs])

@@ -2,7 +2,7 @@
 this package adds.
 
 For each Major Use Case bucket already discovered by
-`me_engine.demand_usage.agents.usage_decomposition_node` (reused unchanged),
+`me_engine.demandUseCaseCountry_approach2B.agents.usage_decomposition_node` (reused unchanged),
 this module discovers India-specific "Actual Use Cases" -- concrete,
 evidence-grounded demand/consumption pathways nested one level under that
 Major Use Case, never a generic segmentation dimension (Product, Source,

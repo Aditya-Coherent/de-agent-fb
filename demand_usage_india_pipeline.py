@@ -37,13 +37,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from me_engine.demand_usage import run_lock  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import run_lock  # noqa: E402
 from me_engine.demand_usage_india import checkpoints, setup, taxonomy  # noqa: E402
 from me_engine.demand_usage_india.buildup_writer import write_buildup_json, write_buildup_workbook  # noqa: E402
 from me_engine.demand_usage_india.graph import run_sizing_phase  # noqa: E402
 from me_engine.generation.config import GenConfig  # noqa: E402
 
-# The market-level sizing lock (`me_engine.demand_usage.run_lock`) is keyed
+# The market-level sizing lock (`me_engine.demandUseCaseCountry_approach2B.run_lock`) is keyed
 # purely by market NAME -- shared, on purpose, with the non-India pipeline's
 # own lock file location. Suffixing the lock's own key keeps an India run
 # from colliding with a concurrent non-India run (or vice versa) for the

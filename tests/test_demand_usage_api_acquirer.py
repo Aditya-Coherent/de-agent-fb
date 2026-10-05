@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import requests
 
-from me_engine.demand_usage import api_acquirer, asset_verifier, evidence, evidence_router
+from me_engine.demandUseCaseCountry_approach2B import api_acquirer, asset_verifier, evidence, evidence_router
 
 
 # --------------------------------------------------------------------------- #

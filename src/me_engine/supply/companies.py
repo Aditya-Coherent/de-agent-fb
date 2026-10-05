@@ -20,6 +20,7 @@ from __future__ import annotations
 import csv
 import json
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -147,3 +148,170 @@ def save_companies_csv(companies: list[Company], path: Path | str) -> Path:
         for i, c in enumerate(companies, start=1):
             writer.writerow([i, c.name, *[c.facts.get(k, "") for k in fact_keys]])
     return path
+
+
+# --------------------------------------------------------------------------- #
+# Screening before estimation: role filter + parent/brand dedupe
+# --------------------------------------------------------------------------- #
+# Both fix real double counting seen in recorded runs: distributors (Cardinal
+# Health, McKesson, Henry Schein) re-sell the same gloves the manufacturers
+# already reported (Disposable Medical Gloves came out ~4x the published
+# size), and one corporate group listed several times under parent/brand/
+# regional names (Deoleo + Bertolli/Carbonell/Carapelli, Sovena + Sovena
+# Group + Andorinha) hid ~$4.4B of duplicates in Olive Oil.
+
+# Trailing tokens that don't distinguish one business from another — legal
+# forms, group/holding wording, and regional-arm qualifiers.
+_CORP_SUFFIXES = frozenset({
+    "inc", "incorporated", "corp", "corporation", "co", "company", "companies", "ltd", "limited",
+    "llc", "lp", "llp", "plc", "sa", "sau", "sas", "sl", "slu", "spa", "srl", "ag", "se", "nv", "bv",
+    "gmbh", "kg", "kgaa", "ab", "asa", "as", "oyj", "bhd", "berhad", "sdn", "pte", "pty", "pvt",
+    "private", "public", "tbk", "pt", "kk", "cv", "de", "and", "the", "holding", "holdings", "group",
+    "international", "intl", "industries", "industry", "global", "worldwide", "enterprises",
+    "asia", "pacific", "europe", "portugal", "spain", "italy", "usa", "us", "america", "americas",
+    "uk", "india", "china", "japan", "thailand", "malaysia",
+})
+
+_NO_PARENT_VALUES = frozenset({"", "independent", "none", "n/a", "na", "-", "self", "unknown", "private"})
+
+EXCLUDED_ROLES = frozenset({"distributor", "retailer"})
+_ROLE_KEYS = ("role", "Role", "category", "Category", "type", "Type", "company_type", "Company_Type")
+_PARENT_KEYS = ("parent_company", "Parent_Company", "parent", "Parent", "Parent_or_Independent")
+
+
+def name_tokens(name: str) -> list[str]:
+    """Lowercased ASCII word tokens of a company name with parenthesised
+    asides removed and trailing corporate/regional suffixes stripped
+    ("Borges International Group" -> ["borges"], "Deoleo, S.A." -> ["deoleo"]).
+    Never strips a name down to nothing."""
+    text = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode().lower()
+    text = re.sub(r"\([^)]*\)", " ", text).replace("&", " and ")
+    text = re.sub(r"[.']", "", text)  # "S.p.A." -> "spa", "McKesson's" -> "mckessons"
+    tokens = [t for t in re.split(r"[^a-z0-9]+", text) if t]
+    stripped = list(tokens)
+    while stripped and stripped[-1] in _CORP_SUFFIXES:
+        stripped.pop()
+    return stripped or tokens
+
+
+def normalize_company_name(name: str) -> str:
+    return " ".join(name_tokens(name))
+
+
+def name_similarity(a: str, b: str) -> float:
+    """Token Dice similarity (0-1) between two company names, ignoring
+    corporate suffixes. Deliberately token-level, not character-level:
+    "Borges" vs "Borgestad ASA" is 0.8 by difflib's character ratio but a
+    different business entirely, while "TopGlove" vs "Top Glove Corporation
+    Bhd" is the same one (handled by the joined-string check)."""
+    ta, tb = name_tokens(a), name_tokens(b)
+    if not ta or not tb:
+        return 0.0
+    if "".join(ta) == "".join(tb):
+        return 1.0
+    sa, sb = set(ta), set(tb)
+    return 2 * len(sa & sb) / (len(sa) + len(sb))
+
+
+def company_role(company: Company) -> str | None:
+    """manufacturer | brand_owner | distributor | retailer | other, from an
+    explicit role/category fact (discovery output, or a user file's column).
+    None when the company carries no such fact — callers keep it as-is."""
+    for key in _ROLE_KEYS:
+        raw = company.facts.get(key)
+        if not raw:
+            continue
+        text = str(raw).strip().lower()
+        # Making the product wins over also distributing it ("manufacturer & distributor").
+        if any(w in text for w in ("manufactur", "producer", "maker", "processor")):
+            return "manufacturer"
+        if any(w in text for w in ("distribut", "wholesal", "reseller", "dealer", "trader")):
+            return "distributor"
+        if "retail" in text or "supermarket" in text:
+            return "retailer"
+        if "brand" in text:
+            return "brand_owner"
+        return "other"
+    return None
+
+
+def parent_company_name(company: Company) -> str | None:
+    for key in _PARENT_KEYS:
+        raw = str(company.facts.get(key) or "").strip()
+        if not raw:
+            continue
+        raw = re.sub(r"^(parent\s*[:\-]|subsidiary of|owned by|part of)\s*", "", raw, flags=re.IGNORECASE)
+        if raw.strip().lower() in _NO_PARENT_VALUES:
+            return None
+        return raw.strip()
+    return None
+
+
+def screen_companies(companies: list[Company]) -> tuple[list[Company], list[dict], list[dict]]:
+    """Deterministic pre-estimation screen. Returns (kept, excluded, merged):
+
+    1. Distributors/retailers are dropped (re-sold product is already in a
+       manufacturer's revenue) and reported in `excluded` with the reason.
+    2. Companies resolving to the same normalized parent are collapsed to
+       one entry — the parent itself when it's in the list (top of the
+       parent chain), otherwise the first listed — and reported in `merged`.
+    """
+    kept_by_role: list[Company] = []
+    excluded: list[dict] = []
+    for c in companies:
+        role = company_role(c)
+        if role in EXCLUDED_ROLES:
+            excluded.append({
+                "name": c.name, "role": role,
+                "reason": f"{role} -- re-sold product is already counted in the manufacturers' revenue",
+            })
+        else:
+            kept_by_role.append(c)
+
+    # Union-find over normalized names, linking each company to its parent so
+    # chains (Bertolli -> Deoleo -> <private-equity owner>) end up in one group.
+    root: dict[str, str] = {}
+
+    def find(k: str) -> str:
+        root.setdefault(k, k)
+        while root[k] != k:
+            root[k] = root[root[k]]
+            k = root[k]
+        return k
+
+    own_keys = [normalize_company_name(c.name) for c in kept_by_role]
+    parent_keys: list[str | None] = []
+    for c, own in zip(kept_by_role, own_keys):
+        parent = parent_company_name(c)
+        pkey = normalize_company_name(parent) if parent else None
+        parent_keys.append(pkey)
+        find(own)
+        if pkey:
+            root[find(own)] = find(pkey)
+
+    groups: dict[str, list[int]] = {}
+    for i, own in enumerate(own_keys):
+        groups.setdefault(find(own), []).append(i)
+
+    kept: list[Company] = []
+    merged: list[dict] = []
+    for members in groups.values():
+        member_keys = {own_keys[i] for i in members}
+        named_parents = {parent_keys[i] for i in members if parent_keys[i]}
+        # The parent at the top of the chain: its own parent isn't a member.
+        # Among those, prefer one some other member names as its parent
+        # (Deoleo over its brand Bertolli when both point at an outside owner).
+        tops = [i for i in members if parent_keys[i] in (None, own_keys[i]) or parent_keys[i] not in member_keys]
+        tops.sort(key=lambda i: (own_keys[i] not in named_parents, i))
+        rep = tops[0] if tops else members[0]
+        kept.append(kept_by_role[rep])
+        others = [kept_by_role[i].name for i in members if i != rep]
+        if others:
+            merged.append({
+                "kept": kept_by_role[rep].name,
+                "merged": others,
+                "reason": "same parent company / brand of a listed parent -- counted once",
+            })
+    order = {id(c): i for i, c in enumerate(kept_by_role)}
+    kept.sort(key=lambda c: order[id(c)])
+    return kept, excluded, merged

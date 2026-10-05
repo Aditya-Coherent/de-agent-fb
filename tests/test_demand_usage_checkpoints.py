@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import checkpoints
+from me_engine.demandUseCaseCountry_approach2B import checkpoints
 
 
 def test_slugify_is_filesystem_safe_and_stable():

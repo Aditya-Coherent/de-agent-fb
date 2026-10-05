@@ -159,7 +159,7 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
     # Layout mirrors the human sheet: B=Region/Country, C=Market Share,
     # D=Expected CAGR, E=Value. Global -> per region -> member countries.
     geo = state.get("geo", {})
-    anchor = state.get("global_anchor_2026", 0.0)
+    anchor = state.get("global_anchor_2025", 0.0)
     r = max(r + 2, 118)
     ws.cell(r, 1, "Always should start from 100th Row")
     ws.cell(r, 2, "Region").font = bold
@@ -219,7 +219,7 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
     mv.cell(3, 4, "Share").font = bold
     mv.cell(3, 5, "CAGR").font = bold
     mv.cell(3, 6, "Confidence").font = bold
-    anchor = state.get("global_anchor_2026", 0.0)
+    anchor = state.get("global_anchor_2025", 0.0)
     mr = 4
     for region, info in regional.items():
         mv.cell(mr, 2, region)

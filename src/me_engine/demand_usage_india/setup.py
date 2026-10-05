@@ -1,7 +1,7 @@
 """Phase 1: Market Setup Draft (India-only variant) -- the FIRST user
 approval gate.
 
-Reuses `me_engine.demand_usage.setup.market_setup_draft_node` COMPLETELY
+Reuses `me_engine.demandUseCaseCountry_approach2B.setup.market_setup_draft_node` COMPLETELY
 UNCHANGED (same web-grounded LLM call for scope/base_year/market_unit/
 physical_unit). The only India-specific behavior lives here, deterministically,
 in code -- never delegated to the LLM: after the shared node returns its
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_usage.setup import market_setup_draft_node
+from me_engine.demandUseCaseCountry_approach2B.setup import market_setup_draft_node
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 

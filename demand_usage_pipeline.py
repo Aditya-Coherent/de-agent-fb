@@ -11,7 +11,7 @@ CONSTRUCTS the market size from underlying demand:
 
 Each phase writes a draft JSON a human can edit; nothing downstream runs
 until the matching `approve-*` subcommand writes the `*_approved.json` file
-(see `me_engine.demand_usage.checkpoints`). Every number in the final output
+(see `me_engine.demandUseCaseCountry_approach2B.checkpoints`). Every number in the final output
 carries a provenance tag (observed / derived / assumption).
 
 Example, end to end:
@@ -25,6 +25,14 @@ Example, end to end:
 
     python demand_usage_pipeline.py size --market "Crude Oil"
     # -> output/demand_usage/crude-oil/02_sizing.json / .xlsx
+
+    # Approach 2B, part 2: Application stays bottom-up, every other segment
+    # is split top-down from the country totals.
+    python demand_usage_pipeline.py segments --market "Crude Oil"
+    # (edit output/demand_usage/crude-oil/03_segments_draft.json if desired)
+    python demand_usage_pipeline.py approve-segments --market "Crude Oil"
+    python demand_usage_pipeline.py report --market "Crude Oil"
+    # -> output/demand_usage/crude-oil/04_market.json / .xlsx
 """
 from __future__ import annotations
 
@@ -36,9 +44,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from me_engine.demand_usage import checkpoints, run_lock, run_report, setup, taxonomy  # noqa: E402
-from me_engine.demand_usage.buildup_writer import write_buildup_json, write_buildup_workbook  # noqa: E402
-from me_engine.demand_usage.graph import run_sizing_phase  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import checkpoints, run_lock, run_report, setup, taxonomy  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B.buildup_writer import write_buildup_json, write_buildup_workbook  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B import segmentation  # noqa: E402
+from me_engine.demandUseCaseCountry_approach2B.graph import run_sizing_phase  # noqa: E402
+from me_engine.demand_topdown.writer import format_terminal_summary  # noqa: E402
 from me_engine.generation.config import GenConfig  # noqa: E402
 
 
@@ -195,6 +205,53 @@ def cmd_size(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_segments(args: argparse.Namespace) -> int:
+    cfg = _cfg()
+    try:
+        draft = segmentation.run_segments_phase(args.market, cfg, cache_path=_cache_path(args))
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+        return 2
+    print(f"Segmentation draft written to {segmentation.segments_draft_path(args.market)}\n")
+    for d in draft["bottom_up_dimensions"]:
+        print(f"[bottom-up] {d['dimension']}: {d['segments']}")
+    for d in draft["top_down_dimensions"]:
+        print(f"[top-down ] {d['dimension']} ({d['taxonomy_source']}, {d['evidence_status']}): {d['segments']}")
+    print(
+        "\nTOP-DOWN DIMENSIONS, SEGMENTS AND SHARES ARE EDITABLE -- edit the draft file if desired, then run:\n"
+        f'  python demand_usage_pipeline.py approve-segments --market "{args.market}"'
+    )
+    return 0
+
+
+def cmd_approve_segments(args: argparse.Namespace) -> int:
+    draft_path = Path(args.draft) if args.draft else segmentation.segments_draft_path(args.market)
+    edited = checkpoints.read_json(draft_path)
+    if edited is None:
+        print(f"ERROR: could not read draft at {draft_path}")
+        return 2
+    try:
+        approved = segmentation.approve_segments(edited)
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        return 2
+    print(f"Segmentation APPROVED for '{approved['market_name']}': "
+          f"{len(approved['top_down_dimensions'])} top-down dimension(s)")
+    print(f'\nNext: python demand_usage_pipeline.py report --market "{approved["market_name"]}"')
+    return 0
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    try:
+        report, json_path, xlsx_path = segmentation.run_report_phase(args.market)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+        return 2
+    print(format_terminal_summary(report))
+    print(f"\nWrote {json_path} and {xlsx_path}")
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description="Three-phase, human-approved usage-based demand-side estimator.")
     p.add_argument("--cache", default="output/.gen_cache.db", help="LLM cache path (shared with Desk Research)")
@@ -221,6 +278,19 @@ def main() -> int:
     sp = sub.add_parser("size", help="Phase 3: run the deterministic evidence-first sizing build-up")
     sp.add_argument("--market", required=True)
     sp.set_defaults(fn=cmd_size)
+
+    sp = sub.add_parser("segments", help="Phase 4: propose segments + shares (Application stays bottom-up)")
+    sp.add_argument("--market", required=True)
+    sp.set_defaults(fn=cmd_segments)
+
+    sp = sub.add_parser("approve-segments", help="Approve (optionally hand-edited) segmentation draft")
+    sp.add_argument("--market", required=True)
+    sp.add_argument("--draft", default=None)
+    sp.set_defaults(fn=cmd_approve_segments)
+
+    sp = sub.add_parser("report", help="Phase 5: top-down split + country/region/global market report")
+    sp.add_argument("--market", required=True)
+    sp.set_defaults(fn=cmd_report)
 
     args = p.parse_args()
     return args.fn(args)

@@ -20,7 +20,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents, evidence_router, evidence_strategy, taxonomy
+from me_engine.demandUseCaseCountry_approach2B import agents, evidence_router, evidence_strategy, taxonomy
 
 
 def _valid_strategy(**overrides) -> dict:
@@ -379,7 +379,7 @@ class _QuantificationLLM:
 
 
 def test_derivation_path_from_strategy_is_preserved_in_audit_trail(monkeypatch):
-    from me_engine.demand_usage import reference_data
+    from me_engine.demandUseCaseCountry_approach2B import reference_data
 
     monkeypatch.setattr(reference_data, "population_share", lambda country, countries: 0.5)
     monkeypatch.setattr(
@@ -413,7 +413,7 @@ def test_derivation_path_from_strategy_is_preserved_in_audit_trail(monkeypatch):
 # buildup_writer -- surfaces the strategy when present.
 # --------------------------------------------------------------------------- #
 def test_build_report_dict_surfaces_evidence_strategy():
-    from me_engine.demand_usage import buildup_writer
+    from me_engine.demandUseCaseCountry_approach2B import buildup_writer
 
     state = {
         "market_name": "Crude Oil", "usage_buckets": [{"name": "Transportation Fuels", "description": "x"}],
@@ -434,7 +434,7 @@ def test_build_report_dict_surfaces_evidence_strategy():
 
 
 def test_build_report_dict_reports_missing_strategy_explicitly():
-    from me_engine.demand_usage import buildup_writer
+    from me_engine.demandUseCaseCountry_approach2B import buildup_writer
 
     state = {
         "market_name": "Crude Oil", "usage_buckets": [{"name": "Transportation Fuels", "description": "x"}],

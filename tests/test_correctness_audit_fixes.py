@@ -18,7 +18,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import agents, correctness_gate, driver_library, evidence_router, units
+from me_engine.demandUseCaseCountry_approach2B import agents, correctness_gate, driver_library, evidence_router, units
 
 
 # --------------------------------------------------------------------------- #
@@ -109,7 +109,7 @@ def test_zero_intensity_with_strong_citation_is_accepted(monkeypatch):
 
 
 def test_zero_intensity_rejection_visible_in_progress(monkeypatch, tmp_path):
-    from me_engine.demand_usage.progress import ProgressRecorder, progress_path
+    from me_engine.demandUseCaseCountry_approach2B.progress import ProgressRecorder, progress_path
     import json
 
     monkeypatch.setattr(evidence_router, "propose_driver_evidence_plan",
@@ -316,7 +316,7 @@ def test_normalize_monetary_value_none_value_passthrough():
 
 
 def test_triangulation_node_normalizes_benchmark_before_gap_calculation(monkeypatch):
-    from me_engine.demand_usage import triangulation, evidence as evidence_mod
+    from me_engine.demandUseCaseCountry_approach2B import triangulation, evidence as evidence_mod
 
     class _Cfg:
         enable_web = False

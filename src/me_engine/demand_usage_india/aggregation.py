@@ -1,7 +1,7 @@
 """Deterministic Major Use Case rollup (India-only) -- pure arithmetic, no
 LLM call, run AFTER Phase 3's sizing graph finishes.
 
-Phase 3 (`me_engine.demand_usage.graph.build_sizing_graph`, reused
+Phase 3 (`me_engine.demandUseCaseCountry_approach2B.graph.build_sizing_graph`, reused
 unchanged) already computes `usage_values[bucket_name][country] -> value`
 and `total_market_value` over "a list of buckets" -- here, the flattened
 Actual Use Cases. This module only REGROUPS those already-computed numbers

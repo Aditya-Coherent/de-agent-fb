@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import pandas as pd
 
-from me_engine.demand_usage import asset_verifier, tabular_acquirer, web_search
+from me_engine.demandUseCaseCountry_approach2B import asset_verifier, tabular_acquirer, web_search
 
 
 def _verification(

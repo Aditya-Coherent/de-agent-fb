@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from me_engine.demand_usage import (
+from me_engine.demandUseCaseCountry_approach2B import (
     api_acquirer,
     asset_verifier,
     evidence,
@@ -23,7 +23,7 @@ from me_engine.demand_usage import (
     tabular_acquirer,
     web_search,
 )
-from me_engine.demand_usage.pdf_acquirer import _PageContent
+from me_engine.demandUseCaseCountry_approach2B.pdf_acquirer import _PageContent
 
 
 def _ok_verification(url: str, content: bytes, content_type: str = "") -> asset_verifier.AssetVerification:
@@ -174,7 +174,7 @@ def test_validate_candidate_never_rejects_on_pure_ambiguity():
 # web_acquirer -- wrong-metric / correct-fact disambiguation
 # --------------------------------------------------------------------------- #
 def test_web_acquirer_rejects_wrong_metric_monetary_value(monkeypatch):
-    import me_engine.demand_usage.web_acquirer as wa
+    import me_engine.demandUseCaseCountry_approach2B.web_acquirer as wa
 
     monkeypatch.setattr(wa, "_fetch_page_text", lambda url: None)
     monkeypatch.setattr(
@@ -203,7 +203,7 @@ def test_web_acquirer_rejects_wrong_metric_monetary_value(monkeypatch):
 
 
 def test_web_acquirer_selects_correct_fact_among_multiple_numbers(monkeypatch):
-    import me_engine.demand_usage.web_acquirer as wa
+    import me_engine.demandUseCaseCountry_approach2B.web_acquirer as wa
 
     monkeypatch.setattr(wa, "_fetch_page_text", lambda url: None)
     monkeypatch.setattr(
@@ -237,7 +237,7 @@ def test_web_acquirer_selects_correct_fact_among_multiple_numbers(monkeypatch):
 
 
 def test_web_acquirer_rejects_geography_mismatch(monkeypatch):
-    import me_engine.demand_usage.web_acquirer as wa
+    import me_engine.demandUseCaseCountry_approach2B.web_acquirer as wa
 
     monkeypatch.setattr(wa, "_fetch_page_text", lambda url: None)
     monkeypatch.setattr(

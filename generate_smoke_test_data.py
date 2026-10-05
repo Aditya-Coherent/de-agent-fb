@@ -2,7 +2,7 @@
 
 Generates records in the EXACT internal schema the pipeline's deterministic
 calculation layer already consumes -- no new schema invented. Field names map
-1:1 onto the real structures used throughout `me_engine.demand_usage`:
+1:1 onto the real structures used throughout `me_engine.demandUseCaseCountry_approach2B`:
 
     market_name          -- state["market_name"]
     country               -- an entry of state["countries"] / quantities[bucket][country]

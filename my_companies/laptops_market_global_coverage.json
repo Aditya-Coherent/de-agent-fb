@@ -1,0 +1,245 @@
+{
+  "market": "Laptops Market",
+  "geography": "global",
+  "total_market_size_estimate_usd_mn": 272910.0,
+  "market_size_source": "https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+  "estimated_coverage_pct": 94.59,
+  "target_coverage_pct": 75.0,
+  "coverage_stop_reason": "target_reached",
+  "coverage_rounds": 0,
+  "n_companies": 115,
+  "n_manufacturers": 37,
+  "n_majors": 22,
+  "n_majors_kept": 21,
+  "runtime_seconds": 606.2,
+  "llm_calls": 226,
+  "time_budget_min": 15.0,
+  "majors": [
+    {
+      "name": "Lenovo Group",
+      "domain": "lenovo.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 45000.0,
+      "est_market_share_pct": 16.5,
+      "source": "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors; https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "HP Inc.",
+      "domain": "hp.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 35000.0,
+      "est_market_share_pct": 12.8,
+      "source": "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors; https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Dell Technologies",
+      "domain": "dell.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 30000.0,
+      "est_market_share_pct": 11.0,
+      "source": "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors; https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Apple Inc.",
+      "domain": "apple.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 28000.0,
+      "est_market_share_pct": 10.3,
+      "source": "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors; https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "ASUS (ASUSTeK Computer)",
+      "domain": "asus.com",
+      "hq_country": "Taiwan",
+      "est_revenue_usd_mn": 14000.0,
+      "est_market_share_pct": 5.1,
+      "source": "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors; https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Acer Inc.",
+      "domain": "acer.com",
+      "hq_country": "Taiwan",
+      "est_revenue_usd_mn": 11000.0,
+      "est_market_share_pct": 4.0,
+      "source": "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors; https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": false
+    },
+    {
+      "name": "Samsung Electronics",
+      "domain": "samsung.com",
+      "hq_country": "South Korea",
+      "est_revenue_usd_mn": 7000.0,
+      "est_market_share_pct": 2.6,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Microsoft Corporation",
+      "domain": "microsoft.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 6500.0,
+      "est_market_share_pct": 2.4,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Huawei Technologies",
+      "domain": "huawei.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 5500.0,
+      "est_market_share_pct": 2.0,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "MSI (Micro-Star International)",
+      "domain": "msi.com",
+      "hq_country": "Taiwan",
+      "est_revenue_usd_mn": 4500.0,
+      "est_market_share_pct": 1.6,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://ru.msi.com/Laptops",
+      "kept_in_output": true
+    },
+    {
+      "name": "Toshiba (Dynabook)",
+      "domain": "dynabook.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 2500.0,
+      "est_market_share_pct": 0.9,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "LG Electronics",
+      "domain": "lg.com",
+      "hq_country": "South Korea",
+      "est_revenue_usd_mn": 2200.0,
+      "est_market_share_pct": 0.8,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Fujitsu",
+      "domain": "fujitsu.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 2000.0,
+      "est_market_share_pct": 0.7,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Panasonic",
+      "domain": "panasonic.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 1800.0,
+      "est_market_share_pct": 0.7,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Xiaomi Corporation",
+      "domain": "mi.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 1700.0,
+      "est_market_share_pct": 0.6,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Google (Alphabet)",
+      "domain": "google.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 1500.0,
+      "est_market_share_pct": 0.5,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Razer Inc.",
+      "domain": "razer.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 1200.0,
+      "est_market_share_pct": 0.4,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Positivo Tecnologia",
+      "domain": "positivo.com.br",
+      "hq_country": "Brazil",
+      "est_revenue_usd_mn": 900.0,
+      "est_market_share_pct": 0.3,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Vaio Corporation",
+      "domain": "vaio.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 700.0,
+      "est_market_share_pct": 0.3,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "System76",
+      "domain": "system76.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 300.0,
+      "est_market_share_pct": 0.1,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Framework Computer",
+      "domain": "frame.work",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 250.0,
+      "est_market_share_pct": 0.1,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    },
+    {
+      "name": "Purism",
+      "domain": "puri.sm",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": 0.0,
+      "source": "https://www.expertmarketresearch.com/blogs/top-laptop-companies; https://www.thebusinessresearchcompany.com/report/laptops-global-market-report",
+      "kept_in_output": true
+    }
+  ],
+  "evidence_sources": [
+    "https://en.wikipedia.org/wiki/Market_share_of_personal_computer_vendors",
+    "https://en.wikipedia.org/wiki/List_of_largest_technology_companies_by_revenue",
+    "https://companiesmarketcap.com/",
+    "https://largest.org/technology/laptops-by-screen-size/",
+    "https://www.lenovo.com/us/en/laptops/",
+    "https://www.tiktok.com/@tombalitcho/video/7428311117836913952",
+    "https://storage.googleapis.com/chngfmdrylbeqmpzpwmvroxxqxgc-blog/lockton-companies-revenue.html",
+    "https://www.expertmarketresearch.com/blogs/top-laptop-companies",
+    "https://fortunly.com/articles/lap-top-market-share/",
+    "https://www.accio.com/business/top-10-laptop-selling-companies-in-world",
+    "https://www.tradingview.com/",
+    "https://www.statista.com/statistics/267018/global-market-share-held-by-pc-vendors/",
+    "https://www.alliedmarketresearch.com/laptops-market-A14982",
+    "https://www.marketsandata.com/industry-reports/laptops-market",
+    "https://market.us/report/refurbished-computer-and-laptops-market/",
+    "https://www.grandviewresearch.com/industry-analysis/dual-screen-laptops-market",
+    "https://www.datainsightsmarket.com/reports/touch-screen-laptops-1666988",
+    "https://www.towardsconsumergoods.com/insights/refurbished-computers-and-laptops-market",
+    "https://www.businessresearchinsights.com/market-reports/2-in-1-laptops-market-127463",
+    "https://www.fortunebusinessinsights.com/dual-screen-laptops-market-116372",
+    "https://www.skyquestt.com/report/refurbished-computers-and-laptops-market",
+    "https://www.globalgrowthinsights.com/market-reports/dual-screen-laptops-market-126969",
+    "https://en.wikipedia.org/wiki/List_of_laptop_brands_and_manufacturers",
+    "https://www.rtings.com/laptop/reviews/best/brands",
+    "https://www.pcmag.com/picks/the-best-laptops"
+  ],
+  "note": "All revenue / market-share / market-size figures are ESTIMATES produced by an LLM from web search snippets and model knowledge; they are approximate and not audited financial data."
+}

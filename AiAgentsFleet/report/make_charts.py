@@ -23,6 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+import labels as dim_labels
 from narrative import ordered_regions
 
 ROOT = Path(__file__).resolve().parent.parent  # AiAgentsFleet/
@@ -181,7 +182,7 @@ def chart_porters(field: dict, out: Path) -> None:
     ax.set_yticks([1, 2, 3, 4, 5])
     ax.set_yticklabels(["1", "2", "3", "4", "5"], color="#94A3B8")
     for ang, val in zip(angles[:-1], values):
-        ax.annotate(f"{val:.0f}", (ang, val), textcoords="offset points", xytext=(6, 6),
+        ax.annotate(f"{round(val, 1):g}", (ang, val), textcoords="offset points", xytext=(6, 6),
                      fontweight="bold", fontsize=12, color=NAVY)
     _save(fig, out)
 
@@ -193,27 +194,28 @@ def _donut(ax, labels: list[str], values: list[float], center_title: str, center
     colors = (PALETTE * 3)[: len(labels)]
     wedges, _ = ax.pie(values, colors=colors, startangle=90, counterclock=False,
                         wedgeprops={"width": 0.42, "edgecolor": "white", "linewidth": 2})
-    ax.text(0, 0.12, center_title, ha="center", va="center", fontsize=15, fontweight="bold", color=NAVY)
-    ax.text(0, -0.12, center_sub, ha="center", va="center", fontsize=10, color="#64748B")
+    ax.text(0, 0.02, center_title, ha="center", va="bottom", fontsize=15, fontweight="bold", color=NAVY)
+    ax.text(0, -0.12, _wrap(center_sub, 18), ha="center", va="top", fontsize=10, color="#64748B")
     ax.legend(wedges, [f"{l}  ({v:.1f}%)" for l, v in zip(labels, values)],
                loc="center left", bbox_to_anchor=(1.05, 0.5), frameon=False, fontsize=11)
     ax.set_aspect("equal")
 
 
 def chart_segmentation(field: dict, out_grade: Path, out_form: Path, market: str,
-                       base_val: float = 0, base_year: int = 2025) -> None:
+                       base_val: float = 0, base_year: int = 2025,
+                       grade_label: str = "Type", form_label: str = "Form") -> None:
     grade = field.get("by_grade_or_type", []) or []
     form = field.get("by_form", []) or []
     yy = f"{base_year}E"
     if grade:
         fig, ax = plt.subplots(figsize=(7.5, 4.5))
         _donut(ax, [g.get("name", "") for g in grade], [g.get("share_pct_of_market", 0) for g in grade],
-               _usd_short(base_val) if base_val else "100%", f"by Type ({yy})")
+               _usd_short(base_val) if base_val else "100%", f"by {grade_label} ({yy})")
         _save(fig, out_grade)
     if form:
         fig, ax = plt.subplots(figsize=(7.5, 4.5))
         _donut(ax, [f.get("name", "") for f in form], [f.get("share_pct_of_market", 0) for f in form],
-               "100%", f"by Form ({yy})")
+               _usd_short(base_val) if base_val else "100%", f"by {form_label} ({yy})")
         _save(fig, out_form)
 
 
@@ -329,7 +331,7 @@ def chart_regional_overview(field: dict, out: Path) -> None:
     _save(fig, out)
 
 
-def chart_region_detail(region_name: str, region_data: dict, out: Path) -> None:
+def chart_region_detail(region_name: str, region_data: dict, out: Path, mix_label: str = "Application") -> None:
     countries = region_data.get("countries", []) or []
     mix = region_data.get("application_mix_pct", []) or []
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
@@ -344,7 +346,7 @@ def chart_region_detail(region_name: str, region_data: dict, out: Path) -> None:
         axes[0].set_xticks([])
     if mix:
         _donut(axes[1], [m.get("name", "") for m in mix], [m.get("share_pct", 0) for m in mix],
-               _wrap(region_name, 14), "Application mix")
+               _wrap(region_name, 14), f"{mix_label} mix")
     fig.tight_layout()
     _save(fig, out)
 
@@ -446,6 +448,8 @@ def generate_all(slug: str) -> Path:
     fields = data["fields"]
     market = data["market_name"]
     charts_dir = market_dir / "charts"
+    # Same dimension names as the headings/captions (from prose.json, written first).
+    lab = dim_labels.load(market_dir, fields, market)
 
     if "market_size" in fields:
         chart_market_size(fields["market_size"], charts_dir / "fig1_1_market_size.png")
@@ -457,7 +461,8 @@ def generate_all(slug: str) -> Path:
         ms = fields.get("market_size") or {}
         chart_segmentation(fields["segmentation_grade_form"], charts_dir / "fig4_1_grade.png",
                              charts_dir / "fig4_2_form.png", market,
-                             ms.get("base_year_value_usd_mn", 0), ms.get("base_year", 2025))
+                             ms.get("base_year_value_usd_mn", 0), ms.get("base_year", 2025),
+                             lab["grade"]["singular"], lab["form"]["singular"])
     if "end_use_industry" in fields:
         chart_end_use(fields["end_use_industry"], charts_dir / "fig5_1_end_use_share.png",
                        charts_dir / "fig5_2_end_use_cagr.png",
@@ -473,7 +478,8 @@ def generate_all(slug: str) -> Path:
         chart_regional_overview(fields["regional"], charts_dir / "fig8_1_regional.png")
         regions = fields["regional"].get("regions", {}) or {}
         for i, rname in enumerate(ordered_regions(regions), start=1):
-            chart_region_detail(rname, regions[rname], charts_dir / f"fig{8 + i}_1_region_{i}.png")
+            chart_region_detail(rname, regions[rname], charts_dir / f"fig{8 + i}_1_region_{i}.png",
+                                lab["region_mix"]["singular"])
     if "competitive_landscape" in fields:
         chart_competitive(fields["competitive_landscape"], charts_dir / "fig14_1_competitive.png",
                           (fields.get("market_size") or {}).get("base_year_value_usd_mn", 0))

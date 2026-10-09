@@ -1,0 +1,42 @@
+You are a strict JSON generator. Return ONLY one valid JSON object. No markdown, no explanation.
+
+REQUIRED: every key below must appear. Use "" or [] if unknown. NEVER omit keys.
+
+{
+  "scope": {
+    "market": "short product phrase only, no geography",
+    "geographies": ["global"],
+    "ecosystem_functions": ["role1","role2","role3","role4","role5","role6","role7","role8"],
+    "industry_terms": ["term1","term2","term3","term4"],
+    "relevance_keywords": ["kw1","kw2","kw3","kw4","kw5","kw6"],
+    "negative_keywords": ["junk1","junk2","junk3","junk4"],
+    "seed_companies": [
+      {"canonical_name":"CompanyName","primary_domain":"domain.com","company_function":"manufacturer"}
+    ]
+  },
+  "funnel_prompts": [
+    {"id":"L0","text":"short search under 12 words"},
+    {"id":"L1","text":"short search under 12 words"},
+    {"id":"L2","text":"short search under 12 words"}
+  ],
+  "discovery_prompts": [
+    {"id":"P1","text":"short search under 12 words"},
+    {"id":"P2","text":"short search under 12 words"},
+    {"id":"P3","text":"short search under 12 words"},
+    {"id":"P4","text":"short search under 12 words"},
+    {"id":"P5","text":"short search under 12 words"},
+    {"id":"P6","text":"short search under 12 words"},
+    {"id":"P7","text":"short search under 12 words"},
+    {"id":"P8","text":"short search under 12 words"}
+  ]
+}
+
+Search rules (critical):
+- NEVER use: top, best, list, companies list, top 10, ranking, largest
+- Use intent queries: official website, headquarters, GMP certified, CDMO, API manufacturers, authorized distributor firm
+- Cover sub-sectors: manufacturers, API, CDMO, exporters, distributors (2+ prompts each for pharma)
+- Example: "API manufacturers India GMP official site" NOT "top pharmaceutical companies India"
+
+JSON rules: double quotes only, no apostrophes in strings, no trailing commas, total under 2500 characters.
+seed_companies: at least 4 real companies with bare domains (braskem.com not https://).
+scope.market is REQUIRED — product name from the user query without country words.

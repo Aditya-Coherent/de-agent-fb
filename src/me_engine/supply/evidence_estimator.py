@@ -21,6 +21,7 @@ returned honestly (empty result) rather than an invented number.
 """
 from __future__ import annotations
 
+import os
 import re
 import statistics
 import time
@@ -36,6 +37,11 @@ _UNIT_TO_MN = {"trillion": 1_000_000, "billion": 1_000, "million": 1, "bn": 1_00
 _CAGR_RE = re.compile(
     r"CAGR[^%\n]{0,40}?([\d]+(?:\.\d+)?)\s*%|([\d]+(?:\.\d+)?)\s*%[^%\n]{0,20}?CAGR", re.IGNORECASE
 )
+
+_YEAR_RE = re.compile(r"\b(20\d{2})\b")
+# Only market sizes stated for these years count; a 2026 (or forecast) figure is never used.
+_MAX_YEAR = int(os.environ.get("DEAGENT_BASE_YEAR", "2025"))
+_ALLOWED_YEARS = {_MAX_YEAR - 1, _MAX_YEAR}
 
 _RELEVANCE_THRESHOLD = 0.35  # cosine similarity, MiniLM embeddings, short snippets
 
@@ -85,12 +91,31 @@ def gather_relevant_evidence(market_name: str, cap: int = 20) -> list[str]:
     return relevant
 
 
+def _value_year(snippet: str, start: int, end: int) -> int | None:
+    """Year closest to a matched value ("USD 16.03 billion in 2026" -> 2026),
+    looking 60 characters before and 40 after; None if no year is nearby."""
+    lo, hi = max(0, start - 60), min(len(snippet), end + 40)
+    best = None
+    for m in _YEAR_RE.finditer(snippet, lo, hi):
+        dist = start - m.end() if m.end() <= start else m.start() - end
+        if best is None or dist < best[0]:
+            best = (dist, int(m.group(1)))
+    return best[1] if best else None
+
+
+def _allowed_value(snippet: str) -> float | None:
+    """First market-size value in the snippet stated for an allowed year."""
+    for vm in _VALUE_RE.finditer(snippet):
+        if _value_year(snippet, vm.start(), vm.end()) in _ALLOWED_YEARS:
+            return float(vm.group(1).replace(",", "")) * _UNIT_TO_MN[vm.group(2).lower()]
+    return None
+
+
 def extract_real_figures(snippets: list[str]) -> list[ExtractedFigure]:
     """Step 3: deterministic regex extraction, no LLM call."""
     out = []
     for s in snippets:
-        vm = _VALUE_RE.search(s)
-        value = float(vm.group(1).replace(",", "")) * _UNIT_TO_MN[vm.group(2).lower()] if vm else None
+        value = _allowed_value(s)
         cm = _CAGR_RE.search(s)
         cagr = None
         if cm:

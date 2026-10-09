@@ -270,7 +270,7 @@
     <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
     <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
     <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
-    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ A = assumption (no source found)</span>
     <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
   </div>
 
@@ -320,23 +320,28 @@ const STEPS = [
    "role": "Scope, countries, base year and units — identical to 2B."
   },
   "inputShort": "Market: Olive Oil",
-  "outputLabel": "14 countries",
+  "outputLabel": "19 countries",
   "reason": "2C starts exactly like 2B.",
   "output": [
    "Spain",
    "Italy",
    "Greece",
    "Portugal",
-   "Tunisia",
-   "Turkey",
-   "Morocco",
-   "Syria",
-   "Algeria",
-   "United States",
    "France",
    "Germany",
+   "United Kingdom",
+   "United States",
+   "Canada",
    "Brazil",
-   "Japan"
+   "Australia",
+   "Turkiye",
+   "Morocco",
+   "Algeria",
+   "Syria",
+   "Tunisia",
+   "Egypt",
+   "China",
+   "Other countries"
   ],
   "activity": [
    "Reusing approved 2B setup"
@@ -354,14 +359,13 @@ const STEPS = [
    "role": "Same use-case decomposition as 2B."
   },
   "inputShort": "Approved scope",
-  "outputLabel": "5 use cases",
+  "outputLabel": "4 use cases",
   "reason": "2C adds one more level BELOW each use case.",
   "output": [
-   "Home Cooking and Table Use",
-   "Foodservice and Restaurant Operations",
-   "Processed Food Manufacturing",
-   "Infused and Flavored Olive Oil Production",
-   "Nutraceutical and Pharmaceutical Applications"
+   "Household (home cooking & table)",
+   "Restaurants & catering",
+   "Food industry (canning, processing, bakery)",
+   "Non-food (cosmetics, pharma, soap)"
   ],
   "activity": [
    "Reusing approved 2B use cases"
@@ -371,22 +375,21 @@ const STEPS = [
   "id": "products",
   "name": "Product Types inside Each Use Case",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "product",
   "source": "llm",
   "agent": {
    "name": "Product-Type Agent (LLM) — the one new node 2C needs",
    "role": "Lists which product types are used inside each use case (same pattern as the India variant's extra 'Actual Use Case' level)."
   },
-  "inputShort": "5 use cases",
-  "outputLabel": "5 × 4 product cells",
+  "inputShort": "4 use cases",
+  "outputLabel": "4 × 4 product cells",
   "reason": "Every (use case, product type) pair becomes its own line, sized in every country.",
   "output": [
-   "Home Cooking and Table Use → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
-   "Foodservice and Restaurant Operations → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
-   "Processed Food Manufacturing → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
-   "Infused and Flavored Olive Oil Production → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
-   "Nutraceutical and Pharmaceutical Applications → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil"
+   "Household (home cooking & table) → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Restaurants & catering → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Food industry (canning, processing, bakery) → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil",
+   "Non-food (cosmetics, pharma, soap) → Extra Virgin Olive Oil, Virgin Olive Oil, Refined Olive Oil (including blends with virgin), Olive-Pomace Oil"
   ],
   "activity": [
    "Listing product types per use case",
@@ -398,14 +401,14 @@ const STEPS = [
   "id": "mix",
   "name": "Product Volume Mix per Country",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "quantity",
   "source": "web",
   "agent": {
    "name": "Demand Quantification per Product",
    "role": "Quantity of each product type inside each use case. Here: the use-case quantity × the product's share in that country (By Product Grade, evidence: web_evidence_backed)."
   },
-  "inputShort": "Foodservice and Restaurant Operations · Italy",
+  "inputShort": "Household (home cooking & table) · Italy",
   "outputLabel": "Product quantities",
   "reason": "In a live 2C run, each product's quantity would have its own driver and sources.",
   "output": [
@@ -415,11 +418,11 @@ const STEPS = [
    },
    {
     "l": "Virgin Olive Oil",
-    "v": "15.0% of volume"
+    "v": "12.0% of volume"
    },
    {
     "l": "Refined Olive Oil (including blends with virgin)",
-    "v": "22.0% of volume"
+    "v": "25.0% of volume"
    },
    {
     "l": "Olive-Pomace Oil",
@@ -427,7 +430,7 @@ const STEPS = [
    }
   ],
   "activity": [
-   "Splitting Foodservice and Restaurant Operations volume in Italy",
+   "Splitting Household (home cooking & table) volume in Italy",
    "Repeating for every use case and country"
   ]
  },
@@ -435,32 +438,32 @@ const STEPS = [
   "id": "price",
   "name": "Price per Product Type",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "price",
   "source": "assumption",
   "agent": {
    "name": "Pricing Agent per Product",
    "role": "A price per product type. Here: the use case's real 2B price × an illustrative grade ratio."
   },
-  "inputShort": "Foodservice and Restaurant Operations average price",
+  "inputShort": "Household (home cooking & table) average price",
   "outputLabel": "Product prices",
   "reason": "Product grades sell at very different prices — this is what 2C captures that 2B cannot.",
   "output": [
    {
     "l": "Extra Virgin Olive Oil",
-    "v": "$8,450 per Tonnes (×1.30)"
+    "v": "$6,343 per Tonnes (×1.30)"
    },
    {
     "l": "Virgin Olive Oil",
-    "v": "$6,500 per Tonnes (×1.00)"
+    "v": "$4,879 per Tonnes (×1.00)"
    },
    {
     "l": "Refined Olive Oil (including blends with virgin)",
-    "v": "$6,500 per Tonnes (×1.00)"
+    "v": "$4,879 per Tonnes (×1.00)"
    },
    {
     "l": "Olive-Pomace Oil",
-    "v": "$3,250 per Tonnes (×0.50)"
+    "v": "$2,440 per Tonnes (×0.50)"
    }
   ],
   "activity": [
@@ -472,46 +475,46 @@ const STEPS = [
   "id": "calculation",
   "name": "Calculation (Product Quantity × Product Price)",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "value",
   "source": "code",
   "agent": {
    "name": "Deterministic Code",
    "role": "value = quantity × price ÷ 1,000,000, for every country × use case × product cell."
   },
-  "inputShort": "Extra Virgin Olive Oil · Foodservice and Restaurant Operations · Italy",
-  "outputLabel": "$1,626.6M",
-  "reason": "252 cells calculated this way.",
+  "inputShort": "Extra Virgin Olive Oil · Household (home cooking & table) · Italy",
+  "outputLabel": "$1,320.1M",
+  "reason": "276 cells calculated this way.",
   "flowCalc": {
    "a": {
-    "value": "192,500",
+    "value": "208,133",
     "unit": "Tonnes of Extra Virgin Olive Oil",
     "src": "derived"
    },
    "opLabel": "×",
    "b": {
-    "value": "$8,450",
+    "value": "$6,343",
     "unit": "per Tonnes",
     "src": "assumption"
    },
    "result": {
-    "value": "$1,626.6M",
+    "value": "$1,320.1M",
     "src": "code"
    },
    "final": {
-    "big": "$1,626.6M",
-    "cap": "Italy · Foodservice and Restaurant Operations · Extra Virgin Olive Oil"
+    "big": "$1,320.1M",
+    "cap": "Italy · Household (home cooking & table) · Extra Virgin Olive Oil"
    }
   },
   "activity": [
-   "252 product cells calculated"
+   "276 product cells calculated"
   ]
  },
  {
   "id": "rollup_app",
   "name": "Products → Use Case (per Country)",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "app",
   "source": "code",
   "agent": {
@@ -519,31 +522,31 @@ const STEPS = [
    "role": "Adds product types into their use case, per country."
   },
   "inputShort": "4 products",
-  "outputLabel": "Foodservice and Restaurant Operations, Italy: $2,559.4M",
+  "outputLabel": "Household (home cooking & table), Italy: $2,077.1M",
   "reason": "First bottom-up rollup level that 2B does not have.",
   "aggregations": [
    {
-    "title": "Products → Foodservice and Restaurant Operations (Italy)",
+    "title": "Products → Household (home cooking & table) (Italy)",
     "rows": [
      {
       "label": "Extra Virgin Olive Oil",
-      "value": "$1,626.6M"
+      "value": "$1,320.1M"
      },
      {
       "label": "Virgin Olive Oil",
-      "value": "$341.2M"
+      "value": "$221.6M"
      },
      {
       "label": "Refined Olive Oil (including blends with virgin)",
-      "value": "$500.5M"
+      "value": "$461.6M"
      },
      {
       "label": "Olive-Pomace Oil",
-      "value": "$91.0M"
+      "value": "$73.9M"
      }
     ],
-    "totalLabel": "Foodservice and Restaurant Operations",
-    "total": "$2,559.4M"
+    "totalLabel": "Household (home cooking & table)",
+    "total": "$2,077.1M"
    }
   ],
   "activity": [
@@ -554,74 +557,70 @@ const STEPS = [
   "id": "rollup_country",
   "name": "Use Cases → Country → Region → Global",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "global",
   "source": "code",
   "agent": {
    "name": "Deterministic Code",
    "role": "Use cases into country, countries into region, regions into global."
   },
-  "inputShort": "14 countries",
-  "outputLabel": "$10.42 Bn",
+  "inputShort": "19 countries",
+  "outputLabel": "$19.63 Bn",
   "reason": "Same rollup as 2B, one level deeper underneath.",
   "aggregations": [
    {
     "title": "Use Case A + Use Case B + … → Global",
     "rows": [
      {
-      "label": "Home Cooking and Table Use",
-      "value": "$395.1M"
+      "label": "Household (home cooking & table)",
+      "value": "$11,706.9M"
      },
      {
-      "label": "Foodservice and Restaurant Operations",
-      "value": "$6,667.9M"
+      "label": "Restaurants & catering",
+      "value": "$3,339.2M"
      },
      {
-      "label": "Processed Food Manufacturing",
-      "value": "$2,942.3M"
+      "label": "Food industry (canning, processing, bakery)",
+      "value": "$3,201.5M"
      },
      {
-      "label": "Infused and Flavored Olive Oil Production",
-      "value": "$344.7M"
-     },
-     {
-      "label": "Nutraceutical and Pharmaceutical Applications",
-      "value": "$65.3M"
+      "label": "Non-food (cosmetics, pharma, soap)",
+      "value": "$1,377.5M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    },
    {
     "title": "Region A + Region B + … → Global",
     "rows": [
      {
       "label": "North America",
-      "value": "$1,727.9M"
+      "value": "$2,628.1M"
      },
      {
       "label": "Latin America",
-      "value": "$172.3M"
+      "value": "$499.5M"
      },
      {
       "label": "Europe",
-      "value": "$7,559.1M"
+      "value": "$10,025.3M"
      },
      {
       "label": "Asia Pacific",
-      "value": "$216.6M"
+      "value": "$470.2M"
      },
      {
       "label": "Middle East & Africa",
-      "value": "$708.2M"
+      "value": "$2,632.8M"
      },
      {
       "label": "Rest of World",
-      "value": "$31.4M"
+      "value": "$3,369.1M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    }
   ],
   "activity": [
@@ -634,18 +633,18 @@ const STEPS = [
   "id": "final_market_size",
   "name": "Final Market Size",
   "data_tag": "illustrative",
-  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative assumption. A live 2C run would size and price each product type separately with its own evidence.",
+  "data_tag_note": "ILLUSTRATIVE — approach 2C is designed but not yet implemented in code. Quantities per use case and country come from the real Olive Oil 2B run; the product mix per country comes from that run's evidence-backed product-type shares; the price ratio between product grades is an illustrative A. A live 2C run would size and price each product type separately with its own evidence.",
   "stage": "final",
   "source": "code",
   "agent": {
    "name": "Deterministic Code",
    "role": "Product Type AND Application are both bottom-up tables; any remaining segment (e.g. channel) would be split top-down."
   },
-  "inputShort": "252 cells",
-  "outputLabel": "$10.42 Bn",
+  "inputShort": "276 cells",
+  "outputLabel": "$19.63 Bn",
   "reason": "Both Product Type and Application tables come from the build-up, not from shares.",
   "big": {
-   "value": "$10.42 Bn",
+   "value": "$19.63 Bn",
    "unit": "illustrative global total"
   },
   "aggregations": [
@@ -654,119 +653,115 @@ const STEPS = [
     "rows": [
      {
       "label": "Extra Virgin Olive Oil",
-      "value": "$6,548.5M"
+      "value": "$11,137.2M"
      },
      {
       "label": "Virgin Olive Oil",
-      "value": "$1,433.2M"
+      "value": "$2,197.7M"
      },
      {
       "label": "Refined Olive Oil (including blends with virgin)",
-      "value": "$2,080.9M"
+      "value": "$5,491.3M"
      },
      {
       "label": "Olive-Pomace Oil",
-      "value": "$352.8M"
+      "value": "$798.9M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    },
    {
     "title": "By Application (bottom-up) → Global",
     "rows": [
      {
-      "label": "Home Cooking and Table Use",
-      "value": "$395.1M"
+      "label": "Household (home cooking & table)",
+      "value": "$11,706.9M"
      },
      {
-      "label": "Foodservice and Restaurant Operations",
-      "value": "$6,667.9M"
+      "label": "Restaurants & catering",
+      "value": "$3,339.2M"
      },
      {
-      "label": "Processed Food Manufacturing",
-      "value": "$2,942.3M"
+      "label": "Food industry (canning, processing, bakery)",
+      "value": "$3,201.5M"
      },
      {
-      "label": "Infused and Flavored Olive Oil Production",
-      "value": "$344.7M"
-     },
-     {
-      "label": "Nutraceutical and Pharmaceutical Applications",
-      "value": "$65.3M"
+      "label": "Non-food (cosmetics, pharma, soap)",
+      "value": "$1,377.5M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    },
    {
     "title": "By Extraction Method (top-down) → Global",
     "rows": [
      {
       "label": "Mechanical Extraction (Cold-Pressed / Cold-Extracted)",
-      "value": "$6,714.3M"
+      "value": "$11,287.5M"
      },
      {
       "label": "Mechanical Extraction (Hot-Pressed / Standard)",
-      "value": "$2,641.7M"
+      "value": "$5,597.1M"
      },
      {
       "label": "Chemical Extraction (Refining and Solvent Extraction)",
-      "value": "$1,059.3M"
+      "value": "$2,740.5M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    },
    {
     "title": "By Distribution Channel (top-down) → Global",
     "rows": [
      {
       "label": "Supermarkets and Hypermarkets",
-      "value": "$5,187.2M"
+      "value": "$8,168.3M"
      },
      {
       "label": "Specialty Food Stores and Gourmet Retailers",
-      "value": "$1,279.2M"
+      "value": "$2,384.7M"
      },
      {
       "label": "Online Retail",
-      "value": "$1,071.9M"
+      "value": "$1,993.7M"
      },
      {
       "label": "Foodservice and Institutional",
-      "value": "$1,805.1M"
+      "value": "$3,963.8M"
      },
      {
       "label": "Direct from Producer / Bulk Sales",
-      "value": "$1,072.1M"
+      "value": "$3,114.5M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    },
    {
     "title": "By Packaging Format (top-down) → Global",
     "rows": [
      {
       "label": "Glass Bottles and Jars",
-      "value": "$4,713.2M"
+      "value": "$7,207.9M"
      },
      {
       "label": "Plastic Bottles and Containers",
-      "value": "$1,916.0M"
+      "value": "$3,873.3M"
      },
      {
       "label": "Metal Cans and Tins",
-      "value": "$1,294.7M"
+      "value": "$2,660.8M"
      },
      {
       "label": "Bulk (Drums, IBCs, Flexitanks)",
-      "value": "$2,491.5M"
+      "value": "$5,883.1M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$10,415.4M"
+    "total": "$19,625.0M"
    }
   ],
   "is_final": true,
@@ -853,7 +848,7 @@ function srcBadge(source) {
     db:{icon:"🗄️", label:"Database", cls:"src-db"},
     code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
     derived:{icon:"📐", label:"Derived", cls:"src-derived"},
-    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    assumption:{icon:"⚠️", label:"A", cls:"src-assumption"},
     human:{icon:"👤", label:"Human", cls:"src-human"},
   };
   const m = map[source] || map.code;
@@ -967,7 +962,7 @@ function provSummary() {
   const s = steps();
   const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
   s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
-  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"A", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
   let html = '<div class="prov-summary">';
   Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
   html += '</div>';

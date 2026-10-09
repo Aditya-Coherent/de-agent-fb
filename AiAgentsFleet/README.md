@@ -119,25 +119,27 @@ Requires `matplotlib` (`pip install matplotlib`, one-time) and the `docx` +
 `image-size` npm packages (already installed under `report/node_modules/`
 via `npm install` in that folder).
 
-Pipeline (`run_report.py` chains these three, each independently runnable):
+Pipeline (`run_report.py` runs the consistency pass, then these three, each
+independently runnable):
 
-1. `report/make_charts.py` — regenerates every figure as a PNG via
-   matplotlib, using colors sampled directly from the Vitamin C template's
-   own chart images (`NAVY #0A2540`, `TEAL #00B4A6`, `ORANGE #F59E0B`,
-   `PURPLE #8B5CF6`, `GREEN #10B981`, `GRAY #9CA3AF`, `RED #DC2626`).
-2. `report/build_content.py` (+ `report/narrative.py`) — turns the field
-   JSON into the actual section text (paragraphs, bullets, table rows),
-   mirroring the Vitamin C paper's sentence patterns
-   ("We estimate the global X market at USD Y in {base_year}...") but
-   entirely data-driven per market. Writes `content_plan.json`.
-3. `report/build_docx.mjs` (docx-js) — a pure, market-agnostic layout
-   renderer: reads `content_plan.json` + the chart PNGs, emits
-   `<slug>-whitepaper.docx`. Validated against Office Open XML's schema via
-   the `docx` skill's `validate.py` (`All validations PASSED!` for all 4
-   markets run so far).
+1. `report/prose_writer.py` — AI-written section text, number-guarded
+   (cached in `prose.json` until the numbers or `PROSE_VERSION` change).
+   It first names what each segment list really is ("Shrimp Species",
+   "Application Methods" — see `report/labels.py`), then drops any text
+   that restates the headline size outside Sections 1/2/14/15, contradicts
+   the competition-structure label, or repeats an earlier heading.
+2. `report/make_charts.py` — every figure as a PNG via matplotlib, using
+   the Vitamin C template's colors; donut/mix labels use the same dimension
+   names as the headings.
+3. `report/build_from_template.py` — clones `vitamin_c_market_whitepaper_v2.docx`
+   and fills it. Section titles, the TOC, sub-headings and captions all use
+   the dimension labels; figures/tables are numbered by section
+   (Figure 9.2); a "grade" list that just repeats Section 6's applications
+   is left out. Ends with a QA summary (duplicate/near-duplicate headings,
+   restated headline, competition-label contradictions, Vitamin C leftovers).
 
 Output: `AiAgentsFleet/output/<slug>/<slug>-whitepaper.docx` (plus
-the intermediate `charts/` folder and `content_plan.json`).
+the intermediate `charts/` folder and `prose.json`).
 
 ## What this does NOT do (yet)
 

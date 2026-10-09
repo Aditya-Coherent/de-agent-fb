@@ -23,7 +23,7 @@ from dataclasses import dataclass
 
 from . import web_search
 from .companies import Company
-from .financials import fetch_company_revenue
+from .financials import MAX_REVENUE_YEAR, fetch_company_revenue
 from ..generation.llm import GenLLM
 
 _GROUNDED_SYSTEM_TMPL = (
@@ -49,7 +49,12 @@ _GROUNDED_SYSTEM_TMPL = (
     "MUST add up to market_revenue_usd_mn (they will be rescaled to it). "
     "Respond ONLY with a JSON object: {{\"market_fraction\": <0-1 number>, \"market_revenue_usd_mn\": "
     "<number>, \"country_revenue_usd_mn\": {{\"<country>\": <number>, ...}}, "
-    "\"no_real_data\": <true|false>, \"reasoning\": \"<one or two sentences>\"}}"
+    "\"no_real_data\": <true|false>, \"revenue_year\": <fiscal year of the revenue you used>, "
+    "\"reasoning\": \"<one or two sentences>\"}}"
+    "\n\nREVENUE YEAR: use only revenue for fiscal year {max_year} or {prev_year} (the latest of the "
+    "two that the data gives). IGNORE any figure for {next_year} or later, any forecast or projection, "
+    "and any trailing-12-month figure running into {next_year}. Report the year you used in "
+    "\"revenue_year\"."
 )
 
 COVERAGE_SYSTEM = (
@@ -105,7 +110,7 @@ def _ground_company(
         )
         text = (
             f"VERIFIED FINANCIAL DATA (source: Yahoo Finance, ticker {financials.ticker}): "
-            f"{financials.matched_name} total annual revenue = "
+            f"{financials.matched_name} total annual revenue for fiscal year {financials.revenue_year} = "
             f"{financials.total_revenue:,.0f} {cur} (raw units, not millions){usd_part} "
             f"(sector: {financials.sector}, industry: {financials.industry}). "
             "This is the company's TOTAL revenue across all markets/products, not just this one. "
@@ -141,7 +146,9 @@ def _ground_company(
 
     if enable_web:
         snippets = web_search.gather(
-            [f"{company.name} {market_name} revenue", f"{company.name} annual revenue"],
+            [f"{company.name} {market_name} revenue {MAX_REVENUE_YEAR}",
+             f"{company.name} annual revenue {MAX_REVENUE_YEAR}",
+             f"{company.name} annual revenue {MAX_REVENUE_YEAR - 1}"],
             per_query=4, cap=8,
         )
         if snippets:
@@ -220,13 +227,23 @@ def estimate_company_countries(
         return {c: 0.0 for c in countries}, "no_real_data", notes
 
     facts_line = ", ".join(f"{k}: {v}" for k, v in company.facts.items()) or "none"
-    system = _GROUNDED_SYSTEM_TMPL.format(market=market_name, countries=", ".join(countries))
+    system = _GROUNDED_SYSTEM_TMPL.format(
+        market=market_name, countries=", ".join(countries),
+        max_year=MAX_REVENUE_YEAR, prev_year=MAX_REVENUE_YEAR - 1, next_year=MAX_REVENUE_YEAR + 1,
+    )
     user = (
         f"Market: {market_name}\nCompany: {company.name}\nKnown facts: {facts_line}\n\n{grounding_text}"
     )
     data = llm.complete_json(system, user)
     if data.get("no_real_data"):
         return {c: 0.0 for c in countries}, "no_real_data", notes
+
+    year = _float_or_none(data.get("revenue_year"))
+    if source == "web_evidence" and year is not None and year > MAX_REVENUE_YEAR:
+        # A 2026+ figure slipped through despite the prompt -- never use it.
+        return {c: 0.0 for c in countries}, "no_real_data", notes + [f"revenue_year_after_base:{int(year)}"]
+    if year is not None:
+        notes = notes + [f"revenue_year:{int(year)}"]
 
     raw = data.get("country_revenue_usd_mn") or {}
     revenue = {c: max(0.0, _float_or_none(raw.get(c)) or 0.0) for c in countries}

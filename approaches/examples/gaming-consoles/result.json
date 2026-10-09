@@ -1,0 +1,22 @@
+{
+  "market": "Gaming Consoles",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T14:00:33+00:00",
+  "1_desk_research": {
+    "status": "failed",
+    "error": "ERROR: could not build a DB skeleton for 'Gaming Consoles'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6465.91it/s]",
+    "minutes": 0.4
+  },
+  "log": [
+    "[2026-10-08T14:00:33+00:00] 1 Desk Research: start",
+    "[2026-10-08T14:00:59+00:00] 1 Desk Research: failed in 0.4 min",
+    "[2026-10-08T14:00:59+00:00] 2A Demand: start",
+    "[2026-10-08T14:13:53+00:00] 2A Demand: failed in 12.9 min"
+  ],
+  "2A_demand_country_total": {
+    "status": "failed",
+    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: d9f1832e-c60e-4e05-8258-8d27312cbe93)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 279, in <lambda>\n    result[\"2A_demand_country_total\"] = _timed(lambda: run_2a(market, out_dir, cfg), log, \"2A Demand\")\n                                                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 159, in run_2a\n    segmentation.approve_segments(segmentation.run_segments_phase(market, cfg, cache_path=CACHE))\n                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandCountry_approach2A\\segmentation.py\", line 39, in run_segments_phase\n    draft = segments.build_segments_draft(\n        llm=llm or GenLLM(config, cache_path=cache_path),\n    ...<7 lines>...\n        search=search,\n    )\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 253, in build_segments_draft\n    dims = propose_dimensions(llm, config, market_name, scope, exclude_application=bool(bottom_up_dimensions))\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 155, in propose_dimensions\n    dims = propose_dimensions_llm(llm, market_name, scope, exclude_application)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 118, in propose_dimensions_llm\n    data = llm.complete_json(_PROPOSE_SYSTEM, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: d9f1832e-c60e-4e05-8258-8d27312cbe93)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
+    "minutes": 12.9
+  }
+}

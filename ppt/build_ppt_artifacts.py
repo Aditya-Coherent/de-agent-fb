@@ -79,6 +79,20 @@ def evidence_source(tag: str) -> str:
     return EVIDENCE_SOURCE.get(tag or "", "assumption")
 
 
+_KEEP_KEYS = {"source", "src", "data_tag", "stage", "id", "code", "severity", "step"}
+
+
+def short_labels(obj, key: str | None = None):
+    """Display text says just "A" for an assumption (the legend explains it once)."""
+    if isinstance(obj, dict):
+        return {k: short_labels(v, k) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [short_labels(v, key) for v in obj]
+    if isinstance(obj, str) and key not in _KEEP_KEYS:
+        return re.sub(r"\bA — A\b", "A", re.sub(r"\bassumptions?\b", "A", obj, flags=re.IGNORECASE))
+    return obj
+
+
 def render(out_name: str, *, title: str, h1: str, subtitle: str, tab: str, desc: str,
            stages: list[dict], steps: list[dict], flags: list[dict], banner: tuple[str, str],
            badge_real: str = "Real Recorded Run", keep: dict[str, str] | None = None) -> Path:
@@ -89,6 +103,7 @@ def render(out_name: str, *, title: str, h1: str, subtitle: str, tab: str, desc:
         used = {s.get("stage") for s in steps}
         stages = [st for st in stages if st["key"] in used]
         flags = [{**f, "step": f["step"] if f["step"] in keep else steps[-1]["id"]} for f in flags]
+    steps, flags = short_labels(steps), short_labels(flags)
     data = (
         f"const BADGE_REAL = {json.dumps(badge_real, ensure_ascii=False)};\n"
         f"const STEPS = {json.dumps(steps, ensure_ascii=False, indent=1)};\n"
@@ -355,7 +370,9 @@ def evidence_and_calc_steps(sizing: dict, label: str) -> list[dict]:
                        "are verified/derived from a source; the rest are labelled 'assumption' -- the LLM gave a figure "
                        "(often naming a source) but the number could not be found in any downloaded document."),
             "output": [{"l": f"{r['country']}" + (f" · {r['usage_bucket']}" if label != "Country" else ""),
-                        "v": f"{num(r.get('quantity'))} {r.get('final_demand_unit', '')} · {r.get('driver_evidence_type')}"}
+                        "v": (f"{r['units'] / 1e6:,.1f}M {r['units_label']} × {r['kg_per_unit']:,.2f} kg = " if r.get("units") and r["units"] >= 1e6
+                              else f"{r['units']:,.0f} {r['units_label']} × {r['kg_per_unit']:,.0f} kg = " if r.get("units") else "")
+                             + f"{num(r.get('quantity'))} {r.get('final_demand_unit', '')} · {r.get('driver_evidence_type')}"}
                        for r in sorted(rows, key=lambda r: -(r.get("value_usd_mn") or 0))[:14]],
             "activity": ["Collecting quantities", "Tagging evidence per cell"],
         },
@@ -420,7 +437,9 @@ def triangulation_step(sizing: dict, total: float) -> dict:
         "sources": rows,
         "validation": [{"label": f"vs {t.get('source')}", "passed": (t.get("gap_pct") or 0) <= 40,
                         "detail": f"gap {t.get('gap_pct')}% (threshold 40%)"} for t in tri]
-        + [{"label": f, "passed": False, "detail": "outlier flag"} for f in (val.get("outlier_flags") or [])[:3]],
+        + [{"label": f, "passed": False, "detail": "outlier flag"} for f in (val.get("outlier_flags") or [])[:3]]
+        + [{"label": f.split(":")[0] + " vs IOC country total", "passed": abs(float(f.rsplit("(", 1)[-1].rstrip("%)"))) <= 25,
+            "detail": f} for f in (val.get("ioc_checks") or [])],
         "activity": ["Searching published market sizes", "Computing gap %", "Plausibility judge"],
     }
 
@@ -531,7 +550,25 @@ def build_2b(market: str) -> Path | None:
     })
     if not steps[-1]["researcher_note"]:
         del steps[-1]["researcher_note"]
-    steps += evidence_and_calc_steps(sizing, "Use Case × Country")
+    calc_steps = evidence_and_calc_steps(sizing, "Use Case × Country")
+    we = sizing.get("worked_example")
+    if we:
+        # Bottom-up for one country, use case by use case: units x usage per unit.
+        calc_steps.insert(2, {
+            "id": "worked_example", "name": f"Bottom-Up Worked Example: {we['country']}", "data_tag": "real",
+            "stage": "quantity", "source": "web",
+            "data_tag_note": "Every line is units × usage per unit, from published sources (see Source Evidence).",
+            "agent": {"name": "Bottom-up build (code)", "role": "Each use case sized on its own, then added up for the country."},
+            "inputShort": f"{len(we['lines'])} use cases", "outputLabel": f"{we['total_t'] / 1000:,.0f} thousand t in {we['country']}",
+            "reason": we.get("check", ""),
+            "aggregations": [{"title": f"{we['country']}: use case 1 + use case 2 + … = country total (tonnes)",
+                              "rows": [{"label": f"{l['use']}: {l['calc']}", "value": f"{l['tonnes'] / 1000:,.1f}k t"} for l in we["lines"]],
+                              "totalLabel": f"{we['country']} total", "total": f"{we['total_t'] / 1000:,.1f}k t"}],
+            "sources": [{"name": l["source"], "url": l["url"], "excerpt": f"{l['use']}: {l['calc']}",
+                         "extractedValue": f"{l['tonnes']:,.0f}", "unit": "t", "decision": "accepted"} for l in we["lines"]],
+            "activity": ["Counting units (people, outlets, factories)", "× usage per unit", "Adding use cases up"],
+        })
+    steps += calc_steps
     app_table = next((t for t in report["segmentation"] if t["method"] == "bottom_up"), None)
     aggs = []
     if app_table:
@@ -955,13 +992,27 @@ def build_supply(market: str) -> Path | None:
     figures = evid.get("figures") or []
     steps = [
         {
-            "id": "vendors", "name": "Vendor Discovery", "data_tag": "real", "stage": "vendors", "source": "llm",
-            "data_tag_note": "company_data_sources in the recorded supply-side report.",
-            "agent": {"name": "Discovery Agent (LLM + web) + Website Verifier", "role": "Lists the companies that earn revenue directly in this market (not the whole value chain); HTTP-checks each website to catch invented names."},
-            "inputShort": f"Market: {market}", "outputLabel": f"{len(sources)} companies",
-            "reason": "Only direct revenue contributors to THIS market are counted.",
-            "output": list(sources.keys()),
-            "activity": ["LLM + web discovery", "Website verification"],
+            "id": "vendors", "name": "Vendor List", "data_tag": "real", "stage": "vendors",
+            "source": "web" if "vendor-intelligence" in (rep.get("company_list_source") or "") else "llm",
+            "data_tag_note": f"Company list source: {rep.get('company_list_source') or 'quick LLM discovery'}.",
+            "agent": ({"name": "Vendor Intelligence (company finder)", "role": "Multi-round web search, validation and classification of the companies in this market; only Manufacturers are used."}
+                      if "vendor-intelligence" in (rep.get("company_list_source") or "") else
+                      {"name": "Quick discovery (LLM + web) — fallback", "role": "Used only when no vendor-intelligence report exists for this market; lists well-known companies and HTTP-checks each website."}),
+            "inputShort": f"Market: {market}", "outputLabel": f"{len(sources)} companies"
+            + (f" · ≈{cov['estimated_coverage_pct']:.0f}% of market" if (cov := rep.get("vendor_intel_coverage") or {}).get("estimated_coverage_pct") is not None else ""),
+            "reason": ("Only direct revenue contributors to THIS market are counted. "
+                       + (f"Vendor intelligence estimates the companies found cover ≈{cov['estimated_coverage_pct']:.0f}% of a "
+                          f"≈{bn(cov.get('total_market_size_estimate_usd_mn'))} market (an estimate; runtime "
+                          f"{(cov.get('runtime_seconds') or 0) / 60:.0f} min)." if cov.get("estimated_coverage_pct") is not None else "")),
+            "output": ([{"l": m.get("name") or m.get("company", ""),
+                         "v": " · ".join(x for x in (
+                             f"≈{bn(m.get('est_revenue_usd_mn') or m.get('Est_Revenue_USD_Mn'))}" if (m.get('est_revenue_usd_mn') or m.get('Est_Revenue_USD_Mn')) else "",
+                             f"≈{float(m.get('est_market_share_pct') or m.get('Est_Market_Share_Pct')):.1f}% share" if (m.get('est_market_share_pct') or m.get('Est_Market_Share_Pct')) else "") if x) or "major player"}
+                        for m in (cov.get("majors") or [])[:15]]
+                       or list(sources.keys())),
+            "activity": (["Finding the largest players first", "Multi-round web search", "Validating & classifying companies",
+                          "Stopping at ~70-80% market coverage or the time limit"]
+                         if "vendor-intelligence" in (rep.get("company_list_source") or "") else ["LLM + web discovery", "Website verification"]),
         },
         {
             "id": "screening", "name": "Screening: Direct Revenue Contributors Only", "data_tag": "real", "stage": "vendors", "source": "code",

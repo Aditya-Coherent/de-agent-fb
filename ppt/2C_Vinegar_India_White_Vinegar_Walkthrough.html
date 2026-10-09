@@ -270,7 +270,7 @@
     <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
     <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
     <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
-    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ A = assumption (no source found)</span>
     <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
   </div>
 
@@ -447,13 +447,13 @@ const STEPS = [
     "decision": "accepted"
    },
    {
-    "name": "Global Market Insights — ASSUMPTION",
+    "name": "Global Market Insights — A",
     "url": "https://www.gminsights.com/industry-analysis/vinegar-market",
     "excerpt": "Synthetic segment held ~80% (79.9%) of the GLOBAL vinegar market in 2024 — applied to India here; no India split is published",
     "extractedValue": "0.8",
     "unit": "share",
     "decision": "rejected",
-    "rejectionReason": "No published figure — labelled assumption"
+    "rejectionReason": "No published figure — labelled A"
    },
    {
     "name": "IndiaMART / GlobalLinker listings — RANGE",
@@ -629,13 +629,13 @@ const STEPS = [
     "decision": "accepted"
    },
    {
-    "name": "Assumption — ASSUMPTION",
+    "name": "A",
     "url": "",
     "excerpt": "No published figure. Some Indian tomato sauces use acetic acid instead of vinegar; 70% assumed to use vinegar",
     "extractedValue": "0.7",
     "unit": "share of volume",
     "decision": "rejected",
-    "rejectionReason": "No published figure — labelled assumption"
+    "rejectionReason": "No published figure — labelled A"
    }
   ],
   "activity": [
@@ -713,13 +713,13 @@ const STEPS = [
     "decision": "accepted"
    },
    {
-    "name": "IndiaMART listing + assumption — ASSUMPTION",
+    "name": "IndiaMART listing + A",
     "url": "https://www.indiamart.com/didwaniasales/veg-mayonnaise.html",
     "excerpt": "₹100 per 875 g pack wholesale (≈ ₹114/kg, IndiaMART); retail packs sell higher. ₹180/kg assumed for value-to-volume",
     "extractedValue": "180",
     "unit": "₹ per kg",
     "decision": "rejected",
-    "rejectionReason": "No published figure — labelled assumption"
+    "rejectionReason": "No published figure — labelled A"
    }
   ],
   "activity": [
@@ -1014,8 +1014,8 @@ const STEPS = [
    "role": "Re-checks every input against its source. Verified = same as published (0% difference)."
   },
   "inputShort": "17 inputs",
-  "outputLabel": "11 verified, 1 derived, 2 range, 3 assumption",
-  "reason": "Assumptions are the inputs no source publishes — they cannot be checked to ±10% and are shown as such.",
+  "outputLabel": "11 verified, 1 derived, 2 range, 3 A",
+  "reason": "A are the inputs no source publishes — they cannot be checked to ±10% and are shown as such.",
   "output": [
    {
     "l": "Verified",
@@ -1030,7 +1030,7 @@ const STEPS = [
     "v": "2"
    },
    {
-    "l": "Assumption",
+    "l": "A",
     "v": "3"
    }
   ],
@@ -1053,7 +1053,7 @@ const STEPS = [
    {
     "label": "Global Market Insights: 0.800 share",
     "passed": false,
-    "detail": "ASSUMPTION — Synthetic segment held ~80% (79.9%) of the GLOBAL vinegar market in 2024 — applied to India here; no India split is published (https://www.gminsights.com/industry-analysis/vinegar-market)"
+    "detail": "A — Synthetic segment held ~80% (79.9%) of the GLOBAL vinegar market in 2024 — applied to India here; no India split is published (https://www.gminsights.com/industry-analysis/vinegar-market)"
    },
    {
     "label": "Pound Sterling Live (2024 USD/INR history): 83.7 INR per USD",
@@ -1081,9 +1081,9 @@ const STEPS = [
     "detail": "RANGE — Commercial ketchup contains 6–8% vinegar (7–12% in some formulation guides); 8% used (https://spice.alibaba.com/spice-basics/how-tomato-ketchup-is-made)"
    },
    {
-    "label": "Assumption: 0.700 share of volume",
+    "label": "A: 0.700 share of volume",
     "passed": false,
-    "detail": "ASSUMPTION — No published figure. Some Indian tomato sauces use acetic acid instead of vinegar; 70% assumed to use vinegar"
+    "detail": "A — No published figure. Some Indian tomato sauces use acetic acid instead of vinegar; 70% assumed to use vinegar"
    },
    {
     "label": "IMARC Group: 428.0 US$ Mn",
@@ -1091,9 +1091,9 @@ const STEPS = [
     "detail": "VERIFIED — The India mayonnaise market size reached USD 428.0 Million in 2024 (https://www.imarcgroup.com/india-mayonnaise-market)"
    },
    {
-    "label": "IndiaMART listing + assumption: 180.0 ₹ per kg",
+    "label": "IndiaMART listing + A: 180.0 ₹ per kg",
     "passed": false,
-    "detail": "ASSUMPTION — ₹100 per 875 g pack wholesale (≈ ₹114/kg, IndiaMART); retail packs sell higher. ₹180/kg assumed for value-to-volume (https://www.indiamart.com/didwaniasales/veg-mayonnaise.html)"
+    "detail": "A — ₹100 per 875 g pack wholesale (≈ ₹114/kg, IndiaMART); retail packs sell higher. ₹180/kg assumed for value-to-volume (https://www.indiamart.com/didwaniasales/veg-mayonnaise.html)"
    },
    {
     "label": "Peer-reviewed mayonnaise-type sauce study (PMC7931383, Table 5): 0.054 share of product weight",
@@ -1203,7 +1203,7 @@ function srcBadge(source) {
     db:{icon:"🗄️", label:"Database", cls:"src-db"},
     code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
     derived:{icon:"📐", label:"Derived", cls:"src-derived"},
-    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    assumption:{icon:"⚠️", label:"A", cls:"src-assumption"},
     human:{icon:"👤", label:"Human", cls:"src-human"},
   };
   const m = map[source] || map.code;
@@ -1317,7 +1317,7 @@ function provSummary() {
   const s = steps();
   const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
   s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
-  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"A", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
   let html = '<div class="prov-summary">';
   Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
   html += '</div>';

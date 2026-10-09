@@ -21,7 +21,7 @@ from me_engine.generation.llm import GenLLM
 from me_engine.generation.semantic_search import embed
 from me_engine.generation.web_evidence import gather
 
-from . import conversion, derivation, driver_library, evidence, evidence_router, evidence_strategy, pricing_strategy, reference_data, units
+from . import anchor, conversion, derivation, driver_library, evidence, evidence_router, evidence_strategy, period_guard, pricing_strategy, reference_data, units
 
 _OVERLAP_SIMILARITY_THRESHOLD = 0.83  # cosine sim above this = likely double-counting
 
@@ -196,7 +196,13 @@ def usage_decomposition_node(state: dict[str, Any]) -> dict[str, Any]:
         "default to 'Industrial, Commercial, Residential' unless the evidence specifically "
         "supports that for THIS market). Buckets MUST be mutually exclusive -- no bucket "
         "should be a subset or rewording of another. Prefer 3-7 buckets that together cover "
-        "the great majority of real demand."
+        "the great majority of real demand.\n\n"
+        "Each unit of the product sold in a year must fall in EXACTLY ONE bucket, so the buckets "
+        "add up to total annual demand. Split by WHO buys/consumes it or WHAT it is used in "
+        "(e.g. households, restaurants & catering, food industry, non-food industry; or consumer, "
+        "enterprise, government) -- NOT by activities one item is used for at the same time "
+        "(e.g. never split a phone into 'messaging', 'navigation' and 'payments': the same phone "
+        "would be counted three times)."
     )
     user = (
         f"Market: {market}\nDefinition: {state.get('market_definition', {}).get('text', '')}\n\n"
@@ -789,6 +795,48 @@ def usage_coverage_node(state: dict[str, Any]) -> dict[str, Any]:
 #    declaration second. The library stores REUSABLE driver/conversion methodologies,
 #    never a fixed usage taxonomy (usage buckets above stay market-specific).
 # --------------------------------------------------------------------------- #
+# A driver that counts a STOCK (people, users, installed base, fleet) is not
+# demand by itself -- demand is what is bought/consumed in one year. Verified
+# failure (Smartphones 2B): "1.8 billion smartphone users" x $420 was taken
+# as one year's purchases, $756B for a single cell.
+_STOCK_DRIVER_RE = re.compile(
+    r"\b(installed base|in (active )?use|in service|in operation|users?|subscribers?|owners?|"
+    r"population|people|persons|households|fleet|stock of)\b",
+    re.IGNORECASE,
+)
+
+
+def _singular(word: str) -> str:
+    word = word.strip()
+    return word[:-1] if word.endswith("s") and not word.endswith("ss") else word
+
+
+def enforce_annual_flow(driver: dict[str, Any], physical_unit: str, log: list[str], bucket_name: str) -> dict[str, Any]:
+    """If the driver is a stock and has no per-year conversion, add one:
+    demand = stock x <product units bought per stock unit per year>. The
+    rate is then searched for / estimated like any other intensity."""
+    if driver.get("consumption_unit"):
+        return driver
+    text = f"{driver.get('driver_name', '')} {driver.get('unit', '')}"
+    if not _STOCK_DRIVER_RE.search(text):
+        return driver
+    product_unit = physical_unit or driver.get("final_demand_unit") or "units"
+    stock_unit = _singular(str(driver.get("unit") or "unit").split("(")[0]) or "unit"
+    fixed = {
+        **driver,
+        "final_demand_unit": product_unit,
+        "consumption_unit": f"{product_unit} per {stock_unit} per year",
+        "intensity_kind": "rate_per_driver_unit",
+        "conversion_formula": "driver_value * intensity_value",
+        "annual_flow_fix": (
+            f"driver '{driver.get('driver_name')}' counts a stock ({driver.get('unit')}); demand is the "
+            f"yearly purchase, so it is multiplied by {product_unit} bought per {stock_unit} per year"
+        ),
+    }
+    log.append(f"[demand_driver] '{bucket_name}': {fixed['annual_flow_fix']}.")
+    return fixed
+
+
 def demand_driver_node(state: dict[str, Any]) -> dict[str, Any]:
     cfg = state["config"]
     llm: GenLLM = state["llm"]
@@ -867,6 +915,7 @@ def demand_driver_node(state: dict[str, Any]) -> dict[str, Any]:
                     f"[demand_driver] '{name}': reused-library evidence strategy flagged for review -- "
                     f"{[f['code'] for f in strategy_flags]}"
                 )
+            drivers[name] = enforce_annual_flow(drivers[name], physical_unit, log, name)
             log.append(f"[demand_driver] '{name}': reused library methodology "
                        f"(similarity {lib_entry.get('match_similarity')})")
             continue
@@ -923,7 +972,12 @@ def demand_driver_node(state: dict[str, Any]) -> dict[str, Any]:
             "market-specific driver exists.\n"
             "(3) List, in required_evidence, what real-world data (country statistics, industry "
             "reports, trade data, etc.) would be needed to ground this driver and its conversion "
-            "factor -- this guides the evidence search that follows."
+            "factor -- this guides the evidence search that follows.\n"
+            "(4) Demand is what is BOUGHT or CONSUMED IN ONE YEAR. For a durable product (phones, "
+            "watches, vehicles, machines) use annual unit sales/shipments, or the installed base x "
+            "the share replaced/bought per year -- NEVER the number of users, owners or the "
+            "installed base by itself. For a consumable, use people/outlets/plants x the amount "
+            "each consumes per year."
             + evidence_strategy.strategy_system_fragment()
         )
         user = (
@@ -1009,6 +1063,12 @@ def demand_driver_node(state: dict[str, Any]) -> dict[str, Any]:
             "library_status": "newly_derived",
             "unit_contract_status": unit_contract_status,
         }
+        drivers[name] = enforce_annual_flow(drivers[name], physical_unit, log, name)
+        if drivers[name].get("annual_flow_fix"):
+            consumption_unit = drivers[name]["consumption_unit"]
+            conversion_formula = drivers[name]["conversion_formula"]
+            final_unit = drivers[name]["final_demand_unit"]
+            intensity_kind = drivers[name]["intensity_kind"]
         driver_library.append(
             usage_description=desc, driver_name=driver_name, driver_unit=unit,
             consumption_unit=consumption_unit, conversion_formula=conversion_formula,
@@ -1048,6 +1108,68 @@ def demand_driver_node(state: dict[str, Any]) -> dict[str, Any]:
 #    evidence + population-share allocation, always tagged `derived`) ->
 #    deterministic conversion (conversion.py) -> demand quantity.
 # --------------------------------------------------------------------------- #
+# Every use case is priced at the SAME level, the one published market sizes
+# use. Seen (Olive Oil 2B): household at retail $8,500/t next to bulk
+# $4,000-4,500/t for the other use cases, putting 2B 51% over the market.
+PRICE_LEVEL_RULE = (
+    "Price level: the MANUFACTURER's selling price (ex-factory / wholesale, what producers and brands "
+    "receive), the same level for every use case -- NOT the retail shelf price paid by consumers, and "
+    "excluding retail margin and sales tax."
+)
+
+_REST_OF_WORLD_RE = re.compile(r"^rest of (the )?world$", re.IGNORECASE)
+
+
+def rest_of_world_fact(global_fact: dict[str, Any], others: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    """Worldwide total minus the listed countries, or None when the global
+    figure can't be the same quantity (not clearly larger than the listed
+    countries, or more than 10x them)."""
+    listed = sum(float(f.get("value") or 0.0) for f in others.values())
+    try:
+        world = float(global_fact.get("value") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    if listed <= 0 or not (1.05 * listed <= world <= 10 * listed):
+        return None
+    status = evidence.worse_of(global_fact.get("evidence_type") or "assumption", "derived")
+    basis = (f"Rest of World = worldwide total {world:,.0f} ({global_fact.get('source') or 'source'}: "
+             f"'{str(global_fact.get('citation') or '')[:100]}') minus the listed countries {listed:,.0f}")
+    return {**global_fact, "value": world - listed, "evidence_type": status, "verification_status": status,
+            "confidence": min(float(global_fact.get("confidence") or 0.5), 0.6), "derivation_basis": basis}
+
+
+def _rest_of_world_from_global(
+    cfg: Any, llm: GenLLM, market: str, bucket: str, driver_name: str, unit: str, base_year: Any,
+    others: dict[str, dict[str, Any]], log: list[str], emitter: Any,
+) -> dict[str, Any] | None:
+    if not cfg.enable_web:
+        return None
+    year = base_year or 2025
+    try:
+        snippets = gather([f"global {driver_name} {year} worldwide total",
+                           f"worldwide {market} {unit} {year}"], per_query=4, cap=8)
+    except Exception as exc:  # noqa: BLE001
+        log.append(f"[demand_quantification] '{bucket}': worldwide total search failed: {exc}")
+        return None
+    global_fact = evidence.extract_structured_fact(
+        llm, snippets, unit=unit,
+        context=f"WORLDWIDE (all countries) annual total of '{driver_name}' ({unit}) in {year} for {market}",
+        emitter=emitter, bucket=bucket,
+    )
+    global_fact, note = period_guard.check_driver_fact(global_fact, base_year, unit)
+    if note:
+        log.append(f"[demand_quantification] '{bucket}' worldwide total: {note}")
+    if global_fact is None:
+        return None
+    fact = rest_of_world_fact(global_fact, others)
+    log.append(
+        f"[demand_quantification] '{bucket}': Rest of World "
+        + (f"= {fact['derivation_basis']}" if fact else
+           f"kept as assumption -- worldwide figure {global_fact.get('value')} doesn't fit the listed countries")
+    )
+    return fact
+
+
 def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
     cfg = state["config"]
     llm: GenLLM = state["llm"]
@@ -1241,8 +1363,21 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
         # WAIT time for the independent fetches themselves overlaps; no
         # evidence-selection, retry, or acceptance-gate logic changed.
         country_evidence: dict[str, tuple[dict[str, Any] | None, list[dict[str, Any]]]] = {}
-        if cfg.enable_web and countries:
-            max_workers = max(1, min(getattr(cfg, "evidence_workers", 8), len(countries)))
+        # Official statistics (e.g. FAOSTAT, attached by 2A's driver phase)
+        # replace the web search for the countries they cover.
+        official_for_bucket = (state.get("official_driver_facts") or {}).get(name) or {}
+        fetch_countries = [c for c in countries if c not in official_for_bucket]
+        if official_for_bucket:
+            log.append(
+                f"[demand_quantification] '{name}': official statistics used for "
+                f"{len([c for c in countries if c in official_for_bucket])} of {len(countries)} countries "
+                f"({next(iter(official_for_bucket.values())).get('source', 'official data')})"
+            )
+        for c in countries:
+            if c in official_for_bucket:
+                country_evidence[c] = (official_for_bucket[c], [])
+        if cfg.enable_web and fetch_countries:
+            max_workers = max(1, min(getattr(cfg, "evidence_workers", 8), len(fetch_countries)))
             with ThreadPoolExecutor(max_workers=max_workers) as pool:
                 futures = {
                     pool.submit(
@@ -1250,7 +1385,7 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
                         context=f"'{driver_name}' ({unit}) for usage bucket '{name}' in {c} ({market})",
                         keywords=[driver_name, unit, c], emitter=emitter, bucket=name,
                     ): c
-                    for c in countries
+                    for c in fetch_countries
                 }
                 for fut in as_completed(futures):
                     c = futures[fut]
@@ -1267,12 +1402,18 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
                     if progress is not None:
                         progress.driver_attempts_live(len(attempts))
         else:
-            for c in countries:
+            for c in fetch_countries:
                 country_evidence[c] = (None, [])
 
         for c in countries:
             driver_fact, attempts = country_evidence[c]
             retrieval_attempts[name][c] = attempts
+            if c in official_for_bucket:
+                driver_fact = official_for_bucket[c]
+            else:
+                driver_fact, period_note = period_guard.check_driver_fact(driver_fact, state.get("base_year"), unit)
+                if period_note:
+                    log.append(f"[demand_quantification] '{name}' @ {c}: {period_note}")
             if driver_fact is not None:
                 country_driver_facts[c] = driver_fact
                 continue
@@ -1293,6 +1434,9 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
                     context=f"Global/regional total '{driver_name}' ({unit}) for usage bucket '{name}' in {market}",
                     emitter=emitter, bucket=name,
                 )
+                regional_fact, period_note = period_guard.check_driver_fact(regional_fact, state.get("base_year"), unit)
+                if period_note:
+                    log.append(f"[demand_quantification] '{name}' global/regional figure: {period_note}")
 
             if regional_fact is not None:
                 share = reference_data.population_share(c, countries)
@@ -1397,6 +1541,20 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
                     f"{next(iter(batch_facts.values())).get('derivation_basis', '')}"
                 )
 
+        # "Rest of World" with no evidence of its own = the worldwide total
+        # minus the listed countries, not a guess (seen: Smartphones 2A put
+        # 0 phones in Rest of World, ~500M units missing).
+        row_country = next((c for c in countries if _REST_OF_WORLD_RE.match(c.strip())), None)
+        if (row_country and row_country not in official_for_bucket
+                and (country_driver_facts.get(row_country) or {}).get("evidence_type") == "assumption"):
+            row_fact = _rest_of_world_from_global(
+                cfg, llm, market, name, driver_name, unit, state.get("base_year"),
+                {c: f for c, f in country_driver_facts.items() if c != row_country}, log, emitter,
+            )
+            if row_fact is not None:
+                country_driver_facts[row_country] = row_fact
+                allocation_notes[row_country] = row_fact["derivation_basis"]
+
         # driver x intensity lands in the intensity's own unit (e.g. meals x
         # litres/meal = litres); if that isn't final_unit (tonnes), convert it
         # here -- the LLM's formula text ("* 0.91") is never executed itself.
@@ -1449,6 +1607,9 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
         if progress is not None:
             progress.bucket_done(name)
 
+    # 2B only: use cases must fit inside each country's 2A total (anchor.py).
+    country_anchor_flags = anchor.apply_country_anchor(quantities, buckets, state.get("country_anchor"), log)
+
     counts = dict.fromkeys(evidence.PROVENANCE_STATES, 0)
     for pc in quantities.values():
         for entry in pc.values():
@@ -1484,6 +1645,7 @@ def demand_quantification_node(state: dict[str, Any]) -> dict[str, Any]:
         "retrieval_plans": retrieval_plans, "retrieval_attempts": retrieval_attempts,
         "intensity_retrieval_plans": intensity_retrieval_plans,
         "intensity_retrieval_attempts": intensity_retrieval_attempts,
+        "country_anchor_flags": country_anchor_flags,
     }
 
 
@@ -1675,7 +1837,8 @@ def pricing_node(state: dict[str, Any]) -> dict[str, Any]:
         # B. Find the actual price, via the SAME Evidence Router discipline,
         # now grounded in the Price Evidence Strategy built above.
         plan = evidence_router.propose_pricing_evidence_plan(
-            llm, market, name, desc, priced_unit, f"Average selling price of {driver_name}",
+            llm, market, name, desc, priced_unit,
+            f"Average manufacturer selling price (ex-factory/wholesale, not retail shelf price) of {driver_name}",
             strategy=price_strategy, emitter=emitter,
         )
         price_retrieval_plans[name] = plan
@@ -1685,7 +1848,8 @@ def pricing_node(state: dict[str, Any]) -> dict[str, Any]:
         )
         context = (
             f"Average selling price in US$ per ONE {priced_unit} of '{driver_name}' for usage bucket "
-            f"'{name}' in {market} (if a source quotes a box/pack/case price, divide by the pack size)"
+            f"'{name}' in {market} (if a source quotes a box/pack/case price, divide by the pack size). "
+            f"{PRICE_LEVEL_RULE}"
         )
         fact = None
         attempts: list[dict[str, Any]] = []
@@ -1703,16 +1867,26 @@ def pricing_node(state: dict[str, Any]) -> dict[str, Any]:
                 f"market size/assumed quantity -- {fact.get('derivation_basis', '')}"
             )
             fact = None
+        # Same year rule as quantities: a price for a year after the base year
+        # (seen: IDC's 2026 forecast ASP of $581 for Smartphones) is never used.
+        price_year = period_guard.fact_year(fact) if fact is not None else None
+        base_year = state.get("base_year")
+        if fact is not None and base_year and price_year and price_year > int(base_year):
+            log.append(f"[pricing] '{name}': REJECTED a {price_year} price ({fact.get('value')}) -- only prices "
+                       f"up to the base year {base_year} are used")
+            fact = None
         if fact is None:
             fact = _fallback_assumption(
                 llm,
                 system=(
                     "You are a pricing analyst. No usable price evidence was found. Give your own "
                     "best-informed average-selling-price estimate anyway -- label it plainly as an "
-                    "assumption, do not claim it is observed."
+                    "assumption, do not claim it is observed. Give the price for the year "
+                    f"{state.get('base_year') or 2025}, not a later forecast."
                 ),
                 user=(
                     f"Market: {market}\nUsage bucket: {name} -- {desc}\n"
+                    f"{PRICE_LEVEL_RULE}\n"
                     f"Price basis: US$ per ONE {priced_unit} of '{driver_name}'. If you know a "
                     "box/pack/case price, divide it by the pack size -- never return a pack price.\n\n"
                     'Return JSON: {"value": number, "rationale": "<1-2 sentences>"}'

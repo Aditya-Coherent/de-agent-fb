@@ -120,6 +120,15 @@ def compute_company_quality_flags(
                        f"converted to USD ({', '.join(fx_unknown[:5])}) -- their real revenue was NOT "
                        "used as a cap (a wrong-currency cap is worse than none).",
         })
+    after_base = sorted(name for name, codes in notes.items()
+                        if any(c.startswith("revenue_year_after_base") for c in codes))
+    if after_base:
+        flags.append({
+            "code": "revenue_year_after_base",
+            "severity": "info",
+            "message": f"{len(after_base)} companies only had revenue figures for a year after the base "
+                       f"year; they were left out rather than use those figures ({', '.join(after_base[:5])}).",
+        })
     no_slice = sorted(name for name, codes in notes.items() if "missing_market_slice" in codes)
     if no_slice:
         flags.append({

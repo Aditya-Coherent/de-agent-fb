@@ -1,7 +1,7 @@
 {
   "market": "Disposable Medical Gloves",
   "vertical": "Healthcare",
-  "started_at": "2026-10-05T07:22:29+00:00",
+  "started_at": "2026-10-05T12:49:42+00:00",
   "log": [
     "[2026-10-03T08:15:54+00:00] 1 Desk Research: start",
     "[2026-10-03T08:17:21+00:00] 1 Desk Research: ok in 1.4 min",
@@ -18,7 +18,11 @@
     "[2026-10-05T07:14:50+00:00] 2A Demand: start",
     "[2026-10-05T07:22:10+00:00] 2A Demand: ok in 7.3 min",
     "[2026-10-05T07:22:29+00:00] 2B Demand: start",
-    "[2026-10-05T08:12:29+00:00] 2B Demand: failed in 50.0 min"
+    "[2026-10-05T08:12:29+00:00] 2B Demand: failed in 50.0 min",
+    "[2026-10-05T12:49:42+00:00] 2B Demand: start",
+    "[2026-10-05T13:29:57+00:00] 2B Demand: ok in 40.2 min",
+    "[2026-10-05T13:29:57+00:00] 3 Supply-Side: start",
+    "[2026-10-05T13:36:59+00:00] 3 Supply-Side: ok in 7.0 min"
   ],
   "1_desk_research": {
     "global_cagr": 0.166,
@@ -167,14 +171,205 @@
     "minutes": 7.3
   },
   "2B_demand_usecase_country": {
-    "status": "failed",
-    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 5967ec99-1b2c-4a7a-bb05-f493e3a715a3)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
-    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 273, in <lambda>\n    result[\"2B_demand_usecase_country\"] = _timed(lambda: run_2b(market, out_dir, cfg), log, \"2B Demand\")\n                                                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 201, in run_2b\n    segmentation.approve_segments(segmentation.run_segments_phase(market, cfg, cache_path=CACHE))\n                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandUseCaseCountry_approach2B\\segmentation.py\", line 77, in run_segments_phase\n    draft = segments.build_segments_draft(\n        llm=llm or GenLLM(config, cache_path=cache_path),\n    ...<7 lines>...\n        search=search,\n    )\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 253, in build_segments_draft\n    dims = propose_dimensions(llm, config, market_name, scope, exclude_application=bool(bottom_up_dimensions))\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 152, in propose_dimensions\n    if dims and not report_taxonomy_fits(llm, market_name, scope, dims):\n                    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 144, in report_taxonomy_fits\n    data = llm.complete_json(_PROPOSE_SYSTEM, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 5967ec99-1b2c-4a7a-bb05-f493e3a715a3)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
-    "minutes": 50.0
+    "setup": {
+      "scope": "This market covers disposable (single-use) medical gloves — examination and surgical gloves made from nitrile, latex, vinyl, neoprene, and polyethylene — that are consumed by healthcare providers, diagnostic laboratories, and other clinical care settings and are discarded after a single patient or task use. Excluded are reusable/professional gloves, non-medical or industrial-use gloves (food handling, janitorial, automotive, cleanroom), and glove accessories such as liners or undergloves, which are separately valued markets. Also excluded are the upstream raw materials (natural rubber latex, nitrile butadiene rubber, vinyl chloride) and manufacturing equipment, which are inputs rather than part of this market's own commodity. Non-clinical end-use demand (e.g., food service or industrial glove consumption) is not valued here, though it may be used only as an intermediate signal to cross-check total glove production volumes.",
+      "geography": [
+        "United States",
+        "China",
+        "Japan",
+        "Germany",
+        "France",
+        "United Kingdom",
+        "Italy",
+        "Brazil",
+        "India",
+        "Canada",
+        "South Korea",
+        "Mexico",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "gloves (single pieces)"
+    },
+    "use_cases": [
+      "Surgical Procedures",
+      "Clinical Examination & Patient Care",
+      "Diagnostic & Pathology Laboratories",
+      "Dental & Oral Care",
+      "Emergency, EMS & First Response",
+      "Home Healthcare & Non-Acute Clinical Care",
+      "Pharmacy & Clinical Compounding"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 31342.5614,
+    "regions_usd_mn": {
+      "North America": 2129.2597,
+      "Latin America": 403.2366,
+      "Europe": 1613.902,
+      "Asia Pacific": 25272.1631,
+      "Rest of World": 1924.0
+    },
+    "countries_usd_mn": {
+      "United States": 1963.5597,
+      "China": 23069.9807,
+      "Japan": 700.5,
+      "Germany": 555.26,
+      "France": 452.2,
+      "United Kingdom": 185.842,
+      "Italy": 420.6,
+      "Brazil": 269.1866,
+      "India": 1200.0,
+      "Canada": 165.7,
+      "South Korea": 301.6824,
+      "Mexico": 134.05,
+      "Rest of World": 1924.0
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Surgical Procedures": 21022.755,
+          "Clinical Examination & Patient Care": 4868.112,
+          "Diagnostic & Pathology Laboratories": 387.9,
+          "Dental & Oral Care": 1292.5144,
+          "Emergency, EMS & First Response": 515.88,
+          "Home Healthcare & Non-Acute Clinical Care": 3051.0,
+          "Pharmacy & Clinical Compounding": 204.4
+        }
+      },
+      {
+        "dimension": "By Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Natural Rubber Gloves": 8872.2188,
+          "Nitrile Gloves": 13246.4075,
+          "Vinyl Gloves": 5358.3957,
+          "Neoprene Gloves": 740.9981,
+          "Polyethylene Gloves": 2497.6902,
+          "Others": 626.8511
+        }
+      },
+      {
+        "dimension": "By Form",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Powdered": 3355.8593,
+          "Non-powdered": 27986.7021
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 0.0,
+      "assumption": 100.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 91/91 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (47%) is below the usual bar.",
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Surgical Procedures' alone is 67% of the total across 7 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Surgical Procedures'@China ($20,400.0M) is 800x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] target_commodity_unit_mismatch: One or more bucket(s) have a final_demand_unit that shares no words with the market's own target-commodity unit: [\"'Surgical Procedures': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Clinical Examination & Patient Care': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Diagnostic & Pathology Laboratories': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Emergency, EMS & First Response': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Home Healthcare & Non-Acute Clinical Care': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Pharmacy & Clinical Compounding': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\"]. This is the signature of a downstream/adjacent product's own unit and price leaking into the target commodity's final value -- review before trusting this run.",
+      "[warning] low_usage_coverage: Estimated usage coverage (68.0%, the pipeline's own bounded estimate -- NOT a verified measurement of the real market) is below the configured threshold (85%) -- Included Demand ($31,342.6M) likely understates the real market. Residual/Uncovered is reported separately ($14,749.4M, implied by the coverage gap, NOT built from evidence, NOT distributed into any bucket) rather than silently inflating any existing bucket.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Food Handling & Food Service (evidence_backed, confidence 90%) -- \"Which gloves work best for healthcare, food handling, and cleaning tasks.\"; Cleaning & Sanitation (evidence_backed, confidence 80%) -- \"Which gloves work best for healthcare, food handling, and cleaning tasks.\"; Industrial & Chemical Handling (evidence_backed, confidence 80%) -- \"Perfect for medical, food, and industrial use.\"",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 13 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 4.1x or more -- flagged for review, the original value/source/note are unchanged: ['Dental & Oral Care']",
+      "[info] triangulation_large_gap: Large gap(s) vs. independent external benchmark(s) -- informational only, never used to adjust the bottom-up total: 'published market-size estimate' benchmark (5400.0 USD Mn, source: Global Medical Disposable Gloves Market Size, Share, Industry Growth) vs. Demand-Side estimate (31,342.6 USD Bn) -- gap +480.4%",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'year_period_consistency'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Surgical Procedures' driver total\", \"'Dental & Oral Care' driver total\", 'Emergency, EMS & First Response']"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\disposable-medical-gloves\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\disposable-medical-gloves\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\disposable-medical-gloves",
+    "status": "ok",
+    "minutes": 40.2
   },
   "3_supply_side": {
-    "status": "pending rerun",
-    "note": "previous result (2026-10-04T07:59:30) used code from before the fixes"
+    "company_method_global_usd_mn": 24732.440192163347,
+    "evidence_method_global_usd_mn": null,
+    "top_companies_global_share": [
+      {
+        "company": "Cardinal Health, Inc.",
+        "share": 0.2056
+      },
+      {
+        "company": "Medline Industries, LP",
+        "share": 0.0647
+      },
+      {
+        "company": "INTCO Medical Technology Co., Ltd.",
+        "share": 0.0612
+      },
+      {
+        "company": "Top Glove Corporation Bhd",
+        "share": 0.0346
+      },
+      {
+        "company": "Ansell Limited",
+        "share": 0.0303
+      },
+      {
+        "company": "Sri Trang Gloves (Thailand) Public Company Limited",
+        "share": 0.0262
+      },
+      {
+        "company": "PT. Sri Trang Agro-Industry Public Company Limited",
+        "share": 0.0251
+      },
+      {
+        "company": "Hartalega Holdings Berhad",
+        "share": 0.0211
+      },
+      {
+        "company": "Bluesail Medical Products Co., Ltd.",
+        "share": 0.0202
+      },
+      {
+        "company": "Kossan Rubber Industries Bhd",
+        "share": 0.0184
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "Italy",
+      "Spain",
+      "Japan",
+      "India",
+      "Brazil",
+      "Russia",
+      "South Korea",
+      "Canada",
+      "Mexico",
+      "Australia",
+      "Rest of Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa"
+    ],
+    "flags": [
+      "high_gross_up: 5 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (India 2.5x, Rest of Asia-Pacific 2.5x, Rest of Latin America 2.5x, Rest of Middle East & Africa 2.5x, China 2.2x) -- most of those countries' totals is an LLM coverage guess, not company revenue.",
+      "disagrees_with_desk_research: Company-based total differs from the Desk Research total by 62% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way.",
+      "no_real_data: No explicitly cited market-size figure was found anywhere in the gathered evidence -- there is no evidence-based estimate for this market."
+    ],
+    "report_json": "approaches\\examples\\disposable-medical-gloves\\3_supply_side.json",
+    "status": "ok",
+    "minutes": 7.0
   },
-  "finished_at": "2026-10-05T08:12:29+00:00"
+  "finished_at": "2026-10-05T13:36:59+00:00"
 }

@@ -1,0 +1,94 @@
+Laptops|Consumer Electronics
+Tablets|Consumer Electronics
+Wireless Earbuds|Consumer Electronics
+Gaming Consoles|Consumer Electronics
+Digital Cameras|Consumer Electronics
+Smart Speakers|Consumer Electronics
+Coffee|Food & Beverages
+Chocolate|Food & Beverages
+Bottled Water|Food & Beverages
+Beer|Food & Beverages
+Wine|Food & Beverages
+Vinegar|Food & Beverages
+Breakfast Cereals|Food & Beverages
+Plant-Based Milk|Food & Beverages
+Energy Drinks|Food & Beverages
+Tea|Food & Beverages
+Insulin|Healthcare
+Contact Lenses|Healthcare
+Hearing Aids|Healthcare
+Surgical Masks|Healthcare
+Dental Implants|Healthcare
+Wheelchairs|Healthcare
+Blood Glucose Monitoring Devices|Healthcare
+Orthopedic Implants|Healthcare
+Syringes|Healthcare
+Cardiac Pacemakers|Healthcare
+Automotive Tires|Automotive
+Electric Vehicles|Automotive
+Automotive Lead-Acid Batteries|Automotive
+Motorcycles|Automotive
+Bicycles|Automotive
+Electric Scooters|Automotive
+Automotive Lubricants|Automotive
+Car Rental|Automotive
+Automotive Glass|Automotive
+Electric Vehicle Chargers|Automotive
+Urea Fertilizer|Agriculture & Chemicals
+Potash Fertilizer|Agriculture & Chemicals
+Organic Fertilizers|Agriculture & Chemicals
+Seeds|Agriculture & Chemicals
+Crop Protection Chemicals|Agriculture & Chemicals
+Tractors|Agriculture & Chemicals
+Animal Feed|Agriculture & Chemicals
+Drip Irrigation|Agriculture & Chemicals
+Adhesives & Sealants|Chemicals & Materials
+Adhesives & Bonding|Chemicals & Materials
+Technical Foam|Chemicals & Materials
+Titanium Dioxide|Chemicals & Materials
+Paints & Coatings|Chemicals & Materials
+Carbon Black|Chemicals & Materials
+Caustic Soda|Chemicals & Materials
+Activated Carbon|Chemicals & Materials
+Polyethylene|Chemicals & Materials
+Cosmetics|Consumer Goods
+Fragrances|Consumer Goods
+Shampoo|Consumer Goods
+Toothpaste|Consumer Goods
+Baby Diapers|Consumer Goods
+Sunglasses|Consumer Goods
+Luxury Handbags|Consumer Goods
+Mattresses|Consumer Goods
+Athletic Footwear|Consumer Goods
+Toys|Consumer Goods
+Razors|Consumer Goods
+Cloud Computing|Information & Communication Technology
+Cybersecurity|Information & Communication Technology
+Cyber-Physical Systems Security|Information & Communication Technology
+Retail Self Scanning Solutions|Information & Communication Technology
+Data Center Colocation|Information & Communication Technology
+CRM Software|Information & Communication Technology
+Semiconductors|Information & Communication Technology
+Smart Cards|Information & Communication Technology
+Video Streaming|Information & Communication Technology
+Spectral Sensor|Industrial & Electronics
+Process Analyzer|Industrial & Electronics
+High Energy Laser|Industrial & Electronics
+Solar Panels|Industrial & Electronics
+Lithium-ion Batteries|Industrial & Electronics
+Air Compressors|Industrial & Electronics
+Elevators|Industrial & Electronics
+Forklifts|Industrial & Electronics
+LED Lighting|Industrial & Electronics
+Industrial Robots|Industrial & Electronics
+Gel Ice Pack|Packaging
+Corrugated Boxes|Packaging
+Glass Bottles|Packaging
+Aluminum Cans|Packaging
+Flexible Packaging|Packaging
+Paper Cups|Packaging
+Labels|Packaging
+Wind Turbines|Energy & Power
+Diesel Generators|Energy & Power
+Smart Meters|Energy & Power
+Hydrogen Electrolyzers|Energy & Power

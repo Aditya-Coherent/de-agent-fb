@@ -1,0 +1,38 @@
+{
+  "market": "Wireless Earbuds",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T13:49:59+00:00",
+  "1_desk_research": {
+    "status": "failed",
+    "error": "ERROR: could not build a DB skeleton for 'Wireless Earbuds'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6168.09it/s]",
+    "minutes": 0.5
+  },
+  "log": [
+    "[2026-10-08T13:49:59+00:00] 1 Desk Research: start",
+    "[2026-10-08T13:50:29+00:00] 1 Desk Research: failed in 0.5 min",
+    "[2026-10-08T13:50:29+00:00] 2A Demand: start",
+    "[2026-10-08T14:02:10+00:00] 2A Demand: failed in 11.7 min",
+    "[2026-10-08T14:02:10+00:00] 2B Demand: start",
+    "[2026-10-08T14:03:05+00:00] 2B Demand: failed in 0.9 min",
+    "[2026-10-08T14:03:05+00:00] 3 Supply-Side: start",
+    "[2026-10-08T14:13:42+00:00] 3 Supply-Side: failed in 10.6 min"
+  ],
+  "2A_demand_country_total": {
+    "status": "failed",
+    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: ee932d9f-d451-4a2d-86e4-4c1574143104)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 279, in <lambda>\n    result[\"2A_demand_country_total\"] = _timed(lambda: run_2a(market, out_dir, cfg), log, \"2A Demand\")\n                                                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 159, in run_2a\n    segmentation.approve_segments(segmentation.run_segments_phase(market, cfg, cache_path=CACHE))\n                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandCountry_approach2A\\segmentation.py\", line 39, in run_segments_phase\n    draft = segments.build_segments_draft(\n        llm=llm or GenLLM(config, cache_path=cache_path),\n    ...<7 lines>...\n        search=search,\n    )\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 254, in build_segments_draft\n    top_down = [estimate_shares(llm, market_name, d, countries, base_year, search) for d in dims]\n                ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 205, in estimate_shares\n    data = llm.complete_json(_SHARES_SYSTEM, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: ee932d9f-d451-4a2d-86e4-4c1574143104)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
+    "minutes": 11.7
+  },
+  "2B_demand_usecase_country": {
+    "status": "failed",
+    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 1928b892-35ba-44e5-8300-5f6df2faec18)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
+    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 282, in <lambda>\n    result[\"2B_demand_usecase_country\"] = _timed(lambda: run_2b(market, out_dir, cfg), log, \"2B Demand\")\n                                                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 189, in run_2b\n    draft = taxonomy.run_taxonomy_phase(approved_setup, cfg, cache_path=CACHE)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandUseCaseCountry_approach2B\\taxonomy.py\", line 58, in run_taxonomy_phase\n    state.update(agents.usage_decomposition_node(state))\n                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandUseCaseCountry_approach2B\\agents.py\", line 213, in usage_decomposition_node\n    data = llm.complete_json(system, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 1928b892-35ba-44e5-8300-5f6df2faec18)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
+    "minutes": 0.9
+  },
+  "3_supply_side": {
+    "status": "failed",
+    "error": "    data = llm.complete_json(_GEOGRAPHY_SYSTEM, f\"Market: {market_name}\") |   File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json |     raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\") | RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 371f9482-683b-4d4d-9616-87a5f06bbd7c)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}} | During task with name 'geography' and id '23ff961d-09c4-1e33-1328-8703135694a7'",
+    "minutes": 10.6
+  },
+  "finished_at": "2026-10-08T14:13:42+00:00"
+}

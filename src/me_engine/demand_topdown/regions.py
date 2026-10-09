@@ -30,7 +30,7 @@ _COUNTRIES: dict[str, list[str]] = {
         "italy", "spain", "portugal", "netherlands", "belgium", "luxembourg", "switzerland", "austria",
         "ireland", "sweden", "norway", "denmark", "finland", "iceland", "poland", "czech republic",
         "czechia", "slovakia", "hungary", "romania", "bulgaria", "greece", "croatia", "slovenia",
-        "serbia", "ukraine", "russia", "belarus", "turkey", "turkiye", "estonia", "latvia", "lithuania",
+        "serbia", "albania", "bosnia", "north macedonia", "montenegro", "ukraine", "russia", "belarus", "turkey", "turkiye", "estonia", "latvia", "lithuania",
         "benelux", "nordics", "eu", "european union",
     ],
     ASIA_PACIFIC: [
@@ -41,7 +41,7 @@ _COUNTRIES: dict[str, list[str]] = {
     ],
     MIDDLE_EAST_AFRICA: [
         "saudi arabia", "united arab emirates", "uae", "qatar", "kuwait", "oman", "bahrain", "gcc",
-        "israel", "iran", "iraq", "jordan", "lebanon", "egypt", "south africa", "nigeria", "kenya",
+        "israel", "iran", "iraq", "jordan", "lebanon", "syria", "palestine", "yemen", "egypt", "south africa", "nigeria", "kenya",
         "morocco", "algeria", "ethiopia", "ghana", "tanzania", "angola", "tunisia", "libya",
         "middle east", "africa",
     ],

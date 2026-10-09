@@ -1,0 +1,381 @@
+{
+  "market": "Televisions",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T12:28:28+00:00",
+  "1_desk_research": {
+    "global_usd_mn": 7800.0,
+    "anchor_year": 2025,
+    "global_cagr": 0.032,
+    "regional": {
+      "North America": {
+        "value_share": 0.28,
+        "cagr": 0.025
+      },
+      "Latin America": {
+        "value_share": 0.07,
+        "cagr": 0.035
+      },
+      "Europe": {
+        "value_share": 0.25,
+        "cagr": 0.028
+      },
+      "Asia Pacific": {
+        "value_share": 0.35,
+        "cagr": 0.038
+      },
+      "Middle East": {
+        "value_share": 0.03,
+        "cagr": 0.04
+      },
+      "Africa": {
+        "value_share": 0.02,
+        "cagr": 0.045
+      }
+    },
+    "reward": 0.64,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\televisions\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 1.4
+  },
+  "log": [
+    "[2026-10-08T12:28:28+00:00] 1 Desk Research: start",
+    "[2026-10-08T12:29:51+00:00] 1 Desk Research: ok in 1.4 min",
+    "[2026-10-08T12:29:51+00:00] 2A Demand: start",
+    "[2026-10-08T12:37:53+00:00] 2A Demand: ok in 8.0 min",
+    "[2026-10-08T12:37:53+00:00] 2B Demand: start",
+    "[2026-10-08T13:33:40+00:00] 2B Demand: ok in 55.8 min",
+    "[2026-10-08T13:33:40+00:00] 3 Supply-Side: start",
+    "[2026-10-08T14:00:14+00:00] 3 Supply-Side: ok in 26.6 min"
+  ],
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers the manufacture and sale of complete television sets (LCD, OLED, QLED, MicroLED; HD through 8K; smart and non-smart) as finished consumer or commercial display products, valued at the set level. It excludes separately valued upstream components and inputs (display panels, semiconductors, backlight units, tuners) and excludes separately valued downstream services and content (streaming subscriptions, broadcast services, advertising, installation and repair). Component shipments and content/streaming demand may still be used as intermediate signals to derive how many television sets end-use demand requires, but they are never priced or valued as part of this market. Commercial applications such as hospitality, retail signage, and corporate AV are in scope only when the product sold is a complete television set, not a dedicated commercial display or projector.",
+      "geography": [
+        "China",
+        "United States",
+        "India",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Brazil",
+        "South Korea",
+        "Russia",
+        "Mexico",
+        "Indonesia",
+        "Turkey",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "televisions (units shipped)"
+    },
+    "driver": {
+      "driver_name": "National watch consumption volume (apparent consumption)",
+      "unit": "watches (units)",
+      "final_demand_unit": "watches (units)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 64790.0,
+    "regions_usd_mn": {
+      "North America": 9900.0,
+      "Latin America": 2420.0,
+      "Europe": 7590.0,
+      "Asia Pacific": 39380.0,
+      "Rest of World": 5500.0
+    },
+    "countries_usd_mn": {
+      "China": 26400.0,
+      "United States": 9900.0,
+      "India": 7700.0,
+      "Japan": 3300.0,
+      "Germany": 2200.0,
+      "United Kingdom": 1980.0,
+      "France": 1760.0,
+      "Brazil": 1540.0,
+      "South Korea": 1320.0,
+      "Russia": 1100.0,
+      "Mexico": 880.0,
+      "Indonesia": 660.0,
+      "Turkey": 550.0,
+      "Rest of World": 5500.0
+    },
+    "segments": [
+      {
+        "dimension": "By Display Technology",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "LCD (LED-backlit)": 38844.3,
+          "OLED": 7027.9,
+          "QLED": 13999.7,
+          "MicroLED": 762.85,
+          "Other (e.g., Plasma, CRT)": 4155.25
+        }
+      },
+      {
+        "dimension": "By Resolution",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "HD (720p/1080p)": 21432.4,
+          "4K UHD": 40741.8,
+          "8K UHD": 2615.8
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "assumption",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Residential": 52761.5,
+          "Commercial (Hospitality, Retail Signage, Corporate AV)": 12028.5
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 28952.0,
+          "Offline Retail": 32598.5,
+          "Direct Sales (B2B)": 3239.5
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 0.0,
+      "assumption": 100.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 14/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\televisions\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\televisions\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\televisions",
+    "status": "ok",
+    "minutes": 8.0
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers the value of finished television sets (TVs) sold as complete consumer or commercial display products, including all display technologies (LCD, LED, OLED, QLED), screen sizes, and smart/traditional configurations, whether sold to residential or commercial end users. It excludes separately valued upstream components and inputs such as display panels, semiconductors, and tuners, as well as separately valued content, streaming, and advertising services (e.g., IPTV subscriptions, Google TV app store revenue) that are not part of the TV hardware transaction. It also excludes adjacent product categories such as computer monitors, digital signage, and projectors, which are distinct markets even where they share display technology. Panel and component production volumes may be used as intermediate evidence to derive TV unit demand, but are never priced or valued as part of this market.",
+      "geography": [
+        "China",
+        "United States",
+        "India",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Brazil",
+        "South Korea",
+        "Russia",
+        "Mexico",
+        "Indonesia",
+        "Turkey",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "televisions (units shipped)"
+    },
+    "use_cases": [
+      "Household / Residential",
+      "Hospitality & Lodging",
+      "Food, Beverage & Retail Venues",
+      "Corporate, Education & Institutional",
+      "Broadcast, Media & Professional Production",
+      "Other Commercial & Public Display"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 90368.4961,
+    "regions_usd_mn": {
+      "North America": 10326.0,
+      "Latin America": 6252.7896,
+      "Europe": 10431.02,
+      "Asia Pacific": 30710.24,
+      "Rest of World": 32648.4465
+    },
+    "countries_usd_mn": {
+      "China": 19238.2,
+      "United States": 10326.0,
+      "India": 5588.48,
+      "Japan": 2355.6,
+      "Germany": 3036.4,
+      "United Kingdom": 1982.2,
+      "France": 1794.62,
+      "Brazil": 5845.3896,
+      "South Korea": 1263.08,
+      "Russia": 2739.5,
+      "Mexico": 407.4,
+      "Indonesia": 2264.88,
+      "Turkey": 878.3,
+      "Rest of World": 32648.4465
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Household / Residential": 69231.4465,
+          "Hospitality & Lodging": 8112.3,
+          "Food, Beverage & Retail Venues": 1980.3,
+          "Corporate, Education & Institutional": 4464.6,
+          "Broadcast, Media & Professional Production": 2094.2496,
+          "Other Commercial & Public Display": 4485.6
+        }
+      },
+      {
+        "dimension": "By Display Technology",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "LCD (including LED-backlit)": 62887.4471,
+          "OLED": 7754.9152,
+          "QLED": 15207.709,
+          "Other (e.g., plasma, CRT, projection TV)": 4518.4248
+        }
+      },
+      {
+        "dimension": "By Screen Size",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Below 32 inches": 14420.5136,
+          "32 to 45 inches": 27573.6051,
+          "46 to 55 inches": 23094.7956,
+          "56 to 65 inches": 16001.1189,
+          "66 inches and above": 9278.4629
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online retail": 33911.401,
+          "Offline retail": 50333.1444,
+          "Direct sales (commercial)": 6123.9507
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 4.4,
+      "source_found_unverified": 7.8,
+      "assumption": 87.8
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 73/84 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (53%) is below the usual bar.",
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Household / Residential' alone is 77% of the total across 6 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Food, Beverage & Retail Venues'@China ($1,344.0M) is 29x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Broadcast, Media & Professional Production'@Brazil ($1,742.9M) is 83x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Digital Signage & Outdoor Advertising (reasoning_only, confidence 70%) -- TVs are widely deployed as digital signage in retail windows, billboards, and wayfinding displays, a distinct commercial application not captured by the existing buckets.; Personal/Portable & Vehicle Entertainment (reasoning_only, confidence 60%) -- Small TVs and TV-capable displays are used in RVs, boats, and as portable devices for personal entertainment, which is not covered by household or commercial buckets.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 3 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'year_period_consistency'] -- flagged for review, original value(s)/source(s) unchanged: ['Hospitality & Lodging', \"'Corporate, Education & Institutional' driver total\", \"'Other Commercial & Public Display' driver total\"]"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\televisions\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\televisions\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\televisions",
+    "status": "ok",
+    "minutes": 55.8
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 98929.24626401761,
+    "evidence_method_global_usd_mn": null,
+    "top_companies_global_share": [
+      {
+        "company": "Samsung Display",
+        "share": 0.1112
+      },
+      {
+        "company": "BOE Technology Group Co., Ltd.",
+        "share": 0.1081
+      },
+      {
+        "company": "LG Display",
+        "share": 0.1069
+      },
+      {
+        "company": "Sony Group Corporation",
+        "share": 0.0923
+      },
+      {
+        "company": "TCL China Star Optoelectronics Technology (TCL CSOT)",
+        "share": 0.0606
+      },
+      {
+        "company": "Hisense Group",
+        "share": 0.0364
+      },
+      {
+        "company": "Xiaomi Corporation",
+        "share": 0.0242
+      },
+      {
+        "company": "Changhong Electric Co., Ltd.",
+        "share": 0.0223
+      },
+      {
+        "company": "Haier Group",
+        "share": 0.0212
+      },
+      {
+        "company": "AU Optronics",
+        "share": 0.0202
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "Japan",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "India",
+      "Brazil",
+      "South Korea",
+      "Russia",
+      "Italy",
+      "Spain",
+      "Canada",
+      "Mexico",
+      "Australia",
+      "Rest of Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa"
+    ],
+    "flags": [
+      "disagrees_with_desk_research: Company-based total differs from the Desk Research total by 1168% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way.",
+      "no_real_data: No explicitly cited market-size figure was found anywhere in the gathered evidence -- there is no evidence-based estimate for this market."
+    ],
+    "report_json": "approaches\\examples\\televisions\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report (run now): televisions_market_global.csv",
+    "vendor_intel_coverage_pct": 8.0,
+    "status": "ok",
+    "minutes": 26.6
+  },
+  "finished_at": "2026-10-08T14:00:14+00:00"
+}

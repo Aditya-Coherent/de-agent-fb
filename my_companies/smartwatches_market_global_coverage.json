@@ -1,0 +1,110 @@
+{
+  "market": "Smartwatches Market",
+  "geography": "global",
+  "total_market_size_estimate_usd_mn": null,
+  "market_size_source": "",
+  "estimated_coverage_pct": 76.25,
+  "target_coverage_pct": 75.0,
+  "coverage_stop_reason": "target_reached",
+  "coverage_rounds": 1,
+  "n_companies": 113,
+  "n_manufacturers": 50,
+  "n_majors": 7,
+  "n_majors_kept": 7,
+  "runtime_seconds": 636.6,
+  "llm_calls": 245,
+  "time_budget_min": 15.0,
+  "majors": [
+    {
+      "name": "Fitbit (Google LLC)",
+      "domain": "fitbit.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 1500.0,
+      "est_market_share_pct": 3.5,
+      "source": "https://www.techradar.com/news/wearables/best-smart-watches-what-s-the-best-wearable-tech-for-you-1154074; https://axis-intelligence.com/smartwatch-statistics/",
+      "kept_in_output": true
+    },
+    {
+      "name": "boAt Lifestyle",
+      "domain": "boat-lifestyle.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 300.0,
+      "est_market_share_pct": 0.7,
+      "source": "https://rocketreach.co/cl/smartwatches-companies_004",
+      "kept_in_output": true
+    },
+    {
+      "name": "ASUS",
+      "domain": "asus.com",
+      "hq_country": "Taiwan",
+      "est_revenue_usd_mn": 200.0,
+      "est_market_share_pct": 0.5,
+      "source": "https://rocketreach.co/cl/smartwatches-companies_004",
+      "kept_in_output": true
+    },
+    {
+      "name": "Titan Company Ltd. (excluding Fastrack)",
+      "domain": "titancompany.in",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 150.0,
+      "est_market_share_pct": 0.3,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Casio Computer Co., Ltd.",
+      "domain": "casio.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 100.0,
+      "est_market_share_pct": 0.2,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Omron Healthcare",
+      "domain": "omronhealthcare.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Alphabet Inc. (Google)",
+      "domain": "abc.xyz",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": null,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    }
+  ],
+  "evidence_sources": [
+    "https://www.globalgrowthinsights.com/blog/smartwatch-companies-1056",
+    "https://www.statista.com/forecasts/1399805/apac-largest-smartwatch-markets-by-revenue/",
+    "https://companiesmarketcap.com/",
+    "https://finance.yahoo.com/news/10-biggest-smartwatch-companies-world-185448007.html",
+    "https://www.forbes.com/lists/global2000/",
+    "https://mashable.com/article/future-of-smartwatches",
+    "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+    "https://www.reportprime.com/smartwatches-r17983/company",
+    "https://scoop.market.us/top-10-smartwatch-companies/",
+    "https://electroiq.com/stats/smartwatch-statistics/",
+    "https://axis-intelligence.com/smartwatch-statistics/",
+    "https://www.sphericalinsights.com/blogs/world-s-top-50-companies-in-smartwatch-market-2025-watchlist-statistical-report-2024-2035",
+    "https://www.bankmycell.com/blog/global-smartwatch-market-share/",
+    "https://www.fortunebusinessinsights.com/smartwatch-market-106625",
+    "https://www.fortunebusinessinsights.com/blog/top-10-smartwatch-brands-11169",
+    "https://dataintelo.com/report/smartwatches-market",
+    "https://www.industryresearch.co/market-reports/smartwatches-market-307282",
+    "https://markwideresearch.com/smartwatches-market/",
+    "https://www.verifiedmarketreports.com/product/smartwatches-market/",
+    "https://www.globalgrowthinsights.com/market-reports/smartwatches-market-110996",
+    "https://www.zionmarketresearch.com/report/smartwatches-market",
+    "https://www.syndicatemarketresearch.com/market-analysis/smartwatches-market.html",
+    "https://finance.yahoo.com/news/smartwatches-market-size-booming-worldwide-102100490.html",
+    "https://www.coherentmarketinsights.com/market-insight/smartwatches-market-4061",
+    "https://www.pcbx.com/article/Top-10-Smartwatch-Manufacturers-in-the-World"
+  ],
+  "note": "All revenue / market-share / market-size figures are ESTIMATES produced by an LLM from web search snippets and model knowledge; they are approximate and not audited financial data."
+}

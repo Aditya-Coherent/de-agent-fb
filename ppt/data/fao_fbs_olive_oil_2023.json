@@ -1,0 +1,199 @@
+{
+  "source": "FAOSTAT Food Balances (2010-2023), item 'Olive Oil', year 2023, unit 1000 t",
+  "url": "https://bulks-faostat.fao.org/production/FoodBalanceSheets_E_All_Data_(Normalized).zip",
+  "downloaded": "2026-10-06",
+  "countries": {
+    "Spain": {
+      "fao_area": "Spain",
+      "domestic_supply_kt": 493.0,
+      "food_kt": 430.0,
+      "other_uses_nonfood_kt": 63.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 8.98
+    },
+    "Italy": {
+      "fao_area": "Italy",
+      "domestic_supply_kt": 535.0,
+      "food_kt": 510.0,
+      "other_uses_nonfood_kt": 25.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 8.57
+    },
+    "Greece": {
+      "fao_area": "Greece",
+      "domestic_supply_kt": 104.0,
+      "food_kt": 90.0,
+      "other_uses_nonfood_kt": 14.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 8.79
+    },
+    "Portugal": {
+      "fao_area": "Portugal",
+      "domestic_supply_kt": 82.0,
+      "food_kt": 62.0,
+      "other_uses_nonfood_kt": 21.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 5.91
+    },
+    "France": {
+      "fao_area": "France",
+      "domestic_supply_kt": 105.0,
+      "food_kt": 105.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 1.58
+    },
+    "Germany": {
+      "fao_area": "Germany",
+      "domestic_supply_kt": 62.0,
+      "food_kt": 60.0,
+      "other_uses_nonfood_kt": 2.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 0.71
+    },
+    "United States": {
+      "fao_area": "United States of America",
+      "domestic_supply_kt": 370.0,
+      "food_kt": 370.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 1.08
+    },
+    "United Kingdom": {
+      "fao_area": "United Kingdom of Great Britain and Northern Ireland",
+      "domestic_supply_kt": 65.0,
+      "food_kt": 60.0,
+      "other_uses_nonfood_kt": 5.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 0.87
+    },
+    "Turkiye": {
+      "fao_area": "Türkiye",
+      "domestic_supply_kt": 150.0,
+      "food_kt": 142.0,
+      "other_uses_nonfood_kt": 8.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 1.63
+    },
+    "Morocco": {
+      "fao_area": "Morocco",
+      "domestic_supply_kt": 146.0,
+      "food_kt": 122.0,
+      "other_uses_nonfood_kt": 24.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 3.25
+    },
+    "Algeria": {
+      "fao_area": "Algeria",
+      "domestic_supply_kt": 91.0,
+      "food_kt": 91.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 1.98
+    },
+    "Brazil": {
+      "fao_area": "Brazil",
+      "domestic_supply_kt": 80.0,
+      "food_kt": 80.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 0.38
+    },
+    "Canada": {
+      "fao_area": "Canada",
+      "domestic_supply_kt": 45.0,
+      "food_kt": 44.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": 1.0,
+      "losses_kt": null,
+      "food_per_capita_kg": 1.13
+    },
+    "Australia": {
+      "fao_area": "Australia",
+      "domestic_supply_kt": 49.0,
+      "food_kt": 47.0,
+      "other_uses_nonfood_kt": 2.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 1.78
+    },
+    "China": {
+      "fao_area": "China, mainland",
+      "domestic_supply_kt": 24.0,
+      "food_kt": 22.0,
+      "other_uses_nonfood_kt": 2.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 0.02
+    },
+    "Syria": {
+      "fao_area": "Syrian Arab Republic",
+      "domestic_supply_kt": 99.0,
+      "food_kt": 87.0,
+      "other_uses_nonfood_kt": 12.0,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 3.67
+    },
+    "Tunisia": {
+      "fao_area": "Tunisia",
+      "domestic_supply_kt": 70.0,
+      "food_kt": 71.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 5.8
+    },
+    "Egypt": {
+      "fao_area": "Egypt",
+      "domestic_supply_kt": 35.0,
+      "food_kt": 35.0,
+      "other_uses_nonfood_kt": null,
+      "processing_kt": null,
+      "losses_kt": null,
+      "food_per_capita_kg": 0.31
+    },
+    "World": {
+      "fao_area": "World",
+      "domestic_supply_kt": 3161.0,
+      "food_kt": 2934.0,
+      "other_uses_nonfood_kt": 224.0,
+      "processing_kt": 1.0,
+      "losses_kt": 0.0,
+      "food_per_capita_kg": 0.36
+    }
+  },
+  "population_2023": {
+    "Algeria": 46164220.0,
+    "Australia": 26451120.0,
+    "Brazil": 211140730.0,
+    "Canada": 39299100.0,
+    "China": 1422584930.0,
+    "Egypt": 114535770.0,
+    "France": 66438820.00000001,
+    "Germany": 84548230.0,
+    "Greece": 10242910.0,
+    "Italy": 59499450.0,
+    "Morocco": 37712500.0,
+    "Portugal": 10430740.0,
+    "Spain": 47911580.0,
+    "Syria": 23594620.0,
+    "Tunisia": 12200430.0,
+    "United Kingdom": 68682960.0,
+    "United States": 343477340.0,
+    "World": 8063887110.0
+  },
+  "population_note": "FAOSTAT Food Balances item 'Population', 2023 (persons)"
+}

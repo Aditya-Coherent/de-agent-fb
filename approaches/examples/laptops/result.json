@@ -1,0 +1,362 @@
+{
+  "market": "Laptops",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T12:19:07+00:00",
+  "1_desk_research": {
+    "status": "failed",
+    "error": "ERROR: could not build a DB skeleton for 'Laptops'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3100.34it/s]",
+    "minutes": 2.8
+  },
+  "log": [
+    "[2026-10-08T10:17:42+00:00] 1 Desk Research: start",
+    "[2026-10-08T10:20:32+00:00] 1 Desk Research: failed in 2.8 min",
+    "[2026-10-08T10:20:32+00:00] 2A Demand: start",
+    "[2026-10-08T10:31:52+00:00] 2A Demand: ok in 11.3 min",
+    "[2026-10-08T10:31:52+00:00] 2B Demand: start",
+    "[2026-10-08T12:00:55+00:00] 2B Demand: ok in 89.0 min",
+    "[2026-10-08T12:00:55+00:00] 3 Supply-Side: start",
+    "[2026-10-08T12:14:53+00:00] 3 Supply-Side: failed in 14.0 min",
+    "[2026-10-08T12:19:07+00:00] 3 Supply-Side: start",
+    "[2026-10-08T12:24:40+00:00] 3 Supply-Side: ok in 5.6 min"
+  ],
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers new, first-sale laptop computers (including traditional clamshell notebooks, 2-in-1 convertibles, and dual-screen laptops) valued as complete, branded devices at the point of original sale. It excludes refurbished or used laptops, which are separately valued in the secondary market, as well as tablets, smartphones, desktop PCs, and standalone components (processors, displays, batteries) that are not sold as a complete laptop. Component and refurbishment activity is used only as intermediate evidence for how many new laptops are required by a given usage bucket, never priced as part of this market.",
+      "geography": [
+        "United States",
+        "China",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "India",
+        "South Korea",
+        "France",
+        "Canada",
+        "Brazil",
+        "Australia",
+        "Netherlands",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "laptops (units shipped)"
+    },
+    "driver": {
+      "driver_name": "National smartphone shipments (apparent consumption)",
+      "unit": "smartphones (units shipped)",
+      "final_demand_unit": "smartphones (units shipped)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 630850.0,
+    "regions_usd_mn": {
+      "North America": 96250.0,
+      "Latin America": 22000.0,
+      "Europe": 39600.0,
+      "Asia Pacific": 308000.0,
+      "Rest of World": 165000.0
+    },
+    "countries_usd_mn": {
+      "United States": 88000.0,
+      "China": 192500.0,
+      "Japan": 16500.0,
+      "Germany": 12100.0,
+      "United Kingdom": 13750.0,
+      "India": 82500.0,
+      "South Korea": 11000.0,
+      "France": 11000.0,
+      "Canada": 8250.0,
+      "Brazil": 22000.0,
+      "Australia": 5500.0,
+      "Netherlands": 2750.0,
+      "Rest of World": 165000.0
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Traditional Clamshell Laptops": 418231.0,
+          "2-in-1 Convertibles": 187385.0,
+          "Dual-Screen Laptops": 25234.0
+        }
+      },
+      {
+        "dimension": "By Application / End-Use",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Personal / Consumer": 298952.5,
+          "Commercial / Enterprise": 204875.0,
+          "Education": 88803.0,
+          "Government": 38219.5
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 274582.0,
+          "Offline Retail": 200744.5,
+          "Direct Sales (B2B)": 115472.5,
+          "OEM / System Integrators": 40051.0
+        }
+      },
+      {
+        "dimension": "By Screen Size",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Less than 13 inches": 132181.5,
+          "13 to 15.9 inches": 345306.5,
+          "16 inches and above": 153362.0
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 0.0,
+      "assumption": 100.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 13/13 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (55%) is below the usual bar.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\laptops\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\laptops\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\laptops",
+    "status": "ok",
+    "minutes": 11.3
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers new laptops (notebook computers) sold to end users, including traditional clamshell laptops, 2-in-1 convertibles, and dual-screen laptops, whether purchased for consumer, commercial, education, or government use. It excludes desktop PCs, tablets, smartphones, and standalone monitors, as well as refurbished laptops, which are a separate secondary market. It also excludes laptop components and accessories (e.g., batteries, chargers, memory) sold separately, and software or services. Demand for laptops is valued at the point of sale to the end user, not at the component or manufacturing-input level.",
+      "geography": [
+        "United States",
+        "China",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "India",
+        "Brazil",
+        "France",
+        "Canada",
+        "South Korea",
+        "Italy",
+        "Australia",
+        "Mexico",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "laptops (units shipped)"
+    },
+    "use_cases": [
+      "Consumer Personal Use",
+      "Business & Enterprise",
+      "Education",
+      "Government & Public Sector",
+      "Gaming & Esports",
+      "Content Creation & Creative Professional"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 306726.4806,
+    "regions_usd_mn": {
+      "North America": 33253.0,
+      "Latin America": 6752.0,
+      "Europe": 21265.0,
+      "Asia Pacific": 50991.4806,
+      "Rest of World": 194465.0
+    },
+    "countries_usd_mn": {
+      "United States": 29025.0,
+      "China": 31505.0,
+      "Japan": 12925.0,
+      "Germany": 5343.0,
+      "United Kingdom": 8199.0,
+      "India": 1226.0,
+      "Brazil": 3806.0,
+      "France": 4653.5,
+      "Canada": 4228.0,
+      "South Korea": 3076.8806,
+      "Italy": 3069.5,
+      "Australia": 2258.6,
+      "Mexico": 2946.0,
+      "Rest of World": 194465.0
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Consumer Personal Use": 92274.0,
+          "Business & Enterprise": 171366.0,
+          "Education": 5912.5,
+          "Government & Public Sector": 8363.4806,
+          "Gaming & Esports": 18762.5,
+          "Content Creation & Creative Professional": 10048.0
+        }
+      },
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Traditional Clamshell Laptops": 189836.9775,
+          "2-in-1 Convertible Laptops": 107687.7087,
+          "Dual-Screen Laptops": 9201.7944
+        }
+      },
+      {
+        "dimension": "By Price Tier",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Entry-Level (Under $500)": 84046.4997,
+          "Mid-Range ($500-$999)": 120911.2942,
+          "High-End ($1000-$1499)": 63285.9382,
+          "Premium ($1500 and Above)": 38482.7485
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 103380.8655,
+          "Offline Retail": 97762.025,
+          "Direct Sales (B2B)": 71301.8889,
+          "Education and Government Contracts": 34281.7012
+        }
+      },
+      {
+        "dimension": "By Screen Size",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Less than 13 inches": 37984.3221,
+          "13 to 14.9 inches": 121256.4663,
+          "15 to 16.9 inches": 104117.8042,
+          "17 inches and Above": 43367.888
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 3.3,
+      "source_found_unverified": 18.9,
+      "assumption": 77.8
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 64/84 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (53%) is below the usual bar.",
+      "[warning] usage_bucket_overlap: Possible double-counting between usage buckets: Consumer Personal Use ~ Business & Enterprise (similarity 0.85); Consumer Personal Use ~ Education (similarity 0.84); Business & Enterprise ~ Government & Public Sector (similarity 0.88)",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Consumer Personal Use'@Rest of World ($44,814.0M) is 15x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Business & Enterprise'@Rest of World ($144,066.0M) is 44x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[warning] low_usage_coverage: Estimated usage coverage (84.0%, the pipeline's own bounded estimate -- NOT a verified measurement of the real market) is below the configured threshold (85%) -- Included Demand ($306,726.5M) likely understates the real market. Residual/Uncovered is reported separately ($58,424.1M, implied by the coverage gap, NOT built from evidence, NOT distributed into any bucket) rather than silently inflating any existing bucket.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Healthcare & Medical (evidence_backed, confidence 90%) -- \"By End User (Individual, Corporate, Educational Institutions, Government, Healthcare)\"; Scientific Research & Academia (evidence_backed, confidence 70%) -- \"Science Today, the computer is the best-suited machine for collecting, analyzing, classifying, and storing data.\"",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 1 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 5.81x or more -- flagged for review, the original value/source/note are unchanged: ['Business & Enterprise']",
+      "[critical] magnitude_cross_validation_discrepancy: 2 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'year_period_consistency'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Business & Enterprise' driver total\", 'Content Creation & Creative Professional']"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\laptops\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\laptops\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\laptops",
+    "status": "ok",
+    "minutes": 89.0
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 320580.0755551852,
+    "evidence_method_global_usd_mn": 129900.0,
+    "top_companies_global_share": [
+      {
+        "company": "HP Inc.",
+        "share": 0.1092
+      },
+      {
+        "company": "Apple Inc.",
+        "share": 0.0873
+      },
+      {
+        "company": "Quanta Computer",
+        "share": 0.0788
+      },
+      {
+        "company": "Intel Corporation",
+        "share": 0.0577
+      },
+      {
+        "company": "Compal Electronics",
+        "share": 0.037
+      },
+      {
+        "company": "Pegatron Corporation",
+        "share": 0.0312
+      },
+      {
+        "company": "Wistron",
+        "share": 0.0277
+      },
+      {
+        "company": "SK Hynix",
+        "share": 0.0271
+      },
+      {
+        "company": "Inventec Corporation",
+        "share": 0.025
+      },
+      {
+        "company": "Nvidia",
+        "share": 0.0244
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "Japan",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "India",
+      "Brazil",
+      "Canada",
+      "South Korea",
+      "Taiwan",
+      "Mexico",
+      "Australia",
+      "Rest of Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa"
+    ],
+    "flags": [
+      "high_gross_up: 4 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (Rest of Asia-Pacific 2.5x, Rest of Latin America 2.5x, Rest of Middle East & Africa 2.5x, Brazil 2.2x) -- most of those countries' totals is an LLM coverage guess, not company revenue."
+    ],
+    "report_json": "approaches\\examples\\laptops\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report: laptops_market_global.csv",
+    "vendor_intel_coverage_pct": 94.59,
+    "status": "ok",
+    "minutes": 5.6
+  },
+  "finished_at": "2026-10-08T12:24:40+00:00"
+}

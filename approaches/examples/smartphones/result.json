@@ -1,0 +1,359 @@
+{
+  "market": "Smartphones",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T08:27:03+00:00",
+  "1_desk_research": {
+    "global_usd_mn": 557000.0,
+    "anchor_year": 2025,
+    "global_cagr": 0.068,
+    "regional": {
+      "North America": {
+        "value_share": 0.18,
+        "cagr": 0.035
+      },
+      "Latin America": {
+        "value_share": 0.08,
+        "cagr": 0.055
+      },
+      "Europe": {
+        "value_share": 0.16,
+        "cagr": 0.04
+      },
+      "Asia Pacific": {
+        "value_share": 0.48,
+        "cagr": 0.075
+      },
+      "Middle East & Africa": {
+        "value_share": 0.1,
+        "cagr": 0.08
+      }
+    },
+    "reward": 0.8425,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\smartphones\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 1.6
+  },
+  "log": [
+    "[2026-10-07T12:15:42+00:00] 1 Desk Research: start",
+    "[2026-10-07T12:17:21+00:00] 1 Desk Research: ok in 1.6 min",
+    "[2026-10-07T12:17:21+00:00] 2A Demand: start",
+    "[2026-10-07T12:24:06+00:00] 2A Demand: ok in 6.8 min",
+    "[2026-10-07T12:24:06+00:00] 2B Demand: start",
+    "[2026-10-07T13:06:10+00:00] 2B Demand: ok in 42.1 min",
+    "[2026-10-07T13:06:10+00:00] 3 Supply-Side: start",
+    "[2026-10-07T13:23:56+00:00] 3 Supply-Side: ok in 17.8 min",
+    "[2026-10-07T14:12:34+00:00] 2A Demand: start",
+    "[2026-10-07T14:18:29+00:00] 2A Demand: ok in 5.9 min",
+    "[2026-10-08T07:05:53+00:00] 2A Demand: start",
+    "[2026-10-08T07:11:13+00:00] 2A Demand: ok in 5.3 min",
+    "[2026-10-08T07:11:13+00:00] 2B Demand: start",
+    "[2026-10-08T07:41:23+00:00] 2B Demand: ok in 30.2 min",
+    "[2026-10-08T07:43:18+00:00] 2A Demand: start",
+    "[2026-10-08T07:49:12+00:00] 2A Demand: ok in 5.9 min",
+    "[2026-10-08T07:49:12+00:00] 2B Demand: start",
+    "[2026-10-08T08:23:29+00:00] 2B Demand: ok in 34.3 min",
+    "[2026-10-08T08:27:03+00:00] 2A Demand: start",
+    "[2026-10-08T08:37:11+00:00] 2A Demand: ok in 10.1 min",
+    "[2026-10-08T08:37:11+00:00] 2B Demand: start",
+    "[2026-10-08T09:10:56+00:00] 2B Demand: ok in 33.7 min"
+  ],
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers the global sale of finished smartphone devices — handheld mobile computing/communication devices running a general-purpose mobile operating system (Android, iOS, HarmonyOS, KaiOS, etc.) with cellular voice/data connectivity — valued at the point of sale to end users (consumer and enterprise), including all price bands, form factors (bar, foldable/flip), and connectivity generations (4G/LTE, 5G). It excludes non-smart feature phones, tablets, laptops, wearables, and other connected devices, and excludes separately valued adjacent markets such as mobile operating systems/app stores, carrier connectivity plans, and aftermarket accessories or repair services. Component and semiconductor supply (chipsets, displays, memory, cameras) is not valued as part of this market, though component shipment data may be used as an intermediate signal to derive device volumes. Replacement/upgrade purchases are in scope as part of ongoing device replacement cycles; refurbished-device resale is out of scope as a separately valued market.",
+      "geography": [
+        "China",
+        "United States",
+        "India",
+        "Japan",
+        "South Korea",
+        "United Kingdom",
+        "Germany",
+        "France",
+        "Brazil",
+        "Indonesia",
+        "Russia",
+        "Mexico",
+        "Nigeria",
+        "Saudi Arabia"
+      ],
+      "base_year": 2025,
+      "physical_unit": "smartphones (units shipped)"
+    },
+    "driver": {
+      "driver_name": "National smartphone shipments (apparent consumption)",
+      "unit": "smartphones (units shipped)",
+      "final_demand_unit": "smartphones (units shipped)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 272825.0049,
+    "regions_usd_mn": {
+      "North America": 44100.0,
+      "Latin America": 10500.0,
+      "Europe": 18200.0049,
+      "Asia Pacific": 193725.0,
+      "Middle East & Africa": 6300.0
+    },
+    "countries_usd_mn": {
+      "China": 99750.0,
+      "United States": 44100.0,
+      "India": 65940.0,
+      "Japan": 8785.0,
+      "South Korea": 5250.0,
+      "United Kingdom": 0.0049,
+      "Germany": 7000.0,
+      "France": 0.0,
+      "Brazil": 0.0,
+      "Indonesia": 14000.0,
+      "Russia": 11200.0,
+      "Mexico": 10500.0,
+      "Nigeria": 3850.0,
+      "Saudi Arabia": 2450.0
+    },
+    "segments": [
+      {
+        "dimension": "By Operating System",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Android": 215944.7524,
+          "iOS": 56880.2525
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "OEM": 62613.2512,
+          "Retailer": 117430.252,
+          "E-commerce": 92781.5017
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 6.7,
+      "derived": 13.3,
+      "source_found_unverified": 53.3,
+      "assumption": 26.7
+    },
+    "quality_flags": [
+      "[warning] high_unverified_claim_share: 7/14 country/bucket quantities rest on a source the LLM named but code could not independently verify (source_found_unverified) -- more useful than a bare assumption, but never promoted to observed; this run leans heavily on unverified claims.",
+      "[warning] low_observed_share: Only 7% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 2 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[info] triangulation_large_gap: Large gap(s) vs. independent external benchmark(s) -- informational only, never used to adjust the bottom-up total: 'published market-size estimate' benchmark (520450.0 USD Mn, source: Global Smartphone Market Size, Growth Analysis, Trends) vs. Demand-Side estimate (272,825.0 USD Bn) -- gap -47.6%"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\smartphones\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\smartphones\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\smartphones",
+    "status": "ok",
+    "minutes": 10.1
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers smartphones as complete, finished mobile communication devices that run a general-purpose mobile operating system and support third-party application installation and high-speed internet access, valued at the point of sale to end users (retail/consumer channel, including carrier and online sales). It explicitly EXCLUDES feature phones and other basic telephony-only handsets, and it excludes separately valued component and accessory markets such as smartphone camera lenses, PTZ camera modules, MEMS sensors, SoCs, chargers, and cases, as well as repair/refurbishment services and enterprise software. Component and accessory production volumes (e.g. camera-lens or SoC shipments) may still be used as intermediate evidence to derive how many finished smartphones are built and sold, but those components are never priced or valued as part of this market. Rugged/waterproof variants are included as smartphones, not as a separate market.",
+      "geography": [
+        "China",
+        "United States",
+        "India",
+        "Japan",
+        "South Korea",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Brazil",
+        "Mexico",
+        "Indonesia",
+        "Vietnam",
+        "Russia",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "smartphones (units shipped)"
+    },
+    "use_cases": [
+      "Personal consumer smartphones",
+      "Enterprise & business-issued smartphones",
+      "Premium/flagship smartphones",
+      "Mid-range smartphones",
+      "Entry-level/budget smartphones"
+    ],
+    "use_cases_dropped_out_of_scope": [
+      "Refurbished/renewed smartphones"
+    ],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 465071.9808,
+    "regions_usd_mn": {
+      "North America": 44947.4859,
+      "Latin America": 22912.0388,
+      "Europe": 45471.6711,
+      "Asia Pacific": 201986.3002,
+      "Rest of World": 149754.4848
+    },
+    "countries_usd_mn": {
+      "China": 98242.2581,
+      "United States": 44947.4859,
+      "India": 63550.0313,
+      "Japan": 9703.7186,
+      "South Korea": 11345.5005,
+      "Germany": 6416.6676,
+      "United Kingdom": 10225.0028,
+      "France": 13390.0007,
+      "Brazil": 8664.0365,
+      "Mexico": 14248.0023,
+      "Indonesia": 11794.7917,
+      "Vietnam": 7350.0,
+      "Russia": 15440.0,
+      "Rest of World": 149754.4848
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Personal consumer smartphones": 320171.4841,
+          "Enterprise & business-issued smartphones": 28328.4177,
+          "Premium/flagship smartphones": 47562.5295,
+          "Mid-range smartphones": 47851.379,
+          "Entry-level/budget smartphones": 21158.1705
+        }
+      },
+      {
+        "dimension": "By Operating System",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "Android": 358204.6999,
+          "iOS": 106867.2809
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "assumption",
+        "taxonomy_source": "cmi_report_db",
+        "global_values_usd_mn": {
+          "OEM": 122454.545,
+          "Retailer": 168188.8828,
+          "E-commerce": 174428.553
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 4.0,
+      "derived": 5.3,
+      "source_found_unverified": 38.7,
+      "assumption": 52.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 37/70 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] low_plausibility: Validation plausibility (53%) is below the usual bar.",
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Personal consumer smartphones' alone is 69% of the total across 5 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Personal consumer smartphones'@Rest of World ($149,754.5M) is 21x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Enterprise & business-issued smartphones'@China ($22,947.1M) is 18x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Ruggedized/industrial smartphones (reasoning_only, confidence 70%) -- Smartphones designed for harsh environments (construction, manufacturing, field work, military) with reinforced casings, water/dust resistance, and extended battery life are a distinct physical application not covered by consumer, enterprise, or price-tier buckets.; Smartphones as dedicated IoT/embedded controllers (reasoning_only, confidence 50%) -- Smartphones repurposed as dedicated controllers or interfaces for machinery, vehicles, or IoT systems (e.g., in-car infotainment, industrial HMI) represent a non-personal, non-enterprise-issued usage that is not captured by existing buckets.",
+      "[warning] low_observed_share: Only 4% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 2 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 8.86x or more -- flagged for review, the original value/source/note are unchanged: ['Entry-level/budget smartphones']",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Enterprise & business-issued smartphones' driver total\", \"'Premium/flagship smartphones' driver total\", \"'Entry-level/budget smartphones' driver total\"]",
+      "[warning] use_cases_scaled_down_to_country_total: China: use cases added up to 2.7x the 2A country total (285,000,000 smartphones (units shipped)); scaled down to match it",
+      "[warning] use_cases_scaled_down_to_country_total: Germany: use cases added up to 1.8x the 2A country total (20,000,000 smartphones (units shipped)); scaled down to match it",
+      "[warning] use_cases_scaled_down_to_country_total: Indonesia: use cases added up to 1.9x the 2A country total (40,000,000 smartphones (units shipped)); scaled down to match it",
+      "[warning] use_cases_scaled_down_to_country_total: Japan: use cases added up to 2.2x the 2A country total (25,100,000 smartphones (units shipped)); scaled down to match it",
+      "[warning] country_total_mismatch: United Kingdom: use cases are 2,592,857.6x the 2A country total (14 smartphones (units shipped)) -- too far apart to be the same quantity (likely a unit error in one of them); not scaled",
+      "[warning] use_cases_scaled_down_to_country_total: United States: use cases added up to 2.0x the 2A country total (126,000,000 smartphones (units shipped)); scaled down to match it"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\smartphones\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\smartphones\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\smartphones",
+    "status": "ok",
+    "minutes": 33.7
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 226395.562307821,
+    "evidence_method_global_usd_mn": 99.8,
+    "top_companies_global_share": [
+      {
+        "company": "Foxconn Technology Group",
+        "share": 0.4049
+      },
+      {
+        "company": "Honor Device Co., Ltd.",
+        "share": 0.0526
+      },
+      {
+        "company": "BOE Technology Group",
+        "share": 0.0473
+      },
+      {
+        "company": "Lenovo Group Limited",
+        "share": 0.0442
+      },
+      {
+        "company": "FIH Mobile Limited",
+        "share": 0.0221
+      },
+      {
+        "company": "OnePlus",
+        "share": 0.021
+      },
+      {
+        "company": "Huaqin Technology",
+        "share": 0.0176
+      },
+      {
+        "company": "Murata Manufacturing",
+        "share": 0.017
+      },
+      {
+        "company": "Deutsche Telekom",
+        "share": 0.0133
+      },
+      {
+        "company": "NTT Docomo",
+        "share": 0.0133
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "India",
+      "Japan",
+      "South Korea",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "Brazil",
+      "Russia",
+      "Canada",
+      "Mexico",
+      "Australia",
+      "Rest of Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa"
+    ],
+    "flags": [
+      "disagrees_with_desk_research: Company-based total differs from the Desk Research total by 59% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way.",
+      "low_extraction_yield: Only 3 of 14 relevant snippets yielded a real figure -- the regex extractor likely missed figures phrased differently than expected (confirmed on 'Global Smartphone Market': 3/15 extracted, total came out 5-7x too low vs published estimates). Treat this total with real caution.",
+      "small_sample: Only 3 real figures went into the median -- a small sample can be skewed by a single outlier or mis-scoped report.",
+      "disagrees_with_desk_research: Evidence-based total differs from the Desk Research total by 100% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way."
+    ],
+    "report_json": "approaches\\examples\\smartphones\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report (run now): smartphones_market_global.csv",
+    "vendor_intel_coverage_pct": 100.0,
+    "status": "ok",
+    "minutes": 17.8
+  },
+  "finished_at": "2026-10-08T09:10:56+00:00"
+}

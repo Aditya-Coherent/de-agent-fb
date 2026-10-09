@@ -1,0 +1,272 @@
+{
+  "market": "Smartphones Market",
+  "geography": "global",
+  "total_market_size_estimate_usd_mn": 550000.0,
+  "market_size_source": "https://www.zippia.com/advice/largest-smartphone-companies/",
+  "estimated_coverage_pct": 100.0,
+  "target_coverage_pct": 75.0,
+  "coverage_stop_reason": "target_reached",
+  "coverage_rounds": 0,
+  "n_companies": 96,
+  "n_manufacturers": 52,
+  "n_majors": 25,
+  "n_majors_kept": 25,
+  "runtime_seconds": 593.7,
+  "llm_calls": 229,
+  "time_budget_min": 15.0,
+  "majors": [
+    {
+      "name": "Apple Inc.",
+      "domain": "apple.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 220000.0,
+      "est_market_share_pct": 40.0,
+      "source": "https://www.zippia.com/advice/largest-smartphone-companies/; https://www.statista.com/statistics/271492/global-market-share-held-by-leading-smartphone-vendors/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Samsung Electronics",
+      "domain": "samsung.com",
+      "hq_country": "South Korea",
+      "est_revenue_usd_mn": 165000.0,
+      "est_market_share_pct": 30.0,
+      "source": "https://www.zippia.com/advice/largest-smartphone-companies/; https://www.idc.com/promo/smartphone-market-share/; https://www.visualcapitalist.com/the-top-companies-by-global-smartphone-market-share/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Xiaomi Corporation",
+      "domain": "mi.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 45000.0,
+      "est_market_share_pct": 8.2,
+      "source": "https://www.phadera.com/global-smartphone-market-share-in-2025-apple-samsung-xiaomi-emerging-giants/; https://www.visualcapitalist.com/the-top-companies-by-global-smartphone-market-share/; https://businesstats.com/smartphone-market-share-by-vendor/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Oppo (Guangdong Oppo Mobile Telecommunications)",
+      "domain": "oppo.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 25000.0,
+      "est_market_share_pct": 4.5,
+      "source": "https://www.visualcapitalist.com/the-top-companies-by-global-smartphone-market-share/; https://businesstats.com/smartphone-market-share-by-vendor/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Vivo (BBK Electronics)",
+      "domain": "vivo.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 22000.0,
+      "est_market_share_pct": 4.0,
+      "source": "https://www.visualcapitalist.com/the-top-companies-by-global-smartphone-market-share/; https://businesstats.com/smartphone-market-share-by-vendor/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Transsion Holdings",
+      "domain": "transsion.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 15000.0,
+      "est_market_share_pct": 2.7,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Honor Device Co., Ltd.",
+      "domain": "honor.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 14000.0,
+      "est_market_share_pct": 2.5,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Huawei Technologies",
+      "domain": "huawei.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 13000.0,
+      "est_market_share_pct": 2.4,
+      "source": "https://www.expertmarketresearch.com/blogs/top-smartphones-companies; https://www.verifiedmarketreports.com/blog/top-10-companies-in-smartphone/; https://www.visualcapitalist.com/the-top-companies-by-global-smartphone-market-share/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Motorola (Lenovo Group)",
+      "domain": "motorola.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 10000.0,
+      "est_market_share_pct": 1.8,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Realme (BBK Electronics)",
+      "domain": "realme.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 9000.0,
+      "est_market_share_pct": 1.6,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Google (Alphabet Inc.)",
+      "domain": "google.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 8000.0,
+      "est_market_share_pct": 1.5,
+      "source": "https://www.expertmarketresearch.com/blogs/top-smartphones-companies",
+      "kept_in_output": true
+    },
+    {
+      "name": "TCL Technology (TCL Communication)",
+      "domain": "tcl.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 4000.0,
+      "est_market_share_pct": 0.7,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Nokia (HMD Global)",
+      "domain": "nokia.com",
+      "hq_country": "Finland",
+      "est_revenue_usd_mn": 3500.0,
+      "est_market_share_pct": 0.6,
+      "source": "https://www.fixya.com/reports/phone-manufacturers",
+      "kept_in_output": true
+    },
+    {
+      "name": "Sony Group Corporation",
+      "domain": "sony.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 3000.0,
+      "est_market_share_pct": 0.5,
+      "source": "https://www.expertmarketresearch.com/blogs/top-smartphones-companies",
+      "kept_in_output": true
+    },
+    {
+      "name": "ZTE Corporation",
+      "domain": "zte.com.cn",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 2500.0,
+      "est_market_share_pct": 0.5,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "AsusTek Computer Inc.",
+      "domain": "asus.com",
+      "hq_country": "Taiwan",
+      "est_revenue_usd_mn": 2000.0,
+      "est_market_share_pct": 0.4,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "LG Electronics",
+      "domain": "lg.com",
+      "hq_country": "South Korea",
+      "est_revenue_usd_mn": 1500.0,
+      "est_market_share_pct": 0.3,
+      "source": "https://www.tharawat-magazine.com/facts/top-5-largest-smartphone-companies/",
+      "kept_in_output": true
+    },
+    {
+      "name": "OnePlus (BBK Electronics)",
+      "domain": "oneplus.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 1500.0,
+      "est_market_share_pct": 0.3,
+      "source": "https://www.expertmarketresearch.com/blogs/top-smartphones-companies; https://www.verifiedmarketreports.com/blog/top-10-companies-in-smartphone/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Meizu Technology",
+      "domain": "meizu.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 800.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Nothing Technology Limited",
+      "domain": "nothing.tech",
+      "hq_country": "United Kingdom",
+      "est_revenue_usd_mn": 700.0,
+      "est_market_share_pct": 0.1,
+      "source": "https://www.expertmarketresearch.com/blogs/top-smartphones-companies",
+      "kept_in_output": true
+    },
+    {
+      "name": "Sharp Corporation",
+      "domain": "sharp.co.jp",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 600.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Panasonic Corporation",
+      "domain": "panasonic.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 500.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Micromax Informatics",
+      "domain": "micromaxinfo.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 400.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Lava International",
+      "domain": "lavamobiles.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 300.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Wiko (Shenzhen Tinno Mobile)",
+      "domain": "wiko.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 250.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    }
+  ],
+  "evidence_sources": [
+    "https://www.zippia.com/advice/largest-smartphone-companies/",
+    "https://www.financecharts.com/keyword/smartphones",
+    "https://www.globalgrowthinsights.com/blog/smartphones-companies-1239",
+    "https://www.techinsights.com/blog/tracker-global-top-200-smartphone-revenue-value-share-asp-and-price-band-model-q1-2025",
+    "https://companiesmarketcap.com/",
+    "https://www.forbes.com/lists/global2000/",
+    "https://blog.technavio.org/blog/top-10-largest-smartphone-companies",
+    "https://www.tharawat-magazine.com/facts/top-5-largest-smartphone-companies/",
+    "https://www.expertmarketresearch.com/blogs/top-smartphones-companies",
+    "https://www.phadera.com/global-smartphone-market-share-in-2025-apple-samsung-xiaomi-emerging-giants/",
+    "https://www.databridgemarketresearch.com/reports/global-smartphones-market",
+    "https://www.expertmarketresearch.com/reports/smartphones-market",
+    "https://www.precedenceresearch.com/smartphones-market",
+    "https://market.us/report/foldable-smartphones-market/",
+    "https://www.emergenresearch.com/industry-report/3d-enabled-smartphones-market",
+    "https://www.verifiedmarketreports.com/blog/top-10-companies-in-smartphone/",
+    "https://techgolly.com/top-5-smartphone-manufacturers-in-2026",
+    "https://www.alibaba.com/showroom/top-smartphones-manufacturers.html",
+    "https://www.freejobalert.com/biggest/largest-smartphone-manufacturers/",
+    "https://www.appbrain.com/stats/top-manufacturers",
+    "https://www.fixya.com/reports/phone-manufacturers",
+    "https://www.tiktok.com/discover/where-are-different-brands-of-phones-made",
+    "https://www.dreamstime.com/editorial-stock-image-smartphone-producers-logos-vector-most-popular-mobile-phones-smartphones-manufacturers-additional-vector-file-available-image54465894",
+    "https://www.persistencemarketresearch.com/market-research/smartphones-market.asp",
+    "https://www.globalgrowthinsights.com/market-reports/smartphones-market-124978"
+  ],
+  "note": "All revenue / market-share / market-size figures are ESTIMATES produced by an LLM from web search snippets and model knowledge; they are approximate and not audited financial data."
+}

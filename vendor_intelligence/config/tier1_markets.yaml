@@ -1,0 +1,54 @@
+# Curated Tier-1 anchors — injected as seeds before Phase 2 discovery.
+# Match is case-insensitive substring on market + query + industry terms.
+
+markets:
+  aluminium_cladding:
+    match_keywords:
+      - aluminium cladding
+      - aluminum cladding
+      - alucobond
+      - acp panel
+      - rainscreen
+      - curtain wall
+      - facade system
+      - façade
+      - composite panel
+      - building envelope
+    geographies:
+      europe:
+        match_keywords:
+          - europe
+          - eu
+          - emea
+          - european
+        tier1:
+          - canonical_name: Alucobond
+            primary_domain: alucobond.com
+            company_function: manufacturer
+            brand: Alucobond
+          - canonical_name: Reynobond
+            primary_domain: reynobond.com
+            company_function: manufacturer
+            brand: Reynobond
+          - canonical_name: ALPOLIC
+            primary_domain: alpolic.com
+            company_function: manufacturer
+            brand: ALPOLIC
+          - canonical_name: Kingspan
+            primary_domain: kingspan.com
+            company_function: manufacturer
+          - canonical_name: Schüco
+            primary_domain: schueco.com
+            company_function: manufacturer
+          - canonical_name: Reynaers Aluminium
+            primary_domain: reynaers.com
+            company_function: manufacturer
+          - canonical_name: Hydro Building Systems
+            primary_domain: hydro.com
+            company_function: manufacturer
+          - canonical_name: Permasteelisa
+            primary_domain: permasteelisa.com
+            company_function: integrator
+          - canonical_name: Aluprof
+            primary_domain: aluprof.eu
+            company_function: manufacturer

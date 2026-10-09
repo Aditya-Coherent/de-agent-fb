@@ -1,0 +1,380 @@
+{
+  "market": "Watches Market",
+  "geography": "global",
+  "total_market_size_estimate_usd_mn": null,
+  "market_size_source": "",
+  "estimated_coverage_pct": 0.0,
+  "target_coverage_pct": 75.0,
+  "coverage_stop_reason": "max_rounds",
+  "coverage_rounds": 3,
+  "n_companies": 98,
+  "n_manufacturers": 82,
+  "n_majors": 37,
+  "n_majors_kept": 37,
+  "runtime_seconds": 644.4,
+  "llm_calls": 247,
+  "time_budget_min": 15.0,
+  "majors": [
+    {
+      "name": "TUDOR Watch",
+      "domain": "tudorwatch.com",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 700.0,
+      "est_market_share_pct": null,
+      "source": "https://www.tudorwatch.com/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Bulova",
+      "domain": "bulova.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 250.0,
+      "est_market_share_pct": null,
+      "source": "https://www.bing.com/aclick?ld=e88Nm1ASJ9VhgVO2Gj1gRnaDVUCUxneTM1Z8o-DqELbwZyNjJSq2cfKq5CTseDowcI3FL4Iaps8S7oSD9J6TbplqHii5QAY1lgDLLf_RjTrPu8f4TvyGfLEY6t9zDzRhV_pIVmnmA0RR8JkKcfDXWBZ_S07JlBynEihb_EsPsFCaJiyDWYt5dhEyQYRgWw0gKjcezUuA&u=aHR0cHMlM2ElMmYlMmZ3d3cuYnVsb3ZhLmNvbSUzZnV0bV9jYW1wYWlnbiUzZCUyNnV0bV9jb250ZW50JTNkJTI2dXRtX2lkJTNkNDg1NDMzMjgwJTI2dXRtX3Rlcm0lM2R3d3cuYnVsb3ZhLmNvbSUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZHNob3BwaW5nZmVlZC1lY29tbSUyNnV0bV9jYW1wYWlnbiUzZEdHTC1CTFYtUE1BWC1OQi1NZW5zJTI2bXNjbGtpZCUzZGNlYTg1Y2M2ZDA2MTE2OWE1NzY4MzYwMDk1ZmYzYzk1JTI2dXRtX3Rlcm0lM2R3d3cuYnVsb3ZhLmNvbSUyNnV0bV9jb250ZW50JTNkTWVucyUyNTIwV2F0Y2hlcw&rlid=cea85cc6d061169a5768360095ff3c95",
+      "kept_in_output": true
+    },
+    {
+      "name": "Corum",
+      "domain": "corum.ch",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 150.0,
+      "est_market_share_pct": null,
+      "source": "https://www.corum.ch/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Gray & Sons",
+      "domain": "grayandsons.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": null,
+      "source": "https://www.bing.com/aclick?ld=e8FJBsvwHyEB4yRvhiNnHedzVUCUzf9WJHd1Ku48gJFbcwmyFweg6wEr1E7ZCNZgo_v5OjFgvBgJ7JPODEDLSyScXc7ZdckRLp7yZIPgtz_StvF5n88oJlYMZ4L_dlMaH0NinZ570rJzeDrYrKcMizaRQ4R7TzsMeDD6lbHsovLhNwrM_eagUwlRXOABm2wc83BWJCHw&u=aHR0cHMlM2ElMmYlMmZ3d3cuZ3JheWFuZHNvbnMuY29tJTJmZmluZS13YXRjaGVzJTJmJTNmdXRtX3NvdXJjZSUzZGJpbmclMjZ1dG1fbWVkaXVtJTNkY3BjJTI2dXRtX2NhbXBhaWduJTNkNTY4ODE0Njc0JTI2dXRtX2tleXdvcmQlM2R3d3cuZ3JheWFuZHNvbnMuY29tJTI2a2V5d29yZCUzZHd3dy5ncmF5YW5kc29ucy5jb20lMjZhZGdyb3VwaWQlM2QxMTc1Mzc5NzU2NDU4OTc5JTI2bXNjbGtpZCUzZDRiMzhhY2RiZDFkOTEyZTFkMzZjYzYxZDk0NDczOTMwJTI2dXRtX3Rlcm0lM2R3d3cuZ3JheWFuZHNvbnMuY29tJTI2dXRtX2NvbnRlbnQlM2RXYXRjaGVz&rlid=4b38acdbd1d912e1d36cc61d94473930",
+      "kept_in_output": true
+    },
+    {
+      "name": "Feldmar Watch Company",
+      "domain": "feldmarwatch.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 30.0,
+      "est_market_share_pct": null,
+      "source": "https://www.hollywoodreporter.com/lists/25-top-watches-hollywood-loves-948877/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Billow Time Watch Co., Ltd",
+      "domain": "billowtimewatch.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 20.0,
+      "est_market_share_pct": null,
+      "source": "https://www.billowtimewatch.com/top-10-watches-companies-in-india-2026/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Beaubleu",
+      "domain": "beaubleu-paris.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 10.0,
+      "est_market_share_pct": null,
+      "source": "https://www.bing.com/aclick?ld=e8DfD-IuLTmyxA1liu4wjDXDVUCUxpaKgWVJwqIthGMFe0OALJdUgVe1AoeslIRWxJBxNayFapmwuuhPVq9zCdhjEj8YLnkjsia5kkPXk2Ebvaor611CkkWB2x5X05zTy9TMwdiPbrttc1E-0J0hUaGhDDbPkblZqqFeMzoEJTiKISUq9PJ3LTfglAaasOBU31n8Bkyg&u=aHR0cHMlM2ElMmYlMmZiZWF1YmxldS1wYXJpcy5jb20lM2Ztc2Nsa2lkJTNkNjZmNzZjMWNmYjUzMWNmMmQyM2QwNmRhYmVjZGVhM2ElMjZ1dG1fc291cmNlJTNkYmluZyUyNnV0bV9tZWRpdW0lM2RjcGMlMjZ1dG1fY2FtcGFpZ24lM2RQTUFYJTI1MjAtJTI1MjBFTiUyNTIwLSUyNTIwTUlEJTI1MjAodGVzdCUyNTIwJWYwJTlmJWE3JWFhKSUyNnV0bV90ZXJtJTNkYmVhdWJsZXUtcGFyaXMuY29tJTI2dXRtX2NvbnRlbnQlM2RHcm91cGUlMjUyMGRlJTI1MjBjb21wb3NhbnRzJWMyJWEwMQ&rlid=66f76c1cfb531cf2d23d06dabecdea3a",
+      "kept_in_output": true
+    },
+    {
+      "name": "Kering",
+      "domain": "kering.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 1500.0,
+      "est_market_share_pct": null,
+      "source": "https://aeroleads.com/list/top-watches-companies-in-france",
+      "kept_in_output": true
+    },
+    {
+      "name": "Chanel",
+      "domain": "chanel.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 800.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Herm\u00e8s",
+      "domain": "hermes.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 600.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Timex Group",
+      "domain": "timex.com",
+      "hq_country": "Netherlands",
+      "est_revenue_usd_mn": 500.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Breitling",
+      "domain": "breitling.com",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 500.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Van Cleef & Arpels",
+      "domain": "vancleefarpels.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 300.0,
+      "est_market_share_pct": null,
+      "source": "https://aeroleads.com/list/top-watches-companies-in-france",
+      "kept_in_output": true
+    },
+    {
+      "name": "Titoni",
+      "domain": "titoni.ch",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 200.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Bell & Ross",
+      "domain": "bellross.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 100.0,
+      "est_market_share_pct": null,
+      "source": "https://whichwatch.org/top-10-french-watch-brands/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Boucheron",
+      "domain": "boucheron.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 100.0,
+      "est_market_share_pct": null,
+      "source": "https://aeroleads.com/list/top-watches-companies-in-france",
+      "kept_in_output": true
+    },
+    {
+      "name": "Yema",
+      "domain": "yema.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": null,
+      "source": "https://www.rankred.com/french-watch-brands/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Time Center",
+      "domain": "timecenter.jo",
+      "hq_country": "Jordan",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": null,
+      "source": "https://timecenter.jo/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Chow Tai Fook Jewellery Group Limited",
+      "domain": "chowtaifook.com",
+      "hq_country": "Hong Kong",
+      "est_revenue_usd_mn": 900.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Lao Feng Xiang Co., Ltd.",
+      "domain": "laofengxiang.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 800.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "China National Watch & Clock Co., Ltd.",
+      "domain": "chinawatchshop.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 500.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Titan Company Limited",
+      "domain": "titancompany.in",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 400.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "KDDL Limited (Ethos)",
+      "domain": "kddl.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 250.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Binda Group",
+      "domain": "bindagroup.com",
+      "hq_country": "Italy",
+      "est_revenue_usd_mn": 200.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Morellato Group",
+      "domain": "morellato.com",
+      "hq_country": "Italy",
+      "est_revenue_usd_mn": 180.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Raymond Weil",
+      "domain": "raymond-weil.com",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 120.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Eberhard & Co.",
+      "domain": "eberhard-co-watches.ch",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 100.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Mondaine Watch Ltd.",
+      "domain": "mondaine.com",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 80.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "St\u00fchrling Original",
+      "domain": "stuhrling.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 70.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Shinola",
+      "domain": "shinola.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 60.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "MVMT",
+      "domain": "mvmt.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Vincero",
+      "domain": "vincero.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 40.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "D1 Milano",
+      "domain": "d1milano.com",
+      "hq_country": "Italy",
+      "est_revenue_usd_mn": 30.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Larsson & Jennings",
+      "domain": "larssonandjennings.com",
+      "hq_country": "United Kingdom",
+      "est_revenue_usd_mn": 25.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Bering",
+      "domain": "beringtime.com",
+      "hq_country": "Denmark",
+      "est_revenue_usd_mn": 20.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Skagen Denmark",
+      "domain": "skagen.com",
+      "hq_country": "Denmark",
+      "est_revenue_usd_mn": 15.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Braun",
+      "domain": "braun.com",
+      "hq_country": "Germany",
+      "est_revenue_usd_mn": 10.0,
+      "est_market_share_pct": null,
+      "source": "model knowledge",
+      "kept_in_output": true
+    }
+  ],
+  "evidence_sources": [
+    "https://companiesmarketcap.com/",
+    "https://www.forbes.com/lists/global2000/",
+    "https://www.statista.com/statistics/1111246/largest-uk-based-companies-revenue/",
+    "https://watchesoff5th.com/pages/biggest-watch-brands-by-sales",
+    "https://expertswatches.com/blogs/blog/top-watch-brands-with-ownership-and-revenue-2025",
+    "https://www.globalgrowthinsights.com/blog/watch-companies-1085",
+    "https://www.zoominfo.com/top-lists/top-manufacturing-watch-companies",
+    "https://www.tipranks.com/",
+    "https://monochrome-watches.com/morgan-stanleys-top-50-watch-brands-for-2024-rolex-still-by-far-the-leader-overall-market-suffered/",
+    "https://monochrome-watches.com/industry-new-morgan-stanley-top-50-watch-brands-for-2025-rolex-still-leading-the-pack-strong-polarization-of-the-market/",
+    "https://www.slashgear.com/2081885/luxury-watch-brands-ranked-market-share-sales/",
+    "https://www.databridgemarketresearch.com/reports/global-watches-market",
+    "https://www.mordorintelligence.com/industry-reports/watch-market",
+    "https://www.gminsights.com/industry-analysis/watch-market",
+    "https://www.grandviewresearch.com/industry-analysis/watches-market",
+    "https://www.thebusinessresearchcompany.com/report/watches-and-clocks-global-market-report",
+    "https://www.globalmarketstatistics.com/market-reports/watch-market-14888",
+    "https://medium.com/@p9276667/global-luxury-watches-market-growth-projections-key-trends-and-future-outlook-73199076762f",
+    "https://www.linkedin.com/posts/elius-simon_rolex-watchmarket-marketshare-activity-7348907409488130048-RR_z",
+    "https://market.aix.kz/?trk=public_post-text",
+    "https://plati.market/",
+    "https://markets.businessinsider.com/",
+    "https://www.g2g.com/",
+    "https://openai.com/",
+    "https://www.shopify.com/"
+  ],
+  "note": "All revenue / market-share / market-size figures are ESTIMATES produced by an LLM from web search snippets and model knowledge; they are approximate and not audited financial data."
+}

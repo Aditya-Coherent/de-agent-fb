@@ -1,0 +1,397 @@
+{
+  "market": "Smartwatches",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T12:19:07+00:00",
+  "1_desk_research": {
+    "global_usd_mn": 42000.0,
+    "anchor_year": 2025,
+    "global_cagr": 0.132,
+    "regional": {
+      "North America": {
+        "value_share": 0.29,
+        "cagr": 0.135
+      },
+      "Latin America": {
+        "value_share": 0.05,
+        "cagr": 0.165
+      },
+      "Europe": {
+        "value_share": 0.24,
+        "cagr": 0.145
+      },
+      "Asia Pacific": {
+        "value_share": 0.34,
+        "cagr": 0.185
+      },
+      "Middle East": {
+        "value_share": 0.05,
+        "cagr": 0.175
+      },
+      "Africa": {
+        "value_share": 0.03,
+        "cagr": 0.195
+      }
+    },
+    "reward": 0.82,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\smartwatches\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 2.9
+  },
+  "log": [
+    "[2026-10-08T10:17:42+00:00] 1 Desk Research: start",
+    "[2026-10-08T10:20:36+00:00] 1 Desk Research: ok in 2.9 min",
+    "[2026-10-08T10:20:36+00:00] 2A Demand: start",
+    "[2026-10-08T10:31:02+00:00] 2A Demand: ok in 10.4 min",
+    "[2026-10-08T10:31:02+00:00] 2B Demand: start",
+    "[2026-10-08T11:55:11+00:00] 2B Demand: ok in 84.2 min",
+    "[2026-10-08T11:55:11+00:00] 3 Supply-Side: start",
+    "[2026-10-08T12:16:03+00:00] 3 Supply-Side: failed in 20.9 min",
+    "[2026-10-08T12:19:07+00:00] 3 Supply-Side: start",
+    "[2026-10-08T12:28:09+00:00] 3 Supply-Side: ok in 9.0 min"
+  ],
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers smartwatches as finished consumer wearable devices that run a general-purpose or wearable operating system (e.g., watchOS, Wear OS, Tizen, RTOS-based smartwatch platforms) and provide on-wrist computing, connectivity, and sensor-based functions such as notifications, fitness/health tracking, and app support. It includes standalone and Bluetooth-tethered smartwatches sold to end users through all channels (direct, e-commerce, retail), but excludes traditional mechanical/quartz watches, basic fitness bands and activity trackers without a smartwatch OS/app ecosystem, smartwatch accessories and replacement straps sold separately, and the separately valued upstream components (displays, SoCs, sensors, batteries) and software/services revenue. Component and software/service demand may still be used as intermediate evidence to derive how many smartwatch units are required, but those components and services are never priced or valued as part of this market.",
+      "geography": [
+        "United States",
+        "China",
+        "India",
+        "United Kingdom",
+        "Germany",
+        "France",
+        "Japan",
+        "South Korea",
+        "Canada",
+        "Australia",
+        "Brazil",
+        "Spain",
+        "Italy",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "smartwatches (units shipped)"
+    },
+    "driver": {
+      "driver_name": "National watch consumption volume (apparent consumption)",
+      "unit": "watches (units)",
+      "final_demand_unit": "watches (units)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 22875.001,
+    "regions_usd_mn": {
+      "North America": 8850.0,
+      "Latin America": 750.0,
+      "Europe": 3075.001,
+      "Asia Pacific": 6450.0,
+      "Rest of World": 3750.0
+    },
+    "countries_usd_mn": {
+      "United States": 8250.0,
+      "China": 0.0,
+      "India": 4500.0,
+      "United Kingdom": 1200.0,
+      "Germany": 0.001,
+      "France": 900.0,
+      "Japan": 1050.0,
+      "South Korea": 450.0,
+      "Canada": 600.0,
+      "Australia": 450.0,
+      "Brazil": 750.0,
+      "Spain": 450.0,
+      "Italy": 525.0,
+      "Rest of World": 3750.0
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Smartwatch with Cellular Connectivity": 7382.2504,
+          "Smartwatch without Cellular Connectivity": 15492.7506
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Fitness & Health Tracking": 11238.7505,
+          "Communication & Notifications": 4926.0002,
+          "Lifestyle & Fashion": 3676.5002,
+          "Safety & Security": 1825.5001,
+          "Other Applications": 1208.25
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 14194.5006,
+          "Offline Retail": 7581.7504,
+          "Direct Sales": 1098.75
+        }
+      },
+      {
+        "dimension": "By Operating System",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "watchOS": 6521.2503,
+          "Wear OS": 5413.5003,
+          "Tizen": 608.25,
+          "RTOS-based": 8640.7503,
+          "Other Operating Systems": 1691.2501
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 26.7,
+      "assumption": 73.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 11/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\smartwatches\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\smartwatches\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\smartwatches",
+    "status": "ok",
+    "minutes": 10.4
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers smartwatches as finished consumer wearable devices that pair with a smartphone or operate standalone and deliver notifications, health/fitness tracking, and app-based functionality on the wrist; it includes both classic (phone-tethered) and standalone/cellular smartwatches across all price bands, display technologies (LCD, OLED/AMOLED), and operating systems (watchOS, Wear OS, Tizen, RTOS-based, etc.). Excluded are traditional mechanical/quartz analog watches, basic fitness bands and activity trackers without app-capable smartwatch functionality, smartwatch accessories and replacement straps sold separately, and the separately valued upstream components (SoCs, displays, sensors, batteries) and downstream software/services revenue (app subscriptions, cellular data plans) that are not the smartwatch device itself. Unit volumes are counted as finished smartwatch devices shipped/sold to end users, not components, packs, or accessory bundles.",
+      "geography": [
+        "United States",
+        "China",
+        "India",
+        "United Kingdom",
+        "Germany",
+        "France",
+        "Japan",
+        "South Korea",
+        "Italy",
+        "Spain",
+        "Canada",
+        "Australia",
+        "Brazil",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "smartwatches (units shipped)"
+    },
+    "use_cases": [
+      "General-purpose consumer smartwatches",
+      "Fitness & outdoor sports smartwatches",
+      "Health-monitoring & medical smartwatches",
+      "Kids' & senior safety smartwatches",
+      "Enterprise & industrial smartwatches"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 26398.7588,
+    "regions_usd_mn": {
+      "North America": 5070.9026,
+      "Latin America": 499.8,
+      "Europe": 2108.7504,
+      "Asia Pacific": 15664.8058,
+      "Rest of World": 3054.5
+    },
+    "countries_usd_mn": {
+      "United States": 4841.0026,
+      "China": 8208.0,
+      "India": 5784.0012,
+      "United Kingdom": 831.9004,
+      "Germany": 66.0,
+      "France": 227.7,
+      "Japan": 784.8,
+      "South Korea": 603.6043,
+      "Italy": 528.05,
+      "Spain": 455.1,
+      "Canada": 229.9,
+      "Australia": 284.4003,
+      "Brazil": 499.8,
+      "Rest of World": 3054.5
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "General-purpose consumer smartwatches": 14930.6502,
+          "Fitness & outdoor sports smartwatches": 2114.7341,
+          "Health-monitoring & medical smartwatches": 8001.25,
+          "Kids' & senior safety smartwatches": 680.4001,
+          "Enterprise & industrial smartwatches": 671.7244
+        }
+      },
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Classic Smartwatches": 14488.3756,
+          "Standalone/Cellular Smartwatches": 6197.398,
+          "Hybrid Smartwatches": 1678.986,
+          "Kids Smartwatches": 4033.9992
+        }
+      },
+      {
+        "dimension": "By Price Band",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Entry-Level (Under $100)": 6545.2084,
+          "Mid-Range ($100-$299)": 10547.6122,
+          "Premium ($300-$599)": 6635.5678,
+          "Luxury ($600 and Above)": 2670.3704
+        }
+      },
+      {
+        "dimension": "By Operating System",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "watchOS": 5832.69,
+          "Wear OS": 4869.8623,
+          "Tizen": 1020.8987,
+          "RTOS-Based": 9645.6318,
+          "Other Proprietary OS": 5029.676
+        }
+      },
+      {
+        "dimension": "By Display Technology",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "LCD": 6550.8055,
+          "OLED/AMOLED": 17220.1495,
+          "E-Ink": 1313.9019,
+          "Other Display Technologies": 1313.9019
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 1.3,
+      "derived": 1.3,
+      "source_found_unverified": 28.0,
+      "assumption": 69.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 47/70 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] low_plausibility: Validation plausibility (57%) is below the usual bar.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'General-purpose consumer smartwatches'@China ($7,560.0M) is 20x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Kids' & senior safety smartwatches'@China ($504.0M) is 27x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[warning] low_observed_share: Only 1% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 4.32x or more -- flagged for review, the original value/source/note are unchanged: ['General-purpose consumer smartwatches']",
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Fitness & outdoor sports smartwatches' driver total\"]",
+      "[warning] country_total_mismatch: Germany: use cases are 110,294.1x the 2A country total (7 watches (units)) -- too far apart to be the same quantity (likely a unit error in one of them); not scaled",
+      "[warning] use_cases_scaled_down_to_country_total: South Korea: use cases added up to 3.8x the 2A country total (3,000,000 watches (units)); scaled down to match it"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\smartwatches\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\smartwatches\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\smartwatches",
+    "status": "ok",
+    "minutes": 84.2
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 65359.09469910082,
+    "evidence_method_global_usd_mn": 7500.0,
+    "top_companies_global_share": [
+      {
+        "company": "Apple Inc.",
+        "share": 0.5475
+      },
+      {
+        "company": "Huawei Technologies",
+        "share": 0.023
+      },
+      {
+        "company": "Xiaomi Corporation",
+        "share": 0.023
+      },
+      {
+        "company": "Fitbit",
+        "share": 0.0126
+      },
+      {
+        "company": "Alphabet Inc.",
+        "share": 0.0092
+      },
+      {
+        "company": "Flex Ltd.",
+        "share": 0.0077
+      },
+      {
+        "company": "Huaqin Technology",
+        "share": 0.0061
+      },
+      {
+        "company": "Celestica Inc.",
+        "share": 0.0057
+      },
+      {
+        "company": "Pegatron Corporation",
+        "share": 0.0046
+      },
+      {
+        "company": "Compal Electronics, Inc.",
+        "share": 0.0046
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "India",
+      "Japan",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "South Korea",
+      "Canada",
+      "Australia",
+      "Brazil",
+      "Mexico",
+      "Spain",
+      "Italy",
+      "Rest of Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Middle East & Africa"
+    ],
+    "flags": [
+      "high_gross_up: 6 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (Rest of Latin America 2.9x, Brazil 2.5x, Mexico 2.5x, Middle East & Africa 2.5x, India 2.2x) -- most of those countries' totals is an LLM coverage guess, not company revenue.",
+      "disagrees_with_desk_research: Company-based total differs from the Desk Research total by 56% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way.",
+      "low_extraction_yield: Only 4 of 14 relevant snippets yielded a real figure -- the regex extractor likely missed figures phrased differently than expected (confirmed on 'Global Smartphone Market': 3/15 extracted, total came out 5-7x too low vs published estimates). Treat this total with real caution.",
+      "small_sample: Only 4 real figures went into the median -- a small sample can be skewed by a single outlier or mis-scoped report.",
+      "disagrees_with_desk_research: Evidence-based total differs from the Desk Research total by 82% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way."
+    ],
+    "report_json": "approaches\\examples\\smartwatches\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report: smartwatches_market_global.csv",
+    "vendor_intel_coverage_pct": 76.25,
+    "status": "ok",
+    "minutes": 9.0
+  },
+  "finished_at": "2026-10-08T12:28:09+00:00"
+}

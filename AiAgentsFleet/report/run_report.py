@@ -106,11 +106,13 @@ def main() -> int:
         return 1
 
     steps = [
+        # AI-written prose, number-guarded; cached in prose.json until the numbers
+        # change. Runs before the charts: it also names each segment dimension
+        # ("Shrimp Species", "Application Method"), which the chart labels use.
+        [sys.executable, str(REPORT_DIR / "prose_writer.py"), "--market-slug", slug],
         [sys.executable, str(REPORT_DIR / "make_charts.py"), "--market-slug", slug],
         # The .docx is cloned from vitamin_c_market_whitepaper_v2.docx itself
-        # (same layout and styling, without its disclaimer page).
-        # AI-written prose, number-guarded; cached in prose.json until the numbers change.
-        [sys.executable, str(REPORT_DIR / "prose_writer.py"), "--market-slug", slug],
+        # (same layout and styling, without its disclaimer page). Prints a QA summary.
         [sys.executable, str(REPORT_DIR / "build_from_template.py"), "--market-slug", slug],
     ]
     for step in steps:

@@ -270,7 +270,7 @@
     <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
     <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
     <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
-    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ A = assumption (no source found)</span>
     <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
   </div>
 
@@ -812,7 +812,7 @@ function srcBadge(source) {
     db:{icon:"🗄️", label:"Database", cls:"src-db"},
     code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
     derived:{icon:"📐", label:"Derived", cls:"src-derived"},
-    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    assumption:{icon:"⚠️", label:"A", cls:"src-assumption"},
     human:{icon:"👤", label:"Human", cls:"src-human"},
   };
   const m = map[source] || map.code;
@@ -926,7 +926,7 @@ function provSummary() {
   const s = steps();
   const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
   s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
-  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"A", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
   let html = '<div class="prov-summary">';
   Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
   html += '</div>';

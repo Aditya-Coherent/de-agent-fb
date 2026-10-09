@@ -131,6 +131,13 @@ class UsageDemandState(TypedDict, total=False):
 
     validation: dict[str, Any]
     quality_flags: list[dict[str, str]]
+    # Official statistics per bucket x country (2A, e.g. FAOSTAT) -- used in
+    # place of the web search for the countries they cover.
+    official_driver_facts: dict[str, dict[str, dict[str, Any]]]
+    # 2B only: each country's total annual demand from the market's 2A run,
+    # and the flags raised when the use cases didn't fit inside it (anchor.py).
+    country_anchor: dict[str, dict[str, Any]]
+    country_anchor_flags: list[dict[str, str]]
 
 
 def build_sizing_graph():
@@ -184,6 +191,7 @@ def sizing_init_state(
         "coverage_pct": approved_taxonomy.get("coverage_pct"),
         "overlap_flags": approved_taxonomy.get("overlap_flags", []),
         "drivers": approved_taxonomy["drivers"],
+        "official_driver_facts": approved_taxonomy.get("official_facts") or {},
         "emitter": emitter,
     }
 
@@ -230,6 +238,10 @@ def run_sizing_phase(
 
     init = sizing_init_state(approved_setup, approved_taxonomy, config, llm, emitter=emitter)
     init["progress"] = progress
+    if approved_taxonomy.get("approach") != "2A":
+        from .anchor import load_2a_country_anchor
+
+        init["country_anchor"] = load_2a_country_anchor(market_name, root) or {}
 
     final: UsageDemandState = {}
     try:
@@ -288,7 +300,7 @@ def run_sizing_phase(
             emitter.emit("sizing", "stage_end", status="failed", error=str(err))
         raise err
 
-    flags = compute_provenance_quality_flags(final) + gate_soft_flags
+    flags = compute_provenance_quality_flags(final) + gate_soft_flags + list(final.get("country_anchor_flags") or [])
     if flags:
         codes = ", ".join(f.get("code", "") for f in flags)
         final.setdefault("log", []).append(f"Quality check flagged this run for review: {codes}")

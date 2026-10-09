@@ -1,0 +1,22 @@
+# Local Vendor Intelligence SearXNG — Bing only (Google/DDG engines CAPTCHA-block on many IPs)
+use_default_settings:
+  engines:
+    keep_only:
+      - bing
+
+server:
+  secret_key: "vendor-intel-local-change-me"
+  limiter: false
+  image_proxy: false
+  public_instance: false
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+    - rss
+
+engines:
+  - name: bing
+    disabled: false

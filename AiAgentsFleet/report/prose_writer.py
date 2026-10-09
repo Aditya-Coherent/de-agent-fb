@@ -39,7 +39,10 @@ from me_engine.generation.config import GenConfig  # noqa: E402
 from me_engine.generation.llm import GenLLM  # noqa: E402
 from me_engine.generation.web_evidence import gather  # noqa: E402
 
+from AiAgentsFleet.consistency import concentration_label  # noqa: E402
 from narrative import build_narrative  # noqa: E402
+import labels as dim_labels  # noqa: E402
+from labels import similar_heading  # noqa: E402
 
 TEMPLATE = REPO / "vitamin_c_market_whitepaper_v2.docx"
 OUTPUT_ROOT = FLEET_DIR / "output"
@@ -66,13 +69,13 @@ SECTIONS: dict[int, tuple[list[str], list[str], str]] = {
         '"threat_of_substitutes": <...>}}'),
     5: (["segmentation_grade_form", "market_size"],
         ["{market} product types segmentation", "{market} product forms formats"],
-        '{"grades": <paragraph on the product types/grades>, "forms": <paragraph on the physical forms>}'),
+        '{"grades": <paragraph on the segments in by_grade_or_type>, "forms": <paragraph on the segments in by_form>}'),
     6: (["end_use_industry", "market_size"],
         ["{market} applications end-use demand"],
         '{"p1": <largest applications paragraph>, "p2": <fastest-growing application paragraph>}'),
     7: (["sub_segments", "market_size"],
         ["{market} fastest growing niche segments"],
-        '{"p1": <intro paragraph>, "bullets": [{"lead": <application name + colon>, "text": <1-2 sentences>}, '
+        '{"p1": <intro paragraph on where growth concentrates among the sub-segments>, "bullets": [{"lead": <group name from by_top_application + colon>, "text": <1-2 sentences>}, '
         'one per application group]}'),
     8: (["derivatives_pricing", "market_size"],
         ["{market} pricing price trends", "{market} premium products value chain"],
@@ -82,10 +85,12 @@ SECTIONS: dict[int, tuple[list[str], list[str], str]] = {
         ["{market} North America Europe market", "{market} Asia Pacific Latin America Middle East Africa market"],
         '{"callout": <short punchy regional tagline>, "p1": <regional divide paragraph>, "regions": '
         '{"<region name>": {"descriptor": <3-6 word title e.g. A Mature Consumption-Driven Market>, '
-        '"para": <2-3 sentences>, "bullets": [<2-4 key market dynamics bullets>]}, ... for each region in FACTS}}'),
+        '"para": <2-3 sentences>, "bullets": [<2-4 bullets about THIS region only: one on its leading '
+        'application_mix_pct item, one on its leading countries, plus drivers from EVIDENCE>]}, ... for each region in FACTS}}'),
     10: (["competitive_landscape", "market_size"],
          ["{market} leading companies", "{market} acquisitions partnerships product launches"],
-         '{"p1": <concentration + leaders paragraph>, "companies": {"<company name>": <1-2 sentence positioning>, '
+         '{"p1": <concentration + leaders paragraph>, "companies": {"<company name>": <1-2 sentence positioning, '
+         'without restating its share>, '
          '... for the top 5 companies in FACTS}, "p2": <closing paragraph on competitive dynamics>}'),
     11: (["regulation", "market_size"],
          ["{market} regulations approval requirements", "{market} regulatory framework compliance"],
@@ -101,7 +106,8 @@ SECTIONS: dict[int, tuple[list[str], list[str], str]] = {
     14: (["scenarios", "market_size", "drivers_restraints"],
          ["{market} outlook risks uncertainty"],
          '{"p1": <scenario framing paragraph>, "bear": <1-2 sentence bear rationale>, "base": <1-2 sentence base '
-         'rationale>, "bull": <1-2 sentence bull rationale>}'),
+         'rationale>, "bull": <1-2 sentence bull rationale> -- each rationale only, without the case name, value '
+         'or CAGR (the heading shows them)}'),
     15: (["market_size", "regional", "end_use_industry", "competitive_landscape", "drivers_restraints"],
          [],
          '{"p1": <thesis intro paragraph>, "thesis": [{"lead": <short bold heading + colon>, "text": '
@@ -122,8 +128,31 @@ _SYSTEM = (
     "6. Be selective like the STYLE EXAMPLE: use only the 2-4 most telling numbers per paragraph (never list "
     "every item), keep paragraphs to 60-110 words and bullets to 1-2 sentences, and spend the words on "
     "insight -- why it matters, what drives it, named real-world specifics from EVIDENCE.\n"
+    "7. Stay on THIS section's topic. Sections 1, 2, 14 and 15 own the headline market size, forecast and "
+    "CAGR; in every other section do not restate them -- open with the section's own subject.\n"
+    "8. Describe segments with the names in headline.dimension_labels (e.g. call them 'product types' or "
+    "'species' as labelled there), never as 'grades', 'forms' or 'industries' unless that is the label.\n"
+    "9. Describe the competitive structure with exactly the term in headline.derived.competition_structure.\n"
+    "10. Make a comparative claim (largest, fastest, highest share globally) only when FACTS show it. Never "
+    "attribute a global figure (e.g. the compliance-cost range) to a single region.\n"
+    "11. A bullet's text must not repeat its own heading/lead (name, rating, share, value or CAGR already "
+    "shown there). Headings must not reuse or paraphrase any in ALREADY USED HEADINGS.\n"
     "Return ONLY valid JSON matching SCHEMA."
 )
+
+_LABEL_SYSTEM = (
+    "You name the dimension that each list of market segments measures. For each list return a label of 1-3 "
+    "words in Title Case that says what the items ARE -- e.g. 'Product Type', 'Shrimp Species', 'Deployment "
+    "Model', 'Application Method', 'Crop Type', 'End-Use Industry', 'Feed Type', 'Farming System'. Use 'Grade' "
+    "or 'Form' only if the items really are grades or physical forms. Do not include the market name.\n"
+    'Return ONLY JSON: {"grade": {"singular": ..., "plural": ...}, "form": {...}, "application": {...}, '
+    '"sub_segment_group": {...}} with a key for each list given.'
+)
+
+# keys whose strings are headings (checked against headings used earlier in the report)
+_HEAD_KEYS = {"head", "lead", "callout", "descriptor"}
+_CONC_RE = re.compile(r"\b(highly concentrated|moderately concentrated|fragmented)\b", re.I)
+_COMPETITION_RE = re.compile(r"compet|player|compan|landscape|leader|rival|share", re.I)
 
 _NUM_RE = re.compile(r"(?<![A-Za-z])\d[\d,]*(?:\.\d+)?")
 
@@ -177,8 +206,37 @@ class NumberGuard:
         return all(self.ok_number(x, d) for x, d in _numbers_in(text))
 
 
-def _clean(obj, guard: NumberGuard, dropped: list[str]):
-    """Recursively keep only strings that pass the number guard."""
+class TextChecks:
+    """Everything a generated string must pass besides the number guard:
+    it may not restate the headline size/forecast outside the sections that
+    own it, may not contradict the competition-structure label, and a
+    heading may not repeat one already used earlier in the report."""
+
+    def __init__(self, section: int, n: dict, conc: str, used_heads: list[str]):
+        self.section = section
+        self.market = n["market"]
+        self.conc = conc
+        self.used_heads = used_heads
+        self.fc = n["fc_val_fmt"].replace("USD ", "")
+        self.base = n["base_val_fmt"].replace("USD ", "")
+        self.cagr = f"{n['cagr']:.1f}%"
+
+    def problem(self, text: str, key: str | None) -> str | None:
+        low = text.lower()
+        if self.section not in (1, 2, 14, 15) and (
+                self.fc in low or (self.base in low and self.cagr in low)):
+            return "restates headline market size"
+        if _COMPETITION_RE.search(text):
+            for m in _CONC_RE.finditer(text):
+                if m.group(1).lower() != self.conc:
+                    return f"says '{m.group(1)}' but competition is {self.conc}"
+        if key in _HEAD_KEYS and any(similar_heading(text, h, self.market) for h in self.used_heads):
+            return "repeats an earlier heading"
+        return None
+
+
+def _clean(obj, guard: NumberGuard, dropped: list[str], checks: TextChecks | None = None, key: str | None = None):
+    """Recursively keep only strings that pass the number guard and checks."""
     if isinstance(obj, str):
         txt = obj.strip()
         if not txt or "vitamin c" in txt.lower():
@@ -187,12 +245,16 @@ def _clean(obj, guard: NumberGuard, dropped: list[str]):
         if not guard.ok(txt):
             dropped.append(txt[:80])
             return None
+        why = checks.problem(txt, key) if checks else None
+        if why:
+            dropped.append(f"[{why}] {txt[:80]}")
+            return None
         return txt
     if isinstance(obj, list):
-        out = [_clean(v, guard, dropped) for v in obj]
+        out = [_clean(v, guard, dropped, checks, key) for v in obj]
         return [v for v in out if v not in (None, {}, [])]
     if isinstance(obj, dict):
-        out = {k: _clean(v, guard, dropped) for k, v in obj.items()}
+        out = {k: _clean(v, guard, dropped, checks, k) for k, v in obj.items()}
         # a {"head"/"lead": ..., "text": ...} pair is only usable whole
         if ({"head", "text"} <= obj.keys() or {"lead", "text"} <= obj.keys()) and None in out.values():
             return None
@@ -233,7 +295,7 @@ def _round(obj):
     return obj
 
 
-def _headline(n: dict) -> dict:
+def _headline(n: dict, labels: dict) -> dict:
     f = n["fields"]
     regions = (f.get("regional") or {}).get("regions") or {}
     comps = (f.get("competitive_landscape") or {}).get("companies") or []
@@ -245,6 +307,7 @@ def _headline(n: dict) -> dict:
         "top3_company_share_pct": round(sum(c.get("share_pct", 0) for c in comps[:3]), 1),
         "named_company_share_pct": round(sum(c.get("share_pct", 0) for c in comps), 1),
         "named_company_count": len(comps),
+        "competition_structure": concentration_label(sum(c.get("share_pct", 0) for c in comps[:3])),
         "largest_region": n["leader_region"][0], "fastest_region": n["fastest_region"][0],
         "largest_application": apps[0]["name"] if apps else None,
         "fastest_application": n["fastest_app"].get("name"),
@@ -257,6 +320,13 @@ def _headline(n: dict) -> dict:
     }
     return {
         "derived": derived,
+        "dimension_labels": {
+            "segmentation_grade_form.by_grade_or_type": labels["grade"]["plural"],
+            "segmentation_grade_form.by_form": labels["form"]["plural"],
+            "end_use_industry.applications": labels["application"]["plural"],
+            "sub_segments.by_top_application": labels["sub_segment_group"]["plural"],
+            "regional.regions.*.application_mix_pct": labels["region_mix"]["plural"],
+        },
         "market": n["market"], "base_year": n["base_year"], "forecast_year": n["forecast_year"],
         "base_value": n["base_val_fmt"], "forecast_value": n["fc_val_fmt"],
         "incremental_value": n["incremental_fmt"], "cagr_pct": round(n["cagr"], 1),
@@ -264,8 +334,49 @@ def _headline(n: dict) -> dict:
     }
 
 
+# Bump when the prompt rules or text checks change, so cached prose.json from
+# an older version is rewritten instead of re-used (build_from_template.py
+# ignores prose.json from another version).
+PROSE_VERSION = 2
+
+
 def fields_hash(fields: dict) -> str:
     return hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def is_current(prose: dict, fields: dict) -> bool:
+    return prose.get("fields_hash") == fields_hash(fields) and prose.get("version") == PROSE_VERSION
+
+
+def dimension_labels(llm: GenLLM, market: str, fields: dict) -> dict:
+    """One LLM call naming what each segment list measures (see labels.py)."""
+    names = {k: v for k, v in dim_labels.segment_names(fields).items() if v}
+    if not names:
+        return {}
+    user = f"MARKET: {market}\nLISTS:\n{json.dumps(names, ensure_ascii=False, indent=1)}"
+    try:
+        raw = llm.complete_json(_LABEL_SYSTEM, user) or {}
+    except Exception as exc:  # noqa: BLE001
+        print(f"  [labels] LLM failed: {exc}")
+        return {}
+    return {k: v for k, v in raw.items() if k in dim_labels.DIMENSIONS and dim_labels._valid(v)}
+
+
+def _headings(section: dict) -> list[str]:
+    """Heading-like strings of one generated section (finding heads, thesis
+    leads, callouts, region descriptors)."""
+    out = []
+    def walk(obj, key=None):
+        if isinstance(obj, str) and key in _HEAD_KEYS:
+            out.append(obj)
+        elif isinstance(obj, dict):
+            for k, v in obj.items():
+                walk(v, k)
+        elif isinstance(obj, list):
+            for v in obj:
+                walk(v, key)
+    walk(section)
+    return out
 
 
 def write(slug: str, force: bool = False) -> Path:
@@ -275,7 +386,7 @@ def write(slug: str, force: bool = False) -> Path:
     h = fields_hash(data["fields"])
     if out_path.exists() and not force:
         old = json.loads(out_path.read_text(encoding="utf-8"))
-        if old.get("fields_hash") == h:
+        if is_current(old, data["fields"]):
             print(f"prose.json up to date for {slug}")
             return out_path
 
@@ -286,9 +397,17 @@ def write(slug: str, force: bool = False) -> Path:
     llm = GenLLM(GenConfig.load(REPO), cache_path=REPO / "output" / ".gen_cache.db")
     scope = data.get("definition_inclusion_exclusion") or data.get("market_definition") or {}
 
-    result = {"market_name": market, "fields_hash": h, "sections": {}, "dropped": {}}
+    raw_labels = dimension_labels(llm, market, f)
+    labels = dim_labels.resolve(f, raw_labels, market)
+    print(f"  [labels] " + ", ".join(f"{d}={labels[d]['plural']}" for d in (*dim_labels.DIMENSIONS, "region_mix")))
+    comps = (f.get("competitive_landscape") or {}).get("companies") or []
+    conc = concentration_label(sum(c.get("share_pct", 0) for c in comps[:3]))
+
+    result = {"market_name": market, "fields_hash": h, "version": PROSE_VERSION,
+              "labels": raw_labels, "sections": {}, "dropped": {}}
+    used_heads: list[str] = []
     for num, (keys, queries, schema) in SECTIONS.items():
-        facts = {"headline": _headline(n), **{k: _round(f.get(k, {})) for k in keys}}
+        facts = {"headline": _headline(n, labels), **{k: _round(f.get(k, {})) for k in keys}}
         if num == 9:
             facts["regions_in_report"] = [r for r in REGIONS if r in (f.get("regional", {}).get("regions") or {})]
         if num == 10:
@@ -304,6 +423,8 @@ def write(slug: str, force: bool = False) -> Path:
             f"FACTS (the only allowed source of numbers):\n{json.dumps(facts, ensure_ascii=False)}\n\n"
             f"EVIDENCE (web snippets, for qualitative specifics):\n"
             + ("\n".join(f"- {e}" for e in evidence) or "(none)")
+            + "\n\nALREADY USED HEADINGS (earlier sections -- do not reuse or paraphrase):\n"
+            + ("\n".join(f"- {x}" for x in used_heads) or "(none)")
             + f"\n\nSTYLE EXAMPLE (tone/length only -- do not reuse its facts):\n{styles.get(num, '')}\n\n"
             f"SCHEMA:\n{schema}"
         )
@@ -314,12 +435,13 @@ def write(slug: str, force: bool = False) -> Path:
             continue
         guard = NumberGuard(facts, evidence)
         dropped: list[str] = []
-        clean = _clean(raw, guard, dropped) or {}
+        clean = _clean(raw, guard, dropped, TextChecks(num, n, conc, used_heads)) or {}
         result["sections"][str(num)] = clean
+        used_heads += _headings(clean)
         if dropped:
             result["dropped"][str(num)] = dropped
         print(f"  [sec {num}] {len(evidence)} snippets; kept {sum(1 for _ in _iter_strings(clean))} text blocks"
-              + (f", dropped {len(dropped)} (unverified numbers)" if dropped else ""))
+              + (f", dropped {len(dropped)} (failed number/consistency checks)" if dropped else ""))
 
     out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     return out_path

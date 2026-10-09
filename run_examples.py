@@ -218,8 +218,10 @@ def run_2b(market: str, out_dir: Path, cfg: Any) -> dict[str, Any]:
 
 def run_supply(market: str, out_dir: Path, desk_value: float | None) -> dict[str, Any]:
     report_path = ROOT / "output" / "supply_side" / f"{_slug(market)}-examples.json"
+    # Company list from vendor intelligence (existing report, or a fresh run of
+    # vendor_intelligence/); quick LLM discovery only if that fails.
     cmd = [sys.executable, "compare_demand_supply.py", "--market", market, "--method", "both",
-           "--discover", "--save-report", str(report_path)]
+           "--vendor-intel", "--save-report", str(report_path)]
     if desk_value:
         cmd += ["--desk-research-value", str(desk_value)]
     proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=3600)
@@ -244,6 +246,8 @@ def run_supply(market: str, out_dir: Path, desk_value: float | None) -> dict[str
         "flags": [f"{f.get('code')}: {f.get('message')}" for f in
                   (company.get("quality_flags") or []) + (evidence.get("quality_flags") or [])],
         "report_json": _copy(report_path, out_dir, "3_supply_side.json"),
+        "company_list_source": rep.get("company_list_source"),
+        "vendor_intel_coverage_pct": (rep.get("vendor_intel_coverage") or {}).get("estimated_coverage_pct"),
     }
 
 

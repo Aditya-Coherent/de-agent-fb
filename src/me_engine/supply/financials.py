@@ -32,6 +32,19 @@ from .companies import name_similarity
 # those then got capped/estimated as if they were olive-oil/glove makers.
 _MIN_NAME_SIMILARITY = 0.6
 
+# Latest fiscal year whose revenue may be used. Supply-Side sizes the base
+# year, so a 2026 figure (or a trailing-12-month total running into 2026)
+# must never be used.
+MAX_REVENUE_YEAR = int(os.environ.get("DEAGENT_BASE_YEAR", "2025"))
+
+
+def _year_of(value) -> int | None:
+    """First 4-digit year in a date-like value (int, '2025-12-31', Timestamp)."""
+    import re
+
+    m = re.search(r"(19|20)\d{2}", str(value))
+    return int(m.group(0)) if m else None
+
 # Fallback USD-per-unit rates (approximate, 2025-26 levels) for when the live
 # yfinance FX quote is unavailable. A rough rate is fine here: it only feeds
 # a revenue CAP and the LLM's grounding text, and being off by a few percent
@@ -57,6 +70,7 @@ class CompanyFinancials:
     region_segments: dict | None = None    # {"date": year, "segments": [{"label": region, "value": revenue, "value_usd_mn": ...}, ...]}
     business_segments: dict | None = None  # same shape, by product/business line
     usd_rate: float | None = None          # USD per 1 unit of `currency`; None = unknown currency, do not cap
+    revenue_year: int | None = None        # fiscal year of `total_revenue` (never after MAX_REVENUE_YEAR)
 
     @property
     def total_revenue_usd_mn(self) -> float | None:
@@ -175,6 +189,41 @@ def _insightsentry_fundamentals(code: str) -> dict | None:
         return None
 
 
+def _latest_allowed(history: list | None) -> dict | None:
+    """Most recent segment block dated no later than MAX_REVENUE_YEAR."""
+    for entry in history or []:
+        year = _year_of((entry or {}).get("date"))
+        if year is not None and year <= MAX_REVENUE_YEAR:
+            return entry
+    return None
+
+
+def _annual_revenue(ticker) -> tuple[float, int] | None:
+    """(Total Revenue, fiscal year) from the latest ANNUAL income statement
+    whose fiscal year ends no later than MAX_REVENUE_YEAR. yfinance's
+    info["totalRevenue"] is trailing-12-months, which by now runs into 2026,
+    so it is not used."""
+    try:
+        stmt = ticker.income_stmt
+    except Exception:  # noqa: BLE001
+        return None
+    if stmt is None or getattr(stmt, "empty", True) or "Total Revenue" not in stmt.index:
+        return None
+    row = stmt.loc["Total Revenue"]
+    best = None
+    for col, value in row.items():
+        year = _year_of(col)
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            continue
+        if year is None or year > MAX_REVENUE_YEAR or value != value or value <= 0:
+            continue
+        if best is None or year > best[1]:
+            best = (value, year)
+    return best
+
+
 def _fetch_segments(matched_name: str) -> tuple[dict | None, dict | None]:
     """Real geographic + business-line revenue segments, via InsightSentry --
     only called after yfinance already confirmed the company is publicly
@@ -193,8 +242,8 @@ def _fetch_segments(matched_name: str) -> tuple[dict | None, dict | None]:
         items = {i.get("id"): i for i in (data.get("data") or [])}
         region_h = (items.get("revenue_seg_by_region_h") or {}).get("value")
         business_h = (items.get("revenue_seg_by_business_h") or {}).get("value")
-        region = region_h[0] if region_h else None
-        business = business_h[0] if business_h else None
+        region = _latest_allowed(region_h)
+        business = _latest_allowed(business_h)
         if region or business:
             return region, business
     return None, None
@@ -219,12 +268,14 @@ def fetch_company_revenue(company_name: str) -> CompanyFinancials | None:
     import yfinance as yf
 
     try:
-        info = yf.Ticker(ticker).info
+        tk = yf.Ticker(ticker)
+        info = tk.info
     except Exception:  # noqa: BLE001
         return None
-    revenue = info.get("totalRevenue")
-    if not revenue:
+    annual = _annual_revenue(tk)
+    if not annual:
         return None
+    revenue, revenue_year = annual
 
     matched_name = match.get("longname") or match.get("shortname") or company_name
     region_segments, business_segments = _fetch_segments(matched_name)
@@ -241,4 +292,5 @@ def fetch_company_revenue(company_name: str) -> CompanyFinancials | None:
         region_segments=_to_usd_segments(region_segments, rate),
         business_segments=_to_usd_segments(business_segments, rate),
         usd_rate=rate,
+        revenue_year=revenue_year,
     )

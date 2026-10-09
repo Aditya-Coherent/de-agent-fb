@@ -1,0 +1,200 @@
+{
+  "market": "Tablets Market",
+  "geography": "global",
+  "total_market_size_estimate_usd_mn": null,
+  "market_size_source": "",
+  "estimated_coverage_pct": 37.2,
+  "target_coverage_pct": 75.0,
+  "coverage_stop_reason": "time_budget",
+  "coverage_rounds": 1,
+  "n_companies": 103,
+  "n_manufacturers": 69,
+  "n_majors": 17,
+  "n_majors_kept": 16,
+  "runtime_seconds": 710.1,
+  "llm_calls": 238,
+  "time_budget_min": 15.0,
+  "majors": [
+    {
+      "name": "Amazon.com, Inc.",
+      "domain": "amazon.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 4500.0,
+      "est_market_share_pct": 3.7,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Microsoft Corporation",
+      "domain": "microsoft.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 3500.0,
+      "est_market_share_pct": 2.9,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "HMD Global",
+      "domain": "hmdglobal.com",
+      "hq_country": "Finland",
+      "est_revenue_usd_mn": 200.0,
+      "est_market_share_pct": 0.2,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Fujitsu",
+      "domain": "fujitsu.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 200.0,
+      "est_market_share_pct": 0.2,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Kobo",
+      "domain": "kobo.com",
+      "hq_country": "Canada",
+      "est_revenue_usd_mn": 100.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "Micromax Informatics",
+      "domain": "micromaxinfo.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 80.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Onyx International",
+      "domain": "onyx-international.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 80.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "iBall",
+      "domain": "iball.co.in",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 60.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Alldocube",
+      "domain": "alldocube.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "PocketBook",
+      "domain": "pocketbook-int.com",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Vaio",
+      "domain": "vaio.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Teclast",
+      "domain": "teclast.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 40.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Tolino",
+      "domain": "tolino.com",
+      "hq_country": "Germany",
+      "est_revenue_usd_mn": 40.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Onda",
+      "domain": "onda.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 30.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "reMarkable",
+      "domain": "remarkable.com",
+      "hq_country": "Norway",
+      "est_revenue_usd_mn": 30.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Prestigio",
+      "domain": "prestigio.com",
+      "hq_country": "Cyprus",
+      "est_revenue_usd_mn": 20.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Penta",
+      "domain": "penta.com",
+      "hq_country": "India",
+      "est_revenue_usd_mn": 15.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    }
+  ],
+  "evidence_sources": [
+    "https://companiesmarketcap.com/",
+    "https://www.tiktok.com/@tombalitcho/video/7428311117836913952",
+    "https://www.cognitivemarketresearch.com/azathioprine-tablets-market-report",
+    "https://florentine-log-723.notion.site/Are-Evolving-Consumer-Preferences-Reshaping-the-Tablets-Market-Landscape-30c881299cfa8001a199cf506dade56e",
+    "https://www.giiresearch.com/report/imarc2008962-dishwasher-tablets-market-report-by-product-type.html",
+    "https://www.industryresearch.co/market-reports/digital-writing-and-graphics-tablets-market-308129",
+    "https://www.coherentmarketinsights.com/industry-reports/north-america-and-europe-fast-melt-tablets-market",
+    "https://www.waysion.com/blog/top-10-best-rugged-tablet-manufacturers-supplier/",
+    "https://digitalmarketingdeal.com/blog/tablet-manufacturers-in-india/",
+    "https://www.thirdpartymanufacturers.in/category/tablets-manufacturers",
+    "https://www.tradeindia.com/manufacturers/alprazolam-tablets.html",
+    "https://www.made-in-china.com/manufacturers/tablets.html",
+    "https://itsdentalcare.com/top-denture-cleaning-tablets-manufacturers/",
+    "https://www.icapsulepack.com/top-10-worldwide-effervescent-tablet-manufacturers/",
+    "https://nimblesbiotech.in/top-pharma-tablets-manufacturers-in-india/",
+    "https://www.neuroconinc.com/bupropion-tablets-manufacturers-in-india/",
+    "https://www.intelmarketresearch.com/danggui-longhui-tablets-market-59036",
+    "https://www.htfmarketintelligence.com/report/global-gengnian-an-tablets-market",
+    "https://www.researchandmarkets.com/reports/5608295/lemon-flavored-tablets-market-size-share-and",
+    "https://www.wiseguyreports.com/reports/sulfaguanidine-tablets-market",
+    "https://www.precisionreports.co/global-gesture-recognition-for-tablets-market-24014432",
+    "https://www.verifiedmarketreports.com/product/freeze-dried-orally-disintegrating-tablets-market/",
+    "https://www.businessresearchinsights.com/market-reports/toothpaste-tablets-market-120835",
+    "https://dataintelo.com/report/humidifier-cleaning-tablets-market",
+    "https://comunidad.espoesia.com/ghbvnm-fd/tablets-market-growth-at-a-rate-of-17-76-in-the-forecast-period-3/"
+  ],
+  "note": "All revenue / market-share / market-size figures are ESTIMATES produced by an LLM from web search snippets and model knowledge; they are approximate and not audited financial data."
+}

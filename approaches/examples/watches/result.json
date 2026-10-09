@@ -1,0 +1,393 @@
+{
+  "market": "Watches",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-07T12:15:42+00:00",
+  "1_desk_research": {
+    "global_usd_mn": 69100.0,
+    "anchor_year": 2025,
+    "global_cagr": 0.043,
+    "regional": {
+      "North America": {
+        "value_share": 0.26,
+        "cagr": 0.042
+      },
+      "Latin America": {
+        "value_share": 0.06,
+        "cagr": 0.045
+      },
+      "Europe": {
+        "value_share": 0.27,
+        "cagr": 0.04
+      },
+      "Asia Pacific": {
+        "value_share": 0.38,
+        "cagr": 0.0622
+      },
+      "Middle East": {
+        "value_share": 0.02,
+        "cagr": 0.05
+      },
+      "Africa": {
+        "value_share": 0.01,
+        "cagr": 0.05
+      }
+    },
+    "reward": 0.805,
+    "iterations": 4,
+    "input_sheet": "approaches\\examples\\watches\\1_desk_research_input_sheet.xlsx",
+    "status": "ok",
+    "minutes": 1.4
+  },
+  "log": [
+    "[2026-10-07T12:15:42+00:00] 1 Desk Research: start",
+    "[2026-10-07T12:17:09+00:00] 1 Desk Research: ok in 1.4 min",
+    "[2026-10-07T12:17:09+00:00] 2A Demand: start",
+    "[2026-10-07T12:25:35+00:00] 2A Demand: ok in 8.4 min",
+    "[2026-10-07T12:25:35+00:00] 2B Demand: start",
+    "[2026-10-07T13:04:37+00:00] 2B Demand: ok in 39.0 min",
+    "[2026-10-07T13:04:37+00:00] 3 Supply-Side: start",
+    "[2026-10-07T13:32:25+00:00] 3 Supply-Side: ok in 27.8 min"
+  ],
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers finished watches (mechanical, quartz, and smart/hybrid timepieces) sold as consumer or luxury goods, valued at the point of final sale to end users. It excludes watch components, movements, straps, and repair services as separately valued markets, and excludes non-watch wearables such as fitness bands and laser therapy devices. Demand for watches is derived from consumer spending, gifting, and fashion/status consumption; component and accessory demand may be used as an intermediate signal for watch production volumes but is never priced as part of this market.",
+      "geography": [
+        "China",
+        "United States",
+        "Switzerland",
+        "Japan",
+        "Germany",
+        "France",
+        "United Kingdom",
+        "Italy",
+        "Hong Kong SAR",
+        "United Arab Emirates",
+        "India",
+        "Singapore",
+        "South Korea",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "watches (units)"
+    },
+    "driver": {
+      "driver_name": "National watch consumption volume (apparent consumption)",
+      "unit": "watches (units)",
+      "final_demand_unit": "watches (units)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 114825.0,
+    "regions_usd_mn": {
+      "North America": 13750.0,
+      "Europe": 11825.0,
+      "Asia Pacific": 56000.0,
+      "Middle East & Africa": 1250.0,
+      "Rest of World": 32000.0
+    },
+    "countries_usd_mn": {
+      "China": 17500.0,
+      "United States": 13750.0,
+      "Switzerland": 3950.0,
+      "Japan": 29000.0,
+      "Germany": 3000.0,
+      "France": 0.0,
+      "United Kingdom": 3000.0,
+      "Italy": 1875.0,
+      "Hong Kong SAR": 2000.0,
+      "United Arab Emirates": 1250.0,
+      "India": 6250.0,
+      "Singapore": 750.0,
+      "South Korea": 2500.0,
+      "Rest of World": 30000.0
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Mechanical Watches": 18056.5,
+          "Quartz Watches": 43466.0,
+          "Smartwatches": 47404.0,
+          "Hybrid Watches": 5898.5
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Personal Use": 40326.0,
+          "Gifting": 23356.5,
+          "Professional Use": 10630.25,
+          "Sports and Fitness": 18492.25,
+          "Fashion and Status": 22020.0
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 37835.25,
+          "Offline Retail": 76989.75
+        }
+      },
+      {
+        "dimension": "By Price Range",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Mass Market": 37412.5,
+          "Mid-Range": 36215.0,
+          "Premium": 25037.5,
+          "Luxury": 16160.0
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 6.7,
+      "derived": 0.0,
+      "source_found_unverified": 6.7,
+      "assumption": 86.7
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 12/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] low_observed_share: Only 7% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] triangulation_large_gap: Large gap(s) vs. independent external benchmark(s) -- informational only, never used to adjust the bottom-up total: 'published market-size estimate' benchmark (69100.0 USD Mn, source: Watches Market Size, Share & Trends | Industry Report, 2033) vs. Demand-Side estimate (114,825.0 USD Bn) -- gap +66.2%",
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Total Watches demand' driver total\"]"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\watches\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\watches\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\watches",
+    "status": "ok",
+    "minutes": 8.4
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers watches as finished timekeeping products valued at the point of consumer purchase, including mechanical, quartz, and smart/hybrid watches sold under watch brands, whether sold through physical retail, brand boutiques, or online channels. Excluded are watch components and parts (movements, cases, straps, crystals) sold separately as B2B inputs, repair and servicing revenue, and non-watch wearables that lack a primary timekeeping function (e.g., fitness bands without a watch form factor). Also excluded are second-hand/resale transactions, which are not newly valued production, and licensed merchandise that is not a functioning timepiece. Where smartwatch demand is used as evidence, only the watch-form-factor portion counts toward this market's volume.",
+      "geography": [
+        "United States",
+        "China",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Italy",
+        "Switzerland",
+        "India",
+        "United Arab Emirates",
+        "Saudi Arabia",
+        "South Korea",
+        "Singapore",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "watches (single pieces)"
+    },
+    "use_cases": [
+      "Everyday Timekeeping & Personal Accessory",
+      "Professional & Occupational Timing",
+      "Sports, Fitness & Outdoor Performance Tracking",
+      "Smartwatch Connectivity & Digital Life",
+      "Gifting & Milestone Commemoration"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 40358.322,
+    "regions_usd_mn": {
+      "North America": 4612.8106,
+      "Europe": 6608.8011,
+      "Asia Pacific": 18566.1007,
+      "Middle East & Africa": 1268.6,
+      "Rest of World": 9302.0096
+    },
+    "countries_usd_mn": {
+      "United States": 4612.8106,
+      "China": 10617.4,
+      "Japan": 1265.8007,
+      "Germany": 1238.1011,
+      "United Kingdom": 3032.2,
+      "France": 621.3,
+      "Italy": 285.4,
+      "Switzerland": 1431.8,
+      "India": 5845.1,
+      "United Arab Emirates": 430.7,
+      "Saudi Arabia": 837.9,
+      "South Korea": 546.1,
+      "Singapore": 291.7,
+      "Rest of World": 9302.0096
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Everyday Timekeeping & Personal Accessory": 18615.0,
+          "Professional & Occupational Timing": 159.75,
+          "Sports, Fitness & Outdoor Performance Tracking": 9312.5,
+          "Smartwatch Connectivity & Digital Life": 4973.572,
+          "Gifting & Milestone Commemoration": 7297.5
+        }
+      },
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Mechanical Watches": 6964.2634,
+          "Quartz Watches": 12803.1616,
+          "Smartwatches": 18615.9348,
+          "Hybrid Watches": 1974.9622
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Physical Retail": 22297.7376,
+          "Brand Boutiques": 5032.0529,
+          "Online": 13028.5315
+        }
+      },
+      {
+        "dimension": "By Price Segment",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Mass Market": 15551.913,
+          "Mid-Range": 12095.2817,
+          "Premium": 7547.2944,
+          "Luxury": 5163.8329
+        }
+      },
+      {
+        "dimension": "By Consumer Group",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Men": 20244.4104,
+          "Women": 14060.1633,
+          "Unisex": 6053.7483
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 1.3,
+      "derived": 2.7,
+      "source_found_unverified": 18.7,
+      "assumption": 77.3
+    },
+    "quality_flags": [
+      "[info] excluded_non_physical_usage: 1 discovered usage bucket(s) were excluded before pricing because they describe financial/inventory activity, not genuine physical consumption: ['Collecting, Investment & Heritage Appreciation']. Kept in the audit trail (Excluded Usages sheet), not deleted.",
+      "[warning] high_assumption_share: 54/70 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] low_usage_coverage: Estimated usage coverage (84.0%, the pipeline's own bounded estimate -- NOT a verified measurement of the real market) is below the configured threshold (85%) -- Included Demand ($40,358.3M) likely understates the real market. Residual/Uncovered is reported separately ($7,687.3M, implied by the coverage gap, NOT built from evidence, NOT distributed into any bucket) rather than silently inflating any existing bucket.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Health & Medical Monitoring (evidence_backed, confidence 90%) -- \"Health Monitoring: Keeping Track of Wellness One of the most impactful uses of a smartwatch is in the realm of health and fitness.\"; Enterprise & Specialized Business Applications (evidence_backed, confidence 85%) -- \"A custom application is currently a typical use of Smartwatches in businesses. Companies are trying to empower employees with Smartwatches running a specialized app to solve a specific problem\"",
+      "[warning] low_observed_share: Only 1% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Everyday Timekeeping & Personal Accessory' driver total\", \"'Smartwatch Connectivity & Digital Life' driver total\", \"'Gifting & Milestone Commemoration' driver total\"]"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\watches\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\watches\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\watches",
+    "status": "ok",
+    "minutes": 39.0
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 77984.2225559946,
+    "evidence_method_global_usd_mn": 118900.0,
+    "top_companies_global_share": [
+      {
+        "company": "Apple Inc.",
+        "share": 0.2308
+      },
+      {
+        "company": "LVMH Moët Hennessy Louis Vuitton",
+        "share": 0.0641
+      },
+      {
+        "company": "Audemars Piguet",
+        "share": 0.0436
+      },
+      {
+        "company": "Garmin Ltd.",
+        "share": 0.0385
+      },
+      {
+        "company": "Samsung Electronics Co., Ltd.",
+        "share": 0.0383
+      },
+      {
+        "company": "Citizen Watch Co., Ltd.",
+        "share": 0.0218
+      },
+      {
+        "company": "Kering",
+        "share": 0.0192
+      },
+      {
+        "company": "Patek Philippe",
+        "share": 0.0192
+      },
+      {
+        "company": "Seiko Group Corporation",
+        "share": 0.0136
+      },
+      {
+        "company": "TAG Heuer",
+        "share": 0.0128
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "Japan",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "Italy",
+      "Switzerland",
+      "Hong Kong SAR, China",
+      "United Arab Emirates",
+      "India",
+      "Brazil",
+      "Russia",
+      "South Korea",
+      "Singapore",
+      "Rest of Europe",
+      "Rest of Asia Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa",
+      "Rest of North America"
+    ],
+    "flags": [
+      "mostly_soft_estimates: Only 16/69 companies had real financial data -- most of this total is still LLM-estimated from web snippets, not hard-capped.",
+      "high_gross_up: 6 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (Rest of Asia Pacific 2.9x, Rest of Latin America 2.9x, Rest of Middle East & Africa 2.9x, Rest of Europe 2.5x, Rest of North America 2.5x) -- most of those countries' totals is an LLM coverage guess, not company revenue.",
+      "low_extraction_yield: Only 3 of 11 relevant snippets yielded a real figure -- the regex extractor likely missed figures phrased differently than expected (confirmed on 'Global Smartphone Market': 3/15 extracted, total came out 5-7x too low vs published estimates). Treat this total with real caution.",
+      "small_sample: Only 3 real figures went into the median -- a small sample can be skewed by a single outlier or mis-scoped report.",
+      "disagrees_with_desk_research: Evidence-based total differs from the Desk Research total by 72% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way."
+    ],
+    "report_json": "approaches\\examples\\watches\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report (run now): watches_market_global.csv",
+    "vendor_intel_coverage_pct": 0.0,
+    "status": "ok",
+    "minutes": 27.8
+  },
+  "finished_at": "2026-10-07T13:32:25+00:00"
+}

@@ -27,3 +27,18 @@ In this approach we analyse all the vendors who are contributing to the industry
 For example if you are tracking the _cloud API market_, Google is a player in the cloud API market. We won't consider the entire revenue of Google. We'll only consider the revenue of Google that contributes to their cloud API business. Maybe 10% of their entire business goes into cloud API so 10% of Google's revenues would be considered here.
 
 Similarly for all the players that have been mapped, the revenue contribution of those players would be tracked as a part of it and would be added to it. This approach helps us to understand the market, at least on the total size, that is, the total market size, which could be fairly accurate. This approach also gives us an understanding of company market share analysis, helping us understand which company has how much of the market share in a particular industry.
+
+
+
+
+Options (pick one):
+1. Let me run one at a time. It's slower (about 5–6 hours total) but uses half the memory. Closing Outlook helps too.
+2. Run them yourself in a normal terminal, outside Claude Code, so the memory guard can't stop them. Run these one after another:
+cd C:\Users\aimlpc1\Desktop\de-agent-fb
+.venv\Scripts\python run_examples.py --market "Disposable Medical Gloves" --vertical "Healthcare" --approaches 2b,supply
+.venv\Scripts\python run_examples.py --market "Urea Fertilizer" --vertical "Agriculture & Chemicals" --approaches 2b,supply
+.venv\Scripts\python run_examples.py --market "Automotive Tires" --vertical "Automotive"
+.venv\Scripts\python run_examples.py --market "Smartphones" --vertical "Consumer Electronics"
+.venv\Scripts\python run_examples.py --market "Olive Oil" --vertical "Food & Beverages" --approaches desk
+.venv\Scripts\python ppt\build_ppt_artifacts.py --market "Olive Oil"
+   The last line rebuilds every walkthrough page and the index table.

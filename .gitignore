@@ -41,3 +41,6 @@ Thumbs.db
 *.tmp
 # Added by code-review-graph
 .code-review-graph/
+
+# Downloaded official statistics (FAOSTAT bulk files)
+data/official/

@@ -1,0 +1,31 @@
+# Phase 1 — CSV export column spec (used in Phases 4–5)
+company_list:
+  - display_name
+  - parent_group
+  - primary_domain
+  - company_type
+  - tier
+  - score
+  - inclusion_reason
+  - inclusion_sources
+  - funnel_levels_seen
+  - evidence_urls
+  - company_description
+
+parent_group_list:
+  - parent_name
+  - brands_in_company_list
+  - listing_mode
+
+suppressed_brands:
+  - name
+  - reason
+
+run_summary:
+  - run_id
+  - query
+  - interpretation_summary
+  - company_count
+  - mock_mode
+  - search_primary
+  - funnel_levels

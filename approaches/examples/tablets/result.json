@@ -1,0 +1,368 @@
+{
+  "market": "Tablets",
+  "vertical": "Consumer Electronics",
+  "started_at": "2026-10-08T12:28:28+00:00",
+  "1_desk_research": {
+    "status": "failed",
+    "error": "ERROR: could not build a DB skeleton for 'Tablets'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 11018.78it/s]",
+    "minutes": 0.3
+  },
+  "log": [
+    "[2026-10-08T12:28:28+00:00] 1 Desk Research: start",
+    "[2026-10-08T12:28:49+00:00] 1 Desk Research: failed in 0.3 min",
+    "[2026-10-08T12:28:49+00:00] 2A Demand: start",
+    "[2026-10-08T12:36:34+00:00] 2A Demand: ok in 7.8 min",
+    "[2026-10-08T12:36:34+00:00] 2B Demand: start",
+    "[2026-10-08T13:20:09+00:00] 2B Demand: ok in 43.6 min",
+    "[2026-10-08T13:20:09+00:00] 3 Supply-Side: start",
+    "[2026-10-08T13:49:39+00:00] 3 Supply-Side: ok in 29.5 min"
+  ],
+  "2A_demand_country_total": {
+    "setup": {
+      "scope": "This market covers tablet devices — portable, touchscreen computing devices positioned between smartphones and laptops, typically with 7-13 inch displays — valued at the point of sale as finished consumer/commercial hardware. It excludes smartphones, laptops/2-in-1 detachables sold as PCs, e-readers, and tablet accessories (cases, keyboards, styluses) as separately valued markets, and excludes tablet-based software, apps, content, and connectivity services. Component-level demand (displays, SoCs, batteries) is not separately valued here, though component shipment volumes may be used as an intermediate signal to derive how many finished tablets were produced and sold.",
+      "geography": [
+        "United States",
+        "China",
+        "India",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "South Korea",
+        "Brazil",
+        "Canada",
+        "Italy",
+        "Spain",
+        "Australia",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "tablets (units shipped)"
+    },
+    "driver": {
+      "driver_name": "Annual tablet unit shipments (apparent consumption)",
+      "unit": "tablets (units shipped)",
+      "final_demand_unit": "tablets (units shipped)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 29159.9999,
+    "regions_usd_mn": {
+      "North America": 486.0,
+      "Latin America": 0.0,
+      "Europe": 1764.0005,
+      "Asia Pacific": 6336.0015,
+      "Rest of World": 20573.9979
+    },
+    "countries_usd_mn": {
+      "United States": 0.0,
+      "China": 5076.0,
+      "India": 810.0,
+      "Japan": 0.0015,
+      "Germany": 1044.0,
+      "United Kingdom": 0.0005,
+      "France": 0.0,
+      "South Korea": 0.0,
+      "Brazil": 0.0,
+      "Canada": 486.0,
+      "Italy": 468.0,
+      "Spain": 252.0,
+      "Australia": 450.0,
+      "Rest of World": 20573.9979
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Slate Tablets": 17092.2598,
+          "2-in-1 Detachable Tablets": 6235.7401,
+          "Rugged Tablets": 3397.68,
+          "Mini Tablets": 2434.32
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Consumer": 13222.4398,
+          "Commercial": 5643.9001,
+          "Education": 5828.0399,
+          "Healthcare": 1805.94,
+          "Industrial": 1474.38,
+          "Government": 1185.3001
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 12424.1399,
+          "Offline Retail": 12542.0401,
+          "Direct Sales": 2297.5199,
+          "Telecom Operators": 1896.3
+        }
+      },
+      {
+        "dimension": "By Screen Size",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Less than 8 inches": 2705.3999,
+          "8 to 10 inches": 13467.2398,
+          "10 to 12 inches": 9860.7601,
+          "12 inches and above": 3126.6001
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 13.3,
+      "source_found_unverified": 13.3,
+      "assumption": 73.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 10/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (45%) is below the usual bar.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Total Tablets demand'@Rest of World ($20,574.0M) is 42x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 1 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\tablets\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\tablets\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\tablets",
+    "status": "ok",
+    "minutes": 7.8
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers tablet computers as standalone, general-purpose portable computing devices with touchscreen displays (typically 7 inches and larger), including slate and detachable/keyboard-cover tablets running general-purpose operating systems (iOS/iPadOS, Android, Windows), valued at the device level for consumer, business, education, and healthcare end use. It excludes smartphones and phablets, notebook/laptop PCs, e-readers with no general-purpose OS, dedicated rugged/industrial handhelds, and separately valued accessories (keyboards, styluses, cases) and aftermarket services, which are not part of this market's own commodity. Tablet end-use demand signals (e.g., remote work, remote education, telehealth deployments) are used only as intermediate evidence to derive how many tablet units those usages require, never as separately valued markets.",
+      "geography": [
+        "United States",
+        "China",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "India",
+        "South Korea",
+        "France",
+        "Brazil",
+        "Canada",
+        "Australia",
+        "Italy",
+        "Spain",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "tablets (units shipped)"
+    },
+    "use_cases": [
+      "Consumer Personal Use",
+      "Business & Enterprise Work",
+      "Education & Academic Learning",
+      "Healthcare & Clinical Use",
+      "Creative & Professional Media",
+      "Government & Public Sector"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 48096.0,
+    "regions_usd_mn": {
+      "North America": 13579.05,
+      "Latin America": 742.4,
+      "Europe": 3817.5,
+      "Asia Pacific": 11909.55,
+      "Rest of World": 18047.5
+    },
+    "countries_usd_mn": {
+      "United States": 12521.5,
+      "China": 7727.5,
+      "Japan": 1090.0,
+      "Germany": 1556.5,
+      "United Kingdom": 912.05,
+      "India": 1995.0,
+      "South Korea": 732.15,
+      "France": 820.2,
+      "Brazil": 742.4,
+      "Canada": 1057.55,
+      "Australia": 364.9,
+      "Italy": 138.1,
+      "Spain": 390.65,
+      "Rest of World": 18047.5
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Consumer Personal Use": 34020.0,
+          "Business & Enterprise Work": 6014.0,
+          "Education & Academic Learning": 3528.0,
+          "Healthcare & Clinical Use": 1798.4,
+          "Creative & Professional Media": 1436.4,
+          "Government & Public Sector": 1299.2
+        }
+      },
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Slate Tablets": 29077.974,
+          "Detachable Tablets": 14782.5805,
+          "Convertible Tablets": 4235.4455
+        }
+      },
+      {
+        "dimension": "By Operating System",
+        "method": "top_down",
+        "evidence_status": "assumption",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "iOS/iPadOS": 18959.7025,
+          "Android": 24008.9205,
+          "Windows": 4095.569,
+          "Others (e.g., Chrome OS, Linux)": 1031.808
+        }
+      },
+      {
+        "dimension": "By Screen Size",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "7 to 8 inches": 3153.67,
+          "8 to 9 inches": 5433.255,
+          "9 to 10 inches": 10327.554,
+          "10 to 11 inches": 18121.772,
+          "11 inches and above": 11059.749
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 28740.94,
+          "Offline Retail": 15170.251,
+          "Direct Sales (e.g., OEM websites, enterprise contracts)": 4184.809
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 1.1,
+      "source_found_unverified": 15.6,
+      "assumption": 83.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 69/84 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (53%) is below the usual bar.",
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Consumer Personal Use' alone is 71% of the total across 6 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Education & Academic Learning'@United States ($2,310.0M) is 16x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Retail & Hospitality Customer-Facing Use (reasoning_only, confidence 70%) -- Tablets are widely deployed as customer-facing kiosks, menus, check-in terminals, and self-service ordering devices in restaurants, hotels, and retail stores. This is a distinct physical application not covered by business productivity, education, healthcare, or government buckets.; In-Vehicle & Transportation Use (reasoning_only, confidence 60%) -- Tablets are commonly used as rear-seat entertainment systems, navigation aids, and fleet management terminals in cars, trucks, and public transit. This represents a separate physical deployment context not captured by existing buckets.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 2 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[critical] magnitude_cross_validation_discrepancy: 2 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Business & Enterprise Work' driver total\", \"'Education & Academic Learning' driver total\"]",
+      "[info] use_cases_below_country_total: Australia: use cases cover only 46% of the 2A country total (2,500,000 tablets (units shipped)) -- a use case may be missing"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\tablets\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\tablets\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\tablets",
+    "status": "ok",
+    "minutes": 43.6
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 88434.50040582159,
+    "evidence_method_global_usd_mn": null,
+    "top_companies_global_share": [
+      {
+        "company": "Apple Inc.",
+        "share": 0.3388
+      },
+      {
+        "company": "Foxconn Technology Group",
+        "share": 0.1074
+      },
+      {
+        "company": "Amazon.com, Inc.",
+        "share": 0.0509
+      },
+      {
+        "company": "Pegatron Corporation",
+        "share": 0.0475
+      },
+      {
+        "company": "Microsoft Corporation",
+        "share": 0.0395
+      },
+      {
+        "company": "Lenovo Group",
+        "share": 0.0281
+      },
+      {
+        "company": "Wistron Corporation",
+        "share": 0.0232
+      },
+      {
+        "company": "Huawei Technologies",
+        "share": 0.017
+      },
+      {
+        "company": "Compal Electronics",
+        "share": 0.0134
+      },
+      {
+        "company": "Xiaomi Corporation",
+        "share": 0.0113
+      }
+    ],
+    "countries": [
+      "United States",
+      "China",
+      "Japan",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "India",
+      "South Korea",
+      "Brazil",
+      "Canada",
+      "Italy",
+      "Spain",
+      "Australia",
+      "Rest of Western Europe",
+      "Rest of Eastern Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa"
+    ],
+    "flags": [
+      "no_real_data: No explicitly cited market-size figure was found anywhere in the gathered evidence -- there is no evidence-based estimate for this market."
+    ],
+    "report_json": "approaches\\examples\\tablets\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report (run now): tablets_market_global.csv",
+    "vendor_intel_coverage_pct": 37.2,
+    "status": "ok",
+    "minutes": 29.5
+  },
+  "finished_at": "2026-10-08T13:49:39+00:00"
+}

@@ -9,16 +9,64 @@
     "2a_global": 13800.0,
     "2a_base_year": 2025,
     "2a_status": "ok",
-    "2b_global": null,
-    "2b_base_year": null,
-    "2b_status": "failed",
-    "supply_company": null,
+    "2b_global": 31342.5614,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 24732.440192163347,
     "supply_evidence": null,
-    "supply_status": "pending rerun",
+    "supply_status": "ok",
     "2a_critical": [
       "[critical] target_commodity_unit_mismatch: One or more bucket(s) have a final_demand_unit that shares no words with the market's own target-commodity unit: [\"'Total Disposable Medical Gloves demand': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\"]. This is the signature of a downstream/adjacent product's own unit and price leaking into the target commodity's final value -- review before trusting this run."
     ],
+    "2b_critical": [
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Surgical Procedures' alone is 67% of the total across 7 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Surgical Procedures'@China ($20,400.0M) is 800x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] target_commodity_unit_mismatch: One or more bucket(s) have a final_demand_unit that shares no words with the market's own target-commodity unit: [\"'Surgical Procedures': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Clinical Examination & Patient Care': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Diagnostic & Pathology Laboratories': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Emergency, EMS & First Response': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Home Healthcare & Non-Acute Clinical Care': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\", \"'Pharmacy & Clinical Compounding': final_demand_unit 'Units' shares no words with the market's own target-commodity unit ('gloves (single pieces)') -- this usually means the bucket's final quantity is still denominated in a downstream/adjacent product's own unit, not the target commodity's own unit, and would be priced with the WRONG commodity's price.\"]. This is the signature of a downstream/adjacent product's own unit and price leaking into the target commodity's final value -- review before trusting this run.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 4.1x or more -- flagged for review, the original value/source/note are unchanged: ['Dental & Oral Care']",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'year_period_consistency'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Surgical Procedures' driver total\", \"'Dental & Oral Care' driver total\", 'Emergency, EMS & First Response']"
+    ]
+  },
+  {
+    "market": "Gaming Consoles",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\gaming-consoles",
+    "desk_value": null,
+    "desk_year": null,
+    "desk_status": "failed",
+    "2a_global": null,
+    "2a_base_year": null,
+    "2a_status": null,
+    "2b_global": null,
+    "2b_base_year": null,
+    "2b_status": null,
+    "supply_company": null,
+    "supply_evidence": null,
+    "supply_status": null,
+    "2a_critical": [],
     "2b_critical": []
+  },
+  {
+    "market": "Laptops",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\laptops",
+    "desk_value": null,
+    "desk_year": null,
+    "desk_status": "failed",
+    "2a_global": 630850.0,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 306726.4806,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 320580.0755551852,
+    "supply_evidence": 129900.0,
+    "supply_status": "ok",
+    "2a_critical": [],
+    "2b_critical": [
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Consumer Personal Use'@Rest of World ($44,814.0M) is 15x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Business & Enterprise'@Rest of World ($144,066.0M) is 44x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 5.81x or more -- flagged for review, the original value/source/note are unchanged: ['Business & Enterprise']",
+      "[critical] magnitude_cross_validation_discrepancy: 2 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'year_period_consistency'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Business & Enterprise' driver total\", 'Content Creation & Creative Professional']"
+    ]
   },
   {
     "market": "Olive Oil",
@@ -27,19 +75,114 @@
     "desk_value": 14615.4,
     "desk_year": 2025,
     "desk_status": "ok",
-    "2a_global": 10495.8,
+    "2a_global": 15556.4312,
     "2a_base_year": 2025,
     "2a_status": "ok",
-    "2b_global": 9256.9769,
+    "2b_global": 23655.3358,
     "2b_base_year": 2025,
     "2b_status": "ok",
-    "supply_company": 8208.176036552992,
-    "supply_evidence": 14000.0,
+    "supply_company": 12651.271453105086,
+    "supply_evidence": 15670.0,
     "supply_status": "ok",
     "2a_critical": [],
     "2b_critical": [
-      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Foodservice and Restaurant Operations' alone is 64% of the total across 5 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
-      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Processed Food Manufacturing' driver total\"]"
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Household culinary use' alone is 73% of the total across 5 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['intensity_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Household culinary use' intensity\"]"
+    ]
+  },
+  {
+    "market": "Smartphones",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\smartphones",
+    "desk_value": 557000.0,
+    "desk_year": 2025,
+    "desk_status": "ok",
+    "2a_global": 272825.0049,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 465071.9808,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 226395.562307821,
+    "supply_evidence": 99.8,
+    "supply_status": "ok",
+    "2a_critical": [],
+    "2b_critical": [
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Personal consumer smartphones' alone is 69% of the total across 5 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Personal consumer smartphones'@Rest of World ($149,754.5M) is 21x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Enterprise & business-issued smartphones'@China ($22,947.1M) is 18x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 8.86x or more -- flagged for review, the original value/source/note are unchanged: ['Entry-level/budget smartphones']",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Enterprise & business-issued smartphones' driver total\", \"'Premium/flagship smartphones' driver total\", \"'Entry-level/budget smartphones' driver total\"]"
+    ]
+  },
+  {
+    "market": "Smartwatches",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\smartwatches",
+    "desk_value": 42000.0,
+    "desk_year": 2025,
+    "desk_status": "ok",
+    "2a_global": 22875.001,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 26398.7588,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 65359.09469910082,
+    "supply_evidence": 7500.0,
+    "supply_status": "ok",
+    "2a_critical": [],
+    "2b_critical": [
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'General-purpose consumer smartwatches'@China ($7,560.0M) is 20x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Kids' & senior safety smartwatches'@China ($504.0M) is 27x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] driver_magnitude_implausible: 1 driver(s) diverge from an independent reference figure by 4.32x or more -- flagged for review, the original value/source/note are unchanged: ['General-purpose consumer smartwatches']",
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Fitness & outdoor sports smartwatches' driver total\"]"
+    ]
+  },
+  {
+    "market": "Tablets",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\tablets",
+    "desk_value": null,
+    "desk_year": null,
+    "desk_status": "failed",
+    "2a_global": 29159.9999,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 48096.0,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 88434.50040582159,
+    "supply_evidence": null,
+    "supply_status": "ok",
+    "2a_critical": [
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Total Tablets demand'@Rest of World ($20,574.0M) is 42x this bucket's median country value -- check for a driver/intensity assumption blowup."
+    ],
+    "2b_critical": [
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Consumer Personal Use' alone is 71% of the total across 6 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Education & Academic Learning'@United States ($2,310.0M) is 16x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] magnitude_cross_validation_discrepancy: 2 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Business & Enterprise Work' driver total\", \"'Education & Academic Learning' driver total\"]"
+    ]
+  },
+  {
+    "market": "Televisions",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\televisions",
+    "desk_value": 7800.0,
+    "desk_year": 2025,
+    "desk_status": "ok",
+    "2a_global": 64790.0,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 90368.4961,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 98929.24626401761,
+    "supply_evidence": null,
+    "supply_status": "ok",
+    "2a_critical": [],
+    "2b_critical": [
+      "[critical] dominant_bucket_unit_mismatch_risk: One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Household / Residential' alone is 77% of the total across 6 bucket(s) -- check its driver/price for a unit mismatch before trusting this run.",
+      "[critical] country_cell_outlier: At least one country's value within a bucket is a wild outlier vs. its peers -- likely a compounding driver/intensity assumption error: 'Food, Beverage & Retail Venues'@China ($1,344.0M) is 29x this bucket's median country value -- check for a driver/intensity assumption blowup.; 'Broadcast, Media & Professional Production'@Brazil ($1,742.9M) is 83x this bucket's median country value -- check for a driver/intensity assumption blowup.",
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'year_period_consistency'] -- flagged for review, original value(s)/source(s) unchanged: ['Hospitality & Lodging', \"'Corporate, Education & Institutional' driver total\", \"'Other Commercial & Public Display' driver total\"]"
     ]
   },
   {
@@ -58,6 +201,48 @@
     "supply_company": null,
     "supply_evidence": null,
     "supply_status": "pending rerun",
+    "2a_critical": [],
+    "2b_critical": []
+  },
+  {
+    "market": "Watches",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\watches",
+    "desk_value": 69100.0,
+    "desk_year": 2025,
+    "desk_status": "ok",
+    "2a_global": 114825.0,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 40358.322,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 77984.2225559946,
+    "supply_evidence": 118900.0,
+    "supply_status": "ok",
+    "2a_critical": [
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Total Watches demand' driver total\"]"
+    ],
+    "2b_critical": [
+      "[critical] magnitude_cross_validation_discrepancy: 3 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Everyday Timekeeping & Personal Accessory' driver total\", \"'Smartwatch Connectivity & Digital Life' driver total\", \"'Gifting & Milestone Commemoration' driver total\"]"
+    ]
+  },
+  {
+    "market": "Wireless Earbuds",
+    "vertical": "Consumer Electronics",
+    "folder": "approaches\\examples\\wireless-earbuds",
+    "desk_value": null,
+    "desk_year": null,
+    "desk_status": "failed",
+    "2a_global": null,
+    "2a_base_year": null,
+    "2a_status": "failed",
+    "2b_global": null,
+    "2b_base_year": null,
+    "2b_status": "failed",
+    "supply_company": null,
+    "supply_evidence": null,
+    "supply_status": "failed",
     "2a_critical": [],
     "2b_critical": []
   }

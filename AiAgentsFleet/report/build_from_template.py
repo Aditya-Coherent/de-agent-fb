@@ -26,6 +26,8 @@ import docx
 from docx.oxml.ns import qn
 from PIL import Image, ImageDraw, ImageFont
 
+import labels as dim_labels
+from labels import mentions, similar_heading
 from narrative import build_narrative, fmt_pct, fmt_usd_mn, ordered_regions
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -84,7 +86,13 @@ def _sentence(text: str) -> str:
     return text if not text or text[-1] in ".!?" else text + "."
 
 
+def _score(v: float) -> str:
+    """1-5 force score as printed in headings and on the radar chart: 4 -> '4', 2.7 -> '2.7'."""
+    return f"{round(float(v or 0), 1):g}"
+
+
 _RATING_PATTERNS = [
+    r"^\s*Rated\s+(?:High|Medium|Low|Moderate)\s+(?:at\s+)?\d(?:\.\d+)?\s*(?:out of|/)\s*5\s*[,:.-]?\s*(?:as\s+|because\s+|since\s+)?",
     r"^\s*(?:High|Medium|Low|Moderate)\s*\(\s*\d(?:\.\d+)?\s*/\s*5\s*\)\s*[:,.-]\s*",
     r"^\s*Rated\s+\d(?:\.\d+)?\s*(?:out of|/)\s*5\s*(?:\([^)]*\))?\s*[,:.-]?\s*(?:as\s+)?",
     r"^[^.:]{0,40}?\bis\s+(?:high|medium|low|moderate)\s*\(\s*\d(?:\.\d+)?\s*/\s*5\s*\)\s*[,:.-]?\s*(?:as\s+|because\s+)?",
@@ -110,11 +118,27 @@ def _short(name: str) -> str:
     return str(name or "").split(" (")[0].strip()
 
 
+def _drop_repeated_lead(lead: str, text: str) -> str:
+    """The AI sometimes opens a bullet by repeating its own bold lead
+    ('Bear Case – USD 9.20 Billion by 2035 (7.2% CAGR): Bear Case – USD 9.20
+    Billion by 2035 (7.17% CAGR): Prolonged ...') -- keep only the body."""
+    text = (text or "").strip()
+    head = lead.rstrip(": ").strip()
+    while ":" in text[: len(head) + 40]:
+        before, after = text.split(":", 1)
+        if not (similar_heading(before, head) or before.strip().lower() == head.lower()):
+            break
+        text = after.strip()
+    return _cap(text)
+
+
 def _price(v: float) -> str:
     v = float(v or 0)
     if v == 0:
         return "0"
-    return f"{v:,.2f}" if abs(v) < 10 else f"{v:,.0f}"
+    if abs(v) < 10:
+        return f"{v:,.2f}"
+    return f"{v:,.1f}".rstrip("0").rstrip(".") if abs(v) < 100 else f"{v:,.0f}"
 
 
 # --------------------------------------------------------------------------- #
@@ -128,6 +152,15 @@ class Builder:
         self.sect_pr = self.protos[-1]
         self.out: list = []
         self._pic_id = 5000
+        self.section = 0
+        self._fig = self._tbl = 0
+        self.titles: dict[int, str] = {}    # section number -> title (the TOC is synced to these)
+        self.toc_entries: list = []
+        self.heads: list[tuple[int, str]] = []    # every heading/tagline emitted, for de-dup + QA
+        self.captions: list[str] = []
+        self.skipped: list[str] = []
+        self.texts: list[tuple[int, str]] = []    # (section, text) of everything added, for QA
+        self.market = ""                          # market name words don't count when comparing headings
 
     # -- element access
     def clone(self, idx: int):
@@ -135,6 +168,8 @@ class Builder:
 
     def add(self, el):
         self.out.append(el)
+        if self.section:
+            self.texts.append((self.section, "".join(t.text or "" for t in el.iter(qn("w:t")))))
         return el
 
     # -- paragraph text
@@ -210,32 +245,57 @@ class Builder:
     def section_start(self, num: int, title: str, confidence: str, first: bool = False) -> None:
         if not first:
             self.add(self.clone(PAGE_BREAK))
+        self.section, self._fig, self._tbl = num, 0, 0
+        self.titles[num] = title
         self.add(self.set_text(self.clone(SEC_LABEL), f"SECTION {num}"))
         self.add(self.set_text(self.clone(SEC_TITLE), title))
         # DATA CONFIDENCE boxes intentionally omitted (not wanted in these reports).
         self.add(self.clone(SPACER))
 
+    def heading(self, proto: int, text: str) -> None:
+        self.heads.append((self.section, text))
+        self.add(self.set_text(self.clone(proto), text))
+
     def para(self, text: str) -> None:
         self.add(self.set_text(self.clone(BODY), text))
 
     def callout(self, text: str) -> None:
+        """Callouts are taglines; one that repeats an earlier heading or
+        tagline adds nothing, so it is left out rather than printed twice."""
+        if any(similar_heading(text, h, self.market) for _, h in self.heads):
+            self.skipped.append(f"Section {self.section} callout (repeats an earlier heading): {text[:70]}")
+            return
+        self.heads.append((self.section, text))
         tbl = self.clone(CALLOUT)
         self.set_table_cell_text(tbl, text)
         self.add(tbl)
         self.add(self.clone(SPACER))
 
     def h2(self, text: str) -> None:
-        self.add(self.set_text(self.clone(H2), text))
+        self.heading(H2, text)
 
     def h3(self, text: str) -> None:
-        self.add(self.set_text(self.clone(H3), text))
+        self.heading(H3, text)
 
     def subhead(self, text: str) -> None:
-        self.add(self.set_text(self.clone(SUBHEAD), text))
+        self.heading(SUBHEAD, text)
 
     def finding(self, head: str, text: str) -> None:
-        self.add(self.set_text(self.clone(BOLD_HEAD), head))
-        self.add(self.set_text(self.clone(BOLD_BODY), text))
+        self.heading(BOLD_HEAD, head)
+        self.add(self.set_text(self.clone(BOLD_BODY), _drop_repeated_lead(head, text)))
+
+    def _caption(self, kind: str, caption: str) -> str:
+        """Numbers figures/tables by the section they sit in (Figure 9.2 = the
+        second figure of Section 9)."""
+        if kind == "Figure":
+            self._fig += 1
+            n = self._fig
+        else:
+            self._tbl += 1
+            n = self._tbl
+        text = f"{kind} {self.section}.{n} - {caption}"
+        self.captions.append(text)
+        return text
 
     def figure(self, path: Path, caption: str) -> None:
         if not path.exists():
@@ -243,7 +303,10 @@ class Builder:
         el = self.clone(FIGURE)
         self._bind_image(el, path, max_cy=3_000_000)   # ~8.3 cm, the template's figure height
         self.add(el)
-        self.add(self.set_text(self.clone(CAPTION), caption))
+        self.add(self.set_text(self.clone(CAPTION), self._caption("Figure", caption)))
+
+    def table_caption(self, caption: str) -> None:
+        self.add(self.set_text(self.clone(TABLE_CAPTION), self._caption("Table", caption)))
 
     def side_figure(self, path: Path, caption: str, text: str) -> None:
         """Template Section 5 pattern: a floating donut beside the paragraph,
@@ -252,7 +315,7 @@ class Builder:
             self.para(text)
             return
         captioned = path.with_name(path.stem + "_captioned.png")
-        _caption_image(path, captioned, caption)
+        _caption_image(path, captioned, self._caption("Figure", caption))
         el = self.clone(SIDE_FIGURE)
         self._bind_image(el, captioned)
         runs = self._runs(el)
@@ -267,7 +330,21 @@ class Builder:
 
     def lead_bullets(self, items: list[tuple[str, str]], proto: int = BULLET_LEAD) -> None:
         for lead, rest in items:
-            self.add(self.set_lead(self.clone(proto), lead, rest))
+            self.heads.append((self.section, lead))
+            self.add(self.set_lead(self.clone(proto), lead, _drop_repeated_lead(lead, rest)))
+
+    def sync_toc(self) -> None:
+        """TOC entries carry the template's Vitamin C section names; replace
+        them with the titles actually used in this report."""
+        for num, el in enumerate(self.toc_entries, start=1):
+            title = self.titles.get(num)
+            if not title:
+                continue
+            runs = self._runs(el)
+            self._set_run_text(runs[0], title.title() if title.isupper() else title)
+            for r in runs[1:]:              # keep the runs (one holds the page break), drop their text
+                for t in r.findall(qn("w:t")):
+                    r.remove(t)
 
     def table(self, proto: int, rows: list[list[str]]) -> None:
         tbl = self.clone(proto)
@@ -397,9 +474,21 @@ def build(slug: str) -> Path:
     prose = {}
     if prose_path.exists():
         pj = json.loads(prose_path.read_text(encoding="utf-8"))
-        from prose_writer import fields_hash
-        if pj.get("fields_hash") == fields_hash(data["fields"]):
+        from prose_writer import is_current
+        if is_current(pj, data["fields"]):
             prose = pj.get("sections", {})
+        else:
+            print("prose.json is stale (fields or prose rules changed) -- using data-only text; "
+                  "re-run prose_writer.py to refresh it")
+
+    # What each segment list actually measures ("Shrimp Species", not "Forms").
+    lab = dim_labels.load(market_dir, f, data.get("market_name", ""))
+    grade_s, grade_p = lab["grade"]["singular"], lab["grade"]["plural"]
+    form_s, form_p = lab["form"]["singular"], lab["form"]["plural"]
+    app_s, app_p = lab["application"]["singular"], lab["application"]["plural"]
+    grp_p = lab["sub_segment_group"]["plural"]
+    mix_s = lab["region_mix"]["singular"]
+    low = dim_labels.lower
 
     def P(sec: int, key: str):
         v = (prose.get(str(sec)) or {}).get(key)
@@ -407,7 +496,16 @@ def build(slug: str) -> Path:
 
     def PL(sec: int, key: str):
         v = (prose.get(str(sec)) or {}).get(key)
-        return [x for x in v if isinstance(x, str)] if isinstance(v, list) and v else None
+        if not isinstance(v, list):
+            return None
+        out = []
+        for x in v:
+            if isinstance(x, dict):      # the AI sometimes returns {"heading": ..., "text": ...} bullets
+                head = next((x[k] for k in ("heading", "head", "lead") if isinstance(x.get(k), str)), "")
+                x = f"{head.strip().rstrip(':.')}: {x['text'].strip()}" if head and isinstance(x.get("text"), str) else x.get("text")
+            if isinstance(x, str) and x.strip():
+                out.append(x.strip())
+        return out or None
 
     def LB(sec: int, key: str, head: str = "lead"):
         v = (prose.get(str(sec)) or {}).get(key)
@@ -427,6 +525,7 @@ def build(slug: str) -> Path:
         return v
 
     b = Builder(TEMPLATE)
+    b.market = n["market"]
     month = datetime.now().strftime("%B %Y")
     bn = n["base_val"] >= 1000
     unit_word = "billion" if bn else "million"
@@ -470,12 +569,9 @@ def build(slug: str) -> Path:
                     b.set_text(cells[ci].find(qn("w:p")), val)
         b.add(el)
     for i in TOC:
-        el = b.clone(i)
-        runs = b._runs(el)
-        txt = "".join((t.text or "") for r in runs for t in r.findall(qn("w:t")))
-        if "Vitamin C" in txt:
-            b.set_text(el, txt.replace("Vitamin C", root))
-        b.add(el)
+        el = b.add(b.clone(i))
+        if i != TOC[0]:
+            b.toc_entries.append(el)     # text set by b.sync_toc() once the section titles are known
 
     # ===================================================================== #
     # 1. Executive summary
@@ -491,7 +587,7 @@ def build(slug: str) -> Path:
         tone = "is an early-stage, high-growth segment"
     b.para(P(1, "p1") or f"The global {root} market {tone}, with demand spread across "
            f"{_join([_short(a['name']) for a in apps[:3]])}"
-           f"{' and other applications' if len(apps) > 3 else ''}. We estimate the market at {n['base_val_fmt']} in {by}, "
+           f"{' and other ' + low(app_p) if len(apps) > 3 else ''}. We estimate the market at {n['base_val_fmt']} in {by}, "
            f"projected to reach {n['fc_val_fmt']} by {fy}, creating {n['incremental_fmt']} in incremental opportunity.")
     b.para(P(1, "p2") or f"Long-term growth is expected to be driven by {_join(dn[:3])}. At the same time, "
            f"{_join(rn[:2])} will remain key factors shaping pricing, margins, and competitive dynamics across the industry.")
@@ -510,15 +606,15 @@ def build(slug: str) -> Path:
                   f"{_pct(leader_d.get('cagr_2025_2030_pct'))} a year through 2030"
                   + (f", ahead of {second[0]} at {_pct(second[1].get('share_pct_of_global'))} of global value." if second else "."))
         if fast_app and fast_app is apps[0]:
-            b.finding(f"{_short(fast_app['name'])} is both the largest and fastest-growing application",
+            b.finding(f"{_short(fast_app['name'])} is both the largest and fastest-growing {low(app_s)}",
                       f"{_short(fast_app['name'])} accounts for {_pct(fast_app.get('share_pct_of_market'))} of market value "
                       f"and is expanding at {_pct(fast_app.get('cagr_2025_2030_pct'))} annually, compared with "
                       f"{_pct(cagr)} for the market overall.")
         elif fast_app:
-            b.finding(f"{_short(fast_app['name'])} is the fastest-growing application",
+            b.finding(f"{_short(fast_app['name'])} is the fastest-growing {low(app_s)}",
                       f"{_short(fast_app['name'])} is expanding at {_pct(fast_app.get('cagr_2025_2030_pct'))} annually, "
                       f"compared with {_pct(cagr)} for the market overall, while {_short(apps[0]['name'])} remains the "
-                      f"largest application at {_pct(apps[0].get('share_pct_of_market'))} of market value.")
+                      f"largest {low(app_s)} at {_pct(apps[0].get('share_pct_of_market'))} of market value.")
         if companies:
             b.finding(f"The competitive landscape is {conc}",
                       f"{_join([c['name'] for c in companies[:3]])} together account for approximately "
@@ -530,7 +626,7 @@ def build(slug: str) -> Path:
     # ===================================================================== #
     ms = f.get("market_size", {}) or {}
     hist = ms.get("historical_usd_mn") or {}
-    b.section_start(2, f"Global {root} Market Size Outlook ({by})", conf("market_size", size=True))
+    b.section_start(2, f"Global {root} Market Size Outlook ({by}–{fy})", conf("market_size", size=True))
     hist_txt = ""
     if hist:
         hy = sorted(hist)
@@ -541,13 +637,13 @@ def build(slug: str) -> Path:
                        f", a compound annual growth rate of {_pct(((h1 / h0) ** (1 / max(1, len(hy) - 1)) - 1) * 100)}."))
     b.para(P(2, "p1") or f"We estimate the global {root} market at {n['base_val_fmt']} in {by}.{hist_txt}")
     b.figure(charts / "fig1_1_market_size.png",
-             f"Figure 1.1 - Global {root} market: historical {sorted(hist)[0] if hist else by} to "
+             f"Global {root} market: historical {sorted(hist)[0] if hist else by} to "
              f"{sorted(hist)[-1] if hist else by} and base-case forecast {by} to {fy}, in USD {unit_word}.")
     b.h2("Long-Term Growth Outlook")
     leader_incr = (leader_d.get("forecast_value_usd_mn", 0) or 0) - (leader_d.get("value_usd_mn", 0) or 0)
     b.para(P(2, "p2") or f"The global {root} market is projected to reach {n['fc_val_fmt']} by {fy}, growing at a CAGR of "
            f"{_pct(cagr)}. {leader} is expected to add the most absolute value, about {_usd(leader_incr)} between "
-           f"{by} and 2030, while {_short(fast_app.get('name', ''))} is the fastest-growing application at "
+           f"{by} and 2030, while {_short(fast_app.get('name', ''))} is the fastest-growing {low(app_s)} at "
            f"{_pct(fast_app.get('cagr_2025_2030_pct'))} a year.")
     mult = (n["fc_val"] / n["base_val"]) if n["base_val"] else 0
     b.callout(P(2, "callout") or f"Compounding at {_pct(cagr)} a year, the market grows {mult:.1f}x between {by} and {fy} -- "
@@ -556,7 +652,7 @@ def build(slug: str) -> Path:
     # ===================================================================== #
     # 3. Drivers & challenges
     # ===================================================================== #
-    b.section_start(3, "Market Dynamics- Drivers & Challenges", conf("drivers_restraints"))
+    b.section_start(3, "Market Dynamics – Drivers & Challenges", conf("drivers_restraints"))
     D, R = n["total_driver_bps"], n["total_restraint_bps"]
     balance = "remains strongly favorable" if R < D * 0.35 else "remains favorable" if R < D * 0.6 else "is finely balanced"
     b.para(P(3, "p1") or f"The market's growth fundamentals remain {'strongly positive' if R < D * 0.35 else 'positive'}. "
@@ -564,7 +660,7 @@ def build(slug: str) -> Path:
            f"while structural restraints reduce growth by around {R:.0f} basis points. The overall balance {balance}, "
            f"supporting our projected {_pct(cagr)} long-term growth outlook.")
     b.figure(charts / "fig2_1_drivers_restraints.png",
-             "Figure 2.1 - What pushes growth up, and what pulls it down, in basis points of annual CAGR.")
+             "What pushes growth up, and what pulls it down, in basis points of annual CAGR.")
     if drivers:
         b.h2("What Is Driving Market Growth")
         txt = (f"{_cap(dn[0])} remains the market's strongest growth driver, contributing nearly "
@@ -598,24 +694,31 @@ def build(slug: str) -> Path:
         txt += (f" {_FORCE_NAMES[ranked[0][1]]} and {_FORCE_NAMES[ranked[1][1]].lower()} remain the most intense "
                 f"forces, while {_FORCE_NAMES[ranked[-1][1]].lower()} remains relatively limited.")
     b.para(P(4, "p1") or txt)
-    b.figure(charts / "fig3_1_porters.png", f"Figure 3.1 - Porter's Five Forces for the global {root} industry, scored 1 to 5.")
+    b.figure(charts / "fig3_1_porters.png", f"Porter's Five Forces for the global {root} industry, scored 1 to 5.")
     b.h2(f"How Attractive Is the {root} Industry")
-    b.bullets([f"{_FORCE_NAMES[k]} – {forces[k].get('label', 'Medium')} ({forces[k].get('score_1_5', 3):.0f}/5): "
+    b.bullets([f"{_FORCE_NAMES[k]} – {forces[k].get('label', 'Medium')} ({_score(forces[k].get('score_1_5', 3))}/5): "
                f"{_cap(_strip_rating(PD(4, 'forces', k)) or _FORCE_NOTES[k][forces[k].get('label', 'Medium')])}"
                for k in ["supplier_power", "competitive_rivalry", "buyer_power", "threat_of_new_entrants", "threat_of_substitutes"]
                if k in forces], proto=BULLET)
 
     # ===================================================================== #
-    # 5. Grades / types and forms
+    # 5. Segmentation (the template's "grades and forms" -- headings use what
+    #    the two lists actually are for this market, e.g. "Shrimp Species")
     # ===================================================================== #
     seg = f.get("segmentation_grade_form", {}) or {}
     grades = sorted(seg.get("by_grade_or_type", []) or [], key=lambda g: g.get("share_pct_of_market", 0), reverse=True)
     forms = sorted(seg.get("by_form", []) or [], key=lambda g: g.get("share_pct_of_market", 0), reverse=True)
-    b.section_start(5, "Understanding Demand Across Grades and Forms", conf("segmentation_grade_form"))
+    if grades and lab["grade_duplicates_application"] and apps:
+        # The "grade" list is Section 6's application list again, with different
+        # shares -- printing both would show two conflicting splits of one thing.
+        b.skipped.append(f"Section 5 {low(grade_p)} split (duplicates Section 6's {low(app_p)} split)")
+        grades = []
+    seg_title = " and ".join(x for x, items in ((grade_p, grades), (form_p, forms)) if items) or "Product Segments"
+    b.section_start(5, f"Understanding Demand Across {seg_title}", conf("segmentation_grade_form"))
     if grades:
-        b.h3("How Different Grades Shape Market Demand")
+        b.h3(f"How Different {grade_p} Shape Market Demand")
         g0 = grades[0]
-        txt = (f"The {root} market is segmented across {len(grades)} product types -- "
+        txt = (f"The {root} market is segmented across {len(grades)} {low(grade_p)} -- "
                f"{_join([_short(g['name']) for g in grades])} -- each with distinct specifications, requirements, "
                f"and pricing dynamics. {_short(g0['name'])} remains the largest segment, accounting for "
                f"{_pct(g0.get('share_pct_of_market'))} of the {by} market value ({_usd(g0.get('value_usd_mn'))})")
@@ -626,34 +729,37 @@ def build(slug: str) -> Path:
         if len(grades) > 2:
             txt += (f" {_short(grades[-1]['name'])} represents the smallest share at "
                     f"{_pct(grades[-1].get('share_pct_of_market'))}.")
-        b.side_figure(charts / "fig4_1_grade.png", f"Figure 4.1 - {root} market value by type, {by} estimate.",
+        b.side_figure(charts / "fig4_1_grade.png", f"{root} market value by {low(grade_s)}, {by} estimate.",
                       P(5, "grades") or txt)
     if forms:
-        b.h3("Understanding Demand Across Forms")
+        b.h3(f"{form_p} and Their Share of Demand")
         f0 = forms[0]
         ff = max(forms, key=lambda x: x.get("fastest_growing_cagr_pct") or 0)
-        txt = (f"The physical form of the product plays an important role in determining application suitability "
-               f"and pricing dynamics. {_short(f0['name'])} dominates the market, accounting for "
+        txt = (f"Demand also varies by {low(form_s)}, which shapes suitability for different uses and pricing "
+               f"dynamics. {_short(f0['name'])} dominates, accounting for "
                f"{_pct(f0.get('share_pct_of_market'))} of total value.")
-        if ff is f0:
-            txt += f" It is also the fastest-growing form, expanding at {_pct(ff.get('fastest_growing_cagr_pct'))} annually."
-        else:
-            txt += (f" {_short(ff['name'])} is emerging as the fastest-growing form, expanding at "
-                    f"{_pct(ff.get('fastest_growing_cagr_pct'))} annually.")
+        if ff.get("fastest_growing_cagr_pct"):
+            if ff is f0:
+                txt += f" It is also the fastest-growing {low(form_s)}, expanding at {_pct(ff.get('fastest_growing_cagr_pct'))} annually."
+            else:
+                txt += (f" {_short(ff['name'])} is the fastest-growing {low(form_s)}, expanding at "
+                        f"{_pct(ff.get('fastest_growing_cagr_pct'))} annually.")
         rest = [x for x in forms[1:] if x is not ff]
         if rest:
             txt += " " + _cap(_join([f"{_short(x['name'])} ({_pct(x.get('share_pct_of_market'))})" for x in rest])) + \
                    " make up the remainder of the market."
-        b.side_figure(charts / "fig4_2_form.png", f"Figure 4.2 - {root} market value by physical form, {by} estimate.",
+        b.side_figure(charts / "fig4_2_form.png", f"{root} market value by {low(form_s)}, {by} estimate.",
                       P(5, "forms") or txt)
 
     # ===================================================================== #
-    # 6. End-use industries
+    # 6. Applications / end uses
     # ===================================================================== #
-    b.section_start(6, "Demand Distribution Across Key Industries", conf("end_use_industry"))
+    b.section_start(6, f"Demand Distribution Across Key {app_p}", conf("end_use_industry"))
     if apps:
-        b.h2("Growth Is Shifting Toward Higher-Value Applications")
-        txt = (f"{_short(apps[0]['name'])} remains the largest {root} application segment, accounting for "
+        # The two figures below are a share chart and a growth chart -- the
+        # heading names exactly that instead of asserting a trend.
+        b.h2(f"{app_p}: Share of Demand and Growth Outlook")
+        txt = (f"{_short(apps[0]['name'])} remains the largest {root} {low(app_s)} segment, accounting for "
                f"{_pct(apps[0].get('share_pct_of_market'))} of market value")
         if len(apps) > 2:
             txt += (f", followed by {_short(apps[1]['name'])} ({_pct(apps[1].get('share_pct_of_market'))}) and "
@@ -662,16 +768,16 @@ def build(slug: str) -> Path:
         if len(apps) > 3:
             txt += f" {_cap(_join([_short(a['name']) for a in apps[3:]]))} make up the remainder of the demand landscape."
         b.para(P(6, "p1") or txt)
-        b.figure(charts / "fig5_1_end_use_share.png", f"Figure 5.1 - End-use application share, {by} estimate.")
+        b.figure(charts / "fig5_1_end_use_share.png", f"Share of market value by {low(app_s)}, {by} estimate.")
         diff = (fast_app.get("cagr_2025_2030_pct", 0) or 0) - cagr
         vs = (f" -- well above the overall market CAGR of {_pct(cagr)}" if diff >= 2 else
               f" -- above the overall market CAGR of {_pct(cagr)}" if diff > 0.2 else
               f", in line with the overall market CAGR of {_pct(cagr)}")
-        b.para(P(6, "p2") or f"{_short(fast_app['name'])} {'is also' if fast_app is apps[0] else 'remains'} the fastest-growing {root} application, expanding at "
+        b.para(P(6, "p2") or f"{_short(fast_app['name'])} {'is also' if fast_app is apps[0] else 'is'} the fastest-growing {root} {low(app_s)}, expanding at "
                f"{_pct(fast_app.get('cagr_2025_2030_pct'))} annually{vs}. "
                + (f"{_short(slow_app['name'])} grows the slowest, at {_pct(slow_app.get('cagr_2025_2030_pct'))} a year."
                   if slow_app is not fast_app else ""))
-        b.figure(charts / "fig5_2_end_use_cagr.png", f"Figure 5.2 - Compound annual growth rates by end-use application, {by} to 2030.")
+        b.figure(charts / "fig5_2_end_use_cagr.png", f"Compound annual growth rate by {low(app_s)}, {by} to 2030.")
 
     # ===================================================================== #
     # 7. Sub-segments
@@ -680,16 +786,19 @@ def build(slug: str) -> Path:
     b.section_start(7, "High-Growth Sub-Segments Reshaping the Market", conf("sub_segments"))
     subs_all = [s for g in groups for s in g.get("sub_segments", []) or []]
     above = sum(1 for s in subs_all if (s.get("cagr_pct") or 0) > cagr)
+    # Only call the groups "applications" when they are Section 6's applications.
+    within = f"major {low(app_s)}" if lab["sub_groups_are_applications"] else f"of the {len(groups)} {low(grp_p)} below"
     if subs_all and above >= len(subs_all) / 2:
-        b.para(P(7, "p1") or "Overall market averages do not fully capture where growth is truly concentrated. Within each major "
-               "application segment, select high-growth niches are expanding well above the market average, offering "
-               "stronger pricing power, faster demand acceleration, and more attractive long-term investment opportunities.")
+        b.para(P(7, "p1") or f"Overall market averages do not fully capture where growth is truly concentrated. Within each "
+               f"{within}, select high-growth niches are expanding well above the {_pct(cagr)} market average, offering "
+               f"stronger pricing power, faster demand acceleration, and more attractive long-term investment opportunities.")
     else:
-        b.para(P(7, "p1") or f"Overall market averages do not fully capture where growth is concentrated. Within each major "
-               f"application segment, growth rates vary widely: only {above} of the {len(subs_all)} sub-segments we "
+        b.para(P(7, "p1") or f"Overall market averages do not fully capture where growth is concentrated. Within each "
+               f"{within}, growth rates vary widely: only {above} of the {len(subs_all)} sub-segments we "
                f"track are expanding faster than the {_pct(cagr)} market average, so niche selection matters.")
     b.figure(charts / "fig6_1_sub_segments.png",
-             f"Figure 6.1 - Sub-segment sizes and growth rates within {_join([_short(g.get('application', '')) for g in groups[:3]])}.")
+             f"Sub-segment growth rates (and sizes, where available) within "
+             f"{_join([_short(g.get('application', '')) for g in groups[:3]])}.")
     if groups:
         b.subhead("High-Growth Sub-Segments Driving Future Market Expansion")
         items = []
@@ -697,10 +806,10 @@ def build(slug: str) -> Path:
             subs = sorted(g.get("sub_segments") or [], key=lambda s: s.get("cagr_pct", 0), reverse=True)
             if not subs:
                 continue
-            top, low = subs[0], subs[-1]
+            top, bottom = subs[0], subs[-1]
             rest = f"{_short(top['name'])} is growing at {_pct(top.get('cagr_pct'))} annually"
-            if low is not top:
-                rest += f", compared with {_pct(low.get('cagr_pct'))} for {_short(low['name'])}"
+            if bottom is not top:
+                rest += f", compared with {_pct(bottom.get('cagr_pct'))} for {_short(bottom['name'])}"
             rest += (f" -- {'above' if top.get('cagr_pct', 0) > cagr else 'below'} the {_pct(cagr)} market average.")
             items.append((f"{_short(g.get('application', ''))}:", rest))
         b.lead_bullets(LB(7, "bullets") or items)
@@ -735,7 +844,7 @@ def build(slug: str) -> Path:
             b.callout(P(8, "callout") or f"Top-tier pricing runs at roughly {hi_mid / lo_mid:.0f}x the entry tier -- the same core "
                       f"product earns materially more value through specification, quality, and positioning.")
     if derivs:
-        b.figure(charts / "fig7_1_derivatives.png", f"Figure 7.1 - Derivative product market sizes, {by} estimate.")
+        b.figure(charts / "fig7_1_derivatives.png", f"Derivative product market sizes, {by} estimate.")
     if tiers:
         b.h2("The Multi-Tier Pricing Structure")
         b.para(P(8, "pricing") or f"{root} pricing varies significantly across tiers, reflecting differences in specification, quality "
@@ -771,11 +880,12 @@ def build(slug: str) -> Path:
         txt += "."
     txt += f" {fastest} is projected to grow fastest, at {_pct(fastest_d.get('cagr_2025_2030_pct'))} a year through 2030."
     b.para(P(9, "p1") or txt)
-    b.figure(charts / "fig8_1_regional.png", f"Figure 8.1 - Regional market size {by} and projected CAGR through 2030.")
+    b.figure(charts / "fig8_1_regional.png", f"Regional market size {by} (bars) and projected CAGR through 2030 (line).")
     chart_idx = {r: i for i, r in enumerate(ordered_regions(regions), start=1)}
     rank = {r: i for i, (r, _) in enumerate(reg_sorted, start=1)}
-    ordinal = {1: "largest", 2: "second-largest", 3: "third-largest", 4: "fourth-largest", 5: "smallest"}
-    for fig_no, rname in enumerate([r for r in TEMPLATE_REGION_ORDER if r in regions], start=9):
+    ordinal = {1: "largest", 2: "second-largest", 3: "third-largest", 4: "fourth-largest", len(rank): "smallest"}
+    used_desc: set[str] = set()
+    for rname in [r for r in TEMPLATE_REGION_ORDER if r in regions]:
         rd = regions[rname]
         rc = rd.get("cagr_2025_2030_pct", 0) or 0
         if rname == leader:
@@ -790,8 +900,11 @@ def build(slug: str) -> Path:
             desc = "A Mature, Steady-Growth Market"
         rprose = PD(9, "regions", rname) or {}
         if isinstance(rprose, dict) and isinstance(rprose.get("descriptor"), str):
-            desc = rprose["descriptor"].strip().strip(".")
-        b.add(b.set_text(b.clone(REGION_HEAD), f"{rname} \u2013 {desc}"))
+            ai_desc = rprose["descriptor"].strip().strip(".")
+            if ai_desc.lower() not in used_desc:      # no two regions with the same title
+                desc = ai_desc
+        used_desc.add(desc.lower())
+        b.heading(REGION_HEAD, f"{rname} \u2013 {desc}")
         countries = sorted(rd.get("countries") or [], key=lambda c: c.get("value_usd_mn", 0), reverse=True)
         rv = rd.get("value_usd_mn", 0) or 0
         txt = (f"{rname} represents the {ordinal.get(rank[rname], '')} {root} market, valued at {_usd(rv)} in {by} "
@@ -800,10 +913,11 @@ def build(slug: str) -> Path:
             txt += f", with {countries[0]['name']} contributing nearly {countries[0].get('value_usd_mn', 0) / rv * 100:.0f}% of regional demand"
         txt += (f". The region is projected to grow at {_pct(rc)} annually, reaching "
                 f"{_usd(rd.get('forecast_value_usd_mn'))} by 2030.")
-        b.para((rprose.get("para") if isinstance(rprose, dict) and isinstance(rprose.get("para"), str) else None) or txt)
+        txt = (rprose.get("para") if isinstance(rprose, dict) and isinstance(rprose.get("para"), str) else None) or txt
+        b.para(txt)
         b.figure(charts / f"fig{8 + chart_idx[rname]}_1_region_{chart_idx[rname]}.png",
-                 f"Figure {fig_no}.1 - {rname}: country market sizes and application mix, {by} estimate.")
-        b.add(b.set_text(b.clone(KEYDYN_HEAD), f"Key Market Dynamics – {rname}"))
+                 f"{rname}: market size by country and {low(mix_s)} mix, {by} estimate.")
+        b.heading(KEYDYN_HEAD, f"Key Market Dynamics \u2013 {rname}")
         dyn = []
         mix = sorted(rd.get("application_mix_pct") or [], key=lambda m: m.get("share_pct", 0), reverse=True)
         if mix:
@@ -816,6 +930,16 @@ def build(slug: str) -> Path:
             dyn.append(f"{countries[0]['name']} and {countries[1]['name']} together account for about {two:.0f}% of the regional market.")
         rb = rprose.get("bullets") if isinstance(rprose, dict) else None
         rb = [x for x in rb if isinstance(x, str)] if isinstance(rb, list) else []
+        if rb:
+            # The bullets sit under this region's chart (countries + mix), so
+            # they must speak to it: add the data bullet for whichever side the
+            # AI bullets leave out.
+            said = " ".join(rb + [txt])
+            if mix and not mentions(said, mix[0]["name"]):
+                rb.insert(0, dyn[0])
+            if len(countries) > 1 and rv and not mentions(said, countries[0]["name"]):
+                rb.append(dyn[-1])
+            rb = rb[:4]
         b.bullets(rb or dyn, proto=LIST_BULLET)
 
     # ===================================================================== #
@@ -828,7 +952,7 @@ def build(slug: str) -> Path:
                f"{_pct(named)} of total market value. Industry leadership is led by "
                f"{_join([c['name'] for c in companies[:3]])}, which together account for approximately "
                f"{_pct(top3)} of global revenue.")
-        b.figure(charts / "fig14_1_competitive.png", f"Figure 14.1 - Estimated market share by company, {by}.")
+        b.figure(charts / "fig14_1_competitive.png", f"Estimated market share by company, {by}.")
         b.h2("Market Leaders and Competitive Positioning")
         b.lead_bullets([(f"{c['name']} (~{c.get('share_pct', 0):.0f}% share):", _sentence(PD(10, "companies", c["name"]) or c.get("positioning_note", "")))
                         for c in companies[:5]])
@@ -851,7 +975,7 @@ def build(slug: str) -> Path:
                f"{lo:.1f}% and {hi:.1f}% to cost of goods sold, depending on product type, certification "
                f"requirements, and regional regulatory standards.")
         b.figure(charts / "fig15_1_regulation.png",
-                 "Figure 15.1 - Compliance cost burden by regulatory area, as a percentage of cost of goods sold.")
+                 "Compliance cost burden by regulatory area, as a percentage of cost of goods sold.")
         b.h2("Regulatory Complexity and Cost Burden Across Markets")
         items = [f"{_short(areas[0]['name'])} is the costliest pathway, adding an estimated "
                  f"{areas[0].get('cost_pct_of_cogs_low', 0):.1f}-{areas[0].get('cost_pct_of_cogs_high', 0):.1f}% to COGS."]
@@ -880,7 +1004,7 @@ def build(slug: str) -> Path:
                "profiles, so price sensitivity is assessed qualitatively through the pricing tiers in Section 8 "
                "and the investment opportunities in Section 13.")
     if segs:
-        b.add(b.set_text(b.clone(SUBHEAD), "Consumer Spending Patterns Are Becoming Increasingly Segmented"))
+        b.subhead("Buyer Spending Patterns Are Becoming Increasingly Segmented")
         wtp_unit = f.get("willingness_to_pay", {}).get("unit") or "USD"
         lo_s = min(segs, key=lambda s: s["baseline_usd"])
         hi_s = max(segs, key=lambda s: s["baseline_usd"])
@@ -889,8 +1013,8 @@ def build(slug: str) -> Path:
                f"{_price(hi_s['baseline_usd'])} {wtp_unit} for {_short(hi_s['name'])}, and every profile pays "
                f"more for at least one premium attribute.")
         b.figure(charts / "fig16_1_wtp.png",
-                 f"Figure 16.1 - Willingness to pay by buyer profile and product attribute, in {wtp_unit}.")
-        b.subhead("Consumer Behavior, Pricing Power, and Innovation Trends")
+                 f"Willingness to pay by buyer profile and product attribute, in {wtp_unit}.")
+        b.subhead("Buyer Behavior, Pricing Power, and Innovation Trends")
 
         def best(s):
             return max(((s.get(k) or 0) / s["baseline_usd"], k) for k in keys)
@@ -924,8 +1048,7 @@ def build(slug: str) -> Path:
                              f"{roi_label(o)} ({o.get('roi_low_pct', 0):.0f}-{o.get('roi_high_pct', 0):.0f}%)",
                              o.get("capital_intensity", "")] for o in opps])
         b.add(b.clone(SPACER))
-        b.add(b.set_text(b.clone(TABLE_CAPTION),
-                         "Table 17.1 - Go-to-market strategy matrix, ranked by expected ROI and time-to-market."))
+        b.table_caption("Go-to-market strategy matrix, ranked by expected ROI and time-to-market.")
         b.subhead("Highest-Potential Investment Opportunities")
         fastest_o = min(opps, key=lambda o: int(str(o.get("time_to_market", "99")).split("-")[0] or 99))
         light = [o for o in opps if str(o.get("capital_intensity", "")).lower().startswith("low")]
@@ -954,7 +1077,7 @@ def build(slug: str) -> Path:
            f"outcomes remain sensitive to {dn[0] if dn else 'demand growth'} on the upside and "
            f"{rn[0] if rn else 'structural headwinds'} on the downside. To reflect this uncertainty, we model three "
            f"realistic market scenarios spanning bullish, base-case, and downside growth trajectories.")
-    b.figure(charts / "fig18_1_scenarios.png", f"Figure 18.1 - Bear, base, and bull case forecasts, {by} to {fy}.")
+    b.figure(charts / "fig18_1_scenarios.png", f"Bear, base, and bull case forecasts, {by} to {fy}.")
     b.subhead("Scenario Outlook: Bear, Base, and Bull Case Futures")
     b.lead_bullets([
         (f"Bear Case – {_usd_title(bear.get('terminal_value_usd_mn'))} by {fy} ({_pct(bear.get('cagr_pct'))} CAGR):",
@@ -1013,8 +1136,55 @@ def build(slug: str) -> Path:
                         if len(tabs) > 1:
                             p._p.remove(tabs[0]._r)
 
+    b.sync_toc()
     out = market_dir / f"{slug}-whitepaper.docx"
     b.save(out)
+    for line in qa(b, n, data):
+        print(line)
+    return out
+
+
+_CONC_RE = re.compile(r"\b(highly concentrated|moderately concentrated|fragmented)\b", re.I)
+
+
+def qa(b: Builder, n: dict, data: dict) -> list[str]:
+    """Post-build checks for the problems that kept recurring: repeated
+    headings, template wording that doesn't match this market, the headline
+    size restated section after section, and contradicting the competition
+    label. Returns printable lines (does not fail the build)."""
+    issues = []
+    heads = [(sec, h.strip().rstrip(":")) for sec, h in b.heads if h.strip()]
+    seen: dict[str, int] = {}
+    for sec, h in heads:
+        key = re.sub(r"\W+", " ", h.lower()).strip()
+        if key in seen:
+            issues.append(f"duplicate heading (sections {seen[key]} and {sec}): {h}")
+        seen.setdefault(key, sec)
+    for i, (s1, h1) in enumerate(heads):
+        for s2, h2 in heads[i + 1:]:
+            if s1 != s2 and similar_heading(h1, h2, b.market) and h1.lower() != h2.lower():
+                issues.append(f"near-duplicate headings (sections {s1} and {s2}): '{h1}' / '{h2}'")
+
+    fc = n["fc_val_fmt"].replace("USD ", "")
+    restated = sorted({sec for sec, t in b.texts if sec not in (1, 2, 14, 15) and fc in t})
+    if restated:
+        issues.append(f"headline forecast ({fc}) restated in section(s) {restated}")
+
+    comps = (n["fields"].get("competitive_landscape") or {}).get("companies") or []
+    conc = concentration_label(sum(c.get("share_pct", 0) for c in comps[:3]))
+    for sec, t in b.texts:
+        for m in _CONC_RE.finditer(t):
+            if m.group(1).lower() != conc and re.search(r"compet|player|compan|landscape|share", t, re.I):
+                issues.append(f"section {sec} calls competition '{m.group(1)}' but top-3 share makes it {conc}")
+                break
+
+    for sec, t in b.texts:
+        if "vitamin c" in t.lower():
+            issues.append(f"section {sec} still mentions Vitamin C: {t[:70]}")
+
+    out = [f"QA: {len(issues)} issue(s)" + (":" if issues else " -- headings unique, captions numbered by section")]
+    out += [f"  - {i}" for i in issues]
+    out += [f"  (left out) {s}" for s in b.skipped]
     return out
 
 

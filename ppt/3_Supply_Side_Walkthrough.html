@@ -261,7 +261,7 @@
   <div class="hero">
     <h1>Approach 3 — Olive Oil: Supply-Side (Vendor Revenue)</h1>
     <p>Take every company that earns revenue directly in this market, keep only the part of its revenue that comes from this market, and add them up. This also gives each company's market share.</p>
-    <div class="status-banner real">Real recorded run · Olive Oil · $8.21 Bn</div>
+    <div class="status-banner real">Real recorded run · Olive Oil · $12.65 Bn</div>
   </div>
 
   <div class="legend">
@@ -270,7 +270,7 @@
     <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
     <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
     <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
-    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ A = assumption (no source found)</span>
     <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
   </div>
 
@@ -310,56 +310,85 @@ const BADGE_REAL = "Real Recorded Run";
 const STEPS = [
  {
   "id": "vendors",
-  "name": "Vendor Discovery",
+  "name": "Vendor List",
   "data_tag": "real",
   "stage": "vendors",
-  "source": "llm",
-  "data_tag_note": "company_data_sources in the recorded supply-side report.",
+  "source": "web",
+  "data_tag_note": "Company list source: vendor-intelligence report: olive_oil_market_global.csv.",
   "agent": {
-   "name": "Discovery Agent (LLM + web) + Website Verifier",
-   "role": "Lists the companies that earn revenue directly in this market (not the whole value chain); HTTP-checks each website to catch invented names."
+   "name": "Vendor Intelligence (company finder)",
+   "role": "Multi-round web search, validation and classification of the companies in this market; only Manufacturers are used."
   },
   "inputShort": "Market: Olive Oil",
-  "outputLabel": "33 companies",
-  "reason": "Only direct revenue contributors to THIS market are counted.",
+  "outputLabel": "61 companies · ≈56% of market",
+  "reason": "Only direct revenue contributors to THIS market are counted. Vendor intelligence estimates the companies found cover ≈56% of a ≈$15.67 Bn market (an estimate; runtime 13 min).",
   "output": [
-   "Deoleo",
-   "Sovena",
-   "Mueloliva",
-   "Borges International Group",
-   "Gallo",
-   "Grupo Ybarra",
-   "Filippo Berio",
-   "Colavita",
-   "Monini",
-   "Mazzola",
-   "Pompeian",
-   "California Olive Ranch",
-   "Lucini Italia",
-   "Cobram Estate",
-   "Jupiter Group",
-   "Minerva",
-   "Terra Creta",
-   "Gaea",
-   "Sesajal",
-   "Aceites del Sur",
-   "Aceites Toledo",
-   "Jaencoop",
-   "Olivarera de Mora",
-   "Barton Olive Oil Co",
-   "Enzo Olive Oil Company",
-   "McEvoy Ranch",
-   "Texas Olive Ranch",
-   "Olio Roi",
-   "Frantoio Franci",
-   "Ravida",
-   "Terra Medi",
-   "Laconiko",
-   "Kalamata Olive Oil"
+   {
+    "l": "Deoleo S.A.",
+    "v": "≈$900.0M · ≈5.7% share"
+   },
+   {
+    "l": "Sovena Group",
+    "v": "≈$700.0M · ≈4.5% share"
+   },
+   {
+    "l": "Borges International Group",
+    "v": "≈$550.0M · ≈3.5% share"
+   },
+   {
+    "l": "Dcoop Group",
+    "v": "≈$500.0M · ≈3.2% share"
+   },
+   {
+    "l": "Salov Group",
+    "v": "≈$400.0M · ≈2.6% share"
+   },
+   {
+    "l": "ACESUR",
+    "v": "≈$350.0M · ≈2.2% share"
+   },
+   {
+    "l": "Colavita",
+    "v": "≈$300.0M · ≈1.9% share"
+   },
+   {
+    "l": "Gallo (Grupo Gallo)",
+    "v": "≈$250.0M · ≈1.6% share"
+   },
+   {
+    "l": "Pompeian, Inc.",
+    "v": "≈$220.0M · ≈1.4% share"
+   },
+   {
+    "l": "Cargill Incorporated",
+    "v": "≈$200.0M · ≈1.3% share"
+   },
+   {
+    "l": "Minerva (Minerva S.A.)",
+    "v": "≈$180.0M · ≈1.1% share"
+   },
+   {
+    "l": "Terra Delyssa (Olio Terra Delyssa)",
+    "v": "≈$150.0M · ≈1.0% share"
+   },
+   {
+    "l": "The Tunisian Olive Oil Company",
+    "v": "≈$120.0M · ≈0.8% share"
+   },
+   {
+    "l": "Sun Grove Foods, Inc.",
+    "v": "≈$100.0M · ≈0.6% share"
+   },
+   {
+    "l": "Cairo Oil and Soap Co.",
+    "v": "≈$90.0M · ≈0.6% share"
+   }
   ],
   "activity": [
-   "LLM + web discovery",
-   "Website verification"
+   "Finding the largest players first",
+   "Multi-round web search",
+   "Validating & classifying companies",
+   "Stopping at ~70-80% market coverage or the time limit"
   ]
  },
  {
@@ -373,21 +402,17 @@ const STEPS = [
    "name": "Deterministic Code — screen_node",
    "role": "Drops distributors/retailers (they resell other vendors' products, so counting them double-counts revenue) and merges brands into their parent company."
   },
-  "inputShort": "40 discovered",
-  "outputLabel": "0 excluded · 7 merged",
+  "inputShort": "63 discovered",
+  "outputLabel": "0 excluded · 2 merged",
   "reason": "Only companies that earn revenue directly from this market are counted, each exactly once.",
   "output": [
    {
     "l": "Deoleo",
-    "v": "kept; merged Carbonell, Bertolli, Olio Carapelli, Olio Sasso, Hojiblanca"
+    "v": "kept; merged Carbonell"
    },
    {
-    "l": "Borges International Group",
-    "v": "kept; merged Borges Agricultural & Industrial Nuts"
-   },
-   {
-    "l": "Cobram Estate",
-    "v": "kept; merged Boundary Bend"
+    "l": "Acesur",
+    "v": "kept; merged Coosur"
    }
   ],
   "activity": [
@@ -407,7 +432,7 @@ const STEPS = [
    "name": "Financials Agent (Yahoo Finance + InsightSentry)",
    "role": "Pulls each company's real total revenue, plus revenue by region and business line where available."
   },
-  "inputShort": "33 companies",
+  "inputShort": "61 companies",
   "outputLabel": "2 with real financials",
   "reason": "Real reported revenue caps every later estimate.",
   "output": [
@@ -420,19 +445,11 @@ const STEPS = [
     "v": "web evidence"
    },
    {
-    "l": "Mueloliva",
-    "v": "web evidence"
-   },
-   {
     "l": "Borges International Group",
     "v": "web evidence"
    },
    {
-    "l": "Gallo",
-    "v": "web evidence"
-   },
-   {
-    "l": "Grupo Ybarra",
+    "l": "Dcoop Group",
     "v": "web evidence"
    },
    {
@@ -440,27 +457,35 @@ const STEPS = [
     "v": "web evidence"
    },
    {
+    "l": "Salov Group",
+    "v": "web evidence"
+   },
+   {
+    "l": "Acesur",
+    "v": "web evidence"
+   },
+   {
+    "l": "Aceites Borges Pont",
+    "v": "web evidence"
+   },
+   {
     "l": "Colavita",
     "v": "web evidence"
    },
    {
-    "l": "Monini",
+    "l": "Gallo",
     "v": "web evidence"
    },
    {
-    "l": "Mazzola",
+    "l": "Pompeian, Inc.",
     "v": "web evidence"
    },
    {
-    "l": "Pompeian",
+    "l": "Cargill Incorporated",
     "v": "web evidence"
    },
    {
-    "l": "California Olive Ranch",
-    "v": "web evidence"
-   },
-   {
-    "l": "Lucini Italia",
+    "l": "Oleificio Zucchi",
     "v": "web evidence"
    },
    {
@@ -468,31 +493,39 @@ const STEPS = [
     "v": "real financials"
    },
    {
-    "l": "Jupiter Group",
+    "l": "Terra Delyssa",
     "v": "web evidence"
    },
    {
-    "l": "Minerva",
+    "l": "The Tunisian Olive Oil Company",
     "v": "web evidence"
    },
    {
-    "l": "Terra Creta",
+    "l": "California Olive Ranch",
     "v": "web evidence"
    },
    {
-    "l": "Gaea",
+    "l": "Olio Carli",
     "v": "web evidence"
    },
    {
-    "l": "Sesajal",
+    "l": "Sun Grove Foods, Inc.",
     "v": "web evidence"
    },
    {
-    "l": "Aceites del Sur",
+    "l": "Cairo Oil and Soap Co.",
     "v": "web evidence"
    },
    {
-    "l": "Aceites Toledo",
+    "l": "Agro Foods & Spices",
+    "v": "web evidence"
+   },
+   {
+    "l": "Lamasia",
+    "v": "web evidence"
+   },
+   {
+    "l": "Mueloliva",
     "v": "web evidence"
    },
    {
@@ -500,47 +533,151 @@ const STEPS = [
     "v": "web evidence"
    },
    {
-    "l": "Olivarera de Mora",
+    "l": "Oleoestepa",
     "v": "web evidence"
    },
    {
-    "l": "Barton Olive Oil Co",
+    "l": "Grupo Hojiblanca",
     "v": "web evidence"
    },
    {
-    "l": "Enzo Olive Oil Company",
+    "l": "Aceites Molisur",
     "v": "web evidence"
    },
    {
-    "l": "McEvoy Ranch",
+    "l": "Boundary Bend",
     "v": "web evidence"
    },
    {
-    "l": "Texas Olive Ranch",
+    "l": "Gaea",
     "v": "web evidence"
    },
    {
-    "l": "Olio Roi",
+    "l": "Lucini Italia",
     "v": "web evidence"
    },
    {
-    "l": "Frantoio Franci",
+    "l": "Olivapalacios",
     "v": "web evidence"
    },
    {
-    "l": "Ravida",
+    "l": "Wiloil International",
     "v": "web evidence"
    },
    {
-    "l": "Terra Medi",
+    "l": "Ybarra (Grupo Ybarra)",
+    "v": "web evidence"
+   },
+   {
+    "l": "Farchioni Olii S.p.A.",
+    "v": "web evidence"
+   },
+   {
+    "l": "Almazaras de la Subbética",
+    "v": "web evidence"
+   },
+   {
+    "l": "Monini",
+    "v": "web evidence"
+   },
+   {
+    "l": "Oro Bailén",
+    "v": "web evidence"
+   },
+   {
+    "l": "Costa d'Oro",
+    "v": "web evidence"
+   },
+   {
+    "l": "Artemoliva",
+    "v": "web evidence"
+   },
+   {
+    "l": "Frantoia",
+    "v": "web evidence"
+   },
+   {
+    "l": "Olitalia",
+    "v": "web evidence"
+   },
+   {
+    "l": "Olivais do Sul",
+    "v": "web evidence"
+   },
+   {
+    "l": "Terra Creta",
+    "v": "web evidence"
+   },
+   {
+    "l": "Sasso",
+    "v": "web evidence"
+   },
+   {
+    "l": "Tariszeytin",
+    "v": "web evidence"
+   },
+   {
+    "l": "Castillo de Canena",
+    "v": "web evidence"
+   },
+   {
+    "l": "Ellouze1870",
+    "v": "web evidence"
+   },
+   {
+    "l": "Herdade do Esporão",
+    "v": "web evidence"
+   },
+   {
+    "l": "Maeva Group",
+    "v": "web evidence"
+   },
+   {
+    "l": "Papadopoulosoliveoil",
+    "v": "web evidence"
+   },
+   {
+    "l": "Taris",
+    "v": "web evidence"
+   },
+   {
+    "l": "Sitia",
+    "v": "web evidence"
+   },
+   {
+    "l": "Zeta Olive Oil",
+    "v": "web evidence"
+   },
+   {
+    "l": "Almazara El Toro",
+    "v": "web evidence"
+   },
+   {
+    "l": "Evoliveoil",
+    "v": "web evidence"
+   },
+   {
+    "l": "Greekliquidgold",
+    "v": "web evidence"
+   },
+   {
+    "l": "Madridlands",
+    "v": "web evidence"
+   },
+   {
+    "l": "Molinodelacalzada",
+    "v": "web evidence"
+   },
+   {
+    "l": "Biolea",
+    "v": "web evidence"
+   },
+   {
+    "l": "Cortijo El Puerto",
     "v": "web evidence"
    },
    {
     "l": "Laconiko",
-    "v": "web evidence"
-   },
-   {
-    "l": "Kalamata Olive Oil",
     "v": "web evidence"
    }
   ],
@@ -553,7 +690,7 @@ const STEPS = [
    {
     "label": "Web evidence only",
     "passed": true,
-    "detail": "31 companies"
+    "detail": "59 companies"
    },
    {
     "label": "No real data",
@@ -578,7 +715,7 @@ const STEPS = [
    "role": "Keeps only the part of each company's revenue that belongs to this market (e.g. only Google's cloud-API revenue, not all of Google), split by country; capped at the company's real total revenue."
   },
   "inputShort": "Company revenue + business-line mix",
-  "outputLabel": "$5,247.5M named-vendor revenue",
+  "outputLabel": "$8,665.1M named-vendor revenue",
   "reason": "The market-specific slice of each vendor's revenue.",
   "aggregations": [
    {
@@ -586,75 +723,95 @@ const STEPS = [
     "rows": [
      {
       "label": "Spain",
-      "value": "$1,895.1M"
+      "value": "$2,125.5M"
      },
      {
       "label": "Italy",
-      "value": "$768.8M"
+      "value": "$1,727.1M"
      },
      {
       "label": "Greece",
-      "value": "$158.0M"
+      "value": "$300.8M"
      },
      {
       "label": "Tunisia",
-      "value": "$61.3M"
+      "value": "$173.0M"
      },
      {
       "label": "Turkey",
-      "value": "$52.3M"
+      "value": "$149.0M"
      },
      {
       "label": "Morocco",
-      "value": "$39.9M"
-     },
-     {
-      "label": "Portugal",
-      "value": "$272.6M"
+      "value": "$59.5M"
      },
      {
       "label": "Syria",
-      "value": "$11.5M"
+      "value": "$16.4M"
      },
      {
-      "label": "Algeria",
-      "value": "$16.1M"
-     },
-     {
-      "label": "Argentina",
-      "value": "$79.3M"
+      "label": "Portugal",
+      "value": "$258.7M"
      },
      {
       "label": "United States",
-      "value": "$1,068.7M"
+      "value": "$1,948.4M"
      },
      {
-      "label": "France",
-      "value": "$155.7M"
+      "label": "Brazil",
+      "value": "$182.5M"
+     },
+     {
+      "label": "Argentina",
+      "value": "$70.0M"
+     },
+     {
+      "label": "Chile",
+      "value": "$50.6M"
+     },
+     {
+      "label": "Australia",
+      "value": "$357.8M"
+     },
+     {
+      "label": "China",
+      "value": "$125.8M"
+     },
+     {
+      "label": "Japan",
+      "value": "$136.5M"
+     },
+     {
+      "label": "India",
+      "value": "$89.4M"
+     },
+     {
+      "label": "Saudi Arabia",
+      "value": "$64.6M"
+     },
+     {
+      "label": "United Arab Emirates",
+      "value": "$61.6M"
      },
      {
       "label": "Rest of Europe",
-      "value": "$295.5M"
+      "value": "$430.9M"
      },
      {
-      "label": "Rest of Middle East & North Africa",
-      "value": "$129.5M"
-     },
-     {
-      "label": "Rest of Americas",
-      "value": "$205.2M"
+      "label": "Rest of Middle East & Africa",
+      "value": "$130.8M"
      },
      {
       "label": "Rest of Asia-Pacific",
-      "value": "$27.3M"
+      "value": "$135.2M"
      },
      {
-      "label": "Rest of Sub-Saharan Africa",
-      "value": "$10.8M"
+      "label": "Rest of Latin America",
+      "value": "$71.0M"
      }
     ],
     "totalLabel": "Named vendors, all countries",
-    "total": "$5,247.5M"
+    "total": "$8,665.1M"
    }
   ],
   "activity": [
@@ -674,98 +831,118 @@ const STEPS = [
    "name": "Coverage Agent (LLM) + Code",
    "role": "Estimates what fraction of each country's market the named vendors cover; code divides to get the full country market."
   },
-  "inputShort": "Spain: $1,895.1M",
-  "outputLabel": "Spain: $2,368.8M",
+  "inputShort": "United States: $1,948.4M",
+  "outputLabel": "United States: $2,597.9M",
   "reason": "Fragmented countries get a low coverage fraction, concentrated ones a high one.",
   "flowCalc": {
    "a": {
-    "value": "$1,895.1M",
-    "unit": "named vendors · Spain",
+    "value": "$1,948.4M",
+    "unit": "named vendors · United States",
     "src": "llm"
    },
    "opLabel": "÷",
    "b": {
-    "value": "80%",
+    "value": "75%",
     "unit": "coverage fraction",
     "src": "assumption"
    },
    "result": {
-    "value": "$2,368.8M",
+    "value": "$2,597.9M",
     "src": "code"
    },
    "final": {
-    "big": "$2,368.8M",
-    "cap": "Spain market"
+    "big": "$2,597.9M",
+    "cap": "United States market"
    }
   },
   "output": [
    {
     "l": "Spain",
-    "v": "coverage 80% → $2,368.8M"
+    "v": "coverage 85% → $2,500.6M"
    },
    {
     "l": "Italy",
-    "v": "coverage 70% → $1,098.2M"
+    "v": "coverage 80% → $2,158.9M"
    },
    {
     "l": "Greece",
-    "v": "coverage 60% → $263.3M"
+    "v": "coverage 75% → $401.0M"
    },
    {
     "l": "Tunisia",
-    "v": "coverage 50% → $122.7M"
+    "v": "coverage 70% → $247.1M"
    },
    {
     "l": "Turkey",
-    "v": "coverage 50% → $104.5M"
+    "v": "coverage 65% → $229.2M"
    },
    {
     "l": "Morocco",
-    "v": "coverage 50% → $79.7M"
-   },
-   {
-    "l": "Portugal",
-    "v": "coverage 60% → $454.3M"
+    "v": "coverage 60% → $99.2M"
    },
    {
     "l": "Syria",
-    "v": "coverage 40% → $28.9M"
+    "v": "coverage 50% → $32.8M"
    },
    {
-    "l": "Algeria",
-    "v": "coverage 40% → $40.2M"
-   },
-   {
-    "l": "Argentina",
-    "v": "coverage 50% → $158.7M"
+    "l": "Portugal",
+    "v": "coverage 70% → $369.6M"
    },
    {
     "l": "United States",
-    "v": "coverage 70% → $1,526.7M"
+    "v": "coverage 75% → $2,597.9M"
    },
    {
-    "l": "France",
-    "v": "coverage 60% → $259.5M"
+    "l": "Brazil",
+    "v": "coverage 60% → $304.1M"
+   },
+   {
+    "l": "Argentina",
+    "v": "coverage 55% → $127.3M"
+   },
+   {
+    "l": "Chile",
+    "v": "coverage 50% → $101.2M"
+   },
+   {
+    "l": "Australia",
+    "v": "coverage 70% → $511.2M"
+   },
+   {
+    "l": "China",
+    "v": "coverage 50% → $251.6M"
+   },
+   {
+    "l": "Japan",
+    "v": "coverage 55% → $248.2M"
+   },
+   {
+    "l": "India",
+    "v": "coverage 50% → $178.7M"
+   },
+   {
+    "l": "Saudi Arabia",
+    "v": "coverage 50% → $129.2M"
+   },
+   {
+    "l": "United Arab Emirates",
+    "v": "coverage 50% → $123.2M"
    },
    {
     "l": "Rest of Europe",
-    "v": "coverage 40% → $738.7M"
+    "v": "coverage 40% → $1,077.3M"
    },
    {
-    "l": "Rest of Middle East & North Africa",
-    "v": "coverage 40% → $323.8M"
-   },
-   {
-    "l": "Rest of Americas",
-    "v": "coverage 40% → $513.0M"
+    "l": "Rest of Middle East & Africa",
+    "v": "coverage 35% → $373.7M"
    },
    {
     "l": "Rest of Asia-Pacific",
-    "v": "coverage 30% → $91.2M"
+    "v": "coverage 35% → $386.4M"
    },
    {
-    "l": "Rest of Sub-Saharan Africa",
-    "v": "coverage 30% → $36.0M"
+    "l": "Rest of Latin America",
+    "v": "coverage 35% → $202.8M"
    }
   ],
   "activity": [
@@ -785,56 +962,56 @@ const STEPS = [
    "role": "Each company's revenue ÷ the market total, per country and globally."
   },
   "inputShort": "Company revenue per country",
-  "outputLabel": "Top: Aceites del Sur 13.8%",
+  "outputLabel": "Top: Acesur 8.1%",
   "reason": "The supply side also tells us WHO holds the market.",
   "output": [
    {
-    "l": "Aceites del Sur",
-    "v": "13.8% · $1,134.0M"
-   },
-   {
-    "l": "Sovena",
-    "v": "12.4% · $1,014.0M"
+    "l": "Acesur",
+    "v": "8.1% · $1,020.0M"
    },
    {
     "l": "Deoleo",
-    "v": "9.8% · $808.0M"
+    "v": "6.4% · $808.7M"
    },
    {
-    "l": "Gallo",
-    "v": "5.2% · $425.0M"
+    "l": "Dcoop Group",
+    "v": "6.2% · $785.0M"
    },
    {
-    "l": "Borges International Group",
-    "v": "3.5% · $290.0M"
+    "l": "Sovena",
+    "v": "5.5% · $700.0M"
    },
    {
-    "l": "Jaencoop",
-    "v": "3.5% · $287.0M"
+    "l": "Salov Group",
+    "v": "4.3% · $540.0M"
    },
    {
     "l": "Filippo Berio",
-    "v": "3.0% · $250.0M"
+    "v": "4.0% · $500.0M"
    },
    {
     "l": "Monini",
-    "v": "2.9% · $238.0M"
+    "v": "2.2% · $278.0M"
    },
    {
-    "l": "Sesajal",
-    "v": "2.0% · $165.0M"
+    "l": "Colavita",
+    "v": "2.0% · $255.0M"
    },
    {
-    "l": "California Olive Ranch",
-    "v": "1.8% · $149.7M"
+    "l": "Gallo",
+    "v": "2.0% · $250.0M"
    },
    {
-    "l": "Grupo Ybarra",
-    "v": "1.8% · $147.3M"
+    "l": "Borges International Group",
+    "v": "2.0% · $247.5M"
    },
    {
-    "l": "Cobram Estate",
-    "v": "1.4% · $113.1M"
+    "l": "Olitalia",
+    "v": "1.9% · $235.0M"
+   },
+   {
+    "l": "Boundary Bend",
+    "v": "1.8% · $232.5M"
    }
   ],
   "activity": [
@@ -853,42 +1030,28 @@ const STEPS = [
    "name": "Evidence Estimator (no LLM)",
    "role": "Collects market-size figures quoted on the web, filters by relevance and takes the median."
   },
-  "inputShort": "5 quoted figures",
-  "outputLabel": "$14.00 Bn",
+  "inputShort": "3 quoted figures",
+  "outputLabel": "$15.67 Bn",
   "reason": "An independent referee for the company-based total.",
   "sources": [
    {
     "name": "Quoted figure 1",
-    "excerpt": "Olive Oil For Massage Market Size 2026 | Trends, Size & Automation...: Download Sample Get Special Discount. Olive Oil For Massage Market Global Outlook, Country Deep-Dives & Strategic Opportunities (2024-2033) Market size (2024): USD 320 million · Forecast (2033): 517.78 Million USD · CAGR: 6.2%.",
-    "extractedValue": "320",
+    "excerpt": "Olive Oil Market Size, Trends & Growth Forecast 2035: Sep 7, 2026 · Olive Oil Market Size is USD 16.03 billion in 2026 and expected to expand to USD 28.94 billion by 2035, at a CAGR of 4.1%.",
+    "extractedValue": "—",
     "unit": "USD Mn",
     "decision": "accepted"
    },
    {
     "name": "Quoted figure 2",
-    "excerpt": "Olive Oil Market Size, Share, Trends & Growth Report [2034]: The global olive oil market size is projected to grow from $20.31 billion in 2026 to $34.17 billion by 2034, exhibiting a CAGR of 5.97%",
-    "extractedValue": "20,310",
+    "excerpt": "Olive Oil Market Size, Share, Trends & Growth Report [2034]Olive sector statistics – December 2025 and forecastsOlive Oil Market Size, Competitors & Forecast to 2034Olive Oil Price Trend 2026, Forecast, Chart, News & IndexOlive Oil Market Size, Share & 2031 Growth Trends ReportOlive Oil Market Size…",
+    "extractedValue": "15,670",
     "unit": "USD Mn",
     "decision": "accepted"
    },
    {
     "name": "Quoted figure 3",
-    "excerpt": "Olive Oil Market Size, Growth, Trends & Industry Outlook 2026-2034: The global Olive Oil Market was valued at USD 14.00 billion in 2025 and is projected to grow at a CAGR of 5.2% from 2026 to 2034.",
-    "extractedValue": "14,000",
-    "unit": "USD Mn",
-    "decision": "accepted"
-   },
-   {
-    "name": "Quoted figure 4",
-    "excerpt": "Olive Oil Market Size, Share & Trends Report, 2026-2033: Olive Oil Market Summary The global olive oil market size was valued at USD 25.2 billion in 2025 and is projected to grow from USD 26.5 billion in 2026 to USD 40.7 billion in 2033, at a CAGR of 6.3%from 2026 to 2033. Europe held the largest r…",
-    "extractedValue": "25,200",
-    "unit": "USD Mn",
-    "decision": "accepted"
-   },
-   {
-    "name": "Quoted figure 5",
-    "excerpt": "U.S. Olive Oil Market Size And Share | Industry Report, 2030: The U.S. olive oil market size was estimated at USD 3.13 billion in 2024 and is expected to grow at a CAGR of 7.4% from 2025 to 2030",
-    "extractedValue": "3,130",
+    "excerpt": "Olive Oil Market Size, Competitors & Forecast to 2034Olive Oil Price Trend 2026, Forecast, Chart, News & IndexOlive Oil Market Size, Share & 2031 Growth Trends ReportOlive Oil Market Size, Share & Growth Report 2034 - IMARC Group: The Olive Oil Market, valued at USD 15.7B in 2025, is projected to r…",
+    "extractedValue": "15,670",
     "unit": "USD Mn",
     "decision": "accepted"
    }
@@ -896,11 +1059,11 @@ const STEPS = [
   "output": [
    {
     "l": "Company-based total",
-    "v": "$8.21 Bn"
+    "v": "$12.65 Bn"
    },
    {
     "l": "Web-evidence median",
-    "v": "$14.00 Bn"
+    "v": "$15.67 Bn"
    }
   ],
   "activity": [
@@ -919,11 +1082,11 @@ const STEPS = [
    "name": "Deterministic Code",
    "role": "Global = Σ country totals."
   },
-  "inputShort": "17 countries",
-  "outputLabel": "$8.21 Bn",
+  "inputShort": "22 countries",
+  "outputLabel": "$12.65 Bn",
   "reason": "Supply-side total, built from vendors' market-specific revenue.",
   "big": {
-   "value": "$8.21 Bn",
+   "value": "$12.65 Bn",
    "unit": "global (company method)"
   },
   "aggregations": [
@@ -932,75 +1095,95 @@ const STEPS = [
     "rows": [
      {
       "label": "Spain",
-      "value": "$2,368.8M"
+      "value": "$2,500.6M"
      },
      {
       "label": "Italy",
-      "value": "$1,098.2M"
+      "value": "$2,158.9M"
      },
      {
       "label": "Greece",
-      "value": "$263.3M"
+      "value": "$401.0M"
      },
      {
       "label": "Tunisia",
-      "value": "$122.7M"
+      "value": "$247.1M"
      },
      {
       "label": "Turkey",
-      "value": "$104.5M"
+      "value": "$229.2M"
      },
      {
       "label": "Morocco",
-      "value": "$79.7M"
-     },
-     {
-      "label": "Portugal",
-      "value": "$454.3M"
+      "value": "$99.2M"
      },
      {
       "label": "Syria",
-      "value": "$28.9M"
+      "value": "$32.8M"
      },
      {
-      "label": "Algeria",
-      "value": "$40.2M"
-     },
-     {
-      "label": "Argentina",
-      "value": "$158.7M"
+      "label": "Portugal",
+      "value": "$369.6M"
      },
      {
       "label": "United States",
-      "value": "$1,526.7M"
+      "value": "$2,597.9M"
      },
      {
-      "label": "France",
-      "value": "$259.5M"
+      "label": "Brazil",
+      "value": "$304.1M"
+     },
+     {
+      "label": "Argentina",
+      "value": "$127.3M"
+     },
+     {
+      "label": "Chile",
+      "value": "$101.2M"
+     },
+     {
+      "label": "Australia",
+      "value": "$511.2M"
+     },
+     {
+      "label": "China",
+      "value": "$251.6M"
+     },
+     {
+      "label": "Japan",
+      "value": "$248.2M"
+     },
+     {
+      "label": "India",
+      "value": "$178.7M"
+     },
+     {
+      "label": "Saudi Arabia",
+      "value": "$129.2M"
+     },
+     {
+      "label": "United Arab Emirates",
+      "value": "$123.2M"
      },
      {
       "label": "Rest of Europe",
-      "value": "$738.7M"
+      "value": "$1,077.3M"
      },
      {
-      "label": "Rest of Middle East & North Africa",
-      "value": "$323.8M"
-     },
-     {
-      "label": "Rest of Americas",
-      "value": "$513.0M"
+      "label": "Rest of Middle East & Africa",
+      "value": "$373.7M"
      },
      {
       "label": "Rest of Asia-Pacific",
-      "value": "$91.2M"
+      "value": "$386.4M"
      },
      {
-      "label": "Rest of Sub-Saharan Africa",
-      "value": "$36.0M"
+      "label": "Rest of Latin America",
+      "value": "$202.8M"
      }
     ],
     "totalLabel": "Global",
-    "total": "$8,208.2M"
+    "total": "$12,651.3M"
    }
   ],
   "is_final": true,
@@ -1020,35 +1203,41 @@ const STEPS = [
    "role": "Rule-based checks over the finished run that say which numbers to distrust and why."
   },
   "inputShort": "The completed run",
-  "outputLabel": "3 flags",
+  "outputLabel": "4 flags",
   "reason": "Shows exactly where a researcher should push back before trusting the number.",
-  "output": "0 critical, 3 warning, 0 info",
+  "output": "1 critical, 3 warning, 0 info",
   "is_review": true,
   "activity": [
    "Scanning for red flags",
-   "3 flags raised"
+   "4 flags raised"
   ]
  }
 ];
 const STAGES = [{"key": "vendors", "label": "Vendors"}, {"key": "revenue", "label": "Total Revenue"}, {"key": "attributable", "label": "Market Slice"}, {"key": "coverage", "label": "Gross-Up"}, {"key": "shares", "label": "Company Shares"}, {"key": "final", "label": "Final"}];
 const qualityFlags = [
  {
+  "code": "low_extraction_yield",
+  "severity": "critical",
+  "step": "final_market_size",
+  "message": "Only 3 of 12 relevant snippets yielded a real figure -- the regex extractor likely missed figures phrased differently than expected (confirmed on 'Global Smartphone Market': 3/15 extracted, total came out 5-7x too low vs published estimates). Treat this total with real caution."
+ },
+ {
   "code": "mostly_soft_estimates",
   "severity": "warning",
   "step": "final_market_size",
-  "message": "Only 2/33 companies had real financial data -- most of this total is still LLM-estimated from web snippets, not hard-capped."
+  "message": "Only 2/61 companies had real financial data -- most of this total is still LLM-estimated from web snippets, not hard-capped."
  },
  {
   "code": "high_gross_up",
   "severity": "warning",
   "step": "final_market_size",
-  "message": "7 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (Rest of Asia-Pacific 3.3x, Rest of Sub-Saharan Africa 3.3x, Syria 2.5x, Algeria 2.5x, Rest of Europe 2.5x) -- most of those countries' totals is an LLM coverage guess, not company revenue."
+  "message": "4 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (Rest of Middle East & Africa 2.9x, Rest of Asia-Pacific 2.9x, Rest of Latin America 2.9x, Rest of Europe 2.5x) -- most of those countries' totals is an LLM coverage guess, not company revenue."
  },
  {
-  "code": "disagrees_with_desk_research",
+  "code": "small_sample",
   "severity": "warning",
   "step": "final_market_size",
-  "message": "Company-based total differs from the Desk Research total by 46% -- beyond the ~30-40% margin a real-data-grounded estimate should land within. Could be a genuine scope/definition difference between sources, or a real error on one side -- worth a human check either way."
+  "message": "Only 3 real figures went into the median -- a small sample can be skewed by a single outlier or mis-scoped report."
  }
 ];
 const APPROACH_DESC = "Companies → their total revenue → only the part from this market → add up → total market + company shares.";
@@ -1125,7 +1314,7 @@ function srcBadge(source) {
     db:{icon:"🗄️", label:"Database", cls:"src-db"},
     code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
     derived:{icon:"📐", label:"Derived", cls:"src-derived"},
-    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    assumption:{icon:"⚠️", label:"A", cls:"src-assumption"},
     human:{icon:"👤", label:"Human", cls:"src-human"},
   };
   const m = map[source] || map.code;
@@ -1239,7 +1428,7 @@ function provSummary() {
   const s = steps();
   const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
   s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
-  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"A", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
   let html = '<div class="prov-summary">';
   Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
   html += '</div>';

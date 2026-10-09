@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from me_engine.demand_topdown import official_data
 from me_engine.demandUseCaseCountry_approach2B import agents, evidence_strategy
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
@@ -37,6 +38,25 @@ def total_demand_bucket(market_name: str, physical_unit: str) -> dict[str, str]:
     }
 
 
+def official_driver(official: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "driver_name": f"Apparent consumption ({official['label']}: {official['item']})",
+        "unit": "tonnes",
+        "final_demand_unit": "tonnes",
+        "consumption_unit": "",
+        "intensity_kind": "",
+        "conversion_formula": "driver_value",
+        "required_evidence": [f"{official['label']} -- {official['item']}, {official['element']}, per country"],
+        "rationale": (
+            f"Official statistics: {official['label']} item '{official['item']}' ({official['element']}). "
+            "Countries it doesn't cover fall back to web evidence."
+        ),
+        "library_status": "official_data",
+        "unit_contract_status": "ok",
+        "official_source": {k: official[k] for k in ("dataset", "item", "label", "element")},
+    }
+
+
 def run_driver_phase(
     approved_setup: dict[str, Any], config: GenConfig,
     cache_path: Path | None = None, root: Path | None = None,
@@ -54,12 +74,27 @@ def run_driver_phase(
         "physical_unit": approved_setup.get("physical_unit", ""),
         "usage_buckets": [bucket],
     }
-    state.update(agents.demand_driver_node(state))
+    official = official_data.official_country_demand(
+        market_name, state["countries"], int(approved_setup.get("base_year") or 2025), llm=llm,
+    )
+    official_facts: dict[str, Any] = {}
+    if official:
+        # Official statistics first (FAOSTAT): the driver IS the country's
+        # consumption in tonnes, no LLM driver or conversion needed.
+        state["drivers"] = {bucket["name"]: official_driver(official)}
+        official_facts = {bucket["name"]: official["facts"]}
+        state["log"].append(
+            f"[2A] official data: {official['label']} '{official['item']}' ({official['element']}) "
+            f"covers {len(official['facts'])} of {len(state['countries'])} countries; the rest use web evidence."
+        )
+    else:
+        state.update(agents.demand_driver_node(state))
     draft = {
         "market_name": market_name,
         "approach": "2A",
         "usage_buckets": [bucket],
         "drivers": state.get("drivers", {}),
+        "official_facts": official_facts,
         "log": state.get("log", []),
         "note": "One country-level total-demand line. Edit the driver (name, unit, formula) if needed, then approve.",
     }
@@ -96,6 +131,7 @@ def approve_driver(edited: dict[str, Any], root: Path | None = None, approved_by
         "approach": "2A",
         "usage_buckets": [{k: str(bucket[k]).strip() for k in ("name", "description", "bucket_category")}],
         "drivers": drivers,
+        "official_facts": edited.get("official_facts") or {},
         "approved": True,
         "approved_by": approved_by,
         "approved_at": _now_iso(),

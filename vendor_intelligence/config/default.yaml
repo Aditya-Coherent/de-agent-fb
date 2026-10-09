@@ -1,0 +1,252 @@
+quality_mode: true
+
+# CHANGED: phase2 quality fix — global junk filters (merged with LLM scope negative_keywords)
+junk_filters:
+  generic_names:
+    - smartphone
+    - mobile phone
+    - mobile phones
+    - handset
+    - handsets
+    - tablet
+    - electronics
+    - technology
+    - tech
+    - devices
+    - gadgets
+    - phone
+    - phones
+    - brand
+    - brands
+    - company
+    - companies
+    - market
+    - industry
+    - sector
+    - segment
+    - product
+    - products
+    - solution
+    - solutions
+    - blogs
+    - blog
+    - news
+    - media
+    - magazine
+    - journal
+    - review
+    - reviews
+    - forum
+    - forums
+  months:
+    - january
+    - february
+    - march
+    - april
+    - may
+    - june
+    - july
+    - august
+    - september
+    - october
+    - november
+    - december
+    - "2023"
+    - "2024"
+    - "2025"
+  search_platforms:
+    - bing
+    - google
+    - yahoo
+    - duckduckgo
+    - baidu
+    - yandex
+    - microsoft
+  ecommerce_platforms:
+    - amazon
+    - flipkart
+    - snapdeal
+    - myntra
+    - swiggy
+    - zomato
+    - paytm
+    - phonepe
+  blocked_names:
+    - pharmaceutical contract manufacturing
+    - pharma contract manufacturing
+    - contract research companies
+    - contract research organization
+    - indian pharma supplier
+    - india you should
+    - pharmchoices the
+    - the top
+    - iso certified pharma company
+    - pharmaceutical export companies
+    - third party manufacturing pharma
+    - pharma distributors
+    - india market the
+    - dokcare lifesciences explore
+    - smartphone
+    - mobile phones
+    - mobile phone
+    - blogs
+    - february
+    - bing
+    - analyticsinsight
+    - liveindia
+    - pcbasic
+    # Cybersecurity junk sites / non-firms
+    - positioniseverything
+    - techbloat
+    - moneyworks4me
+    - companydata
+    - superbcompanies
+    - intellipaat
+    - inventiva
+    - bajajfinserv
+    - seair
+    - ensun
+    - techjockey
+    - cybersecurity channel services
+    - indian softwares
+    - cyber import data india
+    - superbcompanies
+  media_domains:
+    - analyticsinsight.net
+    - livemint.com
+    - business-standard.com
+    - economictimes.com
+    - economictimes.indiatimes.com
+    - ndtv.com
+    - timesofindia.com
+    - hindustantimes.com
+    - moneycontrol.com
+    - 91mobiles.com
+    - gsmarena.com
+    - gadgets360.com
+    - techradar.com
+    - theverge.com
+    - wired.com
+    - cnet.com
+    - techcrunch.com
+    - bgr.in
+    - digit.in
+    - indianexpress.com
+    - liveindia
+    - wikipedia.org
+    - reddit.com
+    - quora.com
+    # Finance / stock platforms
+    - moneyworks4me.com
+    - screener.in
+    - trendlyne.com
+    - tickertape.in
+    # Education / training platforms
+    - intellipaat.com
+    - simplilearn.com
+    - edureka.co
+    # Blog / SEO / content sites
+    - positioniseverything.net
+    - techbloat.com
+    # Company data / aggregators / directories
+    - companydata.com
+    - superbcompanies.com
+    - ensun.io
+    - techjockey.com
+    # Startup / funding news
+    - inventiva.co.in
+    - entrackr.com
+    - inc42.com
+    # Import-export data providers
+    - seair.co.in
+
+# Phase 1 smoke test: how many search prompts to run after LLM compile (0 = skip search, 4 = fast)
+phase1_smoke_max_prompts: 4
+
+search:
+  primary: duckduckgo
+  backup: searxng
+  searxng_base_url: http://127.0.0.1:8080
+  min_results_before_backup: 3
+  results_per_query: 28
+  # Env DDGS_BACKENDS wins; avoid startpage (WinError 10061 on some networks)
+  ddgs_backends: duckduckgo,bing,brave,mojeek,google
+  ddgs_timeout: 20
+  # CHANGED: ddg worker pool — isolated processes reduce rate limiting
+  # Use 1-2 on Windows if you see ConnectTimeout (WinError 10060) from worker processes
+  ddg_worker_count: 2
+  ddg_request_delay_min: 3.0
+  ddg_request_delay_max: 8.0
+  widen_if_unique_entities_lt: 250
+  yield_stop_threshold: 0.05
+  low_yield_consecutive: 10
+  discovery_yield_min_unique: 200
+  discovery_force_widen_below: 80
+
+discovery:
+  prompt_count: 12
+  target_unique_companies: 280
+  target_solid_companies: 120
+  volume_prompt_count: 40
+  widen_loop_max: 2
+  verify_top_candidates: 80
+
+news:
+  providers: [duckduckgo_news, google_alerts, rss]
+  max_articles_per_company: 8
+
+alerts:
+  enabled: false
+  profile_path: data/chrome-profile
+  store_path: data/alerts/articles.json
+  headless: true
+
+evidence:
+  min_distinct_domains_final: 2
+  min_domains_per_gate: 1
+
+freshness:
+  corporate_events_lookback_days: 7
+  ma_cache_ttl_hours: 0
+
+research:
+  min_final_count: 50
+  max_final_count: 200
+  target_solid_companies: 120
+  tier_b_enabled: true
+  never_pad: true
+
+validation:
+  max_validation_entities: 100
+  fast_validation: true
+  parallel_workers: 10
+  max_hits_per_query: 5
+  agentic_validation: true
+  agentic_max_entities: 40
+  agentic_batch_size: 8
+  agentic_max_llm_calls: 3
+  always_scrape_registry: true
+  gates: [operational, geography, product, activity, ma]
+
+listing:
+  use_cluster_priors: false
+
+llm:
+  provider: anthropic
+  max_calls_per_run: 1
+  compiler_model: claude-haiku-4-5-20251001
+  batch_model: claude-haiku-4-5-20251001
+  classifier_model: claude-haiku-4-5-20251001
+  # Phase 1 market map needs large JSON — Sonnet; keep Haiku for compile/classify
+  market_map_model: claude-sonnet-4-6
+
+enrichment:
+  wikidata: true
+  clearbit: false
+  web_fetch: true
+  # All company website scraping uses Selenium + Google Chrome (SCRAPE_BACKEND=selenium)
+  firecrawl_fallback: false
+
+csv:
+  enabled: true
+  output_dir: output

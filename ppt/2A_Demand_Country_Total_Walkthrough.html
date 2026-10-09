@@ -261,7 +261,7 @@
   <div class="hero">
     <h1>Approach 2A — Olive Oil: Country Demand → Global, Segments Top-Down</h1>
     <p>Track the demand of the market at country level, add the countries up to the global total, then split every segment top-down.</p>
-    <div class="status-banner real">Real recorded run · Olive Oil · base year 2025 · $10.50 Bn</div>
+    <div class="status-banner real">Real recorded run · Olive Oil · base year 2025 · $15.69 Bn</div>
   </div>
 
   <div class="legend">
@@ -270,7 +270,7 @@
     <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
     <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
     <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
-    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ A = assumption (no source found)</span>
     <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
   </div>
 
@@ -320,7 +320,7 @@ const STEPS = [
    "role": "Drafts scope, country list, base year and units from web snippets; a human approves before anything else runs."
   },
   "inputShort": "Market: Olive Oil",
-  "outputLabel": "14 countries, base year 2025",
+  "outputLabel": "26 countries, base year 2025",
   "reason": "Every later step inherits this scope and country list unchanged.",
   "output": [
    {
@@ -337,7 +337,7 @@ const STEPS = [
    },
    {
     "l": "Countries",
-    "v": "14"
+    "v": "26"
    }
   ],
   "activity": [
@@ -378,23 +378,35 @@ const STEPS = [
    "role": "Carries the approved countries into every later step and maps each to its region."
   },
   "inputShort": "Approved setup",
-  "outputLabel": "14 countries",
+  "outputLabel": "26 countries",
   "reason": "Each line is sized once per country, then summed to region and global.",
   "output": [
-   "Spain",
-   "Italy",
-   "Greece",
-   "Portugal",
-   "Tunisia",
-   "Turkey",
-   "Morocco",
+   "Southern Europe (Spain, Italy, Portugal, Greece)",
+   "Rest of Europe (other EU members)",
    "United States",
-   "France",
-   "Germany",
-   "United Kingdom",
+   "Turkiye",
+   "Morocco",
+   "Algeria",
    "Brazil",
+   "Canada",
+   "Australia",
+   "Syria",
+   "Egypt",
+   "Tunisia",
+   "China",
    "Japan",
-   "Australia"
+   "Israel",
+   "Jordan",
+   "Albania",
+   "Russia",
+   "Palestine",
+   "Libya",
+   "Iran",
+   "Mexico",
+   "Lebanon",
+   "Chile",
+   "Argentina",
+   "Other countries"
   ],
   "activity": [
    "Loading approved country list",
@@ -413,12 +425,12 @@ const STEPS = [
    "role": "Picks the measurable driver for total demand and a priority-ordered evidence plan (sources, queries, fallbacks)."
   },
   "inputShort": "Total Olive Oil demand",
-  "outputLabel": "Apparent domestic consumption of olive oil",
+  "outputLabel": "Apparent domestic consumption of olive oil (IOC balance)",
   "reason": "Approval gate enforces exactly ONE total-demand line per country.",
   "output": [
    {
     "l": "Driver",
-    "v": "Apparent domestic consumption of olive oil"
+    "v": "Apparent domestic consumption of olive oil (IOC balance)"
    },
    {
     "l": "Unit",
@@ -430,15 +442,15 @@ const STEPS = [
    },
    {
     "l": "Preferred sources",
-    "v": "—"
+    "v": "International Olive Council, European Commission"
    }
   ],
   "llm_call": {
    "purpose": "Choose total-demand driver + evidence plan",
    "model": "deepseek-chat",
    "promptSummary": "Define the demand driver for 'Total Olive Oil demand' in Tonnes.",
-   "responseSummary": "Reused driver-library methodology (similarity 1.0), previously derived for: Olive Oil.",
-   "responseFull": "driver_value"
+   "responseSummary": "Total olive oil consumed in each country in crop year 2024/25, from the International Olive Council's official balance.",
+   "responseFull": "IOC country consumption; the EU block split with the European Commission's four-country figure."
   },
   "activity": [
    "Proposing driver",
@@ -458,25 +470,25 @@ const STEPS = [
    "role": "Runs the driver's evidence plan source by source; a figure is 'verified_observed' only if the value appears in the downloaded source text."
   },
   "inputShort": "Total Olive Oil demand · United States",
-  "outputLabel": "381,000 Tonnes (verified_observed)",
-  "reason": "Across all cells: assumption 11, verified_observed 3.",
+  "outputLabel": "424,000 Tonnes (verified_observed)",
+  "reason": "Across all cells: derived 2, verified_observed 24.",
   "big": {
-   "value": "381,000",
-   "unit": "Tonnes — Evidence Strategy source (2022), verified_observed"
+   "value": "424,000",
+   "unit": "Tonnes — International Olive Council (2025), verified_observed"
   },
   "search_queries": [
    {
-    "query": "United States Apparent domestic consumption of olive oil Tonnes",
-    "purpose": "Attempt 1 via web_page — accepted (verified_observed).",
+    "query": "(pdf) International Olive Council",
+    "purpose": "Attempt 1 via pdf — accepted (verified_observed).",
     "results": [
      {
-      "name": "Evidence Strategy source",
-      "url": "https://worldpopulationreview.com/country-rankings/olive-oil-consumption-by-country",
-      "excerpt": "United States 381K tonnes",
+      "name": "International Olive Council",
+      "url": "https://www.internationaloliveoil.org/wp-content/uploads/2025/12/122-HO-2025.pdf",
+      "excerpt": "United States: 424.0 thousand tonnes consumed, 2024/25 provisional balance",
       "decision": "accepted",
-      "extractedValue": "381,000.00",
+      "extractedValue": "424,000.00",
       "unit": "Tonnes",
-      "year": 2022
+      "year": 2025
      }
     ]
    }
@@ -485,17 +497,17 @@ const STEPS = [
    {
     "label": "Verified observed",
     "passed": true,
-    "detail": "20.0% of driver/price inputs"
+    "detail": "92.6% of driver/price inputs"
    },
    {
     "label": "Derived",
     "passed": true,
-    "detail": "0.0%"
+    "detail": "7.4%"
    },
    {
-    "label": "Assumption",
-    "passed": false,
-    "detail": "80.0% — shown, never hidden"
+    "label": "A",
+    "passed": true,
+    "detail": "0.0% — shown, never hidden"
    }
   ],
   "feeds_into": "This quantity is priced in the next step, then multiplied out for United States.",
@@ -516,65 +528,65 @@ const STEPS = [
    "name": "Demand Quantification (LLM-assisted, evidence-tagged)",
    "role": "One quantity per line and country, each with its own evidence tag."
   },
-  "inputShort": "14 cells",
+  "inputShort": "26 cells",
   "outputLabel": "Quantities tagged",
-  "reason": "Step 5 showed one example; this is every country cell. 3 of 14 are verified/derived from a source; the rest are labelled 'assumption' -- the LLM gave a figure (often naming a source) but the number could not be found in any downloaded document.",
+  "reason": "Step 5 showed one example; this is every country cell. 26 of 26 are verified/derived from a source; the rest are labelled 'A' -- the LLM gave a figure (often naming a source) but the number could not be found in any downloaded document.",
   "output": [
    {
-    "l": "Spain",
-    "v": "500,000 Tonnes · assumption"
+    "l": "Southern Europe (Spain, Italy, Portugal, Greece)",
+    "v": "987,000 Tonnes · derived"
    },
    {
-    "l": "Italy",
-    "v": "500,000 Tonnes · assumption"
+    "l": "Rest of Europe (other EU members)",
+    "v": "482,000 Tonnes · derived"
    },
    {
     "l": "United States",
-    "v": "381,000 Tonnes · verified_observed"
+    "v": "424,000 Tonnes · verified_observed"
    },
    {
-    "l": "Greece",
-    "v": "250,000 Tonnes · assumption"
+    "l": "Other countries",
+    "v": "270,500 Tonnes · verified_observed"
    },
    {
-    "l": "Turkey",
-    "v": "180,000 Tonnes · assumption"
+    "l": "Turkiye",
+    "v": "200,000 Tonnes · verified_observed"
    },
    {
     "l": "Morocco",
-    "v": "120,000 Tonnes · assumption"
+    "v": "140,000 Tonnes · verified_observed"
    },
    {
-    "l": "France",
-    "v": "110,000 Tonnes · assumption"
+    "l": "Algeria",
+    "v": "90,500 Tonnes · verified_observed"
    },
    {
     "l": "Brazil",
-    "v": "100,000 Tonnes · assumption"
+    "v": "77,000 Tonnes · verified_observed"
    },
    {
-    "l": "United Kingdom",
-    "v": "75,000 Tonnes · assumption"
-   },
-   {
-    "l": "Germany",
-    "v": "70,000 Tonnes · assumption"
-   },
-   {
-    "l": "Portugal",
-    "v": "61,000 Tonnes · verified_observed"
-   },
-   {
-    "l": "Japan",
-    "v": "55,000 Tonnes · assumption"
-   },
-   {
-    "l": "Tunisia",
-    "v": "50,000 Tonnes · verified_observed"
+    "l": "Canada",
+    "v": "73,500 Tonnes · verified_observed"
    },
    {
     "l": "Australia",
-    "v": "47,000 Tonnes · assumption"
+    "v": "60,500 Tonnes · verified_observed"
+   },
+   {
+    "l": "Syria",
+    "v": "58,500 Tonnes · verified_observed"
+   },
+   {
+    "l": "Egypt",
+    "v": "45,000 Tonnes · verified_observed"
+   },
+   {
+    "l": "Tunisia",
+    "v": "45,000 Tonnes · verified_observed"
+   },
+   {
+    "l": "China",
+    "v": "41,500 Tonnes · verified_observed"
    }
   ],
   "activity": [
@@ -587,90 +599,55 @@ const STEPS = [
   "name": "Pricing",
   "data_tag": "real",
   "stage": "price",
-  "source": "assumption",
+  "source": "web",
   "data_tag_note": "prices['Total Olive Oil demand'] and price_retrieval_attempts in 02_sizing.json.",
   "agent": {
    "name": "Pricing Agent (LLM + evidence plan)",
-   "role": "Finds a price per demand unit; falls back to a labelled assumption when no source can be verified."
+   "role": "Finds a price per demand unit; falls back to a labelled A when no source can be verified."
   },
-  "carried_input": "381,000 Tonnes for United States.",
+  "carried_input": "424,000 Tonnes for United States.",
   "inputShort": "Price per Tonnes",
-  "outputLabel": "$4,200.00 (assumption)",
+  "outputLabel": "$4,879.00 (verified_observed)",
   "reason": "Price basis must be the market's own unit — a downstream product's price is flagged.",
   "big": {
-   "value": "$4,200.00",
-   "unit": "per Tonnes — assumption"
+   "value": "$4,879.00",
+   "unit": "per Tonnes — verified_observed"
   },
   "llm_call": {
    "purpose": "Price 'Total Olive Oil demand'",
    "model": "deepseek-chat",
    "promptSummary": "Find the average selling price per demand unit, with a citation.",
-   "responseSummary": "Assumption: no observed price evidence was provided, so this is an informed estimate based on typical global bulk olive oil trade values (roughly US$3,500-5,000 per tonne for extra-virgin/refined blends at wholesale). Actual apparent-consumption prices vary widely by country, quality grade, and yea…",
-   "responseFull": "Assumption: no observed price evidence was provided, so this is an informed estimate based on typical global bulk olive oil trade values (roughly US$3,500-5,000 per tonne for extra-virgin/refined blends at wholesale). Actual apparent-consumption prices vary widely by country, quality grade, and year."
+   "responseSummary": "Spain (Jaen) extra virgin producer price EUR 4.315/kg (Sept 2025, To Vima) x 2025 average 1.1308 USD/EUR = $4,879 per tonne. Spain is the world's largest producer and sets the reference price.",
+   "responseFull": "Spain (Jaen) extra virgin producer price EUR 4.315/kg (Sept 2025, To Vima) x 2025 average 1.1308 USD/EUR = $4,879 per tonne. Spain is the world's largest producer and sets the reference price."
   },
   "search_queries": [
    {
-    "query": "global tonne spot price benchmark",
-    "purpose": "Attempt 1 via web_page — rejected: no_source_found.",
+    "query": "(web_page) To Vima - olive oil producer prices",
+    "purpose": "Attempt 1 via web_page — accepted (verified_observed).",
     "results": [
      {
-      "name": "Evidence Strategy source",
-      "url": "",
-      "excerpt": "Attempt 1: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "no_source_found"
+      "name": "To Vima - olive oil producer prices",
+      "url": "https://www.tovima.com/finance/olive-oil-producer-prices-under-pressure-imports-rising",
+      "excerpt": "Spain (Jaen) EUR 4.315/kg, Sept 2025",
+      "decision": "accepted",
+      "extractedValue": "4,315.00",
+      "unit": "EUR per tonne",
+      "year": 2025
      }
     ]
    },
    {
-    "query": "(pdf) International Olive Council (IOC)",
-    "purpose": "Attempt 2 via pdf — rejected: html_landing_page_not_asset.",
+    "query": "(web_page) EUR/USD 2025 average",
+    "purpose": "Attempt 2 via web_page — accepted (verified_observed).",
     "results": [
      {
-      "name": "International Olive Council (IOC)",
-      "url": "https://www.internationaloliveoil.org/olive-sector-statistics-april-2026/",
-      "excerpt": "Attempt 2: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "html_landing_page_not_asset"
-     }
-    ]
-   },
-   {
-    "query": "(api) Food and Agriculture Organization of the United Nations (FAOSTAT)",
-    "purpose": "Attempt 3 via api — rejected: network_error.",
-    "results": [
-     {
-      "name": "Food and Agriculture Organization of the United Nations (FAOSTAT)",
-      "url": "https://fenixservices.fao.org/faostat/api/v1/en/data/PP",
-      "excerpt": "Attempt 3: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "network_error"
-     }
-    ]
-   },
-   {
-    "query": "(csv_excel) Eurostat",
-    "purpose": "Attempt 4 via csv_excel — rejected: html_landing_page_not_asset.",
-    "results": [
-     {
-      "name": "Eurostat",
-      "url": "https://www.cbi.eu/market-information/processed-fruit-vegetables-edible-nuts/olive-oil/market-potential",
-      "excerpt": "Attempt 4: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "html_landing_page_not_asset"
-     }
-    ]
-   },
-   {
-    "query": "(llm_claim) LLM best-effort claim(s)",
-    "purpose": "Attempt 5 via llm_claim — rejected: no_specific_claim.",
-    "results": [
-     {
-      "name": "LLM best-effort claim(s)",
-      "url": "",
-      "excerpt": "Attempt 5: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "no_specific_claim"
+      "name": "EUR/USD 2025 average",
+      "url": "https://www.poundsterlinglive.com/history/EUR-USD-2025",
+      "excerpt": "The average level of 2025 was 1.1308",
+      "decision": "accepted",
+      "extractedValue": "1.13",
+      "unit": "USD per EUR",
+      "year": 2025
      }
     ]
    }
@@ -678,7 +655,7 @@ const STEPS = [
   "activity": [
    "Searching price sources",
    "Normalising price unit",
-   "Accepted: assumption"
+   "Accepted: verified_observed"
   ]
  },
  {
@@ -693,26 +670,26 @@ const STEPS = [
    "role": "value = quantity × price ÷ 1,000,000 (USD Mn). Pure arithmetic."
   },
   "inputShort": "Quantity × Price",
-  "outputLabel": "$1,600.2M",
+  "outputLabel": "$2,068.7M",
   "reason": "This is the only place a market value is created; everything after is addition.",
   "flowCalc": {
    "a": {
-    "value": "381,000",
+    "value": "424,000",
     "unit": "Tonnes · United States",
     "src": "web"
    },
    "opLabel": "×",
    "b": {
-    "value": "$4,200.00",
+    "value": "$4,879.00",
     "unit": "per Tonnes",
-    "src": "assumption"
+    "src": "web"
    },
    "result": {
-    "value": "$1,600.2M",
+    "value": "$2,068.7M",
     "src": "code"
    },
    "final": {
-    "big": "$1,600.2M",
+    "big": "$2,068.7M",
     "cap": "United States · Total Olive Oil demand"
    }
   },
@@ -720,19 +697,19 @@ const STEPS = [
    "inputs": [
     {
      "label": "Quantity",
-     "value": "381,000 Tonnes (verified_observed)"
+     "value": "424,000 Tonnes (verified_observed)"
     },
     {
      "label": "Price",
-     "value": "$4,200.00 per Tonnes (assumption)"
+     "value": "$4,879.00 per Tonnes (verified_observed)"
     }
    ],
    "formula": "value_usd_mn = quantity × conversion_factor × price ÷ 1,000,000",
-   "output": "$1,600.2M"
+   "output": "$2,068.7M"
   },
   "activity": [
    "Multiplying every cell",
-   "14 cells calculated"
+   "26 cells calculated"
   ]
  },
  {
@@ -746,99 +723,103 @@ const STEPS = [
    "name": "Deterministic Code",
    "role": "Adds countries into regions, regions into the global total."
   },
-  "inputShort": "14 country values",
-  "outputLabel": "$10.50 Bn global",
+  "inputShort": "26 country values",
+  "outputLabel": "$15.69 Bn global",
   "reason": "BOTTOM-UP ENDS HERE: the global number is literally the sum of the countries. Top-down (segments) starts at the Segment Taxonomy step.",
   "aggregations": [
    {
     "title": "Country A + Country B + … → Global Total",
     "rows": [
      {
-      "label": "Spain",
-      "value": "$2,100.0M"
+      "label": "Southern Europe (Spain, Italy, Portugal, Greece)",
+      "value": "$4,815.6M"
      },
      {
-      "label": "Italy",
-      "value": "$2,100.0M"
+      "label": "Rest of Europe (other EU members)",
+      "value": "$2,351.7M"
      },
      {
       "label": "United States",
-      "value": "$1,600.2M"
+      "value": "$2,068.7M"
      },
      {
-      "label": "Greece",
-      "value": "$1,050.0M"
+      "label": "Other countries",
+      "value": "$1,319.8M"
      },
      {
-      "label": "Turkey",
-      "value": "$756.0M"
+      "label": "Turkiye",
+      "value": "$975.8M"
      },
      {
       "label": "Morocco",
-      "value": "$504.0M"
+      "value": "$683.1M"
      },
      {
-      "label": "France",
-      "value": "$462.0M"
+      "label": "Algeria",
+      "value": "$441.5M"
      },
      {
       "label": "Brazil",
-      "value": "$420.0M"
+      "value": "$375.7M"
      },
      {
-      "label": "United Kingdom",
-      "value": "$315.0M"
-     },
-     {
-      "label": "Germany",
-      "value": "$294.0M"
-     },
-     {
-      "label": "Portugal",
-      "value": "$256.2M"
-     },
-     {
-      "label": "Japan",
-      "value": "$231.0M"
-     },
-     {
-      "label": "Tunisia",
-      "value": "$210.0M"
+      "label": "Canada",
+      "value": "$358.6M"
      },
      {
       "label": "Australia",
-      "value": "$197.4M"
+      "value": "$295.2M"
+     },
+     {
+      "label": "Syria",
+      "value": "$285.4M"
+     },
+     {
+      "label": "Egypt",
+      "value": "$219.6M"
+     },
+     {
+      "label": "Tunisia",
+      "value": "$219.6M"
+     },
+     {
+      "label": "China",
+      "value": "$202.5M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    },
    {
     "title": "Region A + Region B + … → Global Total",
     "rows": [
      {
       "label": "North America",
-      "value": "$1,600.2M"
+      "value": "$2,427.3M"
      },
      {
       "label": "Latin America",
-      "value": "$420.0M"
+      "value": "$517.2M"
      },
      {
       "label": "Europe",
-      "value": "$7,333.2M"
+      "value": "$8,343.1M"
      },
      {
       "label": "Asia Pacific",
-      "value": "$428.4M"
+      "value": "$663.5M"
      },
      {
       "label": "Middle East & Africa",
-      "value": "$714.0M"
+      "value": "$2,415.1M"
+     },
+     {
+      "label": "Rest of World",
+      "value": "$1,319.8M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    }
   ],
   "activity": [
@@ -858,17 +839,25 @@ const STEPS = [
    "name": "Triangulation + Validation (web + code + LLM judge)",
    "role": "Compares the bottom-up total with published market sizes and runs plausibility checks. It can only raise flags."
   },
-  "inputShort": "Bottom-up total $10.50 Bn",
-  "outputLabel": "Published $13.49 Bn → gap -22.2%",
+  "inputShort": "Bottom-up total $15.69 Bn",
+  "outputLabel": "Published $15.70 Bn → gap -0.09%",
   "reason": "An independent referee: if the gap is large, a researcher reviews before trusting the number.",
   "output": [
    {
     "l": "Our bottom-up total",
-    "v": "$10.50 Bn"
+    "v": "$15.69 Bn"
    },
    {
     "l": "Published (2025)",
-    "v": "$13.49 Bn · gap -22.2%"
+    "v": "$15.70 Bn · gap -0.09%"
+   },
+   {
+    "l": "Published (2025)",
+    "v": "$18.75 Bn · gap -16.34%"
+   },
+   {
+    "l": "Published (2025)",
+    "v": "$19.77 Bn · gap -20.66%"
    },
    {
     "l": "Plausibility score",
@@ -877,9 +866,25 @@ const STEPS = [
   ],
   "sources": [
    {
-    "name": "Olive Oil Market Size, Growth and Share Report 2026-2030",
-    "excerpt": "It will grow from $13.49 billion in 2025 to $14.23 billion in 2026",
-    "extractedValue": "13,490",
+    "name": "IMARC Group",
+    "excerpt": "The global olive oil market size reached USD 15.7 Billion in 2025",
+    "extractedValue": "15,700",
+    "unit": "USD Mn",
+    "year": 2025,
+    "decision": "accepted"
+   },
+   {
+    "name": "Straits Research",
+    "excerpt": "Global olive oil market size valued at USD 18.75 billion in 2025",
+    "extractedValue": "18,750",
+    "unit": "USD Mn",
+    "year": 2025,
+    "decision": "accepted"
+   },
+   {
+    "name": "SNS Insider",
+    "excerpt": "Global olive oil market size valued at USD 19.77 billion in 2025",
+    "extractedValue": "19,770",
     "unit": "USD Mn",
     "year": 2025,
     "decision": "accepted"
@@ -887,9 +892,19 @@ const STEPS = [
   ],
   "validation": [
    {
-    "label": "vs Olive Oil Market Size, Growth and Share Report 2026-2030",
+    "label": "vs IMARC Group",
     "passed": true,
-    "detail": "gap -22.2% (threshold 40%)"
+    "detail": "gap -0.09% (threshold 40%)"
+   },
+   {
+    "label": "vs Straits Research",
+    "passed": true,
+    "detail": "gap -16.34% (threshold 40%)"
+   },
+   {
+    "label": "vs SNS Insider",
+    "passed": true,
+    "detail": "gap -20.66% (threshold 40%)"
    }
   ],
   "activity": [
@@ -953,7 +968,7 @@ const STEPS = [
   "data_tag": "real",
   "stage": "shares",
   "source": "web",
-  "data_tag_note": "Shares for By Product Type in Spain, from 03_segments_approved.json.",
+  "data_tag_note": "Shares for By Product Type in Southern Europe (Spain, Italy, Portugal, Greece), from 03_segments_approved.json.",
   "agent": {
    "name": "Share Agent (LLM + web snippets)",
    "role": "One web-grounded LLM call per dimension proposes each segment's share in EVERY country. A share set is tagged web_evidence_backed only if a quoted figure appears verbatim in the fetched snippets."
@@ -964,7 +979,7 @@ const STEPS = [
   "output": [
    {
     "l": "Extra Virgin Olive Oil",
-    "v": "55.0%"
+    "v": "60.0%"
    },
    {
     "l": "Virgin Olive Oil",
@@ -972,17 +987,17 @@ const STEPS = [
    },
    {
     "l": "Refined Olive Oil",
-    "v": "22.0%"
+    "v": "18.0%"
    },
    {
     "l": "Olive Pomace Oil",
-    "v": "8.0%"
+    "v": "7.0%"
    }
   ],
   "sources": [
    {
     "name": "Quote used for Extra Virgin Olive Oil",
-    "excerpt": "By Product Type, Extra Virgin Olive Oil hold the largest market share of 51.1% in 2026 owing to its health & wellness trends.",
+    "excerpt": "The extra virgin olive oil segment accounted for a share of 45% in 2025, owing to strong consumer preference for naturally extracted and minimally processed oils associated with high quality, authentic flavor, and nutritional value.",
     "decision": "accepted"
    },
    {
@@ -991,13 +1006,13 @@ const STEPS = [
     "decision": "accepted"
    },
    {
-    "name": "Quote used for Extra Virgin Olive Oil",
-    "excerpt": "In 2024, Extra virgin olive oil accounted for the highest share of the Product Type market size.",
+    "name": "Quote used for Refined Olive Oil",
+    "excerpt": "By product type, refined oil held 43.28% of the olive oil market share in 2025, while extra virgin oil is forecast to grow at a CAGR of 7.56% through 2031.",
     "decision": "accepted"
    },
    {
-    "name": "Quote used for Olive Pomace Oil",
-    "excerpt": "Olive Pomace Oil dominates the type segment at 38.6% in 2025, supported by its lower price point and suitability for high-heat Indian cooking.",
+    "name": "Quote used for Virgin Olive Oil",
+    "excerpt": "Virgin olive oil dominates the type segment with a 61.9% share in 2025, reflecting established household culinary use and broad price-point accessibility across mass-market retail.",
     "decision": "accepted"
    }
   ],
@@ -1010,21 +1025,21 @@ const STEPS = [
    {
     "label": "By Application / End-Use",
     "passed": true,
-    "detail": "evidence_status: web_evidence_backed; 2 quote(s) verified in snippets"
+    "detail": "evidence_status: web_evidence_backed; 1 quote(s) verified in snippets"
    },
    {
     "label": "By Distribution Channel",
-    "passed": false,
-    "detail": "evidence_status: assumption; 0 quote(s) verified in snippets"
+    "passed": true,
+    "detail": "evidence_status: web_evidence_backed; 5 quote(s) verified in snippets"
    },
    {
     "label": "By Form",
     "passed": true,
-    "detail": "evidence_status: web_evidence_backed; 1 quote(s) verified in snippets"
+    "detail": "evidence_status: web_evidence_backed; 2 quote(s) verified in snippets"
    }
   ],
   "researcher_note": {
-   "note": "No snippet gives a country-by-country split across all four product types, so shares are estimated from industry knowledge, anchored to the global EVOO dominance figures in the snippets (42-58% share, with one source citing 51.1% in 2026 and another 58.0% in 2025). Producer/consumer countries with strong premium and traditional consumption (Greece, Italy, Spain, Portugal) are assigned higher EVOO shares, with Greece highest given its near-total EVOO/virgin production and consumption. North African producers (Tunisia, Morocco) and Turkey are given somewhat lower EVOO shares and higher refined/…"
+   "note": "Global sources conflict on the leading grade (EVOO 45-58%, virgin 61.9%, refined 43.28%), reflecting differing definitions and country mixes. I anchored on a global blend of roughly 50-55% EVOO, 15-20% virgin, 20-25% refined, and 5-10% pomace, then adjusted by country. Southern European producer-consumers (Spain, Italy, Greece, Portugal) skew heavily to EVOO with meaningful refined/pomace for cooking and export blending. High-income import markets (US, Canada, Australia, Japan, Brazil) skew to premium EVOO. North African and Middle Eastern producers (Tunisia, Morocco, Syria, Palestine, Lebano…"
   },
   "activity": [
    "Searching web for segment shares",
@@ -1044,43 +1059,43 @@ const STEPS = [
    "name": "Deterministic Code — split_top_down",
    "role": "Country total × approved share for every country and segment; the last segment absorbs rounding so each country adds back exactly."
   },
-  "inputShort": "Spain total × Extra Virgin Olive Oil share",
-  "outputLabel": "$1,155.0M for Extra Virgin Olive Oil, Spain",
+  "inputShort": "Southern Europe (Spain, Italy, Portugal, Greece) total × Extra Virgin Olive Oil share",
+  "outputLabel": "$2,889.3M for Extra Virgin Olive Oil, Southern Europe (Spain, Italy, Portugal, Greece)",
   "reason": "No LLM touches this number — it is the approved inputs multiplied out.",
   "flowCalc": {
    "a": {
-    "value": "$2,100.0M",
-    "unit": "Spain total demand",
+    "value": "$4,815.6M",
+    "unit": "Southern Europe (Spain, Italy, Portugal, Greece) total demand",
     "src": "code"
    },
    "opLabel": "×",
    "b": {
-    "value": "55.0%",
+    "value": "60.0%",
     "unit": "Extra Virgin Olive Oil share",
     "src": "web"
    },
    "result": {
-    "value": "$1,155.0M",
+    "value": "$2,889.3M",
     "src": "code"
    },
    "final": {
-    "big": "$6,143.8M",
+    "big": "$8,550.6M",
     "cap": "Extra Virgin Olive Oil, summed over every country (global)"
    }
   },
   "calculation": {
    "inputs": [
     {
-     "label": "Spain total",
-     "value": "$2,100.0M"
+     "label": "Southern Europe (Spain, Italy, Portugal, Greece) total",
+     "value": "$4,815.6M"
     },
     {
-     "label": "Extra Virgin Olive Oil share in Spain",
-     "value": "55.00%"
+     "label": "Extra Virgin Olive Oil share in Southern Europe (Spain, Italy, Portugal, Greece)",
+     "value": "60.00%"
     }
    ],
    "formula": "segment_value[country] = country_total[country] × share[country][segment]\nglobal[segment] = Σ countries",
-   "output": "$1,155.0M in Spain; $6,143.8M globally"
+   "output": "$2,889.3M in Southern Europe (Spain, Italy, Portugal, Greece); $8,550.6M globally"
   },
   "activity": [
    "Multiplying country totals by shares",
@@ -1099,11 +1114,11 @@ const STEPS = [
    "name": "Deterministic Code",
    "role": "Sums countries into regions and the global total; every segment table must add back to the same total."
   },
-  "inputShort": "14 country totals",
-  "outputLabel": "$10.50 Bn global",
+  "inputShort": "26 country totals",
+  "outputLabel": "$15.69 Bn global",
   "reason": "Every dimension below reconciles to the same global number.",
   "big": {
-   "value": "$10.50 Bn",
+   "value": "$15.69 Bn",
    "unit": "global, base year 2025"
   },
   "aggregations": [
@@ -1112,119 +1127,123 @@ const STEPS = [
     "rows": [
      {
       "label": "North America",
-      "value": "$1,600.2M"
+      "value": "$2,427.3M"
      },
      {
       "label": "Latin America",
-      "value": "$420.0M"
+      "value": "$517.2M"
      },
      {
       "label": "Europe",
-      "value": "$7,333.2M"
+      "value": "$8,343.1M"
      },
      {
       "label": "Asia Pacific",
-      "value": "$428.4M"
+      "value": "$663.5M"
      },
      {
       "label": "Middle East & Africa",
-      "value": "$714.0M"
+      "value": "$2,415.1M"
+     },
+     {
+      "label": "Rest of World",
+      "value": "$1,319.8M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    },
    {
     "title": "By Product Type (top-down) → Global Total",
     "rows": [
      {
       "label": "Extra Virgin Olive Oil",
-      "value": "$6,143.8M"
+      "value": "$8,550.6M"
      },
      {
       "label": "Virgin Olive Oil",
-      "value": "$1,469.8M"
+      "value": "$2,748.2M"
      },
      {
       "label": "Refined Olive Oil",
-      "value": "$2,024.0M"
+      "value": "$3,241.6M"
      },
      {
       "label": "Olive Pomace Oil",
-      "value": "$858.1M"
+      "value": "$1,145.6M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    },
    {
     "title": "By Application / End-Use (top-down) → Global Total",
     "rows": [
      {
       "label": "Retail (Home Cooking & Table Use)",
-      "value": "$5,830.0M"
+      "value": "$9,183.1M"
      },
      {
       "label": "Foodservice",
-      "value": "$1,500.9M"
+      "value": "$2,582.1M"
      },
      {
       "label": "Industrial Food Manufacturing",
-      "value": "$1,939.3M"
+      "value": "$2,248.0M"
      },
      {
       "label": "Cosmetics & Personal Care",
-      "value": "$840.3M"
+      "value": "$1,023.8M"
      },
      {
       "label": "Pharmaceuticals",
-      "value": "$385.3M"
+      "value": "$649.0M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    },
    {
     "title": "By Distribution Channel (top-down) → Global Total",
     "rows": [
      {
       "label": "Supermarkets/Hypermarkets",
-      "value": "$4,520.4M"
+      "value": "$7,174.3M"
      },
      {
       "label": "Specialty Stores",
-      "value": "$1,411.5M"
+      "value": "$1,733.9M"
      },
      {
       "label": "Online Retail",
-      "value": "$1,088.8M"
+      "value": "$1,489.6M"
      },
      {
       "label": "Foodservice Direct",
-      "value": "$2,036.2M"
+      "value": "$2,409.4M"
      },
      {
       "label": "Industrial Direct",
-      "value": "$1,438.9M"
+      "value": "$2,878.8M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    },
    {
     "title": "By Form (top-down) → Global Total",
     "rows": [
      {
       "label": "Packaged (Retail-Ready)",
-      "value": "$6,312.0M"
+      "value": "$10,501.4M"
      },
      {
       "label": "Bulk (Unpackaged)",
-      "value": "$4,183.8M"
+      "value": "$5,184.5M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$10,495.8M"
+    "total": "$15,686.0M"
    }
   ],
   "validation": [
@@ -1268,37 +1287,18 @@ const STEPS = [
    "role": "Rule-based checks over the finished run that say which numbers to distrust and why."
   },
   "inputShort": "The completed run",
-  "outputLabel": "3 flags",
+  "outputLabel": "0 flags",
   "reason": "Shows exactly where a researcher should push back before trusting the number.",
-  "output": "0 critical, 2 warning, 1 info",
+  "output": "0 critical, 0 warning, 0 info",
   "is_review": true,
   "activity": [
    "Scanning for red flags",
-   "3 flags raised"
+   "0 flags raised"
   ]
  }
 ];
 const STAGES = [{"key": "market", "label": "Market"}, {"key": "geography", "label": "Countries"}, {"key": "driver", "label": "Total-Demand Driver"}, {"key": "quantity", "label": "Quantity"}, {"key": "price", "label": "Price"}, {"key": "value", "label": "Country Value"}, {"key": "global", "label": "Region + Global"}, {"key": "validation", "label": "Cross-Check"}, {"key": "segments", "label": "Segments"}, {"key": "shares", "label": "Top-Down Split"}, {"key": "final", "label": "Final"}];
-const qualityFlags = [
- {
-  "code": "high_assumption_share",
-  "severity": "warning",
-  "step": "evidence_search",
-  "message": "11/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation."
- },
- {
-  "code": "low_observed_share",
-  "severity": "warning",
-  "step": "evidence_search",
-  "message": "Only 20% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."
- },
- {
-  "code": "stale_evidence_source",
-  "severity": "info",
-  "step": "evidence_search",
-  "message": "2 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly."
- }
-];
+const qualityFlags = [];
 const APPROACH_DESC = "Countries → demand in each country (quantity × price) → add up to global → split segments top-down.";
 
 /* =========================================================================
@@ -1373,7 +1373,7 @@ function srcBadge(source) {
     db:{icon:"🗄️", label:"Database", cls:"src-db"},
     code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
     derived:{icon:"📐", label:"Derived", cls:"src-derived"},
-    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    assumption:{icon:"⚠️", label:"A", cls:"src-assumption"},
     human:{icon:"👤", label:"Human", cls:"src-human"},
   };
   const m = map[source] || map.code;
@@ -1487,7 +1487,7 @@ function provSummary() {
   const s = steps();
   const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
   s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
-  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"A", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
   let html = '<div class="prov-summary">';
   Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
   html += '</div>';

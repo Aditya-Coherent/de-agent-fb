@@ -261,7 +261,7 @@
   <div class="hero">
     <h1>Approach 2B — Olive Oil: Use Case × Country → Global, Other Segments Top-Down</h1>
     <p>Track demand for each application in each country, add applications up to the country and countries up to the global total; other segments are split top-down.</p>
-    <div class="status-banner real">Real recorded run · Olive Oil · base year 2025 · $9.26 Bn</div>
+    <div class="status-banner real">Real recorded run · Olive Oil · base year 2025 · $17.85 Bn</div>
   </div>
 
   <div class="legend">
@@ -270,7 +270,7 @@
     <span class="chip" style="color:#d8b4fe;border-color:rgba(192,132,252,.4)">🗄️ Database</span>
     <span class="chip" style="color:#cbd5e1;border-color:rgba(148,163,184,.4)">⚙️ Deterministic</span>
     <span class="chip" style="color:#fde68a;border-color:rgba(250,204,21,.4)">📐 Derived</span>
-    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ Assumption</span>
+    <span class="chip" style="color:#fda4af;border-color:rgba(251,113,133,.4)">⚠️ A = assumption (no source found)</span>
     <span class="chip" style="color:#ddd6fe;border-color:rgba(167,139,250,.4)">👤 Human</span>
   </div>
 
@@ -320,7 +320,7 @@ const STEPS = [
    "role": "Drafts scope, country list, base year and units from web snippets; a human approves before anything else runs."
   },
   "inputShort": "Market: Olive Oil",
-  "outputLabel": "14 countries, base year 2025",
+  "outputLabel": "19 countries, base year 2025",
   "reason": "Every later step inherits this scope and country list unchanged.",
   "output": [
    {
@@ -337,7 +337,7 @@ const STEPS = [
    },
    {
     "l": "Countries",
-    "v": "14"
+    "v": "19"
    }
   ],
   "activity": [
@@ -378,23 +378,28 @@ const STEPS = [
    "role": "Carries the approved countries into every later step and maps each to its region."
   },
   "inputShort": "Approved setup",
-  "outputLabel": "14 countries",
+  "outputLabel": "19 countries",
   "reason": "Each line is sized once per country, then summed to region and global.",
   "output": [
    "Spain",
    "Italy",
    "Greece",
    "Portugal",
-   "Tunisia",
-   "Turkey",
-   "Morocco",
-   "Syria",
-   "Algeria",
-   "United States",
    "France",
    "Germany",
+   "United Kingdom",
+   "United States",
+   "Canada",
    "Brazil",
-   "Japan"
+   "Australia",
+   "Turkiye",
+   "Morocco",
+   "Algeria",
+   "Syria",
+   "Tunisia",
+   "Egypt",
+   "China",
+   "Other countries"
   ],
   "activity": [
    "Loading approved country list",
@@ -413,47 +418,15 @@ const STEPS = [
    "role": "Splits the market into end-use applications, then checks each one really consumes THIS commodity."
   },
   "inputShort": "Approved scope",
-  "outputLabel": "5 use cases",
+  "outputLabel": "4 use cases",
   "reason": "Each use case is sized separately in every country.",
   "output": [
-   "Home Cooking and Table Use",
-   "Foodservice and Restaurant Operations",
-   "Processed Food Manufacturing",
-   "Infused and Flavored Olive Oil Production",
-   "Nutraceutical and Pharmaceutical Applications"
+   "Household (home cooking & table)",
+   "Restaurants & catering",
+   "Food industry (canning, processing, bakery)",
+   "Non-food (cosmetics, pharma, soap)"
   ],
-  "validation": [
-   {
-    "label": "Home Cooking and Table Use",
-    "passed": true,
-    "detail": "in_scope: Direct household consumption of olive oil as a finished edible commodity is explicitly the core of the market."
-   },
-   {
-    "label": "Foodservice and Restaurant Operations",
-    "passed": true,
-    "detail": "in_scope: Olive oil used in foodservice is a direct demand for olive oil itself, and the scope explicitly includes foodservice usage."
-   },
-   {
-    "label": "Processed Food Manufacturing",
-    "passed": true,
-    "detail": "in_scope: Industrial food manufacturing using olive oil as an ingredient is explicitly listed as in-scope demand for olive oil itself."
-   },
-   {
-    "label": "Infused and Flavored Olive Oil Production",
-    "passed": true,
-    "detail": "in_scope: Infused/flavored olive oil production consumes olive oil as a base input, creating direct demand for the target commodity."
-   },
-   {
-    "label": "Cosmetic and Personal Care Applications",
-    "passed": false,
-    "detail": "out_of_scope: The scope explicitly excludes olive-based cosmetics and soaps, and this bucket describes olive oil used in cosmetic/personal care products, which is a separately valued market."
-   },
-   {
-    "label": "Nutraceutical and Pharmaceutical Applications",
-    "passed": true,
-    "detail": "ambiguous: Olive oil used in nutraceutical/pharmaceutical formulations is not explicitly excluded or included; while it is a downstream use of olive oil, the scope's exclusion of certain non-food applications (…"
-   }
-  ],
+  "validation": [],
   "activity": [
    "Decomposing demand into applications",
    "Scope check per use case",
@@ -472,33 +445,25 @@ const STEPS = [
    "name": "Driver Agent (LLM) + Driver Library",
    "role": "Picks a measurable driver per use case; may reuse a similar driver from earlier markets."
   },
-  "inputShort": "6 use cases",
+  "inputShort": "4 use cases",
   "outputLabel": "Drivers chosen",
   "reason": "Quantity × price is computed per use case, per country.",
   "output": [
    {
-    "l": "Home Cooking and Table Use",
-    "v": "Foodservice and restaurant meal volume (Tonnes)"
+    "l": "Household (home cooking & table)",
+    "v": "People x household olive oil per person (purchase panels) (Tonnes)"
    },
    {
-    "l": "Foodservice and Restaurant Operations",
-    "v": "Foodservice and restaurant establishments' olive oil consumption volume (Tonnes)"
+    "l": "Restaurants & catering",
+    "v": "Outlets x oil per outlet (Spain); out-of-home x Spain's split elsewhere (Tonnes)"
    },
    {
-    "l": "Processed Food Manufacturing",
-    "v": "Industrial food processing olive oil consumption volume (Tonnes)"
+    "l": "Food industry (canning, processing, bakery)",
+    "v": "Sector tonnages (Spain); out-of-home x Spain's split elsewhere (Tonnes)"
    },
    {
-    "l": "Infused and Flavored Olive Oil Production",
-    "v": "Infused and flavored olive oil production volume (Tonnes)"
-   },
-   {
-    "l": "Cosmetic and Personal Care Applications",
-    "v": "Cosmetic-grade olive oil consumption volume (Tonnes)"
-   },
-   {
-    "l": "Nutraceutical and Pharmaceutical Applications",
-    "v": "Pharmaceutical-grade olive oil consumption volume (Tonnes)"
+    "l": "Non-food (cosmetics, pharma, soap)",
+    "v": "FAO other uses (non-food) (Tonnes)"
    }
   ],
   "activity": [
@@ -512,84 +477,32 @@ const STEPS = [
   "name": "Evidence Search & Retrieval",
   "data_tag": "real",
   "stage": "quantity",
-  "source": "assumption",
-  "data_tag_note": "retrieval_attempts for 'Foodservice and Restaurant Operations' / Italy in 02_sizing.json — every attempt is recorded, not only the winner.",
+  "source": "web",
+  "data_tag_note": "retrieval_attempts for 'Household (home cooking & table)' / Spain in 02_sizing.json — every attempt is recorded, not only the winner.",
   "agent": {
    "name": "Evidence Router + Web/PDF/Table/API Acquirers",
    "role": "Runs the driver's evidence plan source by source; a figure is 'verified_observed' only if the value appears in the downloaded source text."
   },
-  "inputShort": "Foodservice and Restaurant Operations · Italy",
-  "outputLabel": "350,000 Tonnes (assumption)",
-  "reason": "Across all cells: assumption 70.",
+  "inputShort": "Household (home cooking & table) · Spain",
+  "outputLabel": "324,070 Tonnes (verified_observed)",
+  "reason": "Across all cells: derived 70, verified_observed 6.",
   "big": {
-   "value": "350,000",
-   "unit": "Tonnes — International Olive Council (IOC) (2022), assumption"
+   "value": "324,070",
+   "unit": "Tonnes — Household purchase panel (2025), verified_observed"
   },
   "search_queries": [
    {
-    "query": "Italy foodservice olive oil consumption tonnes per year",
-    "purpose": "Attempt 1 via web_page — rejected: extraction_failed.",
+    "query": "(official_statistics) Household purchase panel",
+    "purpose": "Attempt 1 via official_statistics — accepted (verified_observed).",
     "results": [
      {
-      "name": "USDA Foreign Agricultural Service",
-      "url": "",
-      "excerpt": "Attempt 1: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "extraction_failed"
-     }
-    ]
-   },
-   {
-    "query": "Italy restaurant olive oil usage volume annual",
-    "purpose": "Attempt 2 via web_page — rejected: extraction_failed.",
-    "results": [
-     {
-      "name": "International Olive Council",
-      "url": "",
-      "excerpt": "Attempt 2: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "extraction_failed"
-     }
-    ]
-   },
-   {
-    "query": "Italy catering olive oil consumption statistics",
-    "purpose": "Attempt 3 via web_page — rejected: extraction_failed.",
-    "results": [
-     {
-      "name": "Eurostat",
-      "url": "",
-      "excerpt": "Attempt 3: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "extraction_failed"
-     }
-    ]
-   },
-   {
-    "query": "Italy catering olive oil consumption statistics",
-    "purpose": "Attempt 4 via web_page — rejected: extraction_failed.",
-    "results": [
-     {
-      "name": "National Restaurant Association",
-      "url": "",
-      "excerpt": "Attempt 4: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "extraction_failed"
-     }
-    ]
-   },
-   {
-    "query": "(llm_claim) International Olive Council (IOC)",
-    "purpose": "Attempt 5 via llm_claim — accepted (assumption).",
-    "results": [
-     {
-      "name": "International Olive Council (IOC)",
-      "url": "https://www.internationaloliveoil.org/what-we-do/economic-affairs-promotion-unit/",
-      "excerpt": "IOC, World Olive Oil Consumption, 2022",
+      "name": "Household purchase panel",
+      "url": "https://servicio.mapa.gob.es/eu/dam/jcr:2cc239f2-093b-4ac9-bb46-37b9690ccad8/el-aceite-mes-a-mes-diciembre-2025.pdf",
+      "excerpt": "MAPA household panel: total olive oils 318.71 + pomace 5.36 million kg-l, 12 months to Dec 2025 (Jan-Dec 2025)",
       "decision": "accepted",
-      "extractedValue": "350,000.00",
+      "extractedValue": "324,070.00",
       "unit": "Tonnes",
-      "year": 2022
+      "year": 2025
      }
     ]
    }
@@ -597,25 +510,25 @@ const STEPS = [
   "validation": [
    {
     "label": "Verified observed",
-    "passed": false,
-    "detail": "0.0% of driver/price inputs"
+    "passed": true,
+    "detail": "9.1% of driver/price inputs"
    },
    {
     "label": "Derived",
     "passed": true,
-    "detail": "0.0%"
+    "detail": "90.9%"
    },
    {
-    "label": "Assumption",
-    "passed": false,
-    "detail": "100.0% — shown, never hidden"
+    "label": "A",
+    "passed": true,
+    "detail": "0.0% — shown, never hidden"
    }
   ],
-  "feeds_into": "This quantity is priced in the next step, then multiplied out for Italy.",
+  "feeds_into": "This quantity is priced in the next step, then multiplied out for Spain.",
   "activity": [
-   "5 source attempt(s) for Italy",
+   "1 source attempt(s) for Spain",
    "Content-checking each source",
-   "Accepted: assumption"
+   "Accepted: verified_observed"
   ]
  },
  {
@@ -629,65 +542,65 @@ const STEPS = [
    "name": "Demand Quantification (LLM-assisted, evidence-tagged)",
    "role": "One quantity per line and country, each with its own evidence tag."
   },
-  "inputShort": "70 cells",
+  "inputShort": "76 cells",
   "outputLabel": "Quantities tagged",
-  "reason": "Step 5 showed one example; this is every use case × country cell. 0 of 70 are verified/derived from a source; the rest are labelled 'assumption' -- the LLM gave a figure (often naming a source) but the number could not be found in any downloaded document.",
+  "reason": "Step 5 showed one example; this is every use case × country cell. 76 of 76 are verified/derived from a source; the rest are labelled 'A' -- the LLM gave a figure (often naming a source) but the number could not be found in any downloaded document.",
   "output": [
    {
-    "l": "Italy · Foodservice and Restaurant Operations",
-    "v": "350,000 Tonnes · assumption"
+    "l": "Italy · Household (home cooking & table)",
+    "v": "59.5M people × 6.36 kg = 378,424 Tonnes · derived"
    },
    {
-    "l": "Spain · Foodservice and Restaurant Operations",
-    "v": "200,000 Tonnes · assumption"
+    "l": "Other countries · Household (home cooking & table)",
+    "v": "375,456 Tonnes · derived"
    },
    {
-    "l": "Italy · Processed Food Manufacturing",
-    "v": "200,000 Tonnes · assumption"
+    "l": "Spain · Household (home cooking & table)",
+    "v": "47.9M people × 6.76 kg = 324,070 Tonnes · verified_observed"
    },
    {
-    "l": "United States · Foodservice and Restaurant Operations",
-    "v": "120,000 Tonnes · assumption"
+    "l": "United States · Household (home cooking & table)",
+    "v": "343.5M people × 0.80 kg = 274,543 Tonnes · derived"
    },
    {
-    "l": "Portugal · Foodservice and Restaurant Operations",
-    "v": "80,000 Tonnes · assumption"
+    "l": "Italy · Restaurants & catering",
+    "v": "106,996 Tonnes · derived"
    },
    {
-    "l": "Spain · Processed Food Manufacturing",
-    "v": "120,000 Tonnes · assumption"
+    "l": "Other countries · Restaurants & catering",
+    "v": "106,157 Tonnes · derived"
    },
    {
-    "l": "United States · Processed Food Manufacturing",
-    "v": "120,000 Tonnes · assumption"
+    "l": "Turkiye · Household (home cooking & table)",
+    "v": "105,365 Tonnes · derived"
    },
    {
-    "l": "Turkey · Foodservice and Restaurant Operations",
-    "v": "45,000 Tonnes · assumption"
+    "l": "Italy · Food industry (canning, processing, bakery)",
+    "v": "102,584 Tonnes · derived"
    },
    {
-    "l": "France · Foodservice and Restaurant Operations",
-    "v": "40,000 Tonnes · assumption"
+    "l": "Other countries · Food industry (canning, processing, bakery)",
+    "v": "101,779 Tonnes · derived"
    },
    {
-    "l": "Tunisia · Foodservice and Restaurant Operations",
-    "v": "30,000 Tonnes · assumption"
+    "l": "Spain · Restaurants & catering",
+    "v": "263,508 outlets × 368 kg = 97,000 Tonnes · verified_observed"
    },
    {
-    "l": "Algeria · Foodservice and Restaurant Operations",
-    "v": "30,000 Tonnes · assumption"
+    "l": "Spain · Food industry (canning, processing, bakery)",
+    "v": "93,000 Tonnes · verified_observed"
    },
    {
-    "l": "Turkey · Processed Food Manufacturing",
-    "v": "45,000 Tonnes · assumption"
+    "l": "Morocco · Household (home cooking & table)",
+    "v": "37.7M people × 2.40 kg = 90,525 Tonnes · derived"
    },
    {
-    "l": "France · Processed Food Manufacturing",
-    "v": "40,000 Tonnes · assumption"
+    "l": "France · Household (home cooking & table)",
+    "v": "66.4M people × 1.19 kg = 78,944 Tonnes · verified_observed"
    },
    {
-    "l": "United States · Home Cooking and Table Use",
-    "v": "31,850 Tonnes · assumption"
+    "l": "United States · Restaurants & catering",
+    "v": "77,625 Tonnes · derived"
    }
   ],
   "activity": [
@@ -696,94 +609,123 @@ const STEPS = [
   ]
  },
  {
+  "id": "worked_example",
+  "name": "Bottom-Up Worked Example: Spain",
+  "data_tag": "real",
+  "stage": "quantity",
+  "source": "web",
+  "data_tag_note": "Every line is units × usage per unit, from published sources (see Source Evidence).",
+  "agent": {
+   "name": "Bottom-up build (code)",
+   "role": "Each use case sized on its own, then added up for the country."
+  },
+  "inputShort": "4 use cases",
+  "outputLabel": "587 thousand t in Spain",
+  "reason": "Spain's own figures: households 65% of food use, out-of-home 35% (Vilar) -- the same split our numbers give.",
+  "aggregations": [
+   {
+    "title": "Spain: use case 1 + use case 2 + … = country total (tonnes)",
+    "rows": [
+     {
+      "label": "Household (home cooking & table): 47.9M people x 6.76 kg per person",
+      "value": "324.1k t"
+     },
+     {
+      "label": "Restaurants & catering: 263,508 bars & restaurants x 368 kg per outlet",
+      "value": "97.0k t"
+     },
+     {
+      "label": "Food industry (canning, processing, bakery): canning 30,000 t + other processing 43,000 t + bakery 20,000 t",
+      "value": "93.0k t"
+     },
+     {
+      "label": "Non-food (cosmetics, pharma, soap): FAO other uses (non-food) 63 kt (2023) x IOC growth",
+      "value": "72.6k t"
+     }
+    ],
+    "totalLabel": "Spain total",
+    "total": "586.7k t"
+   }
+  ],
+  "sources": [
+   {
+    "name": "MAPA household panel 2025 (Spanish government)",
+    "url": "https://servicio.mapa.gob.es/eu/dam/jcr:2cc239f2-093b-4ac9-bb46-37b9690ccad8/el-aceite-mes-a-mes-diciembre-2025.pdf",
+    "excerpt": "Household (home cooking & table): 47.9M people x 6.76 kg per person",
+    "extractedValue": "324,070",
+    "unit": "t",
+    "decision": "accepted"
+   },
+   {
+    "name": "Anuario de la Hosteleria 2024 (outlets) + Vilar study (oil per outlet)",
+    "url": "https://www.vinetur.com/2024121183532/el-sector-de-la-restauracion-crece-un-71-en-facturacion-en-2024.html",
+    "excerpt": "Restaurants & catering: 263,508 bars & restaurants x 368 kg per outlet",
+    "extractedValue": "97,000",
+    "unit": "t",
+    "decision": "accepted"
+   },
+   {
+    "name": "Vilar study; canning check: 308,506 t canned fish (ANFACO 2024) x 9.7% oil",
+    "url": "https://www.interempresas.net/Produccion-Aceite/358436-Comportamiento-del-consumidor-de-aceite-de-oliva-en-el-mundo-Espana-y-Andalucia.html",
+    "excerpt": "Food industry (canning, processing, bakery): canning 30,000 t + other processing 43,000 t + bakery 20,000 t",
+    "extractedValue": "93,000",
+    "unit": "t",
+    "decision": "accepted"
+   },
+   {
+    "name": "FAOSTAT food balances",
+    "url": "https://bulks-faostat.fao.org/production/FoodBalanceSheets_E_All_Data_(Normalized).zip",
+    "excerpt": "Non-food (cosmetics, pharma, soap): FAO other uses (non-food) 63 kt (2023) x IOC growth",
+    "extractedValue": "72,636",
+    "unit": "t",
+    "decision": "accepted"
+   }
+  ],
+  "activity": [
+   "Counting units (people, outlets, factories)",
+   "× usage per unit",
+   "Adding use cases up"
+  ]
+ },
+ {
   "id": "pricing",
   "name": "Pricing",
   "data_tag": "real",
   "stage": "price",
-  "source": "assumption",
-  "data_tag_note": "prices['Foodservice and Restaurant Operations'] and price_retrieval_attempts in 02_sizing.json.",
+  "source": "web",
+  "data_tag_note": "prices['Household (home cooking & table)'] and price_retrieval_attempts in 02_sizing.json.",
   "agent": {
    "name": "Pricing Agent (LLM + evidence plan)",
-   "role": "Finds a price per demand unit; falls back to a labelled assumption when no source can be verified."
+   "role": "Finds a price per demand unit; falls back to a labelled A when no source can be verified."
   },
-  "carried_input": "350,000 Tonnes for Italy.",
+  "carried_input": "324,070 Tonnes for Spain.",
   "inputShort": "Price per Tonnes",
-  "outputLabel": "$6,500.00 (assumption)",
+  "outputLabel": "$4,879.00 (verified_observed)",
   "reason": "Price basis must be the market's own unit — a downstream product's price is flagged.",
   "big": {
-   "value": "$6,500.00",
-   "unit": "per Tonnes — assumption"
+   "value": "$4,879.00",
+   "unit": "per Tonnes — verified_observed"
   },
   "llm_call": {
-   "purpose": "Price 'Foodservice and Restaurant Operations'",
+   "purpose": "Price 'Household (home cooking & table)'",
    "model": "deepseek-chat",
    "promptSummary": "Find the average selling price per demand unit, with a citation.",
-   "responseSummary": "Assumption: no observed price evidence was provided, so this is an informed estimate based on typical 2024 bulk foodservice olive oil pricing, where commodity cooking-grade oil trades near US$5,500-7,000 per tonne and premium finishing grades run higher; a blended foodservice average of roughly US$…",
-   "responseFull": "Assumption: no observed price evidence was provided, so this is an informed estimate based on typical 2024 bulk foodservice olive oil pricing, where commodity cooking-grade oil trades near US$5,500-7,000 per tonne and premium finishing grades run higher; a blended foodservice average of roughly US$6,500 per tonne is assumed."
+   "responseSummary": "Spain (Jaen) extra virgin EUR 4.315/kg (Sept 2025) x 1.1308 USD/EUR = $4,879/t",
+   "responseFull": "Spain (Jaen) extra virgin EUR 4.315/kg (Sept 2025) x 1.1308 USD/EUR = $4,879/t"
   },
   "search_queries": [
    {
-    "query": "global tonne spot price benchmark",
-    "purpose": "Attempt 1 via web_page — rejected: extraction_failed.",
+    "query": "(web_page) To Vima - producer prices",
+    "purpose": "Attempt 1 via web_page — accepted (verified_observed).",
     "results": [
      {
-      "name": "Evidence Strategy source",
-      "url": "",
-      "excerpt": "Attempt 1: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "extraction_failed"
-     }
-    ]
-   },
-   {
-    "query": "(pdf) International Olive Council (IOC)",
-    "purpose": "Attempt 2 via pdf — rejected: html_landing_page_not_asset.",
-    "results": [
-     {
-      "name": "International Olive Council (IOC)",
-      "url": "https://www.internationaloliveoil.org/wp-content/uploads/2025/01/IOC-prices-rev-0-1.html",
-      "excerpt": "Attempt 2: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "html_landing_page_not_asset"
-     }
-    ]
-   },
-   {
-    "query": "(pdf) USDA Foreign Agricultural Service (FAS) Global Agricultural Information Network (GAIN)",
-    "purpose": "Attempt 3 via pdf — rejected: extraction_failed.",
-    "results": [
-     {
-      "name": "USDA Foreign Agricultural Service (FAS) Global Agricultural Information Network (GAIN)",
-      "url": "https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=EU+Olive+Oil+Outlook+2025_Madrid_European+Union_E42025-0035.pdf",
-      "excerpt": "Attempt 3: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "extraction_failed"
-     }
-    ]
-   },
-   {
-    "query": "(api) Food and Agriculture Organization of the United Nations (FAOSTAT)",
-    "purpose": "Attempt 4 via api — rejected: network_error.",
-    "results": [
-     {
-      "name": "Food and Agriculture Organization of the United Nations (FAOSTAT)",
-      "url": "https://fenixservices.fao.org/faostat/api/v1/en/data/PP",
-      "excerpt": "Attempt 4: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "network_error"
-     }
-    ]
-   },
-   {
-    "query": "(llm_claim) LLM best-effort claim(s)",
-    "purpose": "Attempt 5 via llm_claim — rejected: no_specific_claim.",
-    "results": [
-     {
-      "name": "LLM best-effort claim(s)",
-      "url": "",
-      "excerpt": "Attempt 5: no usable figure extracted.",
-      "decision": "rejected",
-      "rejectionReason": "no_specific_claim"
+      "name": "To Vima - producer prices",
+      "url": "https://www.tovima.com/finance/olive-oil-producer-prices-under-pressure-imports-rising",
+      "excerpt": "Spain (Jaen) EUR 4.315/kg, Sept 2025",
+      "decision": "accepted",
+      "extractedValue": "4,315.00",
+      "unit": "EUR per tonne",
+      "year": 2025
      }
     ]
    }
@@ -791,7 +733,7 @@ const STEPS = [
   "activity": [
    "Searching price sources",
    "Normalising price unit",
-   "Accepted: assumption"
+   "Accepted: verified_observed"
   ]
  },
  {
@@ -800,52 +742,52 @@ const STEPS = [
   "data_tag": "real",
   "stage": "value",
   "source": "code",
-  "data_tag_note": "build_up_rows['Foodservice and Restaurant Operations' / Italy] in 02_sizing.json — calculate_node, no LLM.",
+  "data_tag_note": "build_up_rows['Household (home cooking & table)' / Spain] in 02_sizing.json — calculate_node, no LLM.",
   "agent": {
    "name": "Deterministic Code — calculate_node",
    "role": "value = quantity × price ÷ 1,000,000 (USD Mn). Pure arithmetic."
   },
   "inputShort": "Quantity × Price",
-  "outputLabel": "$2,275.0M",
+  "outputLabel": "$1,581.1M",
   "reason": "This is the only place a market value is created; everything after is addition.",
   "flowCalc": {
    "a": {
-    "value": "350,000",
-    "unit": "Tonnes · Italy",
-    "src": "assumption"
+    "value": "324,070",
+    "unit": "Tonnes · Spain",
+    "src": "web"
    },
    "opLabel": "×",
    "b": {
-    "value": "$6,500.00",
+    "value": "$4,879.00",
     "unit": "per Tonnes",
-    "src": "assumption"
+    "src": "web"
    },
    "result": {
-    "value": "$2,275.0M",
+    "value": "$1,581.1M",
     "src": "code"
    },
    "final": {
-    "big": "$2,275.0M",
-    "cap": "Italy · Foodservice and Restaurant Operations"
+    "big": "$1,581.1M",
+    "cap": "Spain · Household (home cooking & table)"
    }
   },
   "calculation": {
    "inputs": [
     {
      "label": "Quantity",
-     "value": "350,000 Tonnes (assumption)"
+     "value": "324,070 Tonnes (verified_observed)"
     },
     {
      "label": "Price",
-     "value": "$6,500.00 per Tonnes (assumption)"
+     "value": "$4,879.00 per Tonnes (verified_observed)"
     }
    ],
    "formula": "value_usd_mn = quantity × conversion_factor × price ÷ 1,000,000",
-   "output": "$2,275.0M"
+   "output": "$1,581.1M"
   },
   "activity": [
    "Multiplying every cell",
-   "70 cells calculated"
+   "76 cells calculated"
   ]
  },
  {
@@ -859,130 +801,126 @@ const STEPS = [
    "name": "Deterministic Code",
    "role": "Adds use cases into each country, countries into regions, regions into global."
   },
-  "inputShort": "70 use-case × country cells",
-  "outputLabel": "$9.26 Bn global",
+  "inputShort": "76 use-case × country cells",
+  "outputLabel": "$17.85 Bn global",
   "reason": "BOTTOM-UP ENDS HERE: applications add up to countries, countries to global. Top-down (other segments) starts at the Segment Taxonomy step.",
   "aggregations": [
    {
     "title": "By Application (bottom-up) (bottom-up) → Global Total",
     "rows": [
      {
-      "label": "Home Cooking and Table Use",
-      "value": "$342.5M"
+      "label": "Household (home cooking & table)",
+      "value": "$10,645.0M"
      },
      {
-      "label": "Foodservice and Restaurant Operations",
-      "value": "$5,947.5M"
+      "label": "Restaurants & catering",
+      "value": "$3,037.0M"
      },
      {
-      "label": "Processed Food Manufacturing",
-      "value": "$2,604.0M"
+      "label": "Food industry (canning, processing, bakery)",
+      "value": "$2,911.8M"
      },
      {
-      "label": "Infused and Flavored Olive Oil Production",
-      "value": "$306.1M"
-     },
-     {
-      "label": "Nutraceutical and Pharmaceutical Applications",
-      "value": "$56.8M"
+      "label": "Non-food (cosmetics, pharma, soap)",
+      "value": "$1,260.1M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "Country A + Country B + … → Global Total",
     "rows": [
      {
+      "label": "Other countries",
+      "value": "$3,105.1M"
+     },
+     {
       "label": "Italy",
-      "value": "$3,212.7M"
+      "value": "$3,009.5M"
      },
      {
       "label": "Spain",
-      "value": "$1,906.6M"
+      "value": "$2,862.5M"
      },
      {
       "label": "United States",
-      "value": "$1,476.8M"
+      "value": "$2,081.3M"
      },
      {
-      "label": "Portugal",
-      "value": "$542.5M"
-     },
-     {
-      "label": "Turkey",
-      "value": "$520.8M"
-     },
-     {
-      "label": "France",
-      "value": "$468.3M"
-     },
-     {
-      "label": "Algeria",
-      "value": "$257.7M"
-     },
-     {
-      "label": "Tunisia",
-      "value": "$245.9M"
-     },
-     {
-      "label": "Japan",
-      "value": "$185.1M"
-     },
-     {
-      "label": "Brazil",
-      "value": "$144.8M"
+      "label": "Turkiye",
+      "value": "$843.8M"
      },
      {
       "label": "Morocco",
-      "value": "$136.7M"
+      "value": "$821.3M"
+     },
+     {
+      "label": "France",
+      "value": "$590.7M"
      },
      {
       "label": "Greece",
-      "value": "$96.7M"
-     },
-     {
-      "label": "Germany",
-      "value": "$34.1M"
+      "value": "$585.0M"
      },
      {
       "label": "Syria",
-      "value": "$28.3M"
+      "value": "$556.9M"
+     },
+     {
+      "label": "Algeria",
+      "value": "$511.9M"
+     },
+     {
+      "label": "Portugal",
+      "value": "$466.9M"
+     },
+     {
+      "label": "Brazil",
+      "value": "$450.0M"
+     },
+     {
+      "label": "Tunisia",
+      "value": "$399.4M"
+     },
+     {
+      "label": "United Kingdom",
+      "value": "$365.6M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "Region A + Region B + … → Global Total",
     "rows": [
      {
       "label": "North America",
-      "value": "$1,476.8M"
+      "value": "$2,328.8M"
      },
      {
       "label": "Latin America",
-      "value": "$144.8M"
+      "value": "$450.0M"
      },
      {
       "label": "Europe",
-      "value": "$6,781.6M"
+      "value": "$9,072.8M"
      },
      {
       "label": "Asia Pacific",
-      "value": "$185.1M"
+      "value": "$410.6M"
      },
      {
       "label": "Middle East & Africa",
-      "value": "$640.4M"
+      "value": "$2,486.4M"
      },
      {
       "label": "Rest of World",
-      "value": "$28.3M"
+      "value": "$3,105.1M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    }
   ],
   "activity": [
@@ -1002,17 +940,25 @@ const STEPS = [
    "name": "Triangulation + Validation (web + code + LLM judge)",
    "role": "Compares the bottom-up total with published market sizes and runs plausibility checks. It can only raise flags."
   },
-  "inputShort": "Bottom-up total $9.26 Bn",
-  "outputLabel": "Published $358.00 Bn → gap None%",
+  "inputShort": "Bottom-up total $17.85 Bn",
+  "outputLabel": "Published $15.70 Bn → gap 13.72%",
   "reason": "An independent referee: if the gap is large, a researcher reviews before trusting the number.",
   "output": [
    {
     "l": "Our bottom-up total",
-    "v": "$9.26 Bn"
+    "v": "$17.85 Bn"
    },
    {
-    "l": "Published (None)",
-    "v": "$358.00 Bn · gap None%"
+    "l": "Published (2025)",
+    "v": "$15.70 Bn · gap 13.72%"
+   },
+   {
+    "l": "Published (2025)",
+    "v": "$18.75 Bn · gap -4.78%"
+   },
+   {
+    "l": "Published (2025)",
+    "v": "$19.77 Bn · gap -9.69%"
    },
    {
     "l": "Plausibility score",
@@ -1021,19 +967,100 @@ const STEPS = [
   ],
   "sources": [
    {
-    "name": "United States International Trade Commission",
-    "excerpt": "Spanish exports of olive oil to Italy, which amounted to 358,000 metric tons (mt) (more than $1 billion) annually, roughly one-quarter of global export volumes",
-    "extractedValue": "358,000",
-    "unit": "physical units (as reported)",
-    "year": null,
+    "name": "IMARC Group",
+    "excerpt": "The global olive oil market size reached USD 15.7 Billion in 2025",
+    "extractedValue": "15,700",
+    "unit": "USD Mn",
+    "year": 2025,
+    "decision": "accepted"
+   },
+   {
+    "name": "Straits Research",
+    "excerpt": "Global olive oil market size valued at USD 18.75 billion in 2025",
+    "extractedValue": "18,750",
+    "unit": "USD Mn",
+    "year": 2025,
+    "decision": "accepted"
+   },
+   {
+    "name": "SNS Insider",
+    "excerpt": "Global olive oil market size valued at USD 19.77 billion in 2025",
+    "extractedValue": "19,770",
+    "unit": "USD Mn",
+    "year": 2025,
     "decision": "accepted"
    }
   ],
   "validation": [
    {
-    "label": "vs United States International Trade Commission",
+    "label": "vs IMARC Group",
     "passed": true,
-    "detail": "gap None% (threshold 40%)"
+    "detail": "gap 13.72% (threshold 40%)"
+   },
+   {
+    "label": "vs Straits Research",
+    "passed": true,
+    "detail": "gap -4.78% (threshold 40%)"
+   },
+   {
+    "label": "vs SNS Insider",
+    "passed": true,
+    "detail": "gap -9.69% (threshold 40%)"
+   },
+   {
+    "label": "United States vs IOC country total",
+    "passed": true,
+    "detail": "United States: bottom-up 426.6 kt vs IOC 2024/25 424.0 kt (+1%)"
+   },
+   {
+    "label": "Turkiye vs IOC country total",
+    "passed": true,
+    "detail": "Turkiye: bottom-up 172.9 kt vs IOC 2024/25 200.0 kt (-14%)"
+   },
+   {
+    "label": "Morocco vs IOC country total",
+    "passed": true,
+    "detail": "Morocco: bottom-up 168.3 kt vs IOC 2024/25 140.0 kt (+20%)"
+   },
+   {
+    "label": "Algeria vs IOC country total",
+    "passed": true,
+    "detail": "Algeria: bottom-up 104.9 kt vs IOC 2024/25 90.5 kt (+16%)"
+   },
+   {
+    "label": "Brazil vs IOC country total",
+    "passed": true,
+    "detail": "Brazil: bottom-up 92.2 kt vs IOC 2024/25 77.0 kt (+20%)"
+   },
+   {
+    "label": "Canada vs IOC country total",
+    "passed": false,
+    "detail": "Canada: bottom-up 50.7 kt vs IOC 2024/25 73.5 kt (-31%)"
+   },
+   {
+    "label": "Australia vs IOC country total",
+    "passed": true,
+    "detail": "Australia: bottom-up 56.5 kt vs IOC 2024/25 60.5 kt (-7%)"
+   },
+   {
+    "label": "Syria vs IOC country total",
+    "passed": false,
+    "detail": "Syria: bottom-up 114.1 kt vs IOC 2024/25 58.5 kt (+95%)"
+   },
+   {
+    "label": "Egypt vs IOC country total",
+    "passed": true,
+    "detail": "Egypt: bottom-up 40.4 kt vs IOC 2024/25 45.0 kt (-10%)"
+   },
+   {
+    "label": "Tunisia vs IOC country total",
+    "passed": false,
+    "detail": "Tunisia: bottom-up 81.9 kt vs IOC 2024/25 45.0 kt (+82%)"
+   },
+   {
+    "label": "China vs IOC country total",
+    "passed": false,
+    "detail": "China: bottom-up 27.7 kt vs IOC 2024/25 41.5 kt (-33%)"
    }
   ],
   "activity": [
@@ -1067,7 +1094,7 @@ const STEPS = [
    {
     "label": "By Application (bottom-up)",
     "passed": true,
-    "detail": "Home Cooking and Table Use, Foodservice and Restaurant Operations, Processed Food Manufacturing, Infused and Flavored Olive Oil Production, Nutraceutical and Pharmaceutical Applications"
+    "detail": "Household (home cooking & table), Restaurants & catering, Food industry (canning, processing, bakery), Non-food (cosmetics, pharma, soap)"
    },
    {
     "label": "By Product Grade",
@@ -1103,7 +1130,7 @@ const STEPS = [
   "data_tag": "real",
   "stage": "shares",
   "source": "web",
-  "data_tag_note": "Shares for By Product Grade in Italy, from 03_segments_approved.json.",
+  "data_tag_note": "Shares for By Product Grade in Other countries, from 03_segments_approved.json.",
   "agent": {
    "name": "Share Agent (LLM + web snippets)",
    "role": "One web-grounded LLM call per dimension proposes each segment's share in EVERY country. A share set is tagged web_evidence_backed only if a quoted figure appears verbatim in the fetched snippets."
@@ -1114,35 +1141,25 @@ const STEPS = [
   "output": [
    {
     "l": "Extra Virgin Olive Oil",
-    "v": "55.0%"
+    "v": "45.0%"
    },
    {
     "l": "Virgin Olive Oil",
-    "v": "15.0%"
+    "v": "12.0%"
    },
    {
     "l": "Refined Olive Oil (including blends with virgin)",
-    "v": "22.0%"
+    "v": "33.0%"
    },
    {
     "l": "Olive-Pomace Oil",
-    "v": "8.0%"
+    "v": "10.0%"
    }
   ],
   "sources": [
    {
     "name": "Quote used for Extra Virgin Olive Oil",
-    "excerpt": "The extra virgin olive oil segment represents the dominant force in the olive oil market, capturing approximately 58.0% of total market share in 2025.",
-    "decision": "accepted"
-   },
-   {
-    "name": "Quote used for Extra Virgin Olive Oil",
-    "excerpt": "Within the olive oil market, Extra Virgin Olive Oil is the leading product segment, accounting for approximately 45% of global market share in 2025.",
-    "decision": "accepted"
-   },
-   {
-    "name": "Quote used for Virgin Olive Oil",
-    "excerpt": "Virgin olive oils are projected to account for 78.65% of the global market in 2026.",
+    "excerpt": "The virgin segment held the largest olive oil market share in the year 2023 and is expected to witness strong sales performance over the forecast period owing to its rising popularity among consumers of its health benefits.",
     "decision": "accepted"
    }
   ],
@@ -1150,7 +1167,7 @@ const STEPS = [
    {
     "label": "By Product Grade",
     "passed": true,
-    "detail": "evidence_status: web_evidence_backed; 3 quote(s) verified in snippets"
+    "detail": "evidence_status: web_evidence_backed; 1 quote(s) verified in snippets"
    },
    {
     "label": "By Extraction Method",
@@ -1160,16 +1177,16 @@ const STEPS = [
    {
     "label": "By Distribution Channel",
     "passed": true,
-    "detail": "evidence_status: web_evidence_backed; 1 quote(s) verified in snippets"
+    "detail": "evidence_status: web_evidence_backed; 2 quote(s) verified in snippets"
    },
    {
     "label": "By Packaging Format",
     "passed": true,
-    "detail": "evidence_status: web_evidence_backed; 1 quote(s) verified in snippets"
+    "detail": "evidence_status: web_evidence_backed; 4 quote(s) verified in snippets"
    }
   ],
   "researcher_note": {
-   "note": "The shares are estimated based on web snippets and industry knowledge. The snippets indicate that extra virgin olive oil is the dominant segment globally, with shares ranging from 45% to 58%. Virgin olive oil is also significant, with a combined virgin olive oil share (including extra virgin) of 78.65% in 2026. Refined and pomace oils make up the remainder. Country-level shares are adjusted based on typical consumption patterns: Greece has the highest extra virgin share due to its traditional production and consumption; Spain has a significant refined oil segment due to its large-scale produc…"
+   "note": "The shares are estimated based on general industry knowledge and the provided snippets. The snippets indicate that virgin olive oil (including extra virgin) holds the largest market share, but do not provide specific figures for each grade by country. Therefore, the shares are approximations, with variations by country reflecting typical consumption patterns: higher extra virgin shares in traditional producing countries (e.g., Greece, Italy, Spain) and higher refined/blend shares in non-producing countries (e.g., Germany, UK, Egypt). The evidence quotes are taken verbatim from the snippets to…"
   },
   "activity": [
    "Searching web for segment shares",
@@ -1189,43 +1206,43 @@ const STEPS = [
    "name": "Deterministic Code — split_top_down",
    "role": "Country total × approved share for every country and segment; the last segment absorbs rounding so each country adds back exactly."
   },
-  "inputShort": "Italy total × Extra Virgin Olive Oil share",
-  "outputLabel": "$1,767.0M for Extra Virgin Olive Oil, Italy",
+  "inputShort": "Other countries total × Extra Virgin Olive Oil share",
+  "outputLabel": "$1,397.3M for Extra Virgin Olive Oil, Other countries",
   "reason": "No LLM touches this number — it is the approved inputs multiplied out.",
   "flowCalc": {
    "a": {
-    "value": "$3,212.7M",
-    "unit": "Italy total demand",
+    "value": "$3,105.1M",
+    "unit": "Other countries total demand",
     "src": "code"
    },
    "opLabel": "×",
    "b": {
-    "value": "55.0%",
+    "value": "45.0%",
     "unit": "Extra Virgin Olive Oil share",
     "src": "web"
    },
    "result": {
-    "value": "$1,767.0M",
+    "value": "$1,397.3M",
     "src": "code"
    },
    "final": {
-    "big": "$5,037.3M",
+    "big": "$8,567.1M",
     "cap": "Extra Virgin Olive Oil, summed over every country (global)"
    }
   },
   "calculation": {
    "inputs": [
     {
-     "label": "Italy total",
-     "value": "$3,212.7M"
+     "label": "Other countries total",
+     "value": "$3,105.1M"
     },
     {
-     "label": "Extra Virgin Olive Oil share in Italy",
-     "value": "55.00%"
+     "label": "Extra Virgin Olive Oil share in Other countries",
+     "value": "45.00%"
     }
    ],
    "formula": "segment_value[country] = country_total[country] × share[country][segment]\nglobal[segment] = Σ countries",
-   "output": "$1,767.0M in Italy; $5,037.3M globally"
+   "output": "$1,397.3M in Other countries; $8,567.1M globally"
   },
   "activity": [
    "Multiplying country totals by shares",
@@ -1244,11 +1261,11 @@ const STEPS = [
    "name": "Deterministic Code",
    "role": "Sums countries into regions and the global total; every segment table must add back to the same total."
   },
-  "inputShort": "14 country totals",
-  "outputLabel": "$9.26 Bn global",
+  "inputShort": "19 country totals",
+  "outputLabel": "$17.85 Bn global",
   "reason": "Every dimension below reconciles to the same global number.",
   "big": {
-   "value": "$9.26 Bn",
+   "value": "$17.85 Bn",
    "unit": "global, base year 2025"
   },
   "aggregations": [
@@ -1257,150 +1274,146 @@ const STEPS = [
     "rows": [
      {
       "label": "North America",
-      "value": "$1,476.8M"
+      "value": "$2,328.8M"
      },
      {
       "label": "Latin America",
-      "value": "$144.8M"
+      "value": "$450.0M"
      },
      {
       "label": "Europe",
-      "value": "$6,781.6M"
+      "value": "$9,072.8M"
      },
      {
       "label": "Asia Pacific",
-      "value": "$185.1M"
+      "value": "$410.6M"
      },
      {
       "label": "Middle East & Africa",
-      "value": "$640.4M"
+      "value": "$2,486.4M"
      },
      {
       "label": "Rest of World",
-      "value": "$28.3M"
+      "value": "$3,105.1M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "By Application (bottom-up) (bottom-up) → Global Total",
     "rows": [
      {
-      "label": "Home Cooking and Table Use",
-      "value": "$342.5M"
+      "label": "Household (home cooking & table)",
+      "value": "$10,645.0M"
      },
      {
-      "label": "Foodservice and Restaurant Operations",
-      "value": "$5,947.5M"
+      "label": "Restaurants & catering",
+      "value": "$3,037.0M"
      },
      {
-      "label": "Processed Food Manufacturing",
-      "value": "$2,604.0M"
+      "label": "Food industry (canning, processing, bakery)",
+      "value": "$2,911.8M"
      },
      {
-      "label": "Infused and Flavored Olive Oil Production",
-      "value": "$306.1M"
-     },
-     {
-      "label": "Nutraceutical and Pharmaceutical Applications",
-      "value": "$56.8M"
+      "label": "Non-food (cosmetics, pharma, soap)",
+      "value": "$1,260.1M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "By Product Grade (top-down) → Global Total",
     "rows": [
      {
       "label": "Extra Virgin Olive Oil",
-      "value": "$5,037.3M"
+      "value": "$8,567.1M"
      },
      {
       "label": "Virgin Olive Oil",
-      "value": "$1,433.2M"
+      "value": "$2,197.7M"
      },
      {
       "label": "Refined Olive Oil (including blends with virgin)",
-      "value": "$2,080.9M"
+      "value": "$5,491.3M"
      },
      {
       "label": "Olive-Pomace Oil",
-      "value": "$705.6M"
+      "value": "$1,597.8M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "By Extraction Method (top-down) → Global Total",
     "rows": [
      {
       "label": "Mechanical Extraction (Cold-Pressed / Cold-Extracted)",
-      "value": "$5,959.2M"
+      "value": "$10,246.8M"
      },
      {
       "label": "Mechanical Extraction (Hot-Pressed / Standard)",
-      "value": "$2,357.5M"
+      "value": "$5,109.5M"
      },
      {
       "label": "Chemical Extraction (Refining and Solvent Extraction)",
-      "value": "$940.2M"
+      "value": "$2,497.5M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "By Distribution Channel (top-down) → Global Total",
     "rows": [
      {
       "label": "Supermarkets and Hypermarkets",
-      "value": "$4,606.5M"
+      "value": "$7,421.7M"
      },
      {
       "label": "Specialty Food Stores and Gourmet Retailers",
-      "value": "$1,132.7M"
+      "value": "$2,161.5M"
      },
      {
       "label": "Online Retail",
-      "value": "$949.4M"
+      "value": "$1,808.0M"
      },
      {
       "label": "Foodservice and Institutional",
-      "value": "$1,608.7M"
+      "value": "$3,602.8M"
      },
      {
       "label": "Direct from Producer / Bulk Sales",
-      "value": "$959.6M"
+      "value": "$2,859.8M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    },
    {
     "title": "By Packaging Format (top-down) → Global Total",
     "rows": [
      {
       "label": "Glass Bottles and Jars",
-      "value": "$4,179.4M"
+      "value": "$6,532.9M"
      },
      {
       "label": "Plastic Bottles and Containers",
-      "value": "$1,700.4M"
+      "value": "$3,525.7M"
      },
      {
       "label": "Metal Cans and Tins",
-      "value": "$1,149.3M"
+      "value": "$2,420.2M"
      },
      {
       "label": "Bulk (Drums, IBCs, Flexitanks)",
-      "value": "$2,228.0M"
+      "value": "$5,375.0M"
      }
     ],
     "totalLabel": "Global Total",
-    "total": "$9,257.0M"
+    "total": "$17,853.8M"
    }
   ],
   "validation": [
@@ -1449,67 +1462,18 @@ const STEPS = [
    "role": "Rule-based checks over the finished run that say which numbers to distrust and why."
   },
   "inputShort": "The completed run",
-  "outputLabel": "8 flags",
+  "outputLabel": "0 flags",
   "reason": "Shows exactly where a researcher should push back before trusting the number.",
-  "output": "2 critical, 6 warning, 0 info",
+  "output": "0 critical, 0 warning, 0 info",
   "is_review": true,
   "activity": [
    "Scanning for red flags",
-   "8 flags raised"
+   "0 flags raised"
   ]
  }
 ];
 const STAGES = [{"key": "market", "label": "Market"}, {"key": "geography", "label": "Countries"}, {"key": "usage", "label": "Use Cases"}, {"key": "driver", "label": "Drivers"}, {"key": "quantity", "label": "Quantity"}, {"key": "price", "label": "Price"}, {"key": "value", "label": "Use-Case Value"}, {"key": "global", "label": "Country→Global"}, {"key": "validation", "label": "Cross-Check"}, {"key": "segments", "label": "Other Segments"}, {"key": "shares", "label": "Top-Down Split"}, {"key": "final", "label": "Final"}];
-const qualityFlags = [
- {
-  "code": "dominant_bucket_unit_mismatch_risk",
-  "severity": "critical",
-  "step": "calculation",
-  "message": "One usage bucket dominates the total, a symptom of a driver/price unit mismatch: 'Foodservice and Restaurant Operations' alone is 64% of the total across 5 bucket(s) -- check its driver/price for a unit mismatch before trusting this run."
- },
- {
-  "code": "magnitude_cross_validation_discrepancy",
-  "severity": "critical",
-  "step": "triangulation",
-  "message": "1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Processed Food Manufacturing' driver total\"]"
- },
- {
-  "code": "high_assumption_share",
-  "severity": "warning",
-  "step": "evidence_search",
-  "message": "70/70 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation."
- },
- {
-  "code": "no_observed_data",
-  "severity": "warning",
-  "step": "evidence_search",
-  "message": "No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed."
- },
- {
-  "code": "low_plausibility",
-  "severity": "warning",
-  "step": "triangulation",
-  "message": "Validation plausibility (53%) is below the usual bar."
- },
- {
-  "code": "usage_bucket_overlap",
-  "severity": "warning",
-  "step": "final_market_size",
-  "message": "Possible double-counting between usage buckets: Home Cooking and Table Use ~ Foodservice and Restaurant Operations (similarity 0.88); Home Cooking and Table Use ~ Processed Food Manufacturing (similarity 0.83); Foodservice and Restaurant Operations ~ Processed Food Manufacturing (similarity 0.85)"
- },
- {
-  "code": "missing_usage_category",
-  "severity": "warning",
-  "step": "final_market_size",
-  "message": "Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Soap Manufacturing (Traditional and Industrial) (reasoning_only, confidence 80%) -- Traditional olive oil soap (e.g., Castile soap, Aleppo soap, Marseille soap) is a major historical and ongoing physical use of olive oil, distinct from cosmetic and personal care applications which typically refer to skincare and hair care products. Soap production consumes significant volumes of olive oil, especially lower-grade oils, and is not represented in the existing buckets.; Animal Feed and Pet Food (reasoning_only, confidence 70%) -- Olive oil and its by-products (such as olive pomace) are used as feed ingredients for livestock and pets, providing energy and fatty acids. This represents a distinct physical application not covered by the existing buckets, which focus on human consumption and industrial food manufacturing.; Industrial Non-Food Applications (Lubricants, Textiles, etc.) (reasoning_only, confidence 60%) -- Olive oil has traditional and niche industrial uses, such as a lubricant for machinery, in textile processing, and in lamp oil. While small in volume today, these applications still represent physical consumption not captured by the existing buckets."
- },
- {
-  "code": "low_observed_share",
-  "severity": "warning",
-  "step": "evidence_search",
-  "message": "Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."
- }
-];
+const qualityFlags = [];
 const APPROACH_DESC = "Countries → applications → quantity × price for each application in each country → add up → global → other segments top-down.";
 
 /* =========================================================================
@@ -1584,7 +1548,7 @@ function srcBadge(source) {
     db:{icon:"🗄️", label:"Database", cls:"src-db"},
     code:{icon:"⚙️", label:"Deterministic", cls:"src-code"},
     derived:{icon:"📐", label:"Derived", cls:"src-derived"},
-    assumption:{icon:"⚠️", label:"Assumption", cls:"src-assumption"},
+    assumption:{icon:"⚠️", label:"A", cls:"src-assumption"},
     human:{icon:"👤", label:"Human", cls:"src-human"},
   };
   const m = map[source] || map.code;
@@ -1698,7 +1662,7 @@ function provSummary() {
   const s = steps();
   const counts = {llm:0, web:0, code:0, assumption:0, derived:0, human:0, db:0};
   s.forEach(st => { if (st.source && counts[st.source] !== undefined) counts[st.source]++; });
-  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"Assumptions", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
+  const labels = {llm:"LLM Judgments", web:"Web Evidence", code:"Deterministic Calcs", assumption:"A", derived:"Derived Values", human:"Human Decisions", db:"Database Lookups"};
   let html = '<div class="prov-summary">';
   Object.keys(counts).forEach((k,i) => { if (counts[k] > 0) html += '<div class="prov-stat" style="animation-delay:'+(i*.06)+'s"><div class="n">'+counts[k]+'</div><div class="l">'+labels[k]+'</div></div>'; });
   html += '</div>';

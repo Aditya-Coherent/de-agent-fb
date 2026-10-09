@@ -52,6 +52,7 @@ from me_engine.supply.discovery import discover_companies
 from me_engine.supply.evidence_estimator import estimate_from_evidence
 from me_engine.supply.graph import run_supply_side
 from me_engine.supply.quality import compute_company_quality_flags, compute_evidence_quality_flags
+from me_engine.supply.vendor_intel import company_file_for, coverage_for
 from me_engine.supply.verify import verify_companies
 
 
@@ -140,6 +141,11 @@ def _run_company_method(args, config, countries) -> dict | None:
         "total_usd_mn": grand_total,
         "log": state.get("log", []),
         "company_data_sources": per_source,
+        "company_revenue_years": {
+            name: int(code.split(":", 1)[1])
+            for name, codes in state.get("per_company_notes", {}).items()
+            for code in codes if code.startswith("revenue_year:")
+        },
         "excluded_companies": state.get("excluded_companies", []),
         "merged_companies": state.get("merged_companies", []),
         "quality_flags": company_flags,
@@ -193,6 +199,9 @@ def main() -> int:
     ap.add_argument("--discover", action="store_true",
                     help="Skip --companies -- run the miniature LLM-based discovery instead (seconds, "
                          "not the full vendor-intelligence pipeline)")
+    ap.add_argument("--vendor-intel", action="store_true",
+                    help="Use the vendor-intelligence company list: an existing report in my_companies/, or run "
+                         "vendor_intelligence/ for this market now. Falls back to --discover if that fails.")
     ap.add_argument("--no-verify", action="store_true", help="Skip website verification with --discover")
     ap.add_argument("--countries", default=None,
                     help="Comma-separated country list, e.g. \"United States,India,Brazil,Germany,China\". "
@@ -216,6 +225,16 @@ def main() -> int:
         return 1
 
     countries = [c.strip() for c in args.countries.split(",") if c.strip()] if args.countries else None
+
+    source_note = None
+    if args.vendor_intel and not args.companies and args.method in ("company", "both"):
+        print(f"Looking for a vendor-intelligence company list for '{args.market}' (runs the finder if none exists) ...")
+        vi_file, source_note = company_file_for(args.market)
+        if vi_file:
+            args.companies = str(vi_file)
+        else:
+            print("[WARN] No vendor-intelligence list available -- falling back to quick discovery.")
+            args.discover, source_note = True, "quick LLM discovery (vendor intelligence unavailable)"
 
     company_result = None
     if args.method in ("company", "both"):
@@ -241,7 +260,10 @@ def main() -> int:
     if evidence_result is not None and evidence_result["has_real_data"]:
         print(f"Evidence-based supply-side total: {evidence_result['total_usd_mn']:,.1f} USD Mn")
 
-    report: dict = {"market": args.market, "method": args.method}
+    report: dict = {"market": args.market, "method": args.method,
+                    "company_list_source": source_note or (f"company list: {Path(args.companies).name}" if args.companies
+                                                           else "quick LLM discovery" if args.discover else None),
+                    "vendor_intel_coverage": coverage_for(Path(args.companies)) if args.companies else None}
     if desk_research_value is not None:
         report["desk_research_total_usd_mn"] = desk_research_value
 

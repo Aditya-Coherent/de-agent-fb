@@ -104,13 +104,46 @@ def test_fetch_company_revenue_converts_total_and_segments(monkeypatch):
         {"date": 2025, "segments": [{"label": "North America", "value": 1_000_000_000}]}, None,
     ))
     monkeypatch.setattr(financials, "_live_fx_rate", lambda cur: 0.22)
-    fake_yf = SimpleNamespace(Ticker=lambda t: SimpleNamespace(info={
-        "totalRevenue": 2_188_000_000, "financialCurrency": "MYR", "sector": "Healthcare", "industry": "x",
+    import pandas as pd
+    stmt = pd.DataFrame(
+        {pd.Timestamp("2026-03-31"): [9_999_000_000], pd.Timestamp("2025-03-31"): [2_188_000_000],
+         pd.Timestamp("2024-03-31"): [1_800_000_000]},
+        index=["Total Revenue"],
+    )
+    fake_yf = SimpleNamespace(Ticker=lambda t: SimpleNamespace(income_stmt=stmt, info={
+        "totalRevenue": 7_777_000_000, "financialCurrency": "MYR", "sector": "Healthcare", "industry": "x",
     }))
     monkeypatch.setitem(sys.modules, "yfinance", fake_yf)
     fin = financials.fetch_company_revenue("Hartalega")
+    # FY2026 and the trailing-12-month total are never used; the latest year <= 2025 is.
+    assert fin.revenue_year == 2025
     assert fin.total_revenue_usd_mn == pytest.approx(481.36)
     assert fin.region_segments["segments"][0]["value_usd_mn"] == pytest.approx(220.0)
+
+
+def test_segments_skip_years_after_base():
+    history = [{"date": "2026"}, {"date": 2025, "segments": []}]
+    assert financials._latest_allowed(history) == {"date": 2025, "segments": []}
+    assert financials._latest_allowed([{"date": 2026}]) is None
+
+
+def test_web_revenue_for_2026_is_rejected(monkeypatch):
+    monkeypatch.setattr(estimator, "fetch_company_revenue", lambda name: None)
+    monkeypatch.setattr(estimator.web_search, "gather", lambda *a, **k: ["Acme revenue 2026: $900M"])
+    llm = _FakeLLM({"country_revenue_usd_mn": {"US": 900.0}, "revenue_year": 2026})
+    revenue, source, notes = estimate_company_countries(llm, "Widgets", Company("Acme"), ["US"], True)
+    assert source == "no_real_data" and revenue == {"US": 0.0}
+    assert "revenue_year_after_base:2026" in notes
+
+
+def test_web_revenue_for_2025_is_kept(monkeypatch):
+    monkeypatch.setattr(estimator, "fetch_company_revenue", lambda name: None)
+    monkeypatch.setattr(estimator.web_search, "gather", lambda *a, **k: ["Acme revenue 2025: $900M"])
+    llm = _FakeLLM({"country_revenue_usd_mn": {"US": 900.0}, "revenue_year": 2025})
+    revenue, source, notes = estimate_company_countries(llm, "Widgets", Company("Acme"), ["US"], True)
+    assert source == "web_evidence" and revenue["US"] == pytest.approx(900.0)
+    assert "revenue_year:2025" in notes
+    assert "2026" in llm.calls[0][0]  # prompt tells the LLM to ignore 2026+ figures
 
 
 def _fin(currency: str | None, rate: float | None, revenue: float = 2_188_000_000) -> CompanyFinancials:

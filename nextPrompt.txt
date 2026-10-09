@@ -1,0 +1,139 @@
+DESK RESEARCH ACCURACY - SESSION HANDOFF (written 2026-10-09)
+==============================================================
+Paste this file into a new Claude Code session to continue the work.
+
+----------------------------------------------------------------
+1. BACKGROUND (what was asked and found)
+----------------------------------------------------------------
+Question: Desk Research (approach 1, src/me_engine/generation/) showed ~10% median error
+vs actuals_2025.csv even though all numbers come from LLM/web search. Why?
+
+Findings:
+- The "actual" in actuals_2025.csv is the median of 2-3 published reports, which themselves
+  disagree by ~11% typical (e.g. watches 78.8-124.5 Bn, urea 49.7-79.7 Bn). So ~10% is near the
+  noise floor; any single published report would score about the same.
+- Originally only ~3 of 7 Desk values were grounded in a cited source; the rest were LLM guesses.
+- Televisions (-88%): the DB lookup (db_source.py pick_best_report) matched "Curved Televisions
+  Market" (CMI DB newsId 4674, USD 10.32 Bn in 2026). Its segmentation in the DB is corrupt
+  ("Cable Track Cables / Torsion Cables"). The first pass guessed 7.8 Bn (ungrounded); later
+  passes guessed 245-258 Bn; the reviewer (plausibility score) kept 7.8 Bn (64% vs 60%).
+- Urea (-58%): grounded on CMI "Urea Fertilizers Market" (newsId 9620, USD 32.71 Bn in 2026 ->
+  31,242 for 2025). The actual (73,500) is TOTAL urea (fertilizer + industrial) -> scope mismatch.
+  The CMI 32.7 Bn figure itself also looks low vs volume x price.
+- Side note: semantic_search() in semantic_search.py errors on the DB
+  ("operator does not exist: vector <=> double precision[]"); nearest_report() is written
+  differently. It was not checked whether anything calls semantic_search().
+
+----------------------------------------------------------------
+2. WORK DONE SO FAR (by another session, ALL UNCOMMITTED)
+----------------------------------------------------------------
+Round 1:
+- agents.py: best-pass selection prefers grounded passes; grounded = cited number found in the
+  evidence by code (not just the LLM's claim); -0.15 penalty for ungrounded; median + flag
+  market_size_unstable when ungrounded guesses differ >2x.
+- New cited_values.py: regex extraction of "USD X bn" figures from DB narrative, snippets, fetched
+  pages; year detection; 2024/2026 moved to 2025 at the cited CAGR (or 5%); one figure per source;
+  dedupe; drop values >2.5x from the median; median = anchor. Keyword scope check, plus an LLM
+  scope check with --scope "<definition>".
+- graph.py bug fix: LangGraph dropped market_size_grounded / quality_flags (not in the state schema).
+- Audit rows in the Artifacts sheet; compare_desk_vs_actuals.py; 47 tests.
+- Result: worse (12.8% -> 38.8% on 6 markets), because the raw web median was used unchecked.
+
+Round 2 (steps 1-9 from the prompt):
+1 page title / URL slug used as the subject when a sentence names no market
+2 rejected figures masked from the LLM evidence; an answer within +/-1% of a rejected figure is re-asked
+3 --scope drives the searches and the DB lookup
+4 db_source: reject product-narrower titles and subject-only matches; fall back to a generic skeleton
+5 size check (units x ASP range, 3x)
+6 source tiers (research-firm pages tier 1; LinkedIn/news/press releases tier 2)
+7 weak-consensus anchor -> HURT held-out accuracy -> behind DEAGENT_WEAK_CONSENSUS, off by default
+8 actuals row renamed "Urea (total, all uses)"
+9 eval with a train/held-out split (25 tuning / 38 held-out by hash of market name)
+- Tests: 870 pass, 2 skipped. New tests in tests/test_desk_evidence_quality.py.
+- Re-run the eval: python compare_desk_vs_actuals.py --eval
+  -> approaches/examples/DESK_EVAL.md / DESK_EVAL.json / DESK_EVAL_SPLIT.json
+
+Held-out results (median abs error; in published range):
+  Old anchor (HEAD)            18.9%, 11/26
+  Current (before round 2)      8.3%, 19/26
+  Round 2, all steps on        14.2%, 17/26
+  Round 2 as shipped (7 off)    6.9%, 22/26   (8.8% over all 38 held-out)
+21 markets that used to fail (no DB skeleton) now get a value; 60/63 final values are grounded.
+
+Remaining known errors:
+- Televisions +333%: web reports say 119-415 Bn; the actual is hardware-only ~64 Bn.
+  This is a market-definition issue -> pass --scope "TV sets, hardware only, manufacturer revenue".
+- Olive Oil +39%: IMARC not recognised as tier 1 by the general rule.
+- Surgical Masks +33%: a generic "masks" figure was accepted (a 2-word market may drop a word).
+- Markets with no DB report: ~10% median error held-out, ~31% tuning
+  (Wireless Earbuds +121%, Digital Cameras -57%, Laptops +42%, Mattresses -38%, Wind Turbines -37%).
+- The LLM scope judge wrongly rejected Fortune's total-urea figure as "narrower".
+- A session was IN PROGRESS fixing "the IMARC tier rule and the two-word masks scope".
+  Check whether it finished (git diff) before continuing.
+
+Caveat: the IMARC/masks fixes were found from held-out failures, so the held-out set is no
+longer an unbiased measure. Evaluate on fresh markets afterwards.
+Caveat: actuals_2025.csv is built from IMARC/GVR/Fortune etc., so a research-firm list makes
+the evaluation partly circular. Keep the list broad (~30 firms), not just the actuals' sources.
+
+----------------------------------------------------------------
+3. BEFORE SWITCHING LAPTOPS (not done yet)
+----------------------------------------------------------------
+- About 40 files are uncommitted on main. Commit them on a new branch (e.g. desk-cited-values) and
+  push to origin (github.com/Aditya-Coherent/de-agent-fb). Exclude the files changed by another
+  run unless you want them: approaches/PRESENTER_GUIDE.txt, approaches/examples/EXAMPLES_SUMMARY.*,
+  gaming-consoles / wireless-earbuds outputs, my_companies/.
+- Copy by hand (gitignored): .env (API keys, NEON_DATABASE_URL), output/,
+  agentGeneratedInputSheet/, agentGeneratedMEWorkbook/.
+- Optional: copy C:\Users\aimlpc1\.claude\projects\C--Users-aimlpc1-Desktop-de-agent-fb\
+  (chat history + memory) to the same path on the new laptop.
+- Recreate .venv on the new laptop; don't copy it.
+
+----------------------------------------------------------------
+4. ANALYST RECOMMENDATIONS
+----------------------------------------------------------------
+1. Make the market definition a required input (inclusions/exclusions, manufacturer vs retail
+   revenue, hardware vs services). This is the main remaining error source.
+2. Output a range (low/base/high) plus a confidence level, not just one number; make
+   "inside the published range" the main KPI.
+3. Cross-check Desk vs Supply-Side / Demand-Side; flag a disagreement >40%
+   (compare_demand_supply.py already computes it).
+4. Prefer each publisher's newest report edition.
+5. Segment consistency checks (children <= parent, segment splits add up to the total).
+6. Analyst review for flagged runs (ungrounded, disputed, size check failed, no DB report).
+7. Measure run-to-run web noise (2-3 runs per market).
+Don't chase below ~7% median error: that is the publisher-disagreement floor.
+
+----------------------------------------------------------------
+5. NEXT PROMPT (paste into the new session)
+----------------------------------------------------------------
+Desk Research is at ~7-9% held-out median error, close to the ~11% disagreement between
+publishers. Don't tune to individual markets any more. Changes:
+
+1. Commit the current shipped state on a new branch (desk-cited-values). Commit only the files
+   you changed. Leave out PRESENTER_GUIDE.txt, EXAMPLES_SUMMARY.*, the gaming-consoles and
+   wireless-earbuds outputs, and my_companies/.
+2. Research-firm tier: replace the domain/URL keyword rule with a list in config of about 30
+   well-known research firms (IMARC, Grand View, Fortune BI, Mordor, MarketsandMarkets, GMI,
+   Precedence, Allied, Technavio, Statista, Euromonitor, CMI, ...). Keep the URL-path rule as a
+   second test. Write the list from general knowledge, not from the sources in actuals_2025.csv.
+3. Masks-type scope: when a market name has 2 words, keep the rule that lets it drop a word, but
+   only if the dropped word is a narrowing word. The head noun alone ("masks" for "Surgical
+   Masks") must not be accepted.
+4. Markets with no DB report:
+   (a) Have the LLM write a scope definition (what's included and excluded, and whether revenue
+       is at manufacturer or retail level). Pass it through the existing --scope path, so it
+       drives the searches and the LLM scope judge.
+   (b) Use a 2x size check instead of 3x for these markets.
+   (c) Flag "needs_analyst_review" when there are fewer than 2 values from research firms.
+5. Range output: alongside the point value, write low/base/high (the min, median and max of the
+   accepted cited values) and a confidence level (high/medium/low from the number of sources,
+   the spread and the flags). Put them in the Artifacts sheet and the history record. No layout
+   changes to the sheet.
+6. Evaluation: make "inside the published range" the main metric and keep median error second.
+   Run each market 2x and report the spread between runs. Then pick 20 new markets that are not
+   in the current tuning or held-out sets, add their actuals the same way (median of 2-3
+   publishers), and report results on them separately. That is the fair number.
+
+Rules: mock every LLM and web call in tests, keep the full test suite passing, commit nothing
+beyond step 1, and show every market's before/after, including the ones that got worse.

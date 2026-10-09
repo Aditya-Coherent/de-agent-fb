@@ -1,0 +1,5929 @@
+[
+  {
+    "market": "Smartphones",
+    "set": "heldout",
+    "actual": 585630.0,
+    "published": [
+      598920.0,
+      537620.0,
+      585630.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 582043.9,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 9 cited values",
+      "pct_error": -0.006123490941379329,
+      "in_published_range": true,
+      "published_range": [
+        537620.0,
+        598920.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 592339.7,
+        "pct_error": 0.011457234089783573,
+        "in_published_range": true,
+        "published_range": [
+          537620.0,
+          598920.0
+        ]
+      },
+      "size_check": {
+        "value": 582043.9,
+        "pct_error": -0.006123490941379329,
+        "in_published_range": true,
+        "published_range": [
+          537620.0,
+          598920.0
+        ]
+      },
+      "source_tiers": {
+        "value": 582043.9,
+        "pct_error": -0.006123490941379329,
+        "in_published_range": true,
+        "published_range": [
+          537620.0,
+          598920.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 582043.9,
+        "pct_error": -0.006123490941379329,
+        "in_published_range": true,
+        "published_range": [
+          537620.0,
+          598920.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 582043.9,
+      "pct_error": -0.006123490941379329,
+      "in_published_range": true,
+      "published_range": [
+        537620.0,
+        598920.0
+      ]
+    }
+  },
+  {
+    "market": "Smartwatches",
+    "set": "heldout",
+    "actual": 38000.0,
+    "published": [
+      38530.0,
+      32010.0,
+      38000.0
+    ],
+    "before": {
+      "value": 30350.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.2013157894736842,
+      "in_published_range": false,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    },
+    "current": {
+      "value": 58087.3,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": 0.528613157894737,
+      "in_published_range": false,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    },
+    "after": {
+      "value": 38530.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $35,355M (https://www.fortunebusinessinsights.com/smartwatch-market-106625)",
+      "pct_error": 0.013947368421052632,
+      "in_published_range": true,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 31905.0,
+        "pct_error": -0.16039473684210526,
+        "in_published_range": true,
+        "published_range": [
+          32010.0,
+          38530.0
+        ]
+      },
+      "size_check": {
+        "value": 32010.0,
+        "pct_error": -0.15763157894736843,
+        "in_published_range": true,
+        "published_range": [
+          32010.0,
+          38530.0
+        ]
+      },
+      "source_tiers": {
+        "value": 43682.3,
+        "pct_error": 0.14953421052631585,
+        "in_published_range": false,
+        "published_range": [
+          32010.0,
+          38530.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 38530.0,
+        "pct_error": 0.013947368421052632,
+        "in_published_range": true,
+        "published_range": [
+          32010.0,
+          38530.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 32010.0,
+      "pct_error": -0.15763157894736843,
+      "in_published_range": true,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    }
+  },
+  {
+    "market": "Laptops",
+    "set": "tuning",
+    "actual": 115100.0,
+    "published": [
+      115100.0,
+      114000.0,
+      132100.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 134900.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $134,164M (https://www.maximizemarketresearch.com/market-report/global-laptops-market/21050/)",
+      "pct_error": 0.17202432667245873,
+      "in_published_range": true,
+      "published_range": [
+        114000.0,
+        132100.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 163806.1,
+        "pct_error": 0.4231633362293658,
+        "in_published_range": false,
+        "published_range": [
+          114000.0,
+          132100.0
+        ]
+      },
+      "size_check": {
+        "value": 163806.1,
+        "pct_error": 0.4231633362293658,
+        "in_published_range": false,
+        "published_range": [
+          114000.0,
+          132100.0
+        ]
+      },
+      "source_tiers": {
+        "value": 163806.1,
+        "pct_error": 0.4231633362293658,
+        "in_published_range": false,
+        "published_range": [
+          114000.0,
+          132100.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 134900.0,
+        "pct_error": 0.17202432667245873,
+        "in_published_range": true,
+        "published_range": [
+          114000.0,
+          132100.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 163806.1,
+      "pct_error": 0.4231633362293658,
+      "in_published_range": false,
+      "published_range": [
+        114000.0,
+        132100.0
+      ]
+    }
+  },
+  {
+    "market": "Tablets",
+    "set": "heldout",
+    "actual": 64000.0,
+    "published": [
+      92700.0,
+      64000.0,
+      55100.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 50000.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $49,295M (https://www.futuremarketinsights.com/reports/tablet-market)",
+      "pct_error": -0.21875,
+      "in_published_range": false,
+      "published_range": [
+        55100.0,
+        92700.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 72700.0,
+        "pct_error": 0.1359375,
+        "in_published_range": true,
+        "published_range": [
+          55100.0,
+          92700.0
+        ]
+      },
+      "size_check": {
+        "value": 72700.0,
+        "pct_error": 0.1359375,
+        "in_published_range": true,
+        "published_range": [
+          55100.0,
+          92700.0
+        ]
+      },
+      "source_tiers": {
+        "value": 79050.0,
+        "pct_error": 0.23515625,
+        "in_published_range": true,
+        "published_range": [
+          55100.0,
+          92700.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 50000.0,
+        "pct_error": -0.21875,
+        "in_published_range": false,
+        "published_range": [
+          55100.0,
+          92700.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 72700.0,
+      "pct_error": 0.1359375,
+      "in_published_range": true,
+      "published_range": [
+        55100.0,
+        92700.0
+      ]
+    }
+  },
+  {
+    "market": "Televisions",
+    "set": "heldout",
+    "actual": 64355.0,
+    "published": [
+      63900.0,
+      64810.0
+    ],
+    "before": {
+      "value": 200000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 2.10776163468262,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    },
+    "current": {
+      "value": 81275.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "low_confidence"
+      ],
+      "method": "median of 4 cited values",
+      "pct_error": 0.26291663429414963,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    },
+    "after": {
+      "value": 119000.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $103,923M (https://www.marketresearchintellect.com/product/televisions-market/)",
+      "pct_error": 0.8491181726361589,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 404191.5,
+        "pct_error": 5.280654183824101,
+        "in_published_range": false,
+        "published_range": [
+          63900.0,
+          64810.0
+        ]
+      },
+      "size_check": {
+        "value": 278965.0,
+        "pct_error": 3.334783622096185,
+        "in_published_range": false,
+        "published_range": [
+          63900.0,
+          64810.0
+        ]
+      },
+      "source_tiers": {
+        "value": 278965.0,
+        "pct_error": 3.334783622096185,
+        "in_published_range": false,
+        "published_range": [
+          63900.0,
+          64810.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 119000.0,
+        "pct_error": 0.8491181726361589,
+        "in_published_range": false,
+        "published_range": [
+          63900.0,
+          64810.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 278965.0,
+      "pct_error": 3.334783622096185,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    }
+  },
+  {
+    "market": "Wireless Earbuds",
+    "set": "heldout",
+    "actual": 35600.0,
+    "published": [
+      39300.0,
+      31900.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 78500.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "single cited value",
+      "pct_error": 1.2050561797752808,
+      "in_published_range": false,
+      "published_range": [
+        31900.0,
+        39300.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 78500.0,
+        "pct_error": 1.2050561797752808,
+        "in_published_range": false,
+        "published_range": [
+          31900.0,
+          39300.0
+        ]
+      },
+      "size_check": {
+        "value": 12080.0,
+        "pct_error": -0.6606741573033708,
+        "in_published_range": false,
+        "published_range": [
+          31900.0,
+          39300.0
+        ]
+      },
+      "source_tiers": {
+        "value": 78500.0,
+        "pct_error": 1.2050561797752808,
+        "in_published_range": false,
+        "published_range": [
+          31900.0,
+          39300.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 78500.0,
+        "pct_error": 1.2050561797752808,
+        "in_published_range": false,
+        "published_range": [
+          31900.0,
+          39300.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 78500.0,
+      "pct_error": 1.2050561797752808,
+      "in_published_range": false,
+      "published_range": [
+        31900.0,
+        39300.0
+      ]
+    }
+  },
+  {
+    "market": "Digital Cameras",
+    "set": "tuning",
+    "actual": 22285.0,
+    "published": [
+      24450.0,
+      20120.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 9516.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.5729863136638995,
+      "in_published_range": false,
+      "published_range": [
+        20120.0,
+        24450.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 9516.0,
+        "pct_error": -0.5729863136638995,
+        "in_published_range": false,
+        "published_range": [
+          20120.0,
+          24450.0
+        ]
+      },
+      "size_check": {
+        "value": 9516.0,
+        "pct_error": -0.5729863136638995,
+        "in_published_range": false,
+        "published_range": [
+          20120.0,
+          24450.0
+        ]
+      },
+      "source_tiers": {
+        "value": 9516.0,
+        "pct_error": -0.5729863136638995,
+        "in_published_range": false,
+        "published_range": [
+          20120.0,
+          24450.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 9516.0,
+        "pct_error": -0.5729863136638995,
+        "in_published_range": false,
+        "published_range": [
+          20120.0,
+          24450.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 9516.0,
+      "pct_error": -0.5729863136638995,
+      "in_published_range": false,
+      "published_range": [
+        20120.0,
+        24450.0
+      ]
+    }
+  },
+  {
+    "market": "Smart Speakers",
+    "set": "heldout",
+    "actual": 14250.0,
+    "published": [
+      14250.0,
+      12300.0,
+      15570.0
+    ],
+    "before": {
+      "value": 14250.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.0,
+      "in_published_range": true,
+      "published_range": [
+        12300.0,
+        15570.0
+      ]
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "failed",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 15600.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 7 cited values",
+      "pct_error": 0.09473684210526316,
+      "in_published_range": true,
+      "published_range": [
+        12300.0,
+        15570.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 15600.0,
+        "pct_error": 0.09473684210526316,
+        "in_published_range": true,
+        "published_range": [
+          12300.0,
+          15570.0
+        ]
+      },
+      "size_check": {
+        "value": 15600.0,
+        "pct_error": 0.09473684210526316,
+        "in_published_range": true,
+        "published_range": [
+          12300.0,
+          15570.0
+        ]
+      },
+      "source_tiers": {
+        "value": 15400.0,
+        "pct_error": 0.08070175438596491,
+        "in_published_range": true,
+        "published_range": [
+          12300.0,
+          15570.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 15600.0,
+        "pct_error": 0.09473684210526316,
+        "in_published_range": true,
+        "published_range": [
+          12300.0,
+          15570.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 15600.0,
+      "pct_error": 0.09473684210526316,
+      "in_published_range": true,
+      "published_range": [
+        12300.0,
+        15570.0
+      ]
+    }
+  },
+  {
+    "market": "Olive Oil",
+    "set": "heldout",
+    "actual": 15700.0,
+    "published": [
+      15700.0,
+      18750.0,
+      13590.0
+    ],
+    "before": {
+      "value": 15500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.012738853503184714,
+      "in_published_range": true,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    },
+    "current": {
+      "value": 17552.9,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": 0.11801910828025487,
+      "in_published_range": true,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    },
+    "after": {
+      "value": 21826.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.39022292993630575,
+      "in_published_range": false,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": null,
+        "pct_error": null,
+        "in_published_range": null
+      },
+      "size_check": {
+        "value": 21826.5,
+        "pct_error": 0.39022292993630575,
+        "in_published_range": false,
+        "published_range": [
+          13590.0,
+          18750.0
+        ]
+      },
+      "source_tiers": {
+        "value": 21826.5,
+        "pct_error": 0.39022292993630575,
+        "in_published_range": false,
+        "published_range": [
+          13590.0,
+          18750.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 21826.5,
+        "pct_error": 0.39022292993630575,
+        "in_published_range": false,
+        "published_range": [
+          13590.0,
+          18750.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 21826.5,
+      "pct_error": 0.39022292993630575,
+      "in_published_range": false,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    }
+  },
+  {
+    "market": "Chocolate",
+    "set": "heldout",
+    "actual": 167000.0,
+    "published": [
+      129600.0,
+      171600.0,
+      167000.0
+    ],
+    "before": {
+      "value": 150000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.10179640718562874,
+      "in_published_range": true,
+      "published_range": [
+        129600.0,
+        171600.0
+      ]
+    },
+    "current": {
+      "value": 130000.0,
+      "grounded": false,
+      "status": "ok",
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "method": "none",
+      "pct_error": -0.2215568862275449,
+      "in_published_range": true,
+      "published_range": [
+        129600.0,
+        171600.0
+      ]
+    },
+    "after": {
+      "value": 129600.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 7 cited values",
+      "pct_error": -0.22395209580838324,
+      "in_published_range": true,
+      "published_range": [
+        129600.0,
+        171600.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 129600.0,
+        "pct_error": -0.22395209580838324,
+        "in_published_range": true,
+        "published_range": [
+          129600.0,
+          171600.0
+        ]
+      },
+      "size_check": {
+        "value": 129600.0,
+        "pct_error": -0.22395209580838324,
+        "in_published_range": true,
+        "published_range": [
+          129600.0,
+          171600.0
+        ]
+      },
+      "source_tiers": {
+        "value": 129600.0,
+        "pct_error": -0.22395209580838324,
+        "in_published_range": true,
+        "published_range": [
+          129600.0,
+          171600.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 129600.0,
+        "pct_error": -0.22395209580838324,
+        "in_published_range": true,
+        "published_range": [
+          129600.0,
+          171600.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 129600.0,
+      "pct_error": -0.22395209580838324,
+      "in_published_range": true,
+      "published_range": [
+        129600.0,
+        171600.0
+      ]
+    }
+  },
+  {
+    "market": "Bottled Water",
+    "set": "tuning",
+    "actual": 323070.0,
+    "published": [
+      323070.0,
+      288800.0,
+      353610.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 335820.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.039465131395672766,
+      "in_published_range": true,
+      "published_range": [
+        288800.0,
+        353610.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 335820.0,
+        "pct_error": 0.039465131395672766,
+        "in_published_range": true,
+        "published_range": [
+          288800.0,
+          353610.0
+        ]
+      },
+      "size_check": {
+        "value": 335820.0,
+        "pct_error": 0.039465131395672766,
+        "in_published_range": true,
+        "published_range": [
+          288800.0,
+          353610.0
+        ]
+      },
+      "source_tiers": {
+        "value": 306882.5,
+        "pct_error": -0.050105240350388464,
+        "in_published_range": true,
+        "published_range": [
+          288800.0,
+          353610.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 335820.0,
+        "pct_error": 0.039465131395672766,
+        "in_published_range": true,
+        "published_range": [
+          288800.0,
+          353610.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 335820.0,
+      "pct_error": 0.039465131395672766,
+      "in_published_range": true,
+      "published_range": [
+        288800.0,
+        353610.0
+      ]
+    }
+  },
+  {
+    "market": "Beer",
+    "set": "heldout",
+    "actual": 804650.0,
+    "published": [
+      882800.0,
+      804650.0,
+      760000.0
+    ],
+    "before": {
+      "value": 663000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.17603927173305164,
+      "in_published_range": false,
+      "published_range": [
+        760000.0,
+        882800.0
+      ]
+    },
+    "current": {
+      "value": 882800.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": 0.09712297272105884,
+      "in_published_range": true,
+      "published_range": [
+        760000.0,
+        882800.0
+      ]
+    },
+    "after": {
+      "value": 815875.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.013950164667868017,
+      "in_published_range": true,
+      "published_range": [
+        760000.0,
+        882800.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 815875.0,
+        "pct_error": 0.013950164667868017,
+        "in_published_range": true,
+        "published_range": [
+          760000.0,
+          882800.0
+        ]
+      },
+      "size_check": {
+        "value": 815875.0,
+        "pct_error": 0.013950164667868017,
+        "in_published_range": true,
+        "published_range": [
+          760000.0,
+          882800.0
+        ]
+      },
+      "source_tiers": {
+        "value": 815875.0,
+        "pct_error": 0.013950164667868017,
+        "in_published_range": true,
+        "published_range": [
+          760000.0,
+          882800.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 815875.0,
+        "pct_error": 0.013950164667868017,
+        "in_published_range": true,
+        "published_range": [
+          760000.0,
+          882800.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 815875.0,
+      "pct_error": 0.013950164667868017,
+      "in_published_range": true,
+      "published_range": [
+        760000.0,
+        882800.0
+      ]
+    }
+  },
+  {
+    "market": "Wine",
+    "set": "heldout",
+    "actual": 360360.0,
+    "published": [
+      360360.0,
+      358500.0,
+      452907.0
+    ],
+    "before": {
+      "value": 544750.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.5116827616827617,
+      "in_published_range": false,
+      "published_range": [
+        358500.0,
+        452907.0
+      ]
+    },
+    "current": {
+      "value": 487720.9,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "single cited value",
+      "pct_error": 0.353426850926851,
+      "in_published_range": false,
+      "published_range": [
+        358500.0,
+        452907.0
+      ]
+    },
+    "after": {
+      "value": 424040.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.1767135642135642,
+      "in_published_range": true,
+      "published_range": [
+        358500.0,
+        452907.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 424040.5,
+        "pct_error": 0.1767135642135642,
+        "in_published_range": true,
+        "published_range": [
+          358500.0,
+          452907.0
+        ]
+      },
+      "size_check": {
+        "value": 424040.5,
+        "pct_error": 0.1767135642135642,
+        "in_published_range": true,
+        "published_range": [
+          358500.0,
+          452907.0
+        ]
+      },
+      "source_tiers": {
+        "value": 424040.5,
+        "pct_error": 0.1767135642135642,
+        "in_published_range": true,
+        "published_range": [
+          358500.0,
+          452907.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 424040.5,
+        "pct_error": 0.1767135642135642,
+        "in_published_range": true,
+        "published_range": [
+          358500.0,
+          452907.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 424040.5,
+      "pct_error": 0.1767135642135642,
+      "in_published_range": true,
+      "published_range": [
+        358500.0,
+        452907.0
+      ]
+    }
+  },
+  {
+    "market": "Plant-Based Milk",
+    "set": "tuning",
+    "actual": 22660.0,
+    "published": [
+      21350.0,
+      22660.0,
+      25100.0
+    ],
+    "before": {
+      "value": 23100.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.019417475728155338,
+      "in_published_range": true,
+      "published_range": [
+        21350.0,
+        25100.0
+      ]
+    },
+    "current": {
+      "value": 21309.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.05959841129744042,
+      "in_published_range": true,
+      "published_range": [
+        21350.0,
+        25100.0
+      ]
+    },
+    "after": {
+      "value": 21375.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $21,213M (CMI report DB: Plant-Based Milk Market)",
+      "pct_error": -0.05668578993821712,
+      "in_published_range": true,
+      "published_range": [
+        21350.0,
+        25100.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 22700.0,
+        "pct_error": 0.00176522506619594,
+        "in_published_range": true,
+        "published_range": [
+          21350.0,
+          25100.0
+        ]
+      },
+      "size_check": {
+        "value": 22130.0,
+        "pct_error": -0.023389232127096204,
+        "in_published_range": true,
+        "published_range": [
+          21350.0,
+          25100.0
+        ]
+      },
+      "source_tiers": {
+        "value": 21560.0,
+        "pct_error": -0.04854368932038835,
+        "in_published_range": true,
+        "published_range": [
+          21350.0,
+          25100.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 21375.5,
+        "pct_error": -0.05668578993821712,
+        "in_published_range": true,
+        "published_range": [
+          21350.0,
+          25100.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 22130.0,
+      "pct_error": -0.023389232127096204,
+      "in_published_range": true,
+      "published_range": [
+        21350.0,
+        25100.0
+      ]
+    }
+  },
+  {
+    "market": "Energy Drinks",
+    "set": "heldout",
+    "actual": 77160.0,
+    "published": [
+      77160.0,
+      72790.0,
+      86180.0
+    ],
+    "before": {
+      "value": 20000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.7407983411093831,
+      "in_published_range": false,
+      "published_range": [
+        72790.0,
+        86180.0
+      ]
+    },
+    "current": {
+      "value": 82695.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": 0.07173405909797823,
+      "in_published_range": true,
+      "published_range": [
+        72790.0,
+        86180.0
+      ]
+    },
+    "after": {
+      "value": 77160.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": 0.0,
+      "in_published_range": true,
+      "published_range": [
+        72790.0,
+        86180.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 77160.0,
+        "pct_error": 0.0,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          86180.0
+        ]
+      },
+      "size_check": {
+        "value": 77160.0,
+        "pct_error": 0.0,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          86180.0
+        ]
+      },
+      "source_tiers": {
+        "value": 80390.0,
+        "pct_error": 0.04186106791083463,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          86180.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 77160.0,
+        "pct_error": 0.0,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          86180.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 77160.0,
+      "pct_error": 0.0,
+      "in_published_range": true,
+      "published_range": [
+        72790.0,
+        86180.0
+      ]
+    }
+  },
+  {
+    "market": "Insulin",
+    "set": "heldout",
+    "actual": 29200.0,
+    "published": [
+      29200.0,
+      30760.0,
+      21130.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 58025.8,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $47,434M (https://www.fnfresearch.com/news/global-insulin-market-value-projected-over-629-billion)",
+      "pct_error": 0.9871849315068494,
+      "in_published_range": false,
+      "published_range": [
+        21130.0,
+        30760.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 29403.7,
+        "pct_error": 0.0069760273972602985,
+        "in_published_range": true,
+        "published_range": [
+          21130.0,
+          30760.0
+        ]
+      },
+      "size_check": {
+        "value": 29403.7,
+        "pct_error": 0.0069760273972602985,
+        "in_published_range": true,
+        "published_range": [
+          21130.0,
+          30760.0
+        ]
+      },
+      "source_tiers": {
+        "value": 29251.8,
+        "pct_error": 0.0017739726027397012,
+        "in_published_range": true,
+        "published_range": [
+          21130.0,
+          30760.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 58025.8,
+        "pct_error": 0.9871849315068494,
+        "in_published_range": false,
+        "published_range": [
+          21130.0,
+          30760.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 29403.7,
+      "pct_error": 0.0069760273972602985,
+      "in_published_range": true,
+      "published_range": [
+        21130.0,
+        30760.0
+      ]
+    }
+  },
+  {
+    "market": "Hearing Aids",
+    "set": "heldout",
+    "actual": 8800.0,
+    "published": [
+      8800.0,
+      8640.0,
+      15110.0
+    ],
+    "before": {
+      "value": 8642.3,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.017920454545454628,
+      "in_published_range": true,
+      "published_range": [
+        8640.0,
+        15110.0
+      ]
+    },
+    "current": {
+      "value": 10054.2,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 7 cited values",
+      "pct_error": 0.14252272727272736,
+      "in_published_range": true,
+      "published_range": [
+        8640.0,
+        15110.0
+      ]
+    },
+    "after": {
+      "value": 11876.1,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.3495568181818182,
+      "in_published_range": true,
+      "published_range": [
+        8640.0,
+        15110.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 11876.1,
+        "pct_error": 0.3495568181818182,
+        "in_published_range": true,
+        "published_range": [
+          8640.0,
+          15110.0
+        ]
+      },
+      "size_check": {
+        "value": 11876.1,
+        "pct_error": 0.3495568181818182,
+        "in_published_range": true,
+        "published_range": [
+          8640.0,
+          15110.0
+        ]
+      },
+      "source_tiers": {
+        "value": 8642.3,
+        "pct_error": -0.017920454545454628,
+        "in_published_range": true,
+        "published_range": [
+          8640.0,
+          15110.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 11876.1,
+        "pct_error": 0.3495568181818182,
+        "in_published_range": true,
+        "published_range": [
+          8640.0,
+          15110.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 11876.1,
+      "pct_error": 0.3495568181818182,
+      "in_published_range": true,
+      "published_range": [
+        8640.0,
+        15110.0
+      ]
+    }
+  },
+  {
+    "market": "Surgical Masks",
+    "set": "heldout",
+    "actual": 5060.0,
+    "published": [
+      5060.0,
+      4140.0,
+      5900.0
+    ],
+    "before": {
+      "value": 3240.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.35968379446640314,
+      "in_published_range": false,
+      "published_range": [
+        4140.0,
+        5900.0
+      ]
+    },
+    "current": {
+      "value": 4845.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.042490118577075096,
+      "in_published_range": true,
+      "published_range": [
+        4140.0,
+        5900.0
+      ]
+    },
+    "after": {
+      "value": 6755.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.3349802371541502,
+      "in_published_range": false,
+      "published_range": [
+        4140.0,
+        5900.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 6755.0,
+        "pct_error": 0.3349802371541502,
+        "in_published_range": false,
+        "published_range": [
+          4140.0,
+          5900.0
+        ]
+      },
+      "size_check": {
+        "value": 6755.0,
+        "pct_error": 0.3349802371541502,
+        "in_published_range": false,
+        "published_range": [
+          4140.0,
+          5900.0
+        ]
+      },
+      "source_tiers": {
+        "value": 4633.2,
+        "pct_error": -0.08434782608695655,
+        "in_published_range": true,
+        "published_range": [
+          4140.0,
+          5900.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 6755.0,
+        "pct_error": 0.3349802371541502,
+        "in_published_range": false,
+        "published_range": [
+          4140.0,
+          5900.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 6755.0,
+      "pct_error": 0.3349802371541502,
+      "in_published_range": false,
+      "published_range": [
+        4140.0,
+        5900.0
+      ]
+    }
+  },
+  {
+    "market": "Dental Implants",
+    "set": "tuning",
+    "actual": 5640.0,
+    "published": [
+      7100.0,
+      5200.0,
+      5640.0
+    ],
+    "before": {
+      "value": 5850.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.03723404255319149,
+      "in_published_range": true,
+      "published_range": [
+        5200.0,
+        7100.0
+      ]
+    },
+    "current": {
+      "value": 5544.2,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 9 cited values",
+      "pct_error": -0.01698581560283691,
+      "in_published_range": true,
+      "published_range": [
+        5200.0,
+        7100.0
+      ]
+    },
+    "after": {
+      "value": 6767.1,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.19984042553191494,
+      "in_published_range": true,
+      "published_range": [
+        5200.0,
+        7100.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 5544.2,
+        "pct_error": -0.01698581560283691,
+        "in_published_range": true,
+        "published_range": [
+          5200.0,
+          7100.0
+        ]
+      },
+      "size_check": {
+        "value": 6767.1,
+        "pct_error": 0.19984042553191494,
+        "in_published_range": true,
+        "published_range": [
+          5200.0,
+          7100.0
+        ]
+      },
+      "source_tiers": {
+        "value": 6767.1,
+        "pct_error": 0.19984042553191494,
+        "in_published_range": true,
+        "published_range": [
+          5200.0,
+          7100.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 6767.1,
+        "pct_error": 0.19984042553191494,
+        "in_published_range": true,
+        "published_range": [
+          5200.0,
+          7100.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 6767.1,
+      "pct_error": 0.19984042553191494,
+      "in_published_range": true,
+      "published_range": [
+        5200.0,
+        7100.0
+      ]
+    }
+  },
+  {
+    "market": "Wheelchairs",
+    "set": "tuning",
+    "actual": 5580.0,
+    "published": [
+      5580.0,
+      7420.0,
+      5120.0
+    ],
+    "before": {
+      "value": 11800.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 1.114695340501792,
+      "in_published_range": false,
+      "published_range": [
+        5120.0,
+        7420.0
+      ]
+    },
+    "current": {
+      "value": 5960.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.06810035842293907,
+      "in_published_range": true,
+      "published_range": [
+        5120.0,
+        7420.0
+      ]
+    },
+    "after": {
+      "value": 7424.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $6,708M (https://www.coherentmarketinsights.com/market-insight/wheelchairs-market-457)",
+      "pct_error": 0.33046594982078853,
+      "in_published_range": true,
+      "published_range": [
+        5120.0,
+        7420.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 6330.0,
+        "pct_error": 0.13440860215053763,
+        "in_published_range": true,
+        "published_range": [
+          5120.0,
+          7420.0
+        ]
+      },
+      "size_check": {
+        "value": 6330.0,
+        "pct_error": 0.13440860215053763,
+        "in_published_range": true,
+        "published_range": [
+          5120.0,
+          7420.0
+        ]
+      },
+      "source_tiers": {
+        "value": 6330.0,
+        "pct_error": 0.13440860215053763,
+        "in_published_range": true,
+        "published_range": [
+          5120.0,
+          7420.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 6800.0,
+        "pct_error": 0.21863799283154123,
+        "in_published_range": true,
+        "published_range": [
+          5120.0,
+          7420.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 6330.0,
+      "pct_error": 0.13440860215053763,
+      "in_published_range": true,
+      "published_range": [
+        5120.0,
+        7420.0
+      ]
+    }
+  },
+  {
+    "market": "Blood Glucose Monitoring Devices",
+    "set": "heldout",
+    "actual": 17220.0,
+    "published": [
+      16460.0,
+      17220.0,
+      24200.0
+    ],
+    "before": {
+      "value": 15500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.09988385598141696,
+      "in_published_range": false,
+      "published_range": [
+        16460.0,
+        24200.0
+      ]
+    },
+    "current": {
+      "value": 15566.4,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.09602787456445995,
+      "in_published_range": false,
+      "published_range": [
+        16460.0,
+        24200.0
+      ]
+    },
+    "after": {
+      "value": 15531.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.09805458768873403,
+      "in_published_range": false,
+      "published_range": [
+        16460.0,
+        24200.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 15531.5,
+        "pct_error": -0.09805458768873403,
+        "in_published_range": false,
+        "published_range": [
+          16460.0,
+          24200.0
+        ]
+      },
+      "size_check": {
+        "value": 15531.5,
+        "pct_error": -0.09805458768873403,
+        "in_published_range": false,
+        "published_range": [
+          16460.0,
+          24200.0
+        ]
+      },
+      "source_tiers": {
+        "value": 15531.5,
+        "pct_error": -0.09805458768873403,
+        "in_published_range": false,
+        "published_range": [
+          16460.0,
+          24200.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 15531.5,
+        "pct_error": -0.09805458768873403,
+        "in_published_range": false,
+        "published_range": [
+          16460.0,
+          24200.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 15531.5,
+      "pct_error": -0.09805458768873403,
+      "in_published_range": false,
+      "published_range": [
+        16460.0,
+        24200.0
+      ]
+    }
+  },
+  {
+    "market": "Orthopedic Implants",
+    "set": "tuning",
+    "actual": 52400.0,
+    "published": [
+      49730.0,
+      52400.0,
+      58200.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 51650.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $43,301M (https://www.skyquestt.com/report/orthopedic-implant-market)",
+      "pct_error": -0.01431297709923664,
+      "in_published_range": true,
+      "published_range": [
+        49730.0,
+        58200.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 39325.0,
+        "pct_error": -0.24952290076335878,
+        "in_published_range": false,
+        "published_range": [
+          49730.0,
+          58200.0
+        ]
+      },
+      "size_check": {
+        "value": 39325.0,
+        "pct_error": -0.24952290076335878,
+        "in_published_range": false,
+        "published_range": [
+          49730.0,
+          58200.0
+        ]
+      },
+      "source_tiers": {
+        "value": 50180.4,
+        "pct_error": -0.04235877862595417,
+        "in_published_range": true,
+        "published_range": [
+          49730.0,
+          58200.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 51650.0,
+        "pct_error": -0.01431297709923664,
+        "in_published_range": true,
+        "published_range": [
+          49730.0,
+          58200.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 39325.0,
+      "pct_error": -0.24952290076335878,
+      "in_published_range": false,
+      "published_range": [
+        49730.0,
+        58200.0
+      ]
+    }
+  },
+  {
+    "market": "Syringes",
+    "set": "tuning",
+    "actual": 10491.0,
+    "published": [
+      10150.0,
+      10491.0,
+      22577.0
+    ],
+    "before": {
+      "value": 15200.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.4488609284148318,
+      "in_published_range": true,
+      "published_range": [
+        10150.0,
+        22577.0
+      ]
+    },
+    "current": {
+      "value": 19450.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 8 cited values",
+      "pct_error": 0.8539700695834525,
+      "in_published_range": true,
+      "published_range": [
+        10150.0,
+        22577.0
+      ]
+    },
+    "after": {
+      "value": 17332.2,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": 0.6521018015441808,
+      "in_published_range": true,
+      "published_range": [
+        10150.0,
+        22577.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 17332.2,
+        "pct_error": 0.6521018015441808,
+        "in_published_range": true,
+        "published_range": [
+          10150.0,
+          22577.0
+        ]
+      },
+      "size_check": {
+        "value": 17332.2,
+        "pct_error": 0.6521018015441808,
+        "in_published_range": true,
+        "published_range": [
+          10150.0,
+          22577.0
+        ]
+      },
+      "source_tiers": {
+        "value": 17332.2,
+        "pct_error": 0.6521018015441808,
+        "in_published_range": true,
+        "published_range": [
+          10150.0,
+          22577.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 17332.2,
+        "pct_error": 0.6521018015441808,
+        "in_published_range": true,
+        "published_range": [
+          10150.0,
+          22577.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 17332.2,
+      "pct_error": 0.6521018015441808,
+      "in_published_range": true,
+      "published_range": [
+        10150.0,
+        22577.0
+      ]
+    }
+  },
+  {
+    "market": "Cardiac Pacemakers",
+    "set": "heldout",
+    "actual": 5660.0,
+    "published": [
+      5300.0,
+      5900.0,
+      5660.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 5092.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.10026501766784453,
+      "in_published_range": true,
+      "published_range": [
+        5300.0,
+        5900.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 5092.5,
+        "pct_error": -0.10026501766784453,
+        "in_published_range": true,
+        "published_range": [
+          5300.0,
+          5900.0
+        ]
+      },
+      "size_check": {
+        "value": 5092.5,
+        "pct_error": -0.10026501766784453,
+        "in_published_range": true,
+        "published_range": [
+          5300.0,
+          5900.0
+        ]
+      },
+      "source_tiers": {
+        "value": 5092.5,
+        "pct_error": -0.10026501766784453,
+        "in_published_range": true,
+        "published_range": [
+          5300.0,
+          5900.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 5092.5,
+        "pct_error": -0.10026501766784453,
+        "in_published_range": true,
+        "published_range": [
+          5300.0,
+          5900.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 5092.5,
+      "pct_error": -0.10026501766784453,
+      "in_published_range": true,
+      "published_range": [
+        5300.0,
+        5900.0
+      ]
+    }
+  },
+  {
+    "market": "Automotive Lead-Acid Batteries",
+    "set": "tuning",
+    "actual": 31300.0,
+    "published": [
+      31300.0,
+      31790.0,
+      13886.0
+    ],
+    "before": {
+      "value": 32000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.022364217252396165,
+      "in_published_range": true,
+      "published_range": [
+        13886.0,
+        31790.0
+      ]
+    },
+    "current": {
+      "value": 32940.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.0523961661341853,
+      "in_published_range": true,
+      "published_range": [
+        13886.0,
+        31790.0
+      ]
+    },
+    "after": {
+      "value": 28420.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "single cited value",
+      "pct_error": -0.09201277955271565,
+      "in_published_range": true,
+      "published_range": [
+        13886.0,
+        31790.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 28420.0,
+        "pct_error": -0.09201277955271565,
+        "in_published_range": true,
+        "published_range": [
+          13886.0,
+          31790.0
+        ]
+      },
+      "size_check": {
+        "value": 28420.0,
+        "pct_error": -0.09201277955271565,
+        "in_published_range": true,
+        "published_range": [
+          13886.0,
+          31790.0
+        ]
+      },
+      "source_tiers": {
+        "value": 28420.0,
+        "pct_error": -0.09201277955271565,
+        "in_published_range": true,
+        "published_range": [
+          13886.0,
+          31790.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 28420.0,
+        "pct_error": -0.09201277955271565,
+        "in_published_range": true,
+        "published_range": [
+          13886.0,
+          31790.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 28420.0,
+      "pct_error": -0.09201277955271565,
+      "in_published_range": true,
+      "published_range": [
+        13886.0,
+        31790.0
+      ]
+    }
+  },
+  {
+    "market": "Bicycles",
+    "set": "heldout",
+    "actual": 84250.0,
+    "published": [
+      95800.0,
+      71100.0,
+      84250.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 68000.0,
+      "grounded": false,
+      "status": "ok",
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "method": "none",
+      "pct_error": -0.19287833827893175,
+      "in_published_range": true,
+      "published_range": [
+        71100.0,
+        95800.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 68000.0,
+        "pct_error": -0.19287833827893175,
+        "in_published_range": true,
+        "published_range": [
+          71100.0,
+          95800.0
+        ]
+      },
+      "size_check": {
+        "value": 68000.0,
+        "pct_error": -0.19287833827893175,
+        "in_published_range": true,
+        "published_range": [
+          71100.0,
+          95800.0
+        ]
+      },
+      "source_tiers": {
+        "value": 84985.2,
+        "pct_error": 0.008726409495548927,
+        "in_published_range": true,
+        "published_range": [
+          71100.0,
+          95800.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 68000.0,
+        "pct_error": -0.19287833827893175,
+        "in_published_range": true,
+        "published_range": [
+          71100.0,
+          95800.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 68000.0,
+      "pct_error": -0.19287833827893175,
+      "in_published_range": true,
+      "published_range": [
+        71100.0,
+        95800.0
+      ]
+    }
+  },
+  {
+    "market": "Automotive Lubricants",
+    "set": "heldout",
+    "actual": 75080.0,
+    "published": [
+      83700.0,
+      72790.0,
+      75080.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 178140.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $189,737M (https://www.marketsandmarkets.com/Market-Reports/lubricants-market-182046896.html)",
+      "pct_error": 1.3726691529035695,
+      "in_published_range": false,
+      "published_range": [
+        72790.0,
+        83700.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 78664.6,
+        "pct_error": 0.04774374001065538,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          83700.0
+        ]
+      },
+      "size_check": {
+        "value": 78664.6,
+        "pct_error": 0.04774374001065538,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          83700.0
+        ]
+      },
+      "source_tiers": {
+        "value": 79604.4,
+        "pct_error": 0.060261054874800137,
+        "in_published_range": true,
+        "published_range": [
+          72790.0,
+          83700.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 178140.0,
+        "pct_error": 1.3726691529035695,
+        "in_published_range": false,
+        "published_range": [
+          72790.0,
+          83700.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 78664.6,
+      "pct_error": 0.04774374001065538,
+      "in_published_range": true,
+      "published_range": [
+        72790.0,
+        83700.0
+      ]
+    }
+  },
+  {
+    "market": "Automotive Glass",
+    "set": "heldout",
+    "actual": 24600.0,
+    "published": [
+      20000.0,
+      24600.0,
+      25000.0
+    ],
+    "before": {
+      "value": 38500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.5650406504065041,
+      "in_published_range": false,
+      "published_range": [
+        20000.0,
+        25000.0
+      ]
+    },
+    "current": {
+      "value": 24011.8,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 14 cited values",
+      "pct_error": -0.023910569105691087,
+      "in_published_range": true,
+      "published_range": [
+        20000.0,
+        25000.0
+      ]
+    },
+    "after": {
+      "value": 27710.7,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $29,394M (https://www.psmarketresearch.com/market-analysis/automotive-glass-market)",
+      "pct_error": 0.12645121951219515,
+      "in_published_range": false,
+      "published_range": [
+        20000.0,
+        25000.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 27710.7,
+        "pct_error": 0.12645121951219515,
+        "in_published_range": false,
+        "published_range": [
+          20000.0,
+          25000.0
+        ]
+      },
+      "size_check": {
+        "value": 26013.7,
+        "pct_error": 0.057467479674796776,
+        "in_published_range": true,
+        "published_range": [
+          20000.0,
+          25000.0
+        ]
+      },
+      "source_tiers": {
+        "value": 23710.0,
+        "pct_error": -0.036178861788617886,
+        "in_published_range": true,
+        "published_range": [
+          20000.0,
+          25000.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 27710.7,
+        "pct_error": 0.12645121951219515,
+        "in_published_range": false,
+        "published_range": [
+          20000.0,
+          25000.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 26013.7,
+      "pct_error": 0.057467479674796776,
+      "in_published_range": true,
+      "published_range": [
+        20000.0,
+        25000.0
+      ]
+    }
+  },
+  {
+    "market": "Potash Fertilizer",
+    "set": "heldout",
+    "actual": 29560.0,
+    "published": [
+      32270.0,
+      22600.0,
+      29560.0
+    ],
+    "before": {
+      "value": 28500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.03585926928281461,
+      "in_published_range": true,
+      "published_range": [
+        22600.0,
+        32270.0
+      ]
+    },
+    "current": {
+      "value": 27566.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 8 cited values",
+      "pct_error": -0.06743910690121786,
+      "in_published_range": true,
+      "published_range": [
+        22600.0,
+        32270.0
+      ]
+    },
+    "after": {
+      "value": 24010.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $23,717M (https://www.databridgemarketresearch.com/reports/global-potash-fertilizers-market)",
+      "pct_error": -0.18775372124492556,
+      "in_published_range": true,
+      "published_range": [
+        22600.0,
+        32270.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 23560.0,
+        "pct_error": -0.2029769959404601,
+        "in_published_range": true,
+        "published_range": [
+          22600.0,
+          32270.0
+        ]
+      },
+      "size_check": {
+        "value": 23560.0,
+        "pct_error": -0.2029769959404601,
+        "in_published_range": true,
+        "published_range": [
+          22600.0,
+          32270.0
+        ]
+      },
+      "source_tiers": {
+        "value": 23560.0,
+        "pct_error": -0.2029769959404601,
+        "in_published_range": true,
+        "published_range": [
+          22600.0,
+          32270.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 24010.0,
+        "pct_error": -0.18775372124492556,
+        "in_published_range": true,
+        "published_range": [
+          22600.0,
+          32270.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 23560.0,
+      "pct_error": -0.2029769959404601,
+      "in_published_range": true,
+      "published_range": [
+        22600.0,
+        32270.0
+      ]
+    }
+  },
+  {
+    "market": "Organic Fertilizers",
+    "set": "tuning",
+    "actual": 11110.0,
+    "published": [
+      13090.0,
+      11110.0,
+      7710.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 12985.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": 0.16876687668766877,
+      "in_published_range": true,
+      "published_range": [
+        7710.0,
+        13090.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 12400.0,
+        "pct_error": 0.11611161116111611,
+        "in_published_range": true,
+        "published_range": [
+          7710.0,
+          13090.0
+        ]
+      },
+      "size_check": {
+        "value": 12770.0,
+        "pct_error": 0.1494149414941494,
+        "in_published_range": true,
+        "published_range": [
+          7710.0,
+          13090.0
+        ]
+      },
+      "source_tiers": {
+        "value": 12770.0,
+        "pct_error": 0.1494149414941494,
+        "in_published_range": true,
+        "published_range": [
+          7710.0,
+          13090.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 12030.0,
+        "pct_error": 0.08280828082808281,
+        "in_published_range": true,
+        "published_range": [
+          7710.0,
+          13090.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 12770.0,
+      "pct_error": 0.1494149414941494,
+      "in_published_range": true,
+      "published_range": [
+        7710.0,
+        13090.0
+      ]
+    }
+  },
+  {
+    "market": "Crop Protection Chemicals",
+    "set": "heldout",
+    "actual": 83320.0,
+    "published": [
+      83320.0,
+      74640.0,
+      99300.0
+    ],
+    "before": {
+      "value": 83320.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.0,
+      "in_published_range": true,
+      "published_range": [
+        74640.0,
+        99300.0
+      ]
+    },
+    "current": {
+      "value": 82180.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "single cited value",
+      "pct_error": -0.013682189150264042,
+      "in_published_range": true,
+      "published_range": [
+        74640.0,
+        99300.0
+      ]
+    },
+    "after": {
+      "value": 50300.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $28,284M (https://www.grandviewresearch.com/industry-analysis/crop-protection-chemicals-market)",
+      "pct_error": -0.3963034085453673,
+      "in_published_range": false,
+      "published_range": [
+        74640.0,
+        99300.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 82285.0,
+        "pct_error": -0.01242198751800288,
+        "in_published_range": true,
+        "published_range": [
+          74640.0,
+          99300.0
+        ]
+      },
+      "size_check": {
+        "value": 81250.0,
+        "pct_error": -0.02484397503600576,
+        "in_published_range": true,
+        "published_range": [
+          74640.0,
+          99300.0
+        ]
+      },
+      "source_tiers": {
+        "value": 81250.0,
+        "pct_error": -0.02484397503600576,
+        "in_published_range": true,
+        "published_range": [
+          74640.0,
+          99300.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 50300.0,
+        "pct_error": -0.3963034085453673,
+        "in_published_range": false,
+        "published_range": [
+          74640.0,
+          99300.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 81250.0,
+      "pct_error": -0.02484397503600576,
+      "in_published_range": true,
+      "published_range": [
+        74640.0,
+        99300.0
+      ]
+    }
+  },
+  {
+    "market": "Tractors",
+    "set": "tuning",
+    "actual": 84670.0,
+    "published": [
+      88410.0,
+      80930.0
+    ],
+    "before": {
+      "value": 89245.3,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.05403684894295504,
+      "in_published_range": true,
+      "published_range": [
+        80930.0,
+        88410.0
+      ]
+    },
+    "current": {
+      "value": 82600.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.024447856383606945,
+      "in_published_range": true,
+      "published_range": [
+        80930.0,
+        88410.0
+      ]
+    },
+    "after": {
+      "value": 89245.3,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 5 cited values",
+      "pct_error": 0.05403684894295504,
+      "in_published_range": true,
+      "published_range": [
+        80930.0,
+        88410.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 89245.3,
+        "pct_error": 0.05403684894295504,
+        "in_published_range": true,
+        "published_range": [
+          80930.0,
+          88410.0
+        ]
+      },
+      "size_check": {
+        "value": 89245.3,
+        "pct_error": 0.05403684894295504,
+        "in_published_range": true,
+        "published_range": [
+          80930.0,
+          88410.0
+        ]
+      },
+      "source_tiers": {
+        "value": 89245.3,
+        "pct_error": 0.05403684894295504,
+        "in_published_range": true,
+        "published_range": [
+          80930.0,
+          88410.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 89245.3,
+        "pct_error": 0.05403684894295504,
+        "in_published_range": true,
+        "published_range": [
+          80930.0,
+          88410.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 89245.3,
+      "pct_error": 0.05403684894295504,
+      "in_published_range": true,
+      "published_range": [
+        80930.0,
+        88410.0
+      ]
+    }
+  },
+  {
+    "market": "Animal Feed",
+    "set": "heldout",
+    "actual": 483690.0,
+    "published": [
+      420820.0,
+      490830.0,
+      483690.0
+    ],
+    "before": {
+      "value": 45000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.906965204986665,
+      "in_published_range": false,
+      "published_range": [
+        420820.0,
+        490830.0
+      ]
+    },
+    "current": {
+      "value": 483880.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": 0.0003928135789451922,
+      "in_published_range": true,
+      "published_range": [
+        420820.0,
+        490830.0
+      ]
+    },
+    "after": {
+      "value": 420820.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $387,298M (https://www.fortunebusinessinsights.com/animal-feed-market-113128)",
+      "pct_error": -0.1299799458330749,
+      "in_published_range": true,
+      "published_range": [
+        420820.0,
+        490830.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 510000.0,
+        "pct_error": 0.05439434348446319,
+        "in_published_range": true,
+        "published_range": [
+          420820.0,
+          490830.0
+        ]
+      },
+      "size_check": {
+        "value": 510000.0,
+        "pct_error": 0.05439434348446319,
+        "in_published_range": true,
+        "published_range": [
+          420820.0,
+          490830.0
+        ]
+      },
+      "source_tiers": {
+        "value": 549000.0,
+        "pct_error": 0.13502449916268686,
+        "in_published_range": false,
+        "published_range": [
+          420820.0,
+          490830.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 420820.0,
+        "pct_error": -0.1299799458330749,
+        "in_published_range": true,
+        "published_range": [
+          420820.0,
+          490830.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 510000.0,
+      "pct_error": 0.05439434348446319,
+      "in_published_range": true,
+      "published_range": [
+        420820.0,
+        490830.0
+      ]
+    }
+  },
+  {
+    "market": "Drip Irrigation",
+    "set": "heldout",
+    "actual": 8050.0,
+    "published": [
+      8760.0,
+      8050.0,
+      6600.0
+    ],
+    "before": {
+      "value": 6000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.2546583850931677,
+      "in_published_range": false,
+      "published_range": [
+        6600.0,
+        8760.0
+      ]
+    },
+    "current": {
+      "value": 8450.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 7 cited values",
+      "pct_error": 0.049689440993788817,
+      "in_published_range": true,
+      "published_range": [
+        6600.0,
+        8760.0
+      ]
+    },
+    "after": {
+      "value": 6284.7,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $2,236M (CMI report DB: Drip Irrigation Market)",
+      "pct_error": -0.21929192546583853,
+      "in_published_range": true,
+      "published_range": [
+        6600.0,
+        8760.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 8200.0,
+        "pct_error": 0.018633540372670808,
+        "in_published_range": true,
+        "published_range": [
+          6600.0,
+          8760.0
+        ]
+      },
+      "size_check": {
+        "value": 8125.0,
+        "pct_error": 0.009316770186335404,
+        "in_published_range": true,
+        "published_range": [
+          6600.0,
+          8760.0
+        ]
+      },
+      "source_tiers": {
+        "value": 8125.0,
+        "pct_error": 0.009316770186335404,
+        "in_published_range": true,
+        "published_range": [
+          6600.0,
+          8760.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 6284.7,
+        "pct_error": -0.21929192546583853,
+        "in_published_range": true,
+        "published_range": [
+          6600.0,
+          8760.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 8125.0,
+      "pct_error": 0.009316770186335404,
+      "in_published_range": true,
+      "published_range": [
+        6600.0,
+        8760.0
+      ]
+    }
+  },
+  {
+    "market": "Titanium Dioxide",
+    "set": "tuning",
+    "actual": 21615.0,
+    "published": [
+      22000.0,
+      21230.0
+    ],
+    "before": {
+      "value": 21500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.005320379366180893,
+      "in_published_range": true,
+      "published_range": [
+        21230.0,
+        22000.0
+      ]
+    },
+    "current": {
+      "value": 22500.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 8 cited values",
+      "pct_error": 0.040943789035392086,
+      "in_published_range": true,
+      "published_range": [
+        21230.0,
+        22000.0
+      ]
+    },
+    "after": {
+      "value": 22250.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 8 cited values",
+      "pct_error": 0.029377746934998842,
+      "in_published_range": true,
+      "published_range": [
+        21230.0,
+        22000.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 22250.0,
+        "pct_error": 0.029377746934998842,
+        "in_published_range": true,
+        "published_range": [
+          21230.0,
+          22000.0
+        ]
+      },
+      "size_check": {
+        "value": 22250.0,
+        "pct_error": 0.029377746934998842,
+        "in_published_range": true,
+        "published_range": [
+          21230.0,
+          22000.0
+        ]
+      },
+      "source_tiers": {
+        "value": 22500.0,
+        "pct_error": 0.040943789035392086,
+        "in_published_range": true,
+        "published_range": [
+          21230.0,
+          22000.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 22250.0,
+        "pct_error": 0.029377746934998842,
+        "in_published_range": true,
+        "published_range": [
+          21230.0,
+          22000.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 22250.0,
+      "pct_error": 0.029377746934998842,
+      "in_published_range": true,
+      "published_range": [
+        21230.0,
+        22000.0
+      ]
+    }
+  },
+  {
+    "market": "Paints & Coatings",
+    "set": "tuning",
+    "actual": 198250.0,
+    "published": [
+      193900.0,
+      202600.0
+    ],
+    "before": {
+      "value": 155250.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.21689785624211855,
+      "in_published_range": false,
+      "published_range": [
+        193900.0,
+        202600.0
+      ]
+    },
+    "current": {
+      "value": 200110.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.009382093316519546,
+      "in_published_range": true,
+      "published_range": [
+        193900.0,
+        202600.0
+      ]
+    },
+    "after": {
+      "value": 207730.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.047818411097099625,
+      "in_published_range": true,
+      "published_range": [
+        193900.0,
+        202600.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 207730.0,
+        "pct_error": 0.047818411097099625,
+        "in_published_range": true,
+        "published_range": [
+          193900.0,
+          202600.0
+        ]
+      },
+      "size_check": {
+        "value": 207730.0,
+        "pct_error": 0.047818411097099625,
+        "in_published_range": true,
+        "published_range": [
+          193900.0,
+          202600.0
+        ]
+      },
+      "source_tiers": {
+        "value": 219490.0,
+        "pct_error": 0.1071374527112232,
+        "in_published_range": false,
+        "published_range": [
+          193900.0,
+          202600.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 207730.0,
+        "pct_error": 0.047818411097099625,
+        "in_published_range": true,
+        "published_range": [
+          193900.0,
+          202600.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 207730.0,
+      "pct_error": 0.047818411097099625,
+      "in_published_range": true,
+      "published_range": [
+        193900.0,
+        202600.0
+      ]
+    }
+  },
+  {
+    "market": "Carbon Black",
+    "set": "heldout",
+    "actual": 21600.0,
+    "published": [
+      21600.0,
+      18500.0,
+      28860.0
+    ],
+    "before": {
+      "value": 20500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.05092592592592592,
+      "in_published_range": true,
+      "published_range": [
+        18500.0,
+        28860.0
+      ]
+    },
+    "current": {
+      "value": 22221.1,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "low_confidence"
+      ],
+      "method": "median of 7 cited values",
+      "pct_error": 0.02875462962962956,
+      "in_published_range": true,
+      "published_range": [
+        18500.0,
+        28860.0
+      ]
+    },
+    "after": {
+      "value": 24665.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "low_confidence"
+      ],
+      "method": "median of 6 cited values",
+      "pct_error": 0.14189814814814813,
+      "in_published_range": true,
+      "published_range": [
+        18500.0,
+        28860.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 24665.0,
+        "pct_error": 0.14189814814814813,
+        "in_published_range": true,
+        "published_range": [
+          18500.0,
+          28860.0
+        ]
+      },
+      "size_check": {
+        "value": 24665.0,
+        "pct_error": 0.14189814814814813,
+        "in_published_range": true,
+        "published_range": [
+          18500.0,
+          28860.0
+        ]
+      },
+      "source_tiers": {
+        "value": 24800.0,
+        "pct_error": 0.14814814814814814,
+        "in_published_range": true,
+        "published_range": [
+          18500.0,
+          28860.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 24665.0,
+        "pct_error": 0.14189814814814813,
+        "in_published_range": true,
+        "published_range": [
+          18500.0,
+          28860.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 24665.0,
+      "pct_error": 0.14189814814814813,
+      "in_published_range": true,
+      "published_range": [
+        18500.0,
+        28860.0
+      ]
+    }
+  },
+  {
+    "market": "Caustic Soda",
+    "set": "heldout",
+    "actual": 46500.0,
+    "published": [
+      50150.0,
+      46440.0,
+      46500.0
+    ],
+    "before": {
+      "value": 78080.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.6791397849462366,
+      "in_published_range": false,
+      "published_range": [
+        46440.0,
+        50150.0
+      ]
+    },
+    "current": {
+      "value": 46500.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 5 cited values",
+      "pct_error": 0.0,
+      "in_published_range": true,
+      "published_range": [
+        46440.0,
+        50150.0
+      ]
+    },
+    "after": {
+      "value": 27360.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $33,675M (https://www.globalgrowthinsights.com/market-reports/caustic-soda-market-114653)",
+      "pct_error": -0.41161290322580646,
+      "in_published_range": false,
+      "published_range": [
+        46440.0,
+        50150.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 47600.0,
+        "pct_error": 0.023655913978494623,
+        "in_published_range": true,
+        "published_range": [
+          46440.0,
+          50150.0
+        ]
+      },
+      "size_check": {
+        "value": 47600.0,
+        "pct_error": 0.023655913978494623,
+        "in_published_range": true,
+        "published_range": [
+          46440.0,
+          50150.0
+        ]
+      },
+      "source_tiers": {
+        "value": 47600.0,
+        "pct_error": 0.023655913978494623,
+        "in_published_range": true,
+        "published_range": [
+          46440.0,
+          50150.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 27360.0,
+        "pct_error": -0.41161290322580646,
+        "in_published_range": false,
+        "published_range": [
+          46440.0,
+          50150.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 47600.0,
+      "pct_error": 0.023655913978494623,
+      "in_published_range": true,
+      "published_range": [
+        46440.0,
+        50150.0
+      ]
+    }
+  },
+  {
+    "market": "Cosmetics",
+    "set": "heldout",
+    "actual": 346840.0,
+    "published": [
+      354680.0,
+      339000.0
+    ],
+    "before": {
+      "value": 450000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.2974282089724369,
+      "in_published_range": false,
+      "published_range": [
+        339000.0,
+        354680.0
+      ]
+    },
+    "current": {
+      "value": 416545.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.20097162956983047,
+      "in_published_range": false,
+      "published_range": [
+        339000.0,
+        354680.0
+      ]
+    },
+    "after": {
+      "value": 412000.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $387,298M (https://www.emergenresearch.com/industry-report/cosmetics-market)",
+      "pct_error": 0.18786760465920885,
+      "in_published_range": false,
+      "published_range": [
+        339000.0,
+        354680.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 361858.0,
+        "pct_error": 0.043299504094106794,
+        "in_published_range": true,
+        "published_range": [
+          339000.0,
+          354680.0
+        ]
+      },
+      "size_check": {
+        "value": 361858.0,
+        "pct_error": 0.043299504094106794,
+        "in_published_range": true,
+        "published_range": [
+          339000.0,
+          354680.0
+        ]
+      },
+      "source_tiers": {
+        "value": 362486.1,
+        "pct_error": 0.04511042555645248,
+        "in_published_range": true,
+        "published_range": [
+          339000.0,
+          354680.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 412000.0,
+        "pct_error": 0.18786760465920885,
+        "in_published_range": false,
+        "published_range": [
+          339000.0,
+          354680.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 361858.0,
+      "pct_error": 0.043299504094106794,
+      "in_published_range": true,
+      "published_range": [
+        339000.0,
+        354680.0
+      ]
+    }
+  },
+  {
+    "market": "Fragrances",
+    "set": "heldout",
+    "actual": 60000.0,
+    "published": [
+      60000.0,
+      58140.0,
+      72720.0
+    ],
+    "before": {
+      "value": 34000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.43333333333333335,
+      "in_published_range": false,
+      "published_range": [
+        58140.0,
+        72720.0
+      ]
+    },
+    "current": {
+      "value": 35260.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": -0.41233333333333333,
+      "in_published_range": false,
+      "published_range": [
+        58140.0,
+        72720.0
+      ]
+    },
+    "after": {
+      "value": 94550.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $97,980M (https://www.skyquestt.com/report/fragrance-market)",
+      "pct_error": 0.5758333333333333,
+      "in_published_range": false,
+      "published_range": [
+        58140.0,
+        72720.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 57600.0,
+        "pct_error": -0.04,
+        "in_published_range": true,
+        "published_range": [
+          58140.0,
+          72720.0
+        ]
+      },
+      "size_check": {
+        "value": 57600.0,
+        "pct_error": -0.04,
+        "in_published_range": true,
+        "published_range": [
+          58140.0,
+          72720.0
+        ]
+      },
+      "source_tiers": {
+        "value": 53250.0,
+        "pct_error": -0.1125,
+        "in_published_range": false,
+        "published_range": [
+          58140.0,
+          72720.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 94550.0,
+        "pct_error": 0.5758333333333333,
+        "in_published_range": false,
+        "published_range": [
+          58140.0,
+          72720.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 57600.0,
+      "pct_error": -0.04,
+      "in_published_range": true,
+      "published_range": [
+        58140.0,
+        72720.0
+      ]
+    }
+  },
+  {
+    "market": "Shampoo",
+    "set": "tuning",
+    "actual": 36915.0,
+    "published": [
+      38230.0,
+      35600.0
+    ],
+    "before": {
+      "value": 13500.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.6342950020316944,
+      "in_published_range": false,
+      "published_range": [
+        35600.0,
+        38230.0
+      ]
+    },
+    "current": {
+      "value": 36087.4,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.02241907083841253,
+      "in_published_range": true,
+      "published_range": [
+        35600.0,
+        38230.0
+      ]
+    },
+    "after": {
+      "value": 33968.7,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.07981308411214962,
+      "in_published_range": true,
+      "published_range": [
+        35600.0,
+        38230.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 33968.7,
+        "pct_error": -0.07981308411214962,
+        "in_published_range": true,
+        "published_range": [
+          35600.0,
+          38230.0
+        ]
+      },
+      "size_check": {
+        "value": 33968.7,
+        "pct_error": -0.07981308411214962,
+        "in_published_range": true,
+        "published_range": [
+          35600.0,
+          38230.0
+        ]
+      },
+      "source_tiers": {
+        "value": 36087.4,
+        "pct_error": -0.02241907083841253,
+        "in_published_range": true,
+        "published_range": [
+          35600.0,
+          38230.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 33968.7,
+        "pct_error": -0.07981308411214962,
+        "in_published_range": true,
+        "published_range": [
+          35600.0,
+          38230.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 33968.7,
+      "pct_error": -0.07981308411214962,
+      "in_published_range": true,
+      "published_range": [
+        35600.0,
+        38230.0
+      ]
+    }
+  },
+  {
+    "market": "Toothpaste",
+    "set": "heldout",
+    "actual": 22300.0,
+    "published": [
+      29320.0,
+      20140.0,
+      22300.0
+    ],
+    "before": {
+      "value": 19380.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.13094170403587443,
+      "in_published_range": true,
+      "published_range": [
+        20140.0,
+        29320.0
+      ]
+    },
+    "current": {
+      "value": 22800.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 7 cited values",
+      "pct_error": 0.02242152466367713,
+      "in_published_range": true,
+      "published_range": [
+        20140.0,
+        29320.0
+      ]
+    },
+    "after": {
+      "value": 23500.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 11 cited values",
+      "pct_error": 0.053811659192825115,
+      "in_published_range": true,
+      "published_range": [
+        20140.0,
+        29320.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 24771.0,
+        "pct_error": 0.11080717488789238,
+        "in_published_range": true,
+        "published_range": [
+          20140.0,
+          29320.0
+        ]
+      },
+      "size_check": {
+        "value": 23500.0,
+        "pct_error": 0.053811659192825115,
+        "in_published_range": true,
+        "published_range": [
+          20140.0,
+          29320.0
+        ]
+      },
+      "source_tiers": {
+        "value": 22942.1,
+        "pct_error": 0.028793721973094107,
+        "in_published_range": true,
+        "published_range": [
+          20140.0,
+          29320.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 23500.0,
+        "pct_error": 0.053811659192825115,
+        "in_published_range": true,
+        "published_range": [
+          20140.0,
+          29320.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 23500.0,
+      "pct_error": 0.053811659192825115,
+      "in_published_range": true,
+      "published_range": [
+        20140.0,
+        29320.0
+      ]
+    }
+  },
+  {
+    "market": "Sunglasses",
+    "set": "tuning",
+    "actual": 43030.0,
+    "published": [
+      41600.0,
+      43030.0,
+      43540.0
+    ],
+    "before": {
+      "value": 12400.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.7118289565419474,
+      "in_published_range": false,
+      "published_range": [
+        41600.0,
+        43540.0
+      ]
+    },
+    "current": {
+      "value": 41927.1,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.025630955147571497,
+      "in_published_range": true,
+      "published_range": [
+        41600.0,
+        43540.0
+      ]
+    },
+    "after": {
+      "value": 39800.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 5 cited values",
+      "pct_error": -0.0750639089007669,
+      "in_published_range": true,
+      "published_range": [
+        41600.0,
+        43540.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 39800.0,
+        "pct_error": -0.0750639089007669,
+        "in_published_range": true,
+        "published_range": [
+          41600.0,
+          43540.0
+        ]
+      },
+      "size_check": {
+        "value": 39800.0,
+        "pct_error": -0.0750639089007669,
+        "in_published_range": true,
+        "published_range": [
+          41600.0,
+          43540.0
+        ]
+      },
+      "source_tiers": {
+        "value": 39800.0,
+        "pct_error": -0.0750639089007669,
+        "in_published_range": true,
+        "published_range": [
+          41600.0,
+          43540.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 39800.0,
+        "pct_error": -0.0750639089007669,
+        "in_published_range": true,
+        "published_range": [
+          41600.0,
+          43540.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 39800.0,
+      "pct_error": -0.0750639089007669,
+      "in_published_range": true,
+      "published_range": [
+        41600.0,
+        43540.0
+      ]
+    }
+  },
+  {
+    "market": "Mattresses",
+    "set": "tuning",
+    "actual": 49560.0,
+    "published": [
+      57510.0,
+      49560.0,
+      45800.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 30800.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.3785310734463277,
+      "in_published_range": false,
+      "published_range": [
+        45800.0,
+        57510.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 30800.0,
+        "pct_error": -0.3785310734463277,
+        "in_published_range": false,
+        "published_range": [
+          45800.0,
+          57510.0
+        ]
+      },
+      "size_check": {
+        "value": 30800.0,
+        "pct_error": -0.3785310734463277,
+        "in_published_range": false,
+        "published_range": [
+          45800.0,
+          57510.0
+        ]
+      },
+      "source_tiers": {
+        "value": 40000.0,
+        "pct_error": -0.19289749798224373,
+        "in_published_range": false,
+        "published_range": [
+          45800.0,
+          57510.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 30800.0,
+        "pct_error": -0.3785310734463277,
+        "in_published_range": false,
+        "published_range": [
+          45800.0,
+          57510.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 30800.0,
+      "pct_error": -0.3785310734463277,
+      "in_published_range": false,
+      "published_range": [
+        45800.0,
+        57510.0
+      ]
+    }
+  },
+  {
+    "market": "Athletic Footwear",
+    "set": "tuning",
+    "actual": 145490.0,
+    "published": [
+      145490.0,
+      130100.0,
+      147500.0
+    ],
+    "before": {
+      "value": 70000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.5188672761014502,
+      "in_published_range": false,
+      "published_range": [
+        130100.0,
+        147500.0
+      ]
+    },
+    "current": {
+      "value": 117660.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.19128462437280913,
+      "in_published_range": false,
+      "published_range": [
+        130100.0,
+        147500.0
+      ]
+    },
+    "after": {
+      "value": 137085.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": -0.05777029349096158,
+      "in_published_range": true,
+      "published_range": [
+        130100.0,
+        147500.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 137085.0,
+        "pct_error": -0.05777029349096158,
+        "in_published_range": true,
+        "published_range": [
+          130100.0,
+          147500.0
+        ]
+      },
+      "size_check": {
+        "value": 137085.0,
+        "pct_error": -0.05777029349096158,
+        "in_published_range": true,
+        "published_range": [
+          130100.0,
+          147500.0
+        ]
+      },
+      "source_tiers": {
+        "value": 131000.0,
+        "pct_error": -0.09959447384699979,
+        "in_published_range": true,
+        "published_range": [
+          130100.0,
+          147500.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 137085.0,
+        "pct_error": -0.05777029349096158,
+        "in_published_range": true,
+        "published_range": [
+          130100.0,
+          147500.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 137085.0,
+      "pct_error": -0.05777029349096158,
+      "in_published_range": true,
+      "published_range": [
+        130100.0,
+        147500.0
+      ]
+    }
+  },
+  {
+    "market": "Toys",
+    "set": "heldout",
+    "actual": 121750.0,
+    "published": [
+      123000.0,
+      120500.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 129960.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.06743326488706365,
+      "in_published_range": false,
+      "published_range": [
+        120500.0,
+        123000.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 129960.0,
+        "pct_error": 0.06743326488706365,
+        "in_published_range": false,
+        "published_range": [
+          120500.0,
+          123000.0
+        ]
+      },
+      "size_check": {
+        "value": 129960.0,
+        "pct_error": 0.06743326488706365,
+        "in_published_range": false,
+        "published_range": [
+          120500.0,
+          123000.0
+        ]
+      },
+      "source_tiers": {
+        "value": 129960.0,
+        "pct_error": 0.06743326488706365,
+        "in_published_range": false,
+        "published_range": [
+          120500.0,
+          123000.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 129960.0,
+        "pct_error": 0.06743326488706365,
+        "in_published_range": false,
+        "published_range": [
+          120500.0,
+          123000.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 129960.0,
+      "pct_error": 0.06743326488706365,
+      "in_published_range": false,
+      "published_range": [
+        120500.0,
+        123000.0
+      ]
+    }
+  },
+  {
+    "market": "Razors",
+    "set": "heldout",
+    "actual": 12754.0,
+    "published": [
+      13888.0,
+      11620.0
+    ],
+    "before": {
+      "value": 22000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.7249490355966756,
+      "in_published_range": false,
+      "published_range": [
+        11620.0,
+        13888.0
+      ]
+    },
+    "current": {
+      "value": 13605.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 5 cited values",
+      "pct_error": 0.06676336835502587,
+      "in_published_range": true,
+      "published_range": [
+        11620.0,
+        13888.0
+      ]
+    },
+    "after": {
+      "value": 13333.8,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 8 cited values",
+      "pct_error": 0.04546024776540687,
+      "in_published_range": true,
+      "published_range": [
+        11620.0,
+        13888.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 13333.8,
+        "pct_error": 0.04546024776540687,
+        "in_published_range": true,
+        "published_range": [
+          11620.0,
+          13888.0
+        ]
+      },
+      "size_check": {
+        "value": 13333.8,
+        "pct_error": 0.04546024776540687,
+        "in_published_range": true,
+        "published_range": [
+          11620.0,
+          13888.0
+        ]
+      },
+      "source_tiers": {
+        "value": 13100.0,
+        "pct_error": 0.027128743923474988,
+        "in_published_range": true,
+        "published_range": [
+          11620.0,
+          13888.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 13333.8,
+        "pct_error": 0.04546024776540687,
+        "in_published_range": true,
+        "published_range": [
+          11620.0,
+          13888.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 13333.8,
+      "pct_error": 0.04546024776540687,
+      "in_published_range": true,
+      "published_range": [
+        11620.0,
+        13888.0
+      ]
+    }
+  },
+  {
+    "market": "Cloud Computing",
+    "set": "tuning",
+    "actual": 781270.0,
+    "published": [
+      723400.0,
+      781270.0,
+      912770.0
+    ],
+    "before": {
+      "value": 1013000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.29660680686574425,
+      "in_published_range": false,
+      "published_range": [
+        723400.0,
+        912770.0
+      ]
+    },
+    "current": {
+      "value": 1012931.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "single cited value",
+      "pct_error": 0.29651848912667833,
+      "in_published_range": false,
+      "published_range": [
+        723400.0,
+        912770.0
+      ]
+    },
+    "after": {
+      "value": 897100.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.14825924456333917,
+      "in_published_range": true,
+      "published_range": [
+        723400.0,
+        912770.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 897100.5,
+        "pct_error": 0.14825924456333917,
+        "in_published_range": true,
+        "published_range": [
+          723400.0,
+          912770.0
+        ]
+      },
+      "size_check": {
+        "value": 897100.5,
+        "pct_error": 0.14825924456333917,
+        "in_published_range": true,
+        "published_range": [
+          723400.0,
+          912770.0
+        ]
+      },
+      "source_tiers": {
+        "value": 897555.0,
+        "pct_error": 0.14884098967066442,
+        "in_published_range": true,
+        "published_range": [
+          723400.0,
+          912770.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 897100.5,
+        "pct_error": 0.14825924456333917,
+        "in_published_range": true,
+        "published_range": [
+          723400.0,
+          912770.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 897100.5,
+      "pct_error": 0.14825924456333917,
+      "in_published_range": true,
+      "published_range": [
+        723400.0,
+        912770.0
+      ]
+    }
+  },
+  {
+    "market": "Cybersecurity",
+    "set": "tuning",
+    "actual": 227600.0,
+    "published": [
+      218980.0,
+      227600.0,
+      248000.0
+    ],
+    "before": {
+      "value": 18000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.9209138840070299,
+      "in_published_range": false,
+      "published_range": [
+        218980.0,
+        248000.0
+      ]
+    },
+    "current": {
+      "value": 195000.0,
+      "grounded": false,
+      "status": "ok",
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "method": "none",
+      "pct_error": -0.14323374340949033,
+      "in_published_range": false,
+      "published_range": [
+        218980.0,
+        248000.0
+      ]
+    },
+    "after": {
+      "value": 233825.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.0273506151142355,
+      "in_published_range": true,
+      "published_range": [
+        218980.0,
+        248000.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 233825.0,
+        "pct_error": 0.0273506151142355,
+        "in_published_range": true,
+        "published_range": [
+          218980.0,
+          248000.0
+        ]
+      },
+      "size_check": {
+        "value": 233825.0,
+        "pct_error": 0.0273506151142355,
+        "in_published_range": true,
+        "published_range": [
+          218980.0,
+          248000.0
+        ]
+      },
+      "source_tiers": {
+        "value": 230000.0,
+        "pct_error": 0.01054481546572935,
+        "in_published_range": true,
+        "published_range": [
+          218980.0,
+          248000.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 233825.0,
+        "pct_error": 0.0273506151142355,
+        "in_published_range": true,
+        "published_range": [
+          218980.0,
+          248000.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 233825.0,
+      "pct_error": 0.0273506151142355,
+      "in_published_range": true,
+      "published_range": [
+        218980.0,
+        248000.0
+      ]
+    }
+  },
+  {
+    "market": "Data Center Colocation",
+    "set": "heldout",
+    "actual": 83040.0,
+    "published": [
+      83040.0,
+      64600.0,
+      84500.0
+    ],
+    "before": {
+      "value": 275000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 2.3116570327552988,
+      "in_published_range": false,
+      "published_range": [
+        64600.0,
+        84500.0
+      ]
+    },
+    "current": {
+      "value": 89815.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.08158718689788054,
+      "in_published_range": false,
+      "published_range": [
+        64600.0,
+        84500.0
+      ]
+    },
+    "after": {
+      "value": 82450.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.007105009633911368,
+      "in_published_range": true,
+      "published_range": [
+        64600.0,
+        84500.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 82450.0,
+        "pct_error": -0.007105009633911368,
+        "in_published_range": true,
+        "published_range": [
+          64600.0,
+          84500.0
+        ]
+      },
+      "size_check": {
+        "value": 82450.0,
+        "pct_error": -0.007105009633911368,
+        "in_published_range": true,
+        "published_range": [
+          64600.0,
+          84500.0
+        ]
+      },
+      "source_tiers": {
+        "value": 85780.0,
+        "pct_error": 0.032996146435452796,
+        "in_published_range": true,
+        "published_range": [
+          64600.0,
+          84500.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 82450.0,
+        "pct_error": -0.007105009633911368,
+        "in_published_range": true,
+        "published_range": [
+          64600.0,
+          84500.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 82450.0,
+      "pct_error": -0.007105009633911368,
+      "in_published_range": true,
+      "published_range": [
+        64600.0,
+        84500.0
+      ]
+    }
+  },
+  {
+    "market": "Semiconductors",
+    "set": "heldout",
+    "actual": 794300.0,
+    "published": [
+      795600.0,
+      793000.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 685030.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.13756766964622938,
+      "in_published_range": false,
+      "published_range": [
+        793000.0,
+        795600.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 685030.0,
+        "pct_error": -0.13756766964622938,
+        "in_published_range": false,
+        "published_range": [
+          793000.0,
+          795600.0
+        ]
+      },
+      "size_check": {
+        "value": 685030.0,
+        "pct_error": -0.13756766964622938,
+        "in_published_range": false,
+        "published_range": [
+          793000.0,
+          795600.0
+        ]
+      },
+      "source_tiers": {
+        "value": 685030.0,
+        "pct_error": -0.13756766964622938,
+        "in_published_range": false,
+        "published_range": [
+          793000.0,
+          795600.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 685030.0,
+        "pct_error": -0.13756766964622938,
+        "in_published_range": false,
+        "published_range": [
+          793000.0,
+          795600.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 685030.0,
+      "pct_error": -0.13756766964622938,
+      "in_published_range": false,
+      "published_range": [
+        793000.0,
+        795600.0
+      ]
+    }
+  },
+  {
+    "market": "Air Compressors",
+    "set": "tuning",
+    "actual": 19700.0,
+    "published": [
+      19700.0,
+      18960.0,
+      29670.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 46921.2,
+      "grounded": true,
+      "status": "ok",
+      "flags": [
+        "cited_values_disputed"
+      ],
+      "method": "disputed: value closest to units x ASP mid $77,460M (https://www.linkedin.com/pulse/air-compressor-market-size-2026-digital-ai-impact-trends-gmlgc/)",
+      "pct_error": 1.3817868020304567,
+      "in_published_range": false,
+      "published_range": [
+        18960.0,
+        29670.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 19188.2,
+        "pct_error": -0.025979695431472043,
+        "in_published_range": true,
+        "published_range": [
+          18960.0,
+          29670.0
+        ]
+      },
+      "size_check": {
+        "value": 19188.2,
+        "pct_error": -0.025979695431472043,
+        "in_published_range": true,
+        "published_range": [
+          18960.0,
+          29670.0
+        ]
+      },
+      "source_tiers": {
+        "value": 19188.2,
+        "pct_error": -0.025979695431472043,
+        "in_published_range": true,
+        "published_range": [
+          18960.0,
+          29670.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 46921.2,
+        "pct_error": 1.3817868020304567,
+        "in_published_range": false,
+        "published_range": [
+          18960.0,
+          29670.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 19188.2,
+      "pct_error": -0.025979695431472043,
+      "in_published_range": true,
+      "published_range": [
+        18960.0,
+        29670.0
+      ]
+    }
+  },
+  {
+    "market": "Elevators",
+    "set": "heldout",
+    "actual": 98720.0,
+    "published": [
+      87900.0,
+      100230.0,
+      98720.0
+    ],
+    "before": {
+      "value": 101580.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.028970826580226903,
+      "in_published_range": true,
+      "published_range": [
+        87900.0,
+        100230.0
+      ]
+    },
+    "current": {
+      "value": 91400.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 6 cited values",
+      "pct_error": -0.07414910858995137,
+      "in_published_range": true,
+      "published_range": [
+        87900.0,
+        100230.0
+      ]
+    },
+    "after": {
+      "value": 90780.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.08042949756888168,
+      "in_published_range": true,
+      "published_range": [
+        87900.0,
+        100230.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 90780.0,
+        "pct_error": -0.08042949756888168,
+        "in_published_range": true,
+        "published_range": [
+          87900.0,
+          100230.0
+        ]
+      },
+      "size_check": {
+        "value": 90780.0,
+        "pct_error": -0.08042949756888168,
+        "in_published_range": true,
+        "published_range": [
+          87900.0,
+          100230.0
+        ]
+      },
+      "source_tiers": {
+        "value": 90780.0,
+        "pct_error": -0.08042949756888168,
+        "in_published_range": true,
+        "published_range": [
+          87900.0,
+          100230.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 90780.0,
+        "pct_error": -0.08042949756888168,
+        "in_published_range": true,
+        "published_range": [
+          87900.0,
+          100230.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 90780.0,
+      "pct_error": -0.08042949756888168,
+      "in_published_range": true,
+      "published_range": [
+        87900.0,
+        100230.0
+      ]
+    }
+  },
+  {
+    "market": "Forklifts",
+    "set": "heldout",
+    "actual": 78780.0,
+    "published": [
+      78780.0,
+      62850.0,
+      81400.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 80605.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": 0.023165778116273166,
+      "in_published_range": true,
+      "published_range": [
+        62850.0,
+        81400.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 80605.0,
+        "pct_error": 0.023165778116273166,
+        "in_published_range": true,
+        "published_range": [
+          62850.0,
+          81400.0
+        ]
+      },
+      "size_check": {
+        "value": 80605.0,
+        "pct_error": 0.023165778116273166,
+        "in_published_range": true,
+        "published_range": [
+          62850.0,
+          81400.0
+        ]
+      },
+      "source_tiers": {
+        "value": 80605.0,
+        "pct_error": 0.023165778116273166,
+        "in_published_range": true,
+        "published_range": [
+          62850.0,
+          81400.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 80605.0,
+        "pct_error": 0.023165778116273166,
+        "in_published_range": true,
+        "published_range": [
+          62850.0,
+          81400.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 80605.0,
+      "pct_error": 0.023165778116273166,
+      "in_published_range": true,
+      "published_range": [
+        62850.0,
+        81400.0
+      ]
+    }
+  },
+  {
+    "market": "LED Lighting",
+    "set": "tuning",
+    "actual": 108990.0,
+    "published": [
+      109110.0,
+      108990.0,
+      56626.0
+    ],
+    "before": {
+      "value": 95.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.9991283604000367,
+      "in_published_range": false,
+      "published_range": [
+        56626.0,
+        109110.0
+      ]
+    },
+    "current": {
+      "value": 97704.6,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.10354527938342963,
+      "in_published_range": true,
+      "published_range": [
+        56626.0,
+        109110.0
+      ]
+    },
+    "after": {
+      "value": 95000.0,
+      "grounded": false,
+      "status": "ok",
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "method": "none",
+      "pct_error": -0.12836040003670063,
+      "in_published_range": true,
+      "published_range": [
+        56626.0,
+        109110.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 95000.0,
+        "pct_error": -0.12836040003670063,
+        "in_published_range": true,
+        "published_range": [
+          56626.0,
+          109110.0
+        ]
+      },
+      "size_check": {
+        "value": 95000.0,
+        "pct_error": -0.12836040003670063,
+        "in_published_range": true,
+        "published_range": [
+          56626.0,
+          109110.0
+        ]
+      },
+      "source_tiers": {
+        "value": 104611.5,
+        "pct_error": -0.04017341040462428,
+        "in_published_range": true,
+        "published_range": [
+          56626.0,
+          109110.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 95000.0,
+        "pct_error": -0.12836040003670063,
+        "in_published_range": true,
+        "published_range": [
+          56626.0,
+          109110.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 95000.0,
+      "pct_error": -0.12836040003670063,
+      "in_published_range": true,
+      "published_range": [
+        56626.0,
+        109110.0
+      ]
+    }
+  },
+  {
+    "market": "Corrugated Boxes",
+    "set": "tuning",
+    "actual": 195600.0,
+    "published": [
+      195600.0,
+      212300.0,
+      179800.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 256810.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": 0.31293456032719835,
+      "in_published_range": false,
+      "published_range": [
+        179800.0,
+        212300.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 256810.0,
+        "pct_error": 0.31293456032719835,
+        "in_published_range": false,
+        "published_range": [
+          179800.0,
+          212300.0
+        ]
+      },
+      "size_check": {
+        "value": 256810.0,
+        "pct_error": 0.31293456032719835,
+        "in_published_range": false,
+        "published_range": [
+          179800.0,
+          212300.0
+        ]
+      },
+      "source_tiers": {
+        "value": 210200.0,
+        "pct_error": 0.07464212678936605,
+        "in_published_range": true,
+        "published_range": [
+          179800.0,
+          212300.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 256810.0,
+        "pct_error": 0.31293456032719835,
+        "in_published_range": false,
+        "published_range": [
+          179800.0,
+          212300.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 256810.0,
+      "pct_error": 0.31293456032719835,
+      "in_published_range": false,
+      "published_range": [
+        179800.0,
+        212300.0
+      ]
+    }
+  },
+  {
+    "market": "Aluminum Cans",
+    "set": "tuning",
+    "actual": 60330.0,
+    "published": [
+      53700.0,
+      60330.0,
+      63200.0
+    ],
+    "before": {
+      "value": 56390.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.06530747555113542,
+      "in_published_range": true,
+      "published_range": [
+        53700.0,
+        63200.0
+      ]
+    },
+    "current": {
+      "value": 55116.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.08642466434609647,
+      "in_published_range": true,
+      "published_range": [
+        53700.0,
+        63200.0
+      ]
+    },
+    "after": {
+      "value": 58771.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.02584120669650257,
+      "in_published_range": true,
+      "published_range": [
+        53700.0,
+        63200.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 58771.0,
+        "pct_error": -0.02584120669650257,
+        "in_published_range": true,
+        "published_range": [
+          53700.0,
+          63200.0
+        ]
+      },
+      "size_check": {
+        "value": 58771.0,
+        "pct_error": -0.02584120669650257,
+        "in_published_range": true,
+        "published_range": [
+          53700.0,
+          63200.0
+        ]
+      },
+      "source_tiers": {
+        "value": 58771.0,
+        "pct_error": -0.02584120669650257,
+        "in_published_range": true,
+        "published_range": [
+          53700.0,
+          63200.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 58771.0,
+        "pct_error": -0.02584120669650257,
+        "in_published_range": true,
+        "published_range": [
+          53700.0,
+          63200.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 58771.0,
+      "pct_error": -0.02584120669650257,
+      "in_published_range": true,
+      "published_range": [
+        53700.0,
+        63200.0
+      ]
+    }
+  },
+  {
+    "market": "Flexible Packaging",
+    "set": "heldout",
+    "actual": 269200.0,
+    "published": [
+      242000.0,
+      269200.0,
+      311150.0
+    ],
+    "before": {
+      "value": 300000.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": 0.11441307578008915,
+      "in_published_range": true,
+      "published_range": [
+        242000.0,
+        311150.0
+      ]
+    },
+    "current": {
+      "value": 314541.2,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "single cited value",
+      "pct_error": 0.16842942050520063,
+      "in_published_range": true,
+      "published_range": [
+        242000.0,
+        311150.0
+      ]
+    },
+    "after": {
+      "value": 307270.6,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.14142124814264478,
+      "in_published_range": true,
+      "published_range": [
+        242000.0,
+        311150.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 307270.6,
+        "pct_error": 0.14142124814264478,
+        "in_published_range": true,
+        "published_range": [
+          242000.0,
+          311150.0
+        ]
+      },
+      "size_check": {
+        "value": 307270.6,
+        "pct_error": 0.14142124814264478,
+        "in_published_range": true,
+        "published_range": [
+          242000.0,
+          311150.0
+        ]
+      },
+      "source_tiers": {
+        "value": 307270.6,
+        "pct_error": 0.14142124814264478,
+        "in_published_range": true,
+        "published_range": [
+          242000.0,
+          311150.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 307270.6,
+        "pct_error": 0.14142124814264478,
+        "in_published_range": true,
+        "published_range": [
+          242000.0,
+          311150.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 307270.6,
+      "pct_error": 0.14142124814264478,
+      "in_published_range": true,
+      "published_range": [
+        242000.0,
+        311150.0
+      ]
+    }
+  },
+  {
+    "market": "Paper Cups",
+    "set": "heldout",
+    "actual": 13400.0,
+    "published": [
+      14600.0,
+      13400.0,
+      9677.0
+    ],
+    "before": {
+      "value": 11305.2,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.15632835820895516,
+      "in_published_range": true,
+      "published_range": [
+        9677.0,
+        14600.0
+      ]
+    },
+    "current": {
+      "value": 12185.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 10 cited values",
+      "pct_error": -0.09067164179104478,
+      "in_published_range": true,
+      "published_range": [
+        9677.0,
+        14600.0
+      ]
+    },
+    "after": {
+      "value": 11690.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 5 cited values",
+      "pct_error": -0.12761194029850748,
+      "in_published_range": true,
+      "published_range": [
+        9677.0,
+        14600.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 11690.0,
+        "pct_error": -0.12761194029850748,
+        "in_published_range": true,
+        "published_range": [
+          9677.0,
+          14600.0
+        ]
+      },
+      "size_check": {
+        "value": 11690.0,
+        "pct_error": -0.12761194029850748,
+        "in_published_range": true,
+        "published_range": [
+          9677.0,
+          14600.0
+        ]
+      },
+      "source_tiers": {
+        "value": 11969.4,
+        "pct_error": -0.10676119402985078,
+        "in_published_range": true,
+        "published_range": [
+          9677.0,
+          14600.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 11690.0,
+        "pct_error": -0.12761194029850748,
+        "in_published_range": true,
+        "published_range": [
+          9677.0,
+          14600.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 11690.0,
+      "pct_error": -0.12761194029850748,
+      "in_published_range": true,
+      "published_range": [
+        9677.0,
+        14600.0
+      ]
+    }
+  },
+  {
+    "market": "Wind Turbines",
+    "set": "tuning",
+    "actual": 170900.0,
+    "published": [
+      170900.0,
+      161990.0,
+      171000.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 107090.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": -0.37337624341720305,
+      "in_published_range": false,
+      "published_range": [
+        161990.0,
+        171000.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 107090.0,
+        "pct_error": -0.37337624341720305,
+        "in_published_range": false,
+        "published_range": [
+          161990.0,
+          171000.0
+        ]
+      },
+      "size_check": {
+        "value": 107090.0,
+        "pct_error": -0.37337624341720305,
+        "in_published_range": false,
+        "published_range": [
+          161990.0,
+          171000.0
+        ]
+      },
+      "source_tiers": {
+        "value": 107090.0,
+        "pct_error": -0.37337624341720305,
+        "in_published_range": false,
+        "published_range": [
+          161990.0,
+          171000.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 107090.0,
+        "pct_error": -0.37337624341720305,
+        "in_published_range": false,
+        "published_range": [
+          161990.0,
+          171000.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 107090.0,
+      "pct_error": -0.37337624341720305,
+      "in_published_range": false,
+      "published_range": [
+        161990.0,
+        171000.0
+      ]
+    }
+  },
+  {
+    "market": "Diesel Generators",
+    "set": "tuning",
+    "actual": 21440.0,
+    "published": [
+      22200.0,
+      21440.0,
+      20300.0
+    ],
+    "before": {
+      "value": 21117.4,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.015046641791044708,
+      "in_published_range": true,
+      "published_range": [
+        20300.0,
+        22200.0
+      ]
+    },
+    "current": {
+      "value": 21320.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 12 cited values",
+      "pct_error": -0.005597014925373134,
+      "in_published_range": true,
+      "published_range": [
+        20300.0,
+        22200.0
+      ]
+    },
+    "after": {
+      "value": 21198.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 4 cited values",
+      "pct_error": -0.011263992537313432,
+      "in_published_range": true,
+      "published_range": [
+        20300.0,
+        22200.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 21198.5,
+        "pct_error": -0.011263992537313432,
+        "in_published_range": true,
+        "published_range": [
+          20300.0,
+          22200.0
+        ]
+      },
+      "size_check": {
+        "value": 21198.5,
+        "pct_error": -0.011263992537313432,
+        "in_published_range": true,
+        "published_range": [
+          20300.0,
+          22200.0
+        ]
+      },
+      "source_tiers": {
+        "value": 21198.5,
+        "pct_error": -0.011263992537313432,
+        "in_published_range": true,
+        "published_range": [
+          20300.0,
+          22200.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 21198.5,
+        "pct_error": -0.011263992537313432,
+        "in_published_range": true,
+        "published_range": [
+          20300.0,
+          22200.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 21198.5,
+      "pct_error": -0.011263992537313432,
+      "in_published_range": true,
+      "published_range": [
+        20300.0,
+        22200.0
+      ]
+    }
+  },
+  {
+    "market": "Smart Meters",
+    "set": "heldout",
+    "actual": 32550.0,
+    "published": [
+      28830.0,
+      32550.0,
+      32900.0
+    ],
+    "before": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "current": {
+      "value": null,
+      "grounded": null,
+      "status": "no DB skeleton",
+      "flags": [],
+      "method": null,
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after": {
+      "value": 29078.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 3 cited values",
+      "pct_error": -0.10666666666666667,
+      "in_published_range": true,
+      "published_range": [
+        28830.0,
+        32900.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 29078.0,
+        "pct_error": -0.10666666666666667,
+        "in_published_range": true,
+        "published_range": [
+          28830.0,
+          32900.0
+        ]
+      },
+      "size_check": {
+        "value": 29078.0,
+        "pct_error": -0.10666666666666667,
+        "in_published_range": true,
+        "published_range": [
+          28830.0,
+          32900.0
+        ]
+      },
+      "source_tiers": {
+        "value": 29634.0,
+        "pct_error": -0.0895852534562212,
+        "in_published_range": true,
+        "published_range": [
+          28830.0,
+          32900.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 29078.0,
+        "pct_error": -0.10666666666666667,
+        "in_published_range": true,
+        "published_range": [
+          28830.0,
+          32900.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 29078.0,
+      "pct_error": -0.10666666666666667,
+      "in_published_range": true,
+      "published_range": [
+        28830.0,
+        32900.0
+      ]
+    }
+  },
+  {
+    "market": "Urea (total, all uses)",
+    "set": "heldout",
+    "actual": 73500.0,
+    "published": [
+      79730.0,
+      73500.0,
+      49720.0
+    ],
+    "before": {
+      "value": 67748.0,
+      "grounded": null,
+      "status": "ok",
+      "flags": [],
+      "method": null,
+      "pct_error": -0.07825850340136055,
+      "in_published_range": true,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    },
+    "current": {
+      "value": 79730.0,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 11 cited values",
+      "pct_error": 0.08476190476190476,
+      "in_published_range": true,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    },
+    "after": {
+      "value": 73767.5,
+      "grounded": true,
+      "status": "ok",
+      "flags": [],
+      "method": "median of 2 cited values",
+      "pct_error": 0.003639455782312925,
+      "in_published_range": true,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    },
+    "ablation": {
+      "title_subject": {
+        "value": 73767.5,
+        "pct_error": 0.003639455782312925,
+        "in_published_range": true,
+        "published_range": [
+          49720.0,
+          79730.0
+        ]
+      },
+      "size_check": {
+        "value": 73767.5,
+        "pct_error": 0.003639455782312925,
+        "in_published_range": true,
+        "published_range": [
+          49720.0,
+          79730.0
+        ]
+      },
+      "source_tiers": {
+        "value": 73767.5,
+        "pct_error": 0.003639455782312925,
+        "in_published_range": true,
+        "published_range": [
+          49720.0,
+          79730.0
+        ]
+      },
+      "weak_consensus": {
+        "value": 73767.5,
+        "pct_error": 0.003639455782312925,
+        "in_published_range": true,
+        "published_range": [
+          49720.0,
+          79730.0
+        ]
+      }
+    },
+    "shipped": {
+      "value": 73767.5,
+      "pct_error": 0.003639455782312925,
+      "in_published_range": true,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    }
+  }
+]

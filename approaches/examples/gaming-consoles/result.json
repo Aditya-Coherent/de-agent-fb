@@ -1,22 +1,353 @@
 {
   "market": "Gaming Consoles",
   "vertical": "Consumer Electronics",
-  "started_at": "2026-10-08T14:00:33+00:00",
+  "started_at": "2026-10-09T07:23:54+00:00",
   "1_desk_research": {
     "status": "failed",
-    "error": "ERROR: could not build a DB skeleton for 'Gaming Consoles'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6465.91it/s]",
-    "minutes": 0.4
+    "error": "ERROR: could not build a DB skeleton for 'Gaming Consoles'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 8016.58it/s]",
+    "minutes": 0.6
   },
   "log": [
     "[2026-10-08T14:00:33+00:00] 1 Desk Research: start",
     "[2026-10-08T14:00:59+00:00] 1 Desk Research: failed in 0.4 min",
     "[2026-10-08T14:00:59+00:00] 2A Demand: start",
-    "[2026-10-08T14:13:53+00:00] 2A Demand: failed in 12.9 min"
+    "[2026-10-08T14:13:53+00:00] 2A Demand: failed in 12.9 min",
+    "[2026-10-09T07:23:54+00:00] 1 Desk Research: start",
+    "[2026-10-09T07:24:30+00:00] 1 Desk Research: failed in 0.6 min",
+    "[2026-10-09T07:24:30+00:00] 2A Demand: start",
+    "[2026-10-09T07:32:51+00:00] 2A Demand: ok in 8.4 min",
+    "[2026-10-09T07:32:51+00:00] 2B Demand: start",
+    "[2026-10-09T08:15:53+00:00] 2B Demand: ok in 43.0 min",
+    "[2026-10-09T08:15:53+00:00] 3 Supply-Side: start",
+    "[2026-10-09T08:35:38+00:00] 3 Supply-Side: ok in 19.7 min"
   ],
   "2A_demand_country_total": {
-    "status": "failed",
-    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: d9f1832e-c60e-4e05-8258-8d27312cbe93)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
-    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 279, in <lambda>\n    result[\"2A_demand_country_total\"] = _timed(lambda: run_2a(market, out_dir, cfg), log, \"2A Demand\")\n                                                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 159, in run_2a\n    segmentation.approve_segments(segmentation.run_segments_phase(market, cfg, cache_path=CACHE))\n                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandCountry_approach2A\\segmentation.py\", line 39, in run_segments_phase\n    draft = segments.build_segments_draft(\n        llm=llm or GenLLM(config, cache_path=cache_path),\n    ...<7 lines>...\n        search=search,\n    )\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 253, in build_segments_draft\n    dims = propose_dimensions(llm, config, market_name, scope, exclude_application=bool(bottom_up_dimensions))\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 155, in propose_dimensions\n    dims = propose_dimensions_llm(llm, market_name, scope, exclude_application)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 118, in propose_dimensions_llm\n    data = llm.complete_json(_PROPOSE_SYSTEM, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: d9f1832e-c60e-4e05-8258-8d27312cbe93)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
-    "minutes": 12.9
-  }
+    "setup": {
+      "scope": "This market covers the value of dedicated gaming console hardware sold at retail or direct-to-consumer, including home consoles (e.g., PlayStation, Xbox, Nintendo Switch) and handheld/portable consoles, whether new or officially refurbished, measured as the end-user purchase value of the console device itself. It excludes software, games, subscriptions, accessories, controllers, and cloud/streaming gaming services, which are separately valued markets, and it excludes general-purpose devices such as smartphones, PCs, and smart TVs even when used for gaming. Console-packaged bundles are counted only at the console's own hardware value, with bundled software or accessory value stripped out. Console software and service demand may be used as an intermediate signal for how many consoles are required (e.g., attach-rate evidence), but software and services are never priced or valued as part of this market.",
+      "geography": [
+        "United States",
+        "Japan",
+        "China",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Canada",
+        "South Korea",
+        "Australia",
+        "Brazil",
+        "Mexico",
+        "Spain",
+        "Italy",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "gaming consoles (units shipped)"
+    },
+    "driver": {
+      "driver_name": "Annual gaming console unit shipments (domestic apparent consumption)",
+      "unit": "consoles (units shipped)",
+      "final_demand_unit": "consoles (units shipped)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 11205.0,
+    "regions_usd_mn": {
+      "North America": 810.0,
+      "Latin America": 450.0,
+      "Europe": 3105.0,
+      "Asia Pacific": 3240.0,
+      "Rest of World": 3600.0
+    },
+    "countries_usd_mn": {
+      "United States": 0.0,
+      "Japan": 2025.0,
+      "China": 0.0,
+      "Germany": 1440.0,
+      "United Kingdom": 1260.0,
+      "France": 0.0,
+      "Canada": 810.0,
+      "South Korea": 675.0,
+      "Australia": 540.0,
+      "Brazil": 0.0,
+      "Mexico": 450.0,
+      "Spain": 405.0,
+      "Italy": 0.0,
+      "Rest of World": 3600.0
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Home Consoles": 5287.5,
+          "Handheld/Portable Consoles": 1646.1,
+          "Hybrid Consoles": 4271.4
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Gaming": 10031.4,
+          "Media and Entertainment": 829.8,
+          "Other Applications": 343.8
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 5340.6,
+          "Offline Retail": 5020.65,
+          "Direct-to-Consumer": 843.75
+        }
+      },
+      {
+        "dimension": "By Source",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "New Consoles": 9766.8,
+          "Officially Refurbished Consoles": 1438.2
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 20.0,
+      "assumption": 80.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 12/14 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (49%) is below the usual bar.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Total Gaming Consoles demand' driver total\"]"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\gaming-consoles\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\gaming-consoles\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\gaming-consoles",
+    "status": "ok",
+    "minutes": 8.4
+  },
+  "2B_demand_usecase_country": {
+    "setup": {
+      "scope": "This market covers the value of dedicated gaming console hardware (home and handheld/portable consoles and their first-party hardware variants) sold at wholesale/retail to end users, including new-generation and prior-generation console units. It excludes software, subscriptions, accessories, and services (e.g., games, online memberships, controllers sold separately), which are separately valued markets, and excludes PC gaming hardware, mobile gaming devices, and general-purpose computing devices. Refurbished/resold consoles are excluded from the primary market value, though they may be referenced as a secondary signal for installed-base and replacement demand. Console unit shipments and installed-base data are used as the physical volume anchor, with revenue derived from average selling prices per unit.",
+      "geography": [
+        "United States",
+        "Japan",
+        "China",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Canada",
+        "South Korea",
+        "Australia",
+        "Brazil",
+        "Mexico",
+        "Spain",
+        "Italy",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "consoles (units shipped)"
+    },
+    "use_cases": [
+      "Home TV-Connected Consoles",
+      "Handheld/Portable Consoles",
+      "Multiplayer/Online-Service-Oriented Console Purchases",
+      "Family/Shared Household Console Purchases",
+      "Enthusiast/Collector and Replacement Console Purchases"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 18569.2811,
+    "regions_usd_mn": {
+      "North America": 5355.0,
+      "Latin America": 1061.05,
+      "Europe": 3690.7811,
+      "Asia Pacific": 4863.75,
+      "Rest of World": 3598.7
+    },
+    "countries_usd_mn": {
+      "United States": 4431.0,
+      "Japan": 768.0,
+      "China": 2948.5,
+      "Germany": 927.4005,
+      "United Kingdom": 512.8506,
+      "France": 1338.75,
+      "Canada": 924.0,
+      "South Korea": 768.9,
+      "Australia": 378.35,
+      "Brazil": 463.3,
+      "Mexico": 597.75,
+      "Spain": 562.3,
+      "Italy": 349.48,
+      "Rest of World": 3598.7
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Home TV-Connected Consoles": 4475.0011,
+          "Handheld/Portable Consoles": 13.08,
+          "Multiplayer/Online-Service-Oriented Console Purchases": 5950.0,
+          "Family/Shared Household Console Purchases": 4361.6,
+          "Enthusiast/Collector and Replacement Console Purchases": 3769.6
+        }
+      },
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Home Consoles": 8782.0982,
+          "Handheld Consoles": 3358.5595,
+          "Hybrid Consoles": 6428.6234
+        }
+      },
+      {
+        "dimension": "By Generation",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Current Generation": 11205.144,
+          "Previous Generation": 5215.4191,
+          "Older Generations": 2148.718
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 10371.449,
+          "Physical Retail": 6340.9039,
+          "Direct from Manufacturer": 1856.9282
+        }
+      },
+      {
+        "dimension": "By Price Tier",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Premium": 6623.22,
+          "Mid-Range": 7211.039,
+          "Budget": 4735.0221
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 2.7,
+      "derived": 0.0,
+      "source_found_unverified": 4.0,
+      "assumption": 93.3
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 65/70 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Arcade/Gambling/Commercial Gaming Consoles (evidence_backed, confidence 70%) -- \"Gambling consoles are often used continuously, which requires PCBs with robust materials and reliable construction to withstand long hours of operation without failure.\"",
+      "[warning] low_observed_share: Only 3% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[info] stale_evidence_source: 1 driver evidence source(s) predate 2022 -- informational, worth a fresher search if this market moves quickly.",
+      "[critical] magnitude_cross_validation_discrepancy: 6 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'intensity_magnitude', 'price_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Home TV-Connected Consoles' driver total\", \"'Handheld/Portable Consoles' price\", \"'Multiplayer/Online-Service-Oriented Console Purchases' driver total\", \"'Family/Shared Household Console Purchases' driver total\"]"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\gaming-consoles\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\gaming-consoles\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\gaming-consoles",
+    "status": "ok",
+    "minutes": 43.0
+  },
+  "3_supply_side": {
+    "company_method_global_usd_mn": 99711.70787182574,
+    "evidence_method_global_usd_mn": 54550.0,
+    "top_companies_global_share": [
+      {
+        "company": "Sony Interactive Entertainment",
+        "share": 0.2131
+      },
+      {
+        "company": "Microsoft Corporation",
+        "share": 0.13
+      },
+      {
+        "company": "Foxconn Technology Group",
+        "share": 0.1003
+      },
+      {
+        "company": "Nintendo Co., Ltd.",
+        "share": 0.0701
+      },
+      {
+        "company": "Wistron Corporation",
+        "share": 0.0501
+      },
+      {
+        "company": "Pegatron Corporation",
+        "share": 0.0421
+      },
+      {
+        "company": "Inventec Corporation",
+        "share": 0.0174
+      },
+      {
+        "company": "Flex Ltd.",
+        "share": 0.0129
+      },
+      {
+        "company": "ASUSTeK Computer Inc.",
+        "share": 0.012
+      },
+      {
+        "company": "Micron Technology, Inc.",
+        "share": 0.0112
+      }
+    ],
+    "countries": [
+      "United States",
+      "Japan",
+      "China",
+      "Germany",
+      "United Kingdom",
+      "France",
+      "Canada",
+      "South Korea",
+      "Australia",
+      "Brazil",
+      "Mexico",
+      "Spain",
+      "Italy",
+      "Rest of Europe",
+      "Rest of Asia-Pacific",
+      "Rest of Latin America",
+      "Rest of Middle East & Africa"
+    ],
+    "flags": [
+      "high_gross_up: 3 countries grossed named-supplier revenue up by more than 2x for the unlisted long tail (China 2.5x, Rest of Latin America 2.5x, Rest of Middle East & Africa 2.5x) -- most of those countries' totals is an LLM coverage guess, not company revenue."
+    ],
+    "report_json": "approaches\\examples\\gaming-consoles\\3_supply_side.json",
+    "company_list_source": "vendor-intelligence report (run now): gaming_consoles_market_global.csv",
+    "vendor_intel_coverage_pct": 90.31,
+    "status": "ok",
+    "minutes": 19.7
+  },
+  "finished_at": "2026-10-09T08:35:38+00:00"
 }

@@ -219,7 +219,47 @@ def build_skeleton_via_llm(market_name: str, ev: DBEvidence, llm) -> Skeleton | 
     )
 
 
-def load_skeleton_from_db(market_name: str, cfg) -> tuple[Skeleton | None, DBEvidence | None]:
+def build_generic_skeleton(market_name: str, llm=None, definition: str = "") -> Skeleton:
+    """Skeleton for a market with no usable DB report: the standard global
+    regions plus segment dimensions proposed by the LLM. Never fails -- with
+    no LLM (or an unusable answer) it is one 'By Type' dimension holding the
+    whole market."""
+    nesting: dict[str, dict[str, list[str]]] = {}
+    if llm is not None:
+        system = (
+            "You are a market-research analyst. Propose the 2 most standard segmentation dimensions "
+            "for this market (e.g. By Product Type, By Application, By End User, By Distribution "
+            "Channel), each with 3-7 mutually exclusive top-level segments that together cover the "
+            "whole market."
+        )
+        user = (
+            f"Market: {market_name}\nScope: {definition or market_name}\n\n"
+            'Return JSON: {"dimensions": [{"title": "By ...", "segments": ["...", ...]}]}'
+        )
+        try:
+            data = llm.complete_json(system, user)
+            for entry in (data.get("dimensions") or [])[:3]:
+                title = str(entry.get("title", "")).strip()
+                segs = [str(s).strip() for s in (entry.get("segments") or []) if str(s).strip()]
+                if title and len(segs) >= 2 and title not in nesting:
+                    nesting[title if title.startswith("By ") else f"By {title}"] = {"__root__": segs[:8]}
+        except Exception:  # noqa: BLE001 - the fallback itself must not fail
+            nesting = {}
+    if not nesting:
+        nesting = {"By Type": {"__root__": [market_name]}}
+    regions = {r: list(cs) for r, cs in REGIONS.items()}
+    return Skeleton(
+        market_name=market_name,
+        geographies=[c for cs in regions.values() for c in cs],
+        regions=regions,
+        nesting=nesting,
+        priced_dimension=next(iter(nesting)),
+    )
+
+
+def load_skeleton_from_db(market_name: str, cfg, *, search_name: str | None = None,
+                          generic_fallback: bool = False,
+                          definition: str = "") -> tuple[Skeleton | None, DBEvidence | None]:
     """Fetch DB evidence and build a skeleton. Primary path: LLM schema extraction
     (robust to messy HTML). Fallback: regex HTML parser.
 
@@ -228,22 +268,31 @@ def load_skeleton_from_db(market_name: str, cfg) -> tuple[Skeleton | None, DBEvi
     substring) — this builds the ENTIRE category taxonomy, so an unverified match
     here is worse than an unverified market-size evidence brief. Same guard as
     structure_node's DB evidence fetch: verify, and on rejection retry once with a
-    genuine semantic-only lookup before giving up."""
+    genuine semantic-only lookup before giving up.
+
+    `search_name` (default: the market name) is what the DB is searched for --
+    the scope's own name when a market definition was given ("Urea" for total
+    urea). With `generic_fallback`, a market with no usable report gets
+    `build_generic_skeleton` instead of (None, ev) -- used by the Desk Research
+    CLI; the web app's segment gate and demand_topdown keep the old contract."""
     llm = None
     if cfg.is_online:
         from .llm import GenLLM  # local import to avoid a hard dependency cycle
         llm = GenLLM(cfg)
 
-    ev = fetch_market_evidence(cfg.neon_url, market_name)
-    if ev is not None and llm is not None and not verify_market_match(market_name, ev.raw_narrative, llm):
+    lookup = search_name or market_name
+    ev = fetch_market_evidence(cfg.neon_url, lookup)
+    if ev is not None and llm is not None and not verify_market_match(lookup, ev.raw_narrative, llm):
         ev = None
         try:
-            alt = fetch_market_evidence_semantic(cfg.neon_url, market_name)
-            if alt is not None and verify_market_match(market_name, alt.raw_narrative, llm):
+            alt = fetch_market_evidence_semantic(cfg.neon_url, lookup)
+            if alt is not None and verify_market_match(lookup, alt.raw_narrative, llm):
                 ev = alt
         except Exception:  # noqa: BLE001
             pass
     if ev is None or not ev.raw_segmentation:
+        if generic_fallback:
+            return build_generic_skeleton(market_name, llm, definition), None
         return None, ev
     sk = None
     if llm is not None:
@@ -255,6 +304,8 @@ def load_skeleton_from_db(market_name: str, cfg) -> tuple[Skeleton | None, DBEvi
         sk = build_skeleton_from_html(market_name, ev.raw_segmentation)
     if sk is not None:
         sk = ensure_global_geography(sk, market_name)
+    elif generic_fallback:
+        return build_generic_skeleton(market_name, llm, definition), None
     return sk, ev
 
 

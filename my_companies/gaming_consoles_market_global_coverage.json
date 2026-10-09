@@ -1,0 +1,272 @@
+{
+  "market": "Gaming Consoles Market",
+  "geography": "global",
+  "total_market_size_estimate_usd_mn": 73330.0,
+  "market_size_source": "https://www.databridgemarketresearch.com/reports/global-gaming-consoles-market",
+  "estimated_coverage_pct": 90.31,
+  "target_coverage_pct": 75.0,
+  "coverage_stop_reason": "target_reached",
+  "coverage_rounds": 0,
+  "n_companies": 117,
+  "n_manufacturers": 48,
+  "n_majors": 25,
+  "n_majors_kept": 18,
+  "runtime_seconds": 563.0,
+  "llm_calls": 235,
+  "time_budget_min": 15.0,
+  "majors": [
+    {
+      "name": "Sony Group Corporation (Sony Interactive Entertainment)",
+      "domain": "sony.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 25000.0,
+      "est_market_share_pct": 34.1,
+      "source": "https://www.databridgemarketresearch.com/reports/global-gaming-consoles-market; https://www.accio.com/business/trendy-ps5-used; https://www-news-market-us.nproxy.org/gaming-console-statistics/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Nintendo Co., Ltd.",
+      "domain": "nintendo.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 15000.0,
+      "est_market_share_pct": 20.5,
+      "source": "https://www.databridgemarketresearch.com/reports/global-gaming-consoles-market; https://www.accio.com/business/trendy-ps5-used; https://www-news-market-us.nproxy.org/gaming-console-statistics/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Microsoft Corporation (Xbox)",
+      "domain": "microsoft.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 13000.0,
+      "est_market_share_pct": 17.7,
+      "source": "https://www.databridgemarketresearch.com/reports/global-gaming-consoles-market; https://www.accio.com/business/trendy-ps5-used; https://www-news-market-us.nproxy.org/gaming-console-statistics/",
+      "kept_in_output": true
+    },
+    {
+      "name": "Valve Corporation",
+      "domain": "valvesoftware.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 2500.0,
+      "est_market_share_pct": 3.4,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "ASUSTeK Computer Inc. (ROG Ally)",
+      "domain": "asus.com",
+      "hq_country": "Taiwan",
+      "est_revenue_usd_mn": 1200.0,
+      "est_market_share_pct": 1.6,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Lenovo Group Limited (Legion Go)",
+      "domain": "lenovo.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 900.0,
+      "est_market_share_pct": 1.2,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Logitech G (Logitech International S.A.)",
+      "domain": "logitech.com",
+      "hq_country": "Switzerland",
+      "est_revenue_usd_mn": 600.0,
+      "est_market_share_pct": 0.8,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Anbernic",
+      "domain": "anbernic.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 300.0,
+      "est_market_share_pct": 0.4,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "AYANEO",
+      "domain": "ayaneo.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 250.0,
+      "est_market_share_pct": 0.3,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "GPD Holdings",
+      "domain": "gpd.hk",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 200.0,
+      "est_market_share_pct": 0.3,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Atari SA",
+      "domain": "atari.com",
+      "hq_country": "France",
+      "est_revenue_usd_mn": 150.0,
+      "est_market_share_pct": 0.2,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Evercade (Blaze Entertainment)",
+      "domain": "evercade.co.uk",
+      "hq_country": "United Kingdom",
+      "est_revenue_usd_mn": 100.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Analogue",
+      "domain": "analogue.co",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 80.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Retroid Pocket",
+      "domain": "retroidpocket.com",
+      "hq_country": "China",
+      "est_revenue_usd_mn": 70.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Panic Inc. (Playdate)",
+      "domain": "panic.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 50.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Sega (Sega Sammy Holdings)",
+      "domain": "sega.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 40.0,
+      "est_market_share_pct": 0.1,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "Bandai Namco Holdings",
+      "domain": "bandainamco.co.jp",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 30.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "Koei Tecmo Holdings",
+      "domain": "koeitecmo.co.jp",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 20.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "Konami Group",
+      "domain": "konami.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 15.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "Capcom Co., Ltd.",
+      "domain": "capcom.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 10.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "Square Enix Holdings",
+      "domain": "square-enix.com",
+      "hq_country": "Japan",
+      "est_revenue_usd_mn": 10.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": false
+    },
+    {
+      "name": "NVIDIA Corporation (Shield)",
+      "domain": "nvidia.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 10.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Amazon.com, Inc. (Fire TV / Luna)",
+      "domain": "amazon.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 5.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Google LLC (Stadia hardware)",
+      "domain": "google.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 5.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": true
+    },
+    {
+      "name": "Apple Inc. (Apple Arcade / MFi controllers)",
+      "domain": "apple.com",
+      "hq_country": "United States",
+      "est_revenue_usd_mn": 5.0,
+      "est_market_share_pct": 0.0,
+      "source": "model knowledge",
+      "kept_in_output": false
+    }
+  ],
+  "evidence_sources": [
+    "https://en.wikipedia.org/wiki/List_of_largest_video_game_companies_by_revenue",
+    "https://companiesmarketcap.com/",
+    "https://revenue.ennead.cc/revenue",
+    "https://www.playstation.com/en-us/",
+    "https://levvvel.com/statistics/",
+    "https://www.ycombinator.com/companies",
+    "https://www.bbc.com/news/articles/cx29r65ygdqo",
+    "https://www.youtube.com/",
+    "https://www.databridgemarketresearch.com/reports/global-gaming-consoles-market",
+    "https://www.accio.com/business/trendy-ps5-used",
+    "https://www.globenewswire.com/en/news-release/2020/03/12/1999520/0/en/Gaming-Consoles-Market-to-Reach-USD-51-15-Billion-By-2027-Introduction-of-Project-Scorpio-by-Microsoft-to-Aid-Growth-states-Fortune-Business-Insights.html",
+    "https://www.einpresswire.com/article/583211282/portable-gaming-consoles-market-key-players-and-growth-rate-2022",
+    "https://www.datainsightsmarket.com/reports/portable-gaming-consoles-1324339",
+    "https://www-news-market-us.nproxy.org/gaming-console-statistics/",
+    "https://www.thebusinessresearchcompany.com/report/over-the-top-devices-and-services-global-market-report",
+    "https://www.researchandmarkets.com/report/united-kingdom-game-console-market",
+    "https://www.lifewire.com/best-gaming-consoles-4154610",
+    "https://www.sourceready.com/supplier/list/best-video-game-console-manufacturers",
+    "https://techgolly.com/top-5-gaming-console-manufacturers-in-2026/",
+    "https://bobovost.github.io/room-ideas/top-gaming-console-manufacturers/",
+    "https://growthmarketreports.com/report/3d-gaming-consoles-market-global-industry-analysis",
+    "https://www.globalgrowthinsights.com/market-reports/game-consoles-market-109711",
+    "https://www.futuremarketinsights.com/reports/game-consoles-market",
+    "https://www.meticulousresearch.com/product/game-consoles-market-6090",
+    "https://www.marketreportsworld.com/market-reports/game-consoles-market-14721500"
+  ],
+  "note": "All revenue / market-share / market-size figures are ESTIMATES produced by an LLM from web search snippets and model knowledge; they are approximate and not audited financial data."
+}

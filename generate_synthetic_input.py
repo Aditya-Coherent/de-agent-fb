@@ -38,26 +38,43 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output", required=True, help="Output .xlsx path")
     p.add_argument("--cache", default="output/.gen_cache.db", help="LLM cache path")
     p.add_argument("--save-state", default=None, help="Optional JSON dump of the final graph state")
+    p.add_argument("--scope", default="",
+                   help="Optional written market definition (e.g. 'total urea, fertilizer + industrial uses'); "
+                        "cited figures are then scope-checked against it by the LLM")
     return p.parse_args()
 
 
 def main() -> int:
+    # Log lines quote web text (e.g. a narrow no-break space); a cp1252
+    # console must not crash the run on them (Cloud Computing, 2026-10-09).
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     args = parse_args()
     cfg = GenConfig.load(ROOT)
     if not cfg.is_online:
         print("ERROR: no LLM API key found in .env (DEEPSEEK_API_KEY / OPENAI_API_KEY).")
         return 2
 
+    search_name = ""
     if args.from_db or not args.skeleton:
         if not cfg.neon_url:
             print("ERROR: --from-db needs NEON_DATABASE_URL in .env")
             return 2
-        skeleton, _ev = load_skeleton_from_db(args.market, cfg)
+        search_name = args.market
+        if args.scope and cfg.is_online:
+            from me_engine.generation.cited_values import scope_search_name
+            from me_engine.generation.llm import GenLLM
+            search_name = scope_search_name(args.market, args.scope, GenLLM(cfg, cache_path=ROOT / args.cache))
+            print(f"Scope search name: {search_name}")
+        skeleton, _ev = load_skeleton_from_db(args.market, cfg, search_name=search_name,
+                                              generic_fallback=True, definition=args.scope)
         if skeleton is None:
             print(f"ERROR: could not build a DB skeleton for '{args.market}'. "
                   "Try --skeleton <reference.xlsx> instead.")
             return 2
-        print(f"Skeleton source: Neon DB segmentation tree")
+        print("Skeleton source: Neon DB segmentation tree" if _ev is not None
+              else "Skeleton source: generic (no matching DB report)")
     else:
         skeleton = load_skeleton_from_human_sheet(Path(args.skeleton), args.market) or load_skeleton(Path(args.skeleton), args.market)
         print(f"Skeleton source: reference sheet real structure ({Path(args.skeleton).name})")
@@ -66,7 +83,8 @@ def main() -> int:
           f"loop<= {cfg.max_loop_iters} reward>= {cfg.reward_threshold}")
 
     cache = ROOT / args.cache
-    state = run_generation(args.market, skeleton, cfg, cache_path=cache)
+    state = run_generation(args.market, skeleton, cfg, cache_path=cache, market_definition=args.scope,
+                           market_search_name=search_name if args.from_db or not args.skeleton else "")
 
     print("\n--- run log ---")
     for line in state.get("log", []):
@@ -88,6 +106,13 @@ def main() -> int:
             "artifacts": state.get("artifacts"),
             "reward": state.get("reward"),
             "iterations": state.get("iter"),
+            "market_size_grounded": state.get("market_size_grounded"),
+            "market_size_source": state.get("market_size_source"),
+            "market_size_unstable": state.get("market_size_unstable"),
+            "cited_anchor": state.get("cited_anchor"),
+            "quality_flags": state.get("quality_flags"),
+            "market_search_name": state.get("market_search_name"),
+            "evidence_sources": state.get("evidence_sources"),
             "log": state.get("log"),
         }
         Path(args.save_state).parent.mkdir(parents=True, exist_ok=True)

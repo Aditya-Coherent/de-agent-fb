@@ -71,7 +71,7 @@ def search_snippets_with_sources(query: str, max_results: int = 6) -> list[dict]
             domain = ""
             if url:
                 domain = url.split("//")[-1].split("/")[0].removeprefix("www.")
-            out.append({"text": text, "url": url, "domain": domain})
+            out.append({"text": text, "url": url, "domain": domain, "title": title})
     return out
 
 
@@ -90,3 +90,26 @@ def gather_with_sources(queries: list[str], per_query: int = 4, cap: int = 12) -
             if len(out) >= cap:
                 return out
     return out
+
+
+def fetch_page_text(url: str, timeout: float = 8.0, max_chars: int = 20_000) -> str:
+    """Visible text of a web page (tags stripped, first `max_chars`), for
+    cited-figure extraction. Never raises -- returns "" on any failure
+    (blocked, timeout, non-HTML)."""
+    try:
+        import html as _html
+        import re as _re
+
+        import httpx
+
+        resp = httpx.get(url, timeout=timeout, follow_redirects=True,
+                         headers={"User-Agent": "Mozilla/5.0 (compatible; DeAgent/1.0)"})
+        if resp.status_code != 200 or "html" not in resp.headers.get("content-type", "html"):
+            return ""
+        raw = _re.sub(r"(?is)<(script|style|noscript)[^>]*>.*?</\1>", " ", resp.text)
+        raw = _re.sub(r"(?i)<(br|p|li|h\d|div|tr)[^>]*>", "\n", raw)
+        text = _html.unescape(_re.sub(r"<[^>]+>", " ", raw))
+        text = _re.sub(r"[ \t\r\f\v]+", " ", text)
+        return _re.sub(r"\n\s*", "\n", text).strip()[:max_chars]
+    except Exception:  # noqa: BLE001 - never let a page fetch break generation
+        return ""

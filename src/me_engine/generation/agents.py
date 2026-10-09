@@ -8,10 +8,14 @@ agent scores the number set and drives the refinement loop.
 from __future__ import annotations
 
 import json
+import math
 import re
+from dataclasses import replace
+from statistics import median
 from typing import Any
 
 from . import segment_definition
+from .cited_values import CAGR_RE, collect_cited_values, estimate_size_range, market_tokens, outside_size_range
 from .db_source import (
     DBEvidence,
     fetch_market_evidence,
@@ -21,7 +25,7 @@ from .db_source import (
 from .llm import GenLLM
 from .quality import compute_demand_quality_flags
 from .skeleton import Skeleton
-from .web_evidence import gather
+from .web_evidence import fetch_page_text, gather, gather_with_sources
 
 
 # --------------------------------------------------------------------------- #
@@ -83,7 +87,7 @@ def _extract_cited_value_mn(cited_text: str) -> float | None:
     return number * _UNIT_TO_MN[m.group(2).lower()]
 
 
-_CAGR_RE = re.compile(r"CAGR[^0-9%]{0,40}?(\d{1,2}(?:\.\d+)?)\s*%|(\d{1,2}(?:\.\d+)?)\s*%\s*CAGR", re.IGNORECASE)
+_CAGR_RE = CAGR_RE
 _VALUE_YEAR_RE = re.compile(
     r"(?:USD|US\$|\$)\s*([\d,]+(?:\.\d+)?)\s*(trillion|billion|million|bn|mn)\b[^.;]{0,25}?\b(?:in|by)\s+(20\d\d)",
     re.IGNORECASE,
@@ -162,18 +166,22 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
     sk: Skeleton = state["skeleton"]
     llm: GenLLM = state["llm"]
     log = state.setdefault("log", [])
+    definition = str(state.get("market_definition") or "")
+    # With a written scope the DB and the web are searched for the scope's own
+    # name ("Urea" for total urea), not the market label ("Urea Fertilizer").
+    lookup = str(state.get("market_search_name") or sk.market_name)
     db_ev = None
     if cfg.neon_url:
         try:
-            db_ev = fetch_market_evidence(cfg.neon_url, sk.market_name)
+            db_ev = fetch_market_evidence(cfg.neon_url, lookup)
         except Exception as exc:  # noqa: BLE001
             log.append(f"Could not reach the research database: {exc}")
 
         if db_ev is not None and cfg.is_online:
             try:
-                if not verify_market_match(sk.market_name, db_ev.raw_narrative, llm):
+                if not verify_market_match(lookup, db_ev.raw_narrative, llm):
                     log.append(
-                        f"Past research didn't match '{sk.market_name}' closely enough -- "
+                        f"Past research didn't match '{lookup}' closely enough -- "
                         "trying a meaning-based search instead of a keyword match"
                     )
                     db_ev = None
@@ -181,8 +189,8 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
                     # matches an unrelated report's category tag. Before giving
                     # up, retry with a genuine meaning-based lookup.
                     try:
-                        alt = fetch_market_evidence_semantic(cfg.neon_url, sk.market_name)
-                        if alt is not None and verify_market_match(sk.market_name, alt.raw_narrative, llm):
+                        alt = fetch_market_evidence_semantic(cfg.neon_url, lookup)
+                        if alt is not None and verify_market_match(lookup, alt.raw_narrative, llm):
                             db_ev = alt
                             log.append(f"Found a better match via meaning-based search: '{alt.keyword}'")
                         elif alt is not None:
@@ -193,17 +201,39 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
                 log.append(f"Could not double-check the research match, keeping it anyway: {exc}")
 
     snippets: list[str] = []
+    web_results: list[dict] = []
     dim_snippets: dict[str, list[str]] = {}
     if cfg.enable_web:
         queries = [
-            f"{sk.market_name} size 2025 2033 CAGR forecast",
-            f"{sk.market_name} regional share North America Europe Asia Pacific",
-            f"{sk.market_name} market segmentation components pricing",
+            f"{lookup} size 2025 2033 CAGR forecast",
+            f"{lookup} regional share North America Europe Asia Pacific",
+            f"{lookup} market segmentation components pricing",
         ]
         try:
-            snippets = gather(queries)
+            web_results = gather_with_sources(queries)
         except Exception as exc:  # noqa: BLE001
             log.append(f"Could not fetch live web results: {exc}")
+        # Queries aimed at a stated market value, kept with their URLs and
+        # titles so each cited figure can be traced to a source (cited_values.py).
+        # Quoted phrases matter: unquoted, ddgs returned mostly unrelated
+        # market reports (Televisions: dining tables, power banks, tickers).
+        name = re.sub(r"(?i)^global\s+|\s+market$", "", lookup.strip())
+        singular = " ".join(market_tokens(name))
+        size_queries = [f'"{name.lower()} market" size 2025 billion']
+        if singular and singular != name.lower():
+            size_queries.append(f'"{singular} market" size valued 2024 2025')
+        size_queries.append(f"global {name} market size 2025 USD billion")
+        try:
+            size_results = gather_with_sources(size_queries, per_query=8, cap=18)
+        except Exception as exc:  # noqa: BLE001
+            size_results = []
+            log.append(f"Could not fetch market-size web results: {exc}")
+        seen = {r["text"][:80].lower() for r in web_results}
+        for item in size_results:
+            if item["text"][:80].lower() not in seen:
+                seen.add(item["text"][:80].lower())
+                web_results.append(item)
+        snippets = [r["text"] for r in web_results]
 
         # Per-dimension queries: the broad/flat dimensions (many near-equal
         # segments) are the ones the shares agent gets most wrong when it only
@@ -211,9 +241,9 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
         for dim, tree in sk.nesting.items():
             root = tree.get("__root__", [])
             label = dim[3:] if dim.startswith("By ") else dim
-            dim_queries = [f"{sk.market_name} {label} share breakdown percentage"]
+            dim_queries = [f"{lookup} {label} share breakdown percentage"]
             if len(root) >= 5:
-                dim_queries.append(f"{sk.market_name} {', '.join(root[:4])} market share")
+                dim_queries.append(f"{lookup} {', '.join(root[:4])} market share")
             try:
                 dim_snippets[dim] = gather(dim_queries, per_query=4, cap=6)
             except Exception as exc:  # noqa: BLE001
@@ -224,7 +254,121 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
         f"Evidence gathered: {db_note}, {len(snippets)} live web results, "
         f"{sum(len(v) for v in dim_snippets.values())} category-specific web results"
     )
-    return {"db_evidence": db_ev, "web_snippets": snippets, "dim_snippets": dim_snippets, "log": log}
+
+    size_range = None
+    if getattr(cfg, "size_check", False) and cfg.is_online:
+        size_range = estimate_size_range(lookup, definition, llm)
+        if size_range:
+            log.append(
+                f"Size check (units x price): {size_range['units_low']:,.0f}-{size_range['units_high']:,.0f} "
+                f"{size_range['unit'] or 'units'} x ${size_range['asp_low_usd']:,.0f}-${size_range['asp_high_usd']:,.0f} "
+                f"= ${size_range['low_mn']:,.0f}M-${size_range['high_mn']:,.0f}M"
+            )
+        else:
+            log.append("Size check skipped -- no usable units x price estimate")
+
+    cited, sources = _cited_anchor(state, db_ev, web_results, lookup, size_range,
+                                   fetch_pages=bool(getattr(cfg, "fetch_pages", False)))
+    # Rejected figures must never reach the market-size LLM: mask them in the
+    # evidence every later prompt is built from.
+    masks = _figure_masks(cited)
+    if db_ev is not None and masks:
+        db_ev = replace(db_ev, raw_narrative=_mask_text(db_ev.raw_narrative, masks),
+                        summary_text=_mask_text(db_ev.summary_text, masks))
+    snippets = [_mask_text(s, masks) for s in snippets]
+    dim_snippets = {d: [_mask_text(s, masks) for s in v] for d, v in dim_snippets.items()}
+    return {
+        "db_evidence": db_ev, "web_snippets": snippets, "dim_snippets": dim_snippets, "log": log,
+        "web_sources": web_results, "cited_anchor": cited, "evidence_sources": sources,
+    }
+
+
+_MAX_PAGES = 4
+
+
+def _cited_anchor(state: dict[str, Any], db_ev: DBEvidence | None, web_results: list[dict], lookup: str,
+                  size_range: dict[str, Any] | None, *, fetch_pages: bool) -> tuple[dict[str, Any], list[list[str]]]:
+    """Consensus 2025 market value from every cited figure in the DB report and
+    the web results (snippet + page text per URL, with the page title). Logs
+    what was accepted and why figures were rejected for scope or magnitude.
+    Also returns the (label, text, title) sources, saved for offline replay."""
+    cfg = state.get("config")
+    log = state.setdefault("log", [])
+    sources: list[list[str]] = []
+    if db_ev is not None and db_ev.raw_narrative:
+        sources.append([f"CMI report DB: {db_ev.keyword}", db_ev.raw_narrative, db_ev.keyword])
+    by_url: dict[str, list[str]] = {}
+    titles: dict[str, str] = {}
+    for item in web_results:
+        key = item.get("url") or item.get("domain") or "web"
+        by_url.setdefault(key, []).append(item["text"])
+        titles.setdefault(key, item.get("title") or "")
+    fetched = 0
+    wanted = market_tokens(lookup)
+    for url, texts in by_url.items():
+        joined = " ".join(texts).lower()
+        relevant = "market" in joined and all(t in joined for t in wanted)
+        if (fetch_pages and relevant and fetched < _MAX_PAGES and url.startswith("http")
+                and not url.lower().endswith(".pdf")):
+            page = fetch_page_text(url)
+            fetched += 1
+            if page:
+                texts = texts + [page]
+        sources.append([url, "\n".join(texts), titles.get(url, "")])
+
+    llm = state.get("llm")
+    anchor = collect_cited_values(
+        [tuple(s) for s in sources], lookup, definition=str(state.get("market_definition") or ""),
+        llm=llm if getattr(cfg, "is_online", False) else None,
+        size_range=size_range,
+        title_subject=getattr(cfg, "title_subject", True),
+        source_tiers=getattr(cfg, "source_tiers", True),
+        weak_consensus=getattr(cfg, "weak_consensus", False),
+    )
+    for r in anchor.rejected:
+        if r.reason.startswith(("scope:", "magnitude:")):
+            log.append(f"Rejected cited figure {r.raw_text} ({r.source}) -- {r.reason}")
+    if anchor.grounded:
+        log.append(f"Cited market size: {anchor.describe()}")
+        if anchor.disputed:
+            log.append("Cited values are disputed (a single value, or a spread above 2x)")
+    else:
+        log.append(
+            f"No usable cited market-size figure ({len(anchor.rejected)} rejected, "
+            f"{len(anchor.corroborating)} tier-2 only)"
+        )
+    return anchor.to_dict(), sources
+
+
+_MASK_LABELS = (
+    ("scope:", "different scope"), ("magnitude:", "implausible size"), ("outlier:", "outlier"),
+    ("forecast", "forecast year"), ("year ", "other year"), ("no year", "no year stated"),
+    ("value for a part", "segment or region"), ("incremental", "growth increment"),
+)
+
+
+def _figure_masks(cited: dict[str, Any]) -> dict[str, str]:
+    """raw_text -> replacement for every rejected figure that isn't also the
+    text of an accepted or corroborating one."""
+    keep = {v["raw_text"] for v in (cited.get("accepted") or []) + (cited.get("corroborating") or [])}
+    masks: dict[str, str] = {}
+    for v in cited.get("rejected") or []:
+        raw = v.get("raw_text") or ""
+        reason = str(v.get("reason", ""))
+        if not raw or raw in keep or raw in masks or reason.startswith(
+                ("another figure from the same source", "same figure as")):
+            continue
+        label = next((lbl for key, lbl in _MASK_LABELS if reason.startswith(key)), "not used")
+        masks[raw] = f"[figure removed: {label}]"
+    return masks
+
+
+def _mask_text(text: str, masks: dict[str, str]) -> str:
+    if not text or not masks:
+        return text
+    for raw in sorted(masks, key=len, reverse=True):
+        text = re.sub(rf"(?<![\w.$]){re.escape(raw)}(?![\w])", masks[raw], text)
+    return text
 
 
 def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -258,14 +402,36 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
             "Apply the critique concretely — adjust the named number(s) in the stated "
             "direction; do not just return the same numbers."
         )
+    cited_anchor = state.get("cited_anchor") or {}
+    consensus = cited_anchor.get("value_2025_mn")
     user = (
-        f"Market: {sk.market_name}\nRegions: {regions}\n\n{_evidence_brief(state)}{refine}\n\n"
+        f"Market: {sk.market_name}\nRegions: {regions}\n\n{_evidence_brief(state)}"
+        f"{_cited_block(cited_anchor)}{refine}\n\n"
         "global_value_2025 is in US$ MILLIONS (e.g. USD 15.2 billion -> 15200; USD 850 million -> 850).\n"
         'Return JSON: {"global_value_2025": number, "global_cagr": number, "grounded": <true|false>, '
         '"cited_figure": "<the real figure you grounded on, or empty string if none>", '
         '"regions": {"<region>": {"value_share": number, "cagr": number}}}'
     )
     data = llm.complete_json(system, user)
+    # Without a cited consensus, an answer equal to a figure we rejected (e.g.
+    # the scoped urea run returned 32,710 = the fertilizer-only CMI figure) is
+    # discarded and re-asked with that figure named.
+    for _ in range(_MAX_REASKS):
+        if consensus:
+            break
+        hit = _matches_rejected(data.get("global_value_2025"), cited_anchor)
+        if hit is None:
+            break
+        state.setdefault("log", []).append(
+            f"Discarded an answer of ${float(data.get('global_value_2025')):,.0f}M -- it equals the rejected figure "
+            f"{hit['raw_text']} ({hit['reason'][:80]}); asking again"
+        )
+        user += (
+            f"\n\nYOUR PREVIOUS ANSWER ({data.get('global_value_2025')}) equals a REJECTED figure "
+            f"({hit['raw_text']}: {hit['reason'][:120]}). It does not describe this market's scope. "
+            "Estimate the market for the stated scope instead."
+        )
+        data = llm.complete_json(system, user)
     regional_raw = data.get("regions", {}) or {}
     shares = {r: float(regional_raw.get(r, {}).get("value_share", 0.0) or 0.0) for r in regions}
     shares = _normalize(shares)
@@ -317,14 +483,96 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
             correction_note += f" [value ${global_anchor:,.0f}M reset to {why}]"
             global_anchor = round(target, 1)
 
-    note = (f"grounded on: {cited}" if grounded and cited else "no cited figure found — ungrounded estimate") + correction_note
+    # Grounded means backed by a cited figure (source + number) we can find in
+    # the evidence ourselves -- not just the LLM saying so.
+    if consensus:
+        source = f"cited figures: {_describe_anchor(cited_anchor)}"
+        if abs(global_anchor - consensus) / consensus > 0.005:
+            correction_note = f" [value ${global_anchor:,.0f}M reset to cited consensus]"
+        else:
+            correction_note = ""
+        global_anchor = round(float(consensus), 1)
+        if cited_anchor.get("cagr") and abs(global_cagr - cited_anchor["cagr"]) > 0.005:
+            correction_note += f" [CAGR {global_cagr:.1%} reset to cited {cited_anchor['cagr']:.1%}]"
+            global_cagr = round(float(cited_anchor["cagr"]), 4)
+        grounded = True
+        note = f"grounded on {source}" + correction_note
+    else:
+        verified = grounded and _citation_verified(cited, state)
+        if grounded and not verified:
+            correction_note += " [LLM-cited figure not found in the evidence or rejected for scope -- treated as ungrounded]"
+        source = f"LLM-cited evidence figure: {cited}" if verified else ""
+        note = (f"grounded on: {cited}" if verified and cited else "no cited figure found — ungrounded estimate") + correction_note
+        grounded = verified
     state.setdefault("log", []).append(
         f"Estimated total market size: ${global_anchor:,.0f}M for 2025, growing {global_cagr:.1%} per year ({note})"
     )
     return {
         "regional": regional, "global_anchor_2025": global_anchor, "global_cagr": global_cagr,
-        "market_size_grounded": grounded,
+        "market_size_grounded": grounded, "market_size_source": source,
     }
+
+
+_MAX_REASKS = 2
+
+
+def _matches_rejected(value: Any, cited_anchor: dict[str, Any]) -> dict[str, Any] | None:
+    """The rejected figure an LLM answer equals within +/-1% (as stated or
+    moved to 2025), if any."""
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None
+    if v <= 0:
+        return None
+    for r in cited_anchor.get("rejected") or []:
+        reason = str(r.get("reason", ""))
+        if reason.startswith(("another figure from the same source", "same figure as")):
+            continue  # bookkeeping duplicates, not figures judged wrong
+        for ref in (r.get("value_mn"), r.get("value_2025_mn")):
+            if ref and abs(v - float(ref)) <= 0.01 * float(ref):
+                return r
+    return None
+
+
+def _describe_anchor(cited_anchor: dict[str, Any]) -> str:
+    parts = "; ".join(
+        f"{v['source']}: {v['raw_text']} ({v['year']})" for v in cited_anchor.get("accepted", [])
+    )
+    return f"{cited_anchor.get('method')} = ${float(cited_anchor['value_2025_mn']):,.0f}M [{parts}]"
+
+
+def _cited_block(cited_anchor: dict[str, Any]) -> str:
+    """The pre-extracted cited figures the LLM must anchor to, as a prompt
+    block. Rejected figures are never shown (they are also masked out of the
+    evidence brief): naming them, even as "do not use", put them in reach."""
+    accepted = cited_anchor.get("accepted") or []
+    if not accepted:
+        return ""
+    lines = ["\n\nCITED MARKET-SIZE FIGURES (extracted from the evidence, converted to 2025 US$ Mn):"]
+    for v in accepted:
+        lines.append(f"- {v['source']}: {v['raw_text']} for {v['year']} -> {v['value_2025_mn']:,.0f} (2025)")
+    if cited_anchor.get("value_2025_mn"):
+        lines.append(
+            f"CONSENSUS ANCHOR ({cited_anchor.get('method')}): {float(cited_anchor['value_2025_mn']):,.0f}. "
+            "global_value_2025 MUST equal this anchor; set grounded=true and cite these figures."
+        )
+    return "\n".join(lines)
+
+
+def _citation_verified(cited: str, state: dict[str, Any]) -> bool:
+    """True when the LLM's cited figure is a number that actually appears in
+    the evidence and was not rejected for scope."""
+    value = _extract_cited_value_mn(cited)
+    if not value:
+        return False
+    rejected = [
+        float(v["value_mn"]) for v in (state.get("cited_anchor") or {}).get("rejected") or []
+        if str(v.get("reason", "")).startswith("scope:")
+    ]
+    if any(abs(value - r) <= 0.01 * r for r in rejected):
+        return False
+    return any(abs(value - e) <= 0.01 * e for e in _evidence_values_mn(state))
 
 
 def _shares_global(state, sk, llm, regions, critique, prior):
@@ -534,15 +782,46 @@ def finalize_node(state: dict[str, Any]) -> dict[str, Any]:
     the reward loop (see reward_node) — a later, worse-scoring iteration should
     not overwrite an earlier, better one for any of them.
     """
-    best = state.get("best_state")
-    best_reward = float(state.get("best_reward", -1.0))
+    log = state.setdefault("log", [])
+    history = state.get("pass_history") or []
     cur_reward = float(state.get("reward", -1.0))
     update: dict[str, Any] = {}
-    if best is not None and best_reward > cur_reward:
-        state.setdefault("log", []).append(
-            f"Kept the best pass from earlier -- it scored higher ({best_reward:.0%} vs {cur_reward:.0%})"
-        )
-        update = {**best, "reward": best_reward}
+    if history:
+        choice = select_best_pass(history)
+        chosen = history[choice["index"]]
+        last = history[-1]
+        if choice["index"] != len(history) - 1:
+            if chosen["reward"] > last["reward"]:
+                log.append(
+                    f"Kept the best pass from earlier -- it scored higher ({chosen['reward']:.0%} vs {last['reward']:.0%})"
+                )
+            elif chosen["grounded"] and not last["grounded"]:
+                log.append(
+                    f"Kept pass {chosen['iter']} -- its market size is backed by a cited figure "
+                    f"(the last pass was not)"
+                )
+            else:
+                log.append(f"Kept pass {chosen['iter']} -- its market size is closest to the median of all passes")
+            update = {**chosen["snapshot"], "reward": chosen["reward"]}
+        if choice["unstable"]:
+            vals = ", ".join(f"${v:,.0f}M" for v in choice["values"])
+            final_value = choice["anchor_override"] or chosen["global_anchor_2025"]
+            log.append(
+                f"Market size was unstable across passes ({vals}) -- used the median ${final_value:,.0f}M"
+            )
+            update.setdefault("reward", chosen["reward"])
+            update["market_size_unstable"] = {"values": choice["values"], "median": final_value}
+            if choice["anchor_override"] is not None:
+                update["global_anchor_2025"] = choice["anchor_override"]
+                update["market_size_source"] = "median of ungrounded estimates across passes"
+    else:
+        best = state.get("best_state")
+        best_reward = float(state.get("best_reward", -1.0))
+        if best is not None and best_reward > cur_reward:
+            log.append(
+                f"Kept the best pass from earlier -- it scored higher ({best_reward:.0%} vs {cur_reward:.0%})"
+            )
+            update = {**best, "reward": best_reward}
 
     flags = compute_demand_quality_flags({**state, **update})
     if flags:
@@ -750,35 +1029,84 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
         state.setdefault("log", []).append(f"Reviewer could not evaluate this pass: {exc}")
         dim_score, market_score, asp_score = {}, None, None
 
-    reward = round(0.4 * consistency + 0.6 * plaus, 4)
+    # An ungrounded market size is penalised, so a self-consistent pass built on
+    # a guessed total cannot outscore one built on a cited figure.
+    grounded = state.get("market_size_grounded") is True
+    penalty = 0.0 if grounded else UNGROUNDED_PENALTY
+    reward = round(max(0.0, 0.4 * consistency + 0.6 * plaus - penalty), 4)
+    if not grounded:
+        market_crit = " ".join(x for x in [
+            market_crit, "The global market size is not backed by any cited figure; anchor it to a cited value if the evidence has one.",
+        ] if x)
     # global critique string (consistency problems + regional note) as a fallback
     fallback = "; ".join(problems[:4])
     critique = " | ".join(x for x in [fallback, reg_crit] if x)
 
-    # keep-best across iterations — snapshot EVERYTHING the loop refines, not
-    # just shares, so finalize can restore the best full state.
-    best_reward = float(state.get("best_reward", -1.0))
+    # Every pass is kept (snapshot of EVERYTHING the loop refines, not just
+    # shares) so finalize can pick by groundedness first, then reward.
+    snapshot = {
+        "shares": shares,
+        "regional": regional,
+        "global_anchor_2025": state.get("global_anchor_2025"),
+        "global_cagr": state.get("global_cagr"),
+        "market_size_grounded": grounded,
+        "market_size_source": state.get("market_size_source", ""),
+        "geo": state.get("geo"),
+        "asp": state.get("asp"),
+        "dim_score": dim_score,
+        "market_score": market_score,
+        "asp_score": asp_score,
+    }
+    history = list(state.get("pass_history") or []) + [{
+        "iter": it, "reward": reward, "grounded": grounded,
+        "global_anchor_2025": state.get("global_anchor_2025"), "snapshot": snapshot,
+    }]
+    choice = select_best_pass(history)
+    best = history[choice["index"]]
     update = {
         "reward": reward, "critique": critique, "dim_critique": dim_critique,
         "market_critique": market_crit, "asp_critique": asp_crit, "iter": it,
         "dim_score": dim_score, "market_score": market_score, "asp_score": asp_score,
+        "pass_history": history, "best_reward": best["reward"], "best_state": best["snapshot"],
     }
-    if reward > best_reward:
-        update["best_reward"] = reward
-        update["best_state"] = {
-            "shares": shares,
-            "regional": regional,
-            "global_anchor_2025": state.get("global_anchor_2025"),
-            "global_cagr": state.get("global_cagr"),
-            "market_size_grounded": state.get("market_size_grounded"),
-            "geo": state.get("geo"),
-            "asp": state.get("asp"),
-            "dim_score": dim_score,
-            "market_score": market_score,
-            "asp_score": asp_score,
-        }
     state.setdefault("log", []).append(
         f"Review pass {it}: confidence {reward:.0%} (consistency {consistency:.0%}, "
-        f"plausibility {plaus:.0%}) -- best so far: {max(best_reward, reward):.0%}"
+        f"plausibility {plaus:.0%}{'' if grounded else f', -{penalty:.0%} ungrounded market size'}) "
+        f"-- best so far: {best['reward']:.0%}"
     )
     return update
+
+
+UNGROUNDED_PENALTY = 0.15
+UNSTABLE_RATIO = 2.0
+
+
+def select_best_pass(history: list[dict[str, Any]]) -> dict[str, Any]:
+    """Pick the pass finalize should keep.
+
+    A pass whose market size is grounded in a cited figure always beats an
+    ungrounded one; reward only breaks ties within each group. When the
+    ungrounded values differ by more than 2x across passes (Televisions gave
+    7.8 Bn, 258 Bn, 245 Bn, 245 Bn), the outlier is never chosen: the median
+    of the ungrounded values becomes the market size, carried by the pass
+    closest to it.
+
+    Returns {"index", "anchor_override" (float | None), "unstable" (bool),
+    "values" (ungrounded values seen)}.
+    """
+    grounded = [i for i, p in enumerate(history) if p.get("grounded")]
+    if grounded:
+        idx = max(grounded, key=lambda i: (history[i]["reward"], -i))
+        return {"index": idx, "anchor_override": None, "unstable": False, "values": []}
+    values = [float(p.get("global_anchor_2025") or 0.0) for p in history]
+    positive = [v for v in values if v > 0]
+    if len(positive) >= 2 and max(positive) / min(positive) > UNSTABLE_RATIO:
+        med = median(positive)
+        idx = min(
+            (i for i, v in enumerate(values) if v > 0),
+            key=lambda i: (abs(math.log(values[i] / med)), -history[i]["reward"], i),
+        )
+        override = None if abs(values[idx] - med) <= 1e-9 * med else round(med, 1)
+        return {"index": idx, "anchor_override": override, "unstable": True, "values": values}
+    idx = max(range(len(history)), key=lambda i: (history[i]["reward"], -i))
+    return {"index": idx, "anchor_override": None, "unstable": False, "values": values}

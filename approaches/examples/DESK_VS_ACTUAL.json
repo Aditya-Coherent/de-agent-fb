@@ -1,0 +1,349 @@
+[
+  {
+    "label": "Smartphones",
+    "actual": 585630.0,
+    "before": {
+      "value": 557000.0,
+      "grounded": true,
+      "source": "grounded on: Data Bridge Market Research: USD 520.95 Billion in 2024, USD 881.79 Billion by 2032, CAGR 6.80% (2024-2032); second report: USD 527,215.06 Million "
+    },
+    "after": {},
+    "before_score": {
+      "pct_error": -0.04888752283865239,
+      "in_published_range": true,
+      "published_range": [
+        537620.0,
+        598920.0
+      ]
+    },
+    "after_score": {
+      "pct_error": null,
+      "in_published_range": null
+    }
+  },
+  {
+    "label": "Watches",
+    "actual": 81300.0,
+    "before": {
+      "value": 69100.0,
+      "grounded": true,
+      "source": "grounded on: USD 69.1 billion in 2025 (Watches Market Size, Share & Trends | Industry Report, 2033)"
+    },
+    "after": {
+      "value": 120050.0,
+      "grounded": true,
+      "source": "cited figures: single cited value = $120,050M [https://www.maximizemarketresearch.com/market-report/watches-market/199565/: USD 120.05 billion (2025)]",
+      "cited_method": "single cited value",
+      "cited_sources": [
+        "https://www.maximizemarketresearch.com/market-report/watches-market/199565/"
+      ],
+      "scope_rejections": [
+        "USD 7.14 Billion (https://www.expertmarketresearch.com/reports/india-traditional-and-connected-watches-market): scope: different/narrower scope: 'connected watches' adds ['connected']",
+        "USD 100 billion (https://www.expertmarketresearch.com/reports/india-traditional-and-connected-watches-market): scope: no market named next to the value",
+        "USD 0.4 Billion (https://deepmarketinsights.com/vista/insights/waterproof-watches-market/nordic): scope: regional figure (nordic), not global",
+        "USD 0.4 Billion (https://deepmarketinsights.com/vista/insights/waterproof-watches-market/nordic): scope: regional figure (nordic), not global"
+      ],
+      "quality_flags": [],
+      "scope": ""
+    },
+    "before_score": {
+      "pct_error": -0.15006150061500614,
+      "in_published_range": false,
+      "published_range": [
+        78800.0,
+        124500.0
+      ]
+    },
+    "after_score": {
+      "pct_error": 0.47662976629766296,
+      "in_published_range": true,
+      "published_range": [
+        78800.0,
+        124500.0
+      ]
+    }
+  },
+  {
+    "label": "Smartwatches",
+    "actual": 38000.0,
+    "before": {
+      "value": 42000.0,
+      "grounded": true,
+      "source": "grounded on: Smartwatches Market Size, Share 2035 | CAGR 13.2% [CAGR 14.5% reset to cited 13.2%]"
+    },
+    "after": {
+      "value": 42970.8,
+      "grounded": true,
+      "source": "cited figures: median of 6 cited values = $42,971M [https://www.syndicatemarketresearch.com/market-analysis/smartwatches-market.html: USD 37.61 Billion (2025); https://www.verifiedmarketreports.com/product/smartwatches-market/: USD 50.5 Billion (2024); https://www.imarcgroup.com/smartwatch-market: USD 62.3 Billion (2025); https://www.fortunebusinessinsights.com/smartwatch-market-106625: USD 38.53 billion (2025); https://www.linkedin.com/pulse/smartwatch-market-size-industry-analysis-share-forecast-2034-6sacf: USD 40.51 billion (2024); https://www.researchandmarkets.com/reports/6121767/smartwatches-market-global-forecast: USD 32.54 billion (2025)]",
+      "cited_method": "median of 6 cited values",
+      "cited_sources": [
+        "https://www.syndicatemarketresearch.com/market-analysis/smartwatches-market.html",
+        "https://www.verifiedmarketreports.com/product/smartwatches-market/",
+        "https://www.imarcgroup.com/smartwatch-market",
+        "https://www.fortunebusinessinsights.com/smartwatch-market-106625",
+        "https://www.linkedin.com/pulse/smartwatch-market-size-industry-analysis-share-forecast-2034-6sacf",
+        "https://www.researchandmarkets.com/reports/6121767/smartwatches-market-global-forecast"
+      ],
+      "scope_rejections": [
+        "USD 14.31 billion (https://semiconductorinsight.com/report/smartwatches-market/): scope: no market named next to the value",
+        "USD 14.31 billion (https://semiconductorinsight.com/report/smartwatches-market/): scope: no market named next to the value",
+        "USD 34.73 Billion (https://www.syndicatemarketresearch.com/market-analysis/smartwatches-market.html): scope: no market named next to the value",
+        "USD 44.28 billion (https://www.fortunebusinessinsights.com/smartwatch-market-106625): scope: no market named next to the value",
+        "US$ 48.4 billion (https://www.persistencemarketresearch.com/market-research/smart-watch-market.asp): scope: different/narrower scope: '2033.The smartwatch' adds ['2033', 'the']"
+      ],
+      "quality_flags": [],
+      "scope": ""
+    },
+    "before_score": {
+      "pct_error": 0.10526315789473684,
+      "in_published_range": false,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    },
+    "after_score": {
+      "pct_error": 0.13081052631578954,
+      "in_published_range": false,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    }
+  },
+  {
+    "label": "Televisions",
+    "actual": 64355.0,
+    "before": {
+      "value": 7800.0,
+      "grounded": false,
+      "source": "no cited figure found — ungrounded estimate"
+    },
+    "after": {
+      "value": 393330.0,
+      "grounded": true,
+      "source": "cited figures: median of 3 cited values = $393,330M [https://www.thebusinessresearchcompany.com/report/televisions-global-market-report: $164.6 billion (2025); https://www.researchandmarkets.com/reports/6083173/televisions-market-global-forecast: USD 393.33 billion (2025); https://www.syndicatemarketresearch.com/market-analysis/televisions-market.html: USD 396.99 Billion (2024)]",
+      "cited_method": "median of 3 cited values",
+      "cited_sources": [
+        "https://www.thebusinessresearchcompany.com/report/televisions-global-market-report",
+        "https://www.researchandmarkets.com/reports/6083173/televisions-market-global-forecast",
+        "https://www.syndicatemarketresearch.com/market-analysis/televisions-market.html"
+      ],
+      "scope_rejections": [
+        "USD 10.32 Bn (CMI report DB: Curved Televisions Market): scope: different/narrower scope: 'curved televisions' adds ['curved']",
+        "$164.6 billion (https://www.thebusinessresearchcompany.com/report/televisions-global-market-report): scope: no market named next to the value",
+        "$169.02 billion (https://www.thebusinessresearchcompany.com/report/televisions-global-market-report): scope: no market named next to the value",
+        "$164.6 billion (https://www.thebusinessresearchcompany.com/report/televisions-global-market-report): scope: no market named next to the value",
+        "$169.02 billion (https://www.thebusinessresearchcompany.com/report/televisions-global-market-report): scope: no market named next to the value",
+        "$101.2 billion (https://dataintelo.com/report/global-lcd-televisions-market): scope: no market named next to the value",
+        "$101.2 billion (https://dataintelo.com/report/global-lcd-televisions-market): scope: no market named next to the value",
+        "$101.2 billion (https://dataintelo.com/report/global-lcd-televisions-market): scope: different/narrower scope: 'LCD televisions' adds ['lcd']",
+        "$28.8 billion (https://dataintelo.com/report/global-lcd-televisions-market): scope: no market named next to the value",
+        "USD 11.44 billion (https://www.databridgemarketresearch.com/reports/global-curved-televisions-market): scope: different/narrower scope: 'curved televisions' adds ['curved']",
+        "USD 3.78 billion (https://www.themarketintelligence.com/market-reports/bathroom-television-market-2504): scope: different/narrower scope: 'Bathroom Television' adds ['bathroom']",
+        "USD 3.87 billion (https://www.themarketintelligence.com/market-reports/bathroom-television-market-2504): scope: different/narrower scope: 'Bathroom Television' adds ['bathroom']",
+        "USD 4.76 Billion (https://linktr.ee/robertmarketresearcher): scope: regional figure (mexico), not global"
+      ],
+      "quality_flags": [
+        "low_confidence"
+      ],
+      "scope": ""
+    },
+    "before_score": {
+      "pct_error": -0.8787972962473778,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    },
+    "after_score": {
+      "pct_error": 5.1118794188485746,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    }
+  },
+  {
+    "label": "Olive Oil",
+    "actual": 15700.0,
+    "before": {
+      "value": 14615.4,
+      "grounded": false,
+      "source": "no cited figure found — ungrounded estimate"
+    },
+    "after": {
+      "value": 17552.9,
+      "grounded": true,
+      "source": "cited figures: single cited value = $17,553M [https://www.tunisiadailysun.com/article/921246989-olive-oil-market-set-for-steady-expansion-as-health-trends-boost-global-demand: US$ 18.3 billion (2026)]",
+      "cited_method": "single cited value",
+      "cited_sources": [
+        "https://www.tunisiadailysun.com/article/921246989-olive-oil-market-set-for-steady-expansion-as-health-trends-boost-global-demand"
+      ],
+      "scope_rejections": [
+        "USD 226.52 Million (https://deepmarketinsights.com/vista/insights/olive-oil-market/nigeria): scope: regional figure (nigeria), not global",
+        "USD 231.63 billion (https://www.fortunebusinessinsights.com/cooking-oil-market-106391): scope: no market named next to the value",
+        "USD 133.88 billion (https://www.fortunebusinessinsights.com/cooking-oil-market-106391): scope: no market named next to the value",
+        "USD 143.67 billion (https://www.fortunebusinessinsights.com/cooking-oil-market-106391): scope: no market named next to the value",
+        "USD 4.40 Billion (https://www.maximizemarketresearch.com/market-report/table-olives-market/189443/): scope: different/narrower scope: 'Table Olives' adds ['table']",
+        "USD 4.79 billion (https://www.pinterest.com/pin/morocco-argan-oil-market-size-by-type-2014-2025-usd-million--669699407072650784/): scope: different/narrower scope: 'Sesame Oil' adds ['sesame']"
+      ],
+      "quality_flags": [],
+      "scope": ""
+    },
+    "before_score": {
+      "pct_error": -0.06908280254777073,
+      "in_published_range": true,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    },
+    "after_score": {
+      "pct_error": 0.11801910828025487,
+      "in_published_range": true,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    }
+  },
+  {
+    "label": "Disposable Medical Gloves",
+    "actual": 13800.0,
+    "before": {
+      "value": 15249.5,
+      "grounded": false,
+      "source": "no cited figure found — ungrounded estimate"
+    },
+    "after": {
+      "value": 8035.1,
+      "grounded": true,
+      "source": "cited figures: median of 4 cited values = $8,035M [https://www.valuemarketresearch.com/report/medical-gloves-market: USD 6.19 Billion (2025); https://www.skyquestt.com/report/medical-gloves-market: $9.16 billion (2025); https://www.einnews.com/pr_news/841835066/disposable-medical-gloves-market-boosted-by-infection-risks-eco-friendly-solutions-healthcare-infrastructure-growth: USD 6.37B (2024); https://www.sphericalinsights.com/reports/disposable-medical-glove-market: USD 15.86 billion (2025)]",
+      "cited_method": "median of 4 cited values",
+      "cited_sources": [
+        "https://www.valuemarketresearch.com/report/medical-gloves-market",
+        "https://www.skyquestt.com/report/medical-gloves-market",
+        "https://www.einnews.com/pr_news/841835066/disposable-medical-gloves-market-boosted-by-infection-risks-eco-friendly-solutions-healthcare-infrastructure-growth",
+        "https://www.sphericalinsights.com/reports/disposable-medical-glove-market"
+      ],
+      "scope_rejections": [
+        "USD 2.8 billion (https://www.strategicrevenueinsights.com/industry/disposable-medical-gloves-market): scope: no market named next to the value",
+        "USD 1.2 billion (https://www.strategicrevenueinsights.com/industry/disposable-medical-gloves-market): scope: no market named next to the value",
+        "USD 0.8 billion (https://www.strategicrevenueinsights.com/industry/disposable-medical-gloves-market): scope: no market named next to the value",
+        "USD 6.97 Billion (https://www.valuemarketresearch.com/report/medical-gloves-market): scope: no market named next to the value",
+        "US$13.52 BILLION (https://www.linkedin.com/pulse/how-many-medical-examination-gloves-does-world-use-goh-ph-d--2objc): scope: no market named next to the value",
+        "US$ 8.4 billion (https://vintfint.com/blogs/265875/Disposable-Medical-Gloves-Market-Technological-Advancements-Industry-Trends): scope: no market named next to the value",
+        "USD 271.97 Billion (https://www.maximizemarketresearch.com/market-report/global-disposable-medical-supplies-market/93867/): scope: different/narrower scope: 'Disposable Medical Supplies' adds ['supply']"
+      ],
+      "quality_flags": [],
+      "scope": ""
+    },
+    "before_score": {
+      "pct_error": 0.10503623188405797,
+      "in_published_range": true,
+      "published_range": [
+        8500.0,
+        15860.0
+      ]
+    },
+    "after_score": {
+      "pct_error": -0.41774637681159416,
+      "in_published_range": false,
+      "published_range": [
+        8500.0,
+        15860.0
+      ]
+    }
+  },
+  {
+    "label": "Urea Fertilizer",
+    "actual": 73500.0,
+    "before": {
+      "value": 31241.6,
+      "grounded": true,
+      "source": "grounded on: USD 32.71 Bn in 2026, CAGR 4.7% (2026–2033) from DB narrative"
+    },
+    "after": {
+      "value": 47229.0,
+      "grounded": true,
+      "source": "cited figures: median of 3 cited values = $47,229M [CMI report DB: Urea Fertilizers Market: USD 32.71 Bn (2026); https://www.persistencemarketresearch.com/market-research/urea-fertilizer-market.asp: US$ 83.4 billion (2026); https://www.marketsizeandtrends.com/report/urea-fertilizer-market/: USD 45.5 billion (2024)]",
+      "cited_method": "median of 3 cited values",
+      "cited_sources": [
+        "CMI report DB: Urea Fertilizers Market",
+        "https://www.persistencemarketresearch.com/market-research/urea-fertilizer-market.asp",
+        "https://www.marketsizeandtrends.com/report/urea-fertilizer-market/"
+      ],
+      "scope_rejections": [
+        "USD 52.7 Billion (https://www.linkedin.com/pulse/urea-market-booming-expected-hit-usd602billion-2033-imarc-kushwaha-854ic): scope: broader/different scope: 'urea' lacks 'fertilizer'",
+        "75.24 billion USD (https://www.verifiedmarketreports.com/product/granular-urea-fertilizer-market/): scope: no market named next to the value",
+        "USD 1.48 billion (https://dataintelo.com/report/urea-triazone-solution-fertilizer-market): scope: different/narrower scope: 'urea-triazone solution fertilizer' adds ['triazone', 'solution']",
+        "USD 1.48 billion (https://dataintelo.com/report/urea-triazone-solution-fertilizer-market): scope: different/narrower scope: 'urea-triazone solution fertilizer' adds ['triazone', 'solution']",
+        "US$105.28M (https://gtaic.ai/market-reports/urea-fertilizers-market-netherlands-guide-in-2026): scope: no market named next to the value",
+        "US$105.28M (https://gtaic.ai/market-reports/urea-fertilizers-market-netherlands-guide-in-2026): scope: different/narrower scope: 'Netherlands's' adds ['netherland', 's']",
+        "USD 15.49 billion (https://risso-chemical.com/liquid-granular-nitrogen-fertilizer-guide/): scope: different/narrower scope: 'liquid fertilizers' adds ['liquid']"
+      ],
+      "quality_flags": [],
+      "scope": ""
+    },
+    "before_score": {
+      "pct_error": -0.5749442176870748,
+      "in_published_range": false,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    },
+    "after_score": {
+      "pct_error": -0.35742857142857143,
+      "in_published_range": false,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    }
+  },
+  {
+    "label": "Urea Fertilizer (scope: Total urea market, all uses: fertilizer plus industrial (resins, DEF/AdBlue, feed); not fertilizer-only)",
+    "variant": true,
+    "actual": 73500.0,
+    "before": {},
+    "after": {
+      "value": 32710.0,
+      "grounded": false,
+      "source": "LLM estimate, no cited figure",
+      "cited_method": "none",
+      "cited_sources": [],
+      "scope_rejections": [
+        "USD 32.71 Bn (CMI report DB: Urea Fertilizers Market): scope: narrower: Urea fertilizers market likely fertilizer-only, excluding industrial uses.",
+        "USD 1.56 billion (https://growthmarketreports.com/report/biuret-free-urea-fertilizer-market): scope: narrower: Biuret Free Urea Fertilizer is a sub-segment of the total urea market.",
+        "USD 1.56 Billion (https://growthmarketreports.com/report/biuret-free-urea-fertilizer-market): scope: narrower: Biuret Free Urea Fertilizer is a sub-segment of the total urea market.",
+        "USD 1.56 billion (https://growthmarketreports.com/report/biuret-free-urea-fertilizer-market): scope: narrower: Biuret Free Urea Fertilizer is a sub-segment of the total urea market.",
+        "US$ 83.4 billion (https://www.persistencemarketresearch.com/market-research/urea-fertilizer-market.asp): scope: narrower: Urea fertilizer market covers fertilizer use only, not industrial uses.",
+        "US$ 83.4 billion (https://www.persistencemarketresearch.com/market-research/urea-fertilizer-market.asp): scope: narrower: Urea fertilizer market covers fertilizer use only, not industrial uses.",
+        "US$ 44.62 Billion (https://www.renub.com/india-fertilizers-market-p.php): scope: no market named next to the value",
+        "US$105.28M (https://gtaic.ai/market-reports/urea-fertilizers-market-netherlands-guide-in-2026): scope: no market named next to the value",
+        "US$105.28M (https://gtaic.ai/market-reports/urea-fertilizers-market-netherlands-guide-in-2026): scope: different: Single-country (Netherlands) market, not the global total urea market.",
+        "US$ 83.4 billion (https://www.einnews.com/pr_news/899781831/urea-fertilizer-market-to-reach-us-111-2-bn-by-2033-fueled-by-rising-global-food-demand-and-expanding-cereal-production): scope: narrower: Urea fertilizer market covers fertilizer use only, not industrial uses."
+      ],
+      "quality_flags": [
+        "ungrounded_market_size"
+      ],
+      "scope": "Total urea market, all uses: fertilizer plus industrial (resins, DEF/AdBlue, feed); not fertilizer-only"
+    },
+    "before_score": {
+      "pct_error": null,
+      "in_published_range": null
+    },
+    "after_score": {
+      "pct_error": -0.5549659863945579,
+      "in_published_range": false,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    }
+  }
+]

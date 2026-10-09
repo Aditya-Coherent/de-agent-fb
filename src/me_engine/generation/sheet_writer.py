@@ -244,6 +244,37 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
         art.cell(ir, 4, "; ".join(a.get("drivers", []) or []))
         art.cell(ir, 5, "; ".join(a.get("current_events", []) or []))
         ir += 1
+    # Market-size audit trail, same five columns: every cited figure found,
+    # whether it was used, and why not.
+    cited = state.get("cited_anchor") or {}
+    grounded = state.get("market_size_grounded")
+    art.cell(ir, 1, "Market size source")
+    art.cell(ir, 2, "Where does the global 2025 value come from?")
+    art.cell(ir, 3, f"${float(anchor or 0):,.0f}M -- "
+                    + ("grounded: " if grounded else "ungrounded: ")
+                    + (state.get("market_size_source") or "LLM estimate, no cited figure"))
+    art.cell(ir, 4, cited.get("method", "none"))
+    ir += 1
+    size_range = cited.get("size_range")
+    art.cell(ir, 1, "Market size check")
+    art.cell(ir, 2, "Independent size range (global annual units x average selling price)")
+    if size_range:
+        art.cell(ir, 3, f"${size_range['low_mn']:,.0f}M-${size_range['high_mn']:,.0f}M "
+                        "(cited figures more than 3x outside are rejected)")
+        art.cell(ir, 4, f"{size_range['units_low']:,.0f}-{size_range['units_high']:,.0f} "
+                        f"{size_range.get('unit') or 'units'} x US${size_range['asp_low_usd']:,.2f}-"
+                        f"{size_range['asp_high_usd']:,.2f}")
+    else:
+        art.cell(ir, 3, "skipped (no usable units x price estimate)")
+    ir += 1
+    for v in (cited.get("accepted") or []) + (cited.get("corroborating") or []) + (cited.get("rejected") or []):
+        art.cell(ir, 1, f"Market size citation ({v.get('status')})")
+        art.cell(ir, 2, str(v.get("source", "")))
+        moved = f" -> ${float(v['value_2025_mn']):,.0f}M in 2025" if v.get("value_2025_mn") else ""
+        art.cell(ir, 3, f"{v.get('raw_text')} ({v.get('year') or 'no year'}){moved}"
+                        + (f" -- {v.get('reason')}" if v.get("reason") else ""))
+        art.cell(ir, 4, str(v.get("sentence", ""))[:500])
+        ir += 1
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out_path)

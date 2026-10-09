@@ -1,11 +1,11 @@
 # Five-Industry Examples — All Approaches
 
-_Generated 2026-10-08T14:13:42+00:00 by `run_examples.py`. All values are USD Mn. Every approval gate was auto-approved as drafted (unattended demo run), so treat these as first drafts, not reviewed estimates._
+_Generated 2026-10-09T08:35:38+00:00 by `run_examples.py`. All values are USD Mn. Every approval gate was auto-approved as drafted (unattended demo run), so treat these as first drafts, not reviewed estimates._
 
 | Market | Vertical | 1 Desk Research | 2A Demand: country total | 2B Demand: use case × country | 3 Supply: companies | 3 Supply: web evidence |
 |---|---|---|---|---|---|---|
 | Disposable Medical Gloves | Healthcare | 15,250 (2025) | 13,800 (2025) ⚠ 1 critical flag(s) | 31,343 (2025) ⚠ 5 critical flag(s) | 24,732 | — |
-| Gaming Consoles | Consumer Electronics | failed | — | — | — | — |
+| Gaming Consoles | Consumer Electronics | failed | 11,205 (2025) ⚠ 1 critical flag(s) | 18,569 (2025) ⚠ 1 critical flag(s) | 99,712 | 54,550 |
 | Laptops | Consumer Electronics | failed | 630,850 (2025) | 306,726 (2025) ⚠ 3 critical flag(s) | 320,580 | 129,900 |
 | Olive Oil | Food & Beverages | 14,615 (2025) | 15,556 (2025) | 23,655 (2025) ⚠ 2 critical flag(s) | 12,651 | 15,670 |
 | Smartphones | Consumer Electronics | 557,000 (2025) | 272,825 (2025) | 465,072 (2025) ⚠ 4 critical flag(s) | 226,396 | 100 |
@@ -14,7 +14,7 @@ _Generated 2026-10-08T14:13:42+00:00 by `run_examples.py`. All values are USD Mn
 | Televisions | Consumer Electronics | 7,800 (2025) | 64,790 (2025) | 90,368 (2025) ⚠ 3 critical flag(s) | 98,929 | — |
 | Urea Fertilizer | Agriculture & Chemicals | 31,242 (2025) | 55,315 (2025) | pending rerun | pending rerun | pending rerun |
 | Watches | Consumer Electronics | 69,100 (2025) | 114,825 (2025) ⚠ 1 critical flag(s) | 40,358 (2025) ⚠ 1 critical flag(s) | 77,984 | 118,900 |
-| Wireless Earbuds | Consumer Electronics | failed | failed | failed | failed | failed |
+| Wireless Earbuds | Consumer Electronics | failed | 15,328 (2025) | 12,160 (2025) ⚠ 1 critical flag(s) | failed | failed |
 
 ⚠ = the run raised critical quality flags (for example a price quoted per box applied to a count of single items); that total is not usable until the flagged inputs are corrected. Details under each market.
 
@@ -51,10 +51,27 @@ Files: `approaches\examples\disposable-medical-gloves/`
 
 Files: `approaches\examples\gaming-consoles/`
 
-- **2A:** not run
-- **2B:** not run
-- **1 Desk Research:** failed — global — (2026) (ERROR: could not build a DB skeleton for 'Gaming Consoles'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6465.91it/s])
-- **3 Supply-Side:** not run — companies —, web evidence —
+- **2A:** global 11,205 (base year 2025); North America 810, Latin America 450, Europe 3,105, Asia Pacific 3,240, Rest of World 3,600
+  - Driver: Annual gaming console unit shipments (domestic apparent consumption)
+  - Evidence: verified 0%, derived 0%, unverified 20%, assumption 80%
+  - By Product Type (top_down, web_evidence_backed): Home Consoles 5,288, Handheld/Portable Consoles 1,646, Hybrid Consoles 4,271
+  - By Application (top_down, web_evidence_backed): Gaming 10,031, Media and Entertainment 830, Other Applications 344
+  - By Distribution Channel (top_down, web_evidence_backed): Online Retail 5,341, Offline Retail 5,021, Direct-to-Consumer 844
+  - By Source (top_down, web_evidence_backed): New Consoles 9,767, Officially Refurbished Consoles 1,438
+  - ⚠ [critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: ["'Total Gaming Consoles demand' driver total"]
+  - Quality warnings: 4 (see result.json)
+- **2B:** global 18,569 (base year 2025); North America 5,355, Latin America 1,061, Europe 3,691, Asia Pacific 4,864, Rest of World 3,599
+  - Use cases: Home TV-Connected Consoles, Handheld/Portable Consoles, Multiplayer/Online-Service-Oriented Console Purchases, Family/Shared Household Console Purchases, Enthusiast/Collector and Replacement Console Purchases
+  - Evidence: verified 3%, derived 0%, unverified 4%, assumption 93%
+  - By Application (bottom-up) (bottom_up, see 02_sizing build-up rows): Home TV-Connected Consoles 4,475, Handheld/Portable Consoles 13, Multiplayer/Online-Service-Oriented Console Purchases 5,950, Family/Shared Household Console Purchases 4,362, Enthusiast/Collector and Replacement Console Purchases 3,770
+  - By Product Type (top_down, web_evidence_backed): Home Consoles 8,782, Handheld Consoles 3,359, Hybrid Consoles 6,429
+  - By Generation (top_down, web_evidence_backed): Current Generation 11,205, Previous Generation 5,215, Older Generations 2,149
+  - By Distribution Channel (top_down, web_evidence_backed): Online Retail 10,371, Physical Retail 6,341, Direct from Manufacturer 1,857
+  - By Price Tier (top_down, web_evidence_backed): Premium 6,623, Mid-Range 7,211, Budget 4,735
+  - ⚠ [critical] magnitude_cross_validation_discrepancy: 6 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'intensity_magnitude', 'price_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: ["'Home TV-Connected Consoles' driver total", "'Handheld/Portable Consoles' price", "'Multiplayer/Online-Service-Oriented Console Purchases' driver total", "'Family/Shared 
+  - Quality warnings: 3 (see result.json)
+- **1 Desk Research:** failed — global — (2026) (ERROR: could not build a DB skeleton for 'Gaming Consoles'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 8016.58it/s])
+- **3 Supply-Side:** ok — companies 99,712, web evidence 54,550; top shares: Sony Interactive Entertainment 21%, Microsoft Corporation 13%, Foxconn Technology Group 10%, Nintendo Co., Ltd. 7%, Wistron Corporation 5%
 
 ## Laptops (Consumer Electronics)
 
@@ -261,7 +278,23 @@ Files: `approaches\examples\watches/`
 
 Files: `approaches\examples\wireless-earbuds/`
 
-- **2A:** failed RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: ee932d9f-d451-4a2d-86e4-4c1574143104)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}
-- **2B:** failed RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 1928b892-35ba-44e5-8300-5f6df2faec18)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}
-- **1 Desk Research:** failed — global — (2026) (ERROR: could not build a DB skeleton for 'Wireless Earbuds'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6168.09it/s])
-- **3 Supply-Side:** failed — companies —, web evidence — (    data = llm.complete_json(_GEOGRAPHY_SYSTEM, f"Market: {market_name}") |   File "C:\Users\aimlpc1\Desktop\de-agent-fb\src\me_engine\generation\llm.py", line 97, in complete_json |     raise RuntimeError(f"LLM call failed after {retries} attempts: {last_err}") | RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 371f9482-683b-4d4d-9616-87a5f06bbd7c)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}} | During task with name 'geography' and id '23ff961d-09c4-1e33-1328-8703135694a7')
+- **2A:** global 15,328 (base year 2025); North America 3,520, Latin America 384, Europe 512, Asia Pacific 7,072, Rest of World 3,840
+  - Driver: Annual wireless earbud unit shipments (apparent consumption)
+  - Evidence: verified 0%, derived 0%, unverified 67%, assumption 33%
+  - By Product Type (top_down, web_evidence_backed): True Wireless Stereo (TWS) Earbuds 12,555, Wireless Earphones (non-TWS) 2,773
+  - By Form Factor (top_down, web_evidence_backed): In-Ear 12,947, Open-Ear 1,642, On-Ear 740
+  - By Application (top_down, assumption): Personal Audio 7,933, Communication 2,502, Fitness & Sports 1,951, Gaming & Entertainment 1,896, Professional & Enterprise 1,045
+  - By Distribution Channel (top_down, web_evidence_backed): Online Retail 10,044, Offline Retail 4,518, Direct Sales 766
+  - Quality warnings: 4 (see result.json)
+- **2B:** global 12,160 (base year 2025); North America 2,761, Latin America 556, Europe 1,590, Asia Pacific 5,197, Rest of World 2,056
+  - Use cases: Personal Everyday Listening, Fitness & Active Use, Commuting & Travel, Professional & Enterprise Communication, Gaming & Low-Latency Audio, Replacement & Spare Units
+  - Evidence: verified 0%, derived 1%, unverified 9%, assumption 90%
+  - By Application (bottom-up) (bottom_up, see 02_sizing build-up rows): Personal Everyday Listening 4,889, Fitness & Active Use 1,272, Commuting & Travel 3,481, Professional & Enterprise Communication 1,334, Gaming & Low-Latency Audio 265, Replacement & Spare Units 919
+  - By Product Type (top_down, web_evidence_backed): Standard TWS Earbuds 4,618, Premium TWS Earbuds 3,147, Mini/Compact TWS Earbuds 1,593, Feature-Differentiated TWS Earbuds (e.g., ANC, Spatial Audio) 2,802
+  - By Distribution Channel (top_down, web_evidence_backed): Online Retail 6,848, Offline Retail 4,539, Direct Sales (OEM/Enterprise) 773
+  - By Price Tier (top_down, web_evidence_backed): Budget (Under $50) 3,775, Mid-Range ($50-$150) 4,697, Premium ($150-$300) 2,764, Luxury (Above $300) 925
+  - By Connectivity Technology (top_down, web_evidence_backed): Bluetooth 5.0 and Below 2,854, Bluetooth 5.1-5.2 3,431, Bluetooth 5.3 and Above 4,793, Other Wireless Technologies (e.g., LE Audio, NFC) 1,083
+  - ⚠ [critical] magnitude_cross_validation_discrepancy: 7 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'price_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: ["'Personal Everyday Listening' driver total", "'Personal Everyday Listening' price", "'Commuting & Travel' driver total", "'Professional & Enterprise Communication' driver total"]
+  - Quality warnings: 12 (see result.json)
+- **1 Desk Research:** failed — global — (2026) (ERROR: could not build a DB skeleton for 'Wireless Earbuds'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 7879.57it/s])
+- **3 Supply-Side:** failed — companies —, web evidence —

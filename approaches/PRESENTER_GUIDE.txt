@@ -1,4 +1,4 @@
-
+save those results for those 63 markets as well somewhere i will look into it
 Apparoch 2A:
 
 Think of one cake cut into pieces in different ways: by colour, by size, by shape. The pieces always add back to the same cake. Top-down splitting only decides how big each piece is; it never changes the cake. That's why the page has a check that every table adds back to the same total. If one didn't, it would mean a calculation error.

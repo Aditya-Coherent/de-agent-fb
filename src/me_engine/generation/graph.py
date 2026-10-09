@@ -54,6 +54,19 @@ class GenState(TypedDict, total=False):
     asp_score: float | None
     best_reward: float
     best_state: dict[str, Any]
+    # Market-size grounding. These keys must be declared here: LangGraph drops
+    # any node update whose key is not in the state schema (market_size_grounded
+    # and quality_flags were silently lost before they were listed).
+    market_definition: str
+    market_search_name: str
+    evidence_sources: list[list[str]]
+    web_sources: list[dict[str, Any]]
+    cited_anchor: dict[str, Any]
+    market_size_grounded: bool
+    market_size_source: str
+    market_size_unstable: dict[str, Any]
+    pass_history: list[dict[str, Any]]
+    quality_flags: list[dict[str, str]]
     iter: int
     log: list[str]
 
@@ -93,7 +106,8 @@ def build_graph():
 
 
 def run_generation(market_name: str, skeleton: Skeleton, config: GenConfig,
-                   cache_path: Path | None = None) -> GenState:
+                   cache_path: Path | None = None, market_definition: str = "",
+                   market_search_name: str = "") -> GenState:
     llm = GenLLM(config, cache_path=cache_path)
     graph = build_graph()
     init: GenState = {
@@ -104,6 +118,10 @@ def run_generation(market_name: str, skeleton: Skeleton, config: GenConfig,
         "iter": 0,
         "log": [],
     }
+    if market_definition:
+        init["market_definition"] = market_definition
+    if market_search_name:
+        init["market_search_name"] = market_search_name
     # recursion_limit must exceed nodes * loop iterations (5 nodes/iteration now
     # that market_size/geo/asp are refined too, not just shares)
     final = graph.invoke(init, config={"recursion_limit": 80})

@@ -33,17 +33,21 @@
     "desk_value": null,
     "desk_year": null,
     "desk_status": "failed",
-    "2a_global": null,
-    "2a_base_year": null,
-    "2a_status": null,
-    "2b_global": null,
-    "2b_base_year": null,
-    "2b_status": null,
-    "supply_company": null,
-    "supply_evidence": null,
-    "supply_status": null,
-    "2a_critical": [],
-    "2b_critical": []
+    "2a_global": 11205.0,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 18569.2811,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
+    "supply_company": 99711.70787182574,
+    "supply_evidence": 54550.0,
+    "supply_status": "ok",
+    "2a_critical": [
+      "[critical] magnitude_cross_validation_discrepancy: 1 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Total Gaming Consoles demand' driver total\"]"
+    ],
+    "2b_critical": [
+      "[critical] magnitude_cross_validation_discrepancy: 6 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'intensity_magnitude', 'price_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Home TV-Connected Consoles' driver total\", \"'Handheld/Portable Consoles' price\", \"'Multiplayer/Online-Service-Oriented Console Purchases' driver total\", \"'Family/Shared Household Console Purchases' driver total\"]"
+    ]
   },
   {
     "market": "Laptops",
@@ -234,16 +238,18 @@
     "desk_value": null,
     "desk_year": null,
     "desk_status": "failed",
-    "2a_global": null,
-    "2a_base_year": null,
-    "2a_status": "failed",
-    "2b_global": null,
-    "2b_base_year": null,
-    "2b_status": "failed",
+    "2a_global": 15328.001,
+    "2a_base_year": 2025,
+    "2a_status": "ok",
+    "2b_global": 12160.0456,
+    "2b_base_year": 2025,
+    "2b_status": "ok",
     "supply_company": null,
     "supply_evidence": null,
     "supply_status": "failed",
     "2a_critical": [],
-    "2b_critical": []
+    "2b_critical": [
+      "[critical] magnitude_cross_validation_discrepancy: 7 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'price_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Personal Everyday Listening' driver total\", \"'Personal Everyday Listening' price\", \"'Commuting & Travel' driver total\", \"'Professional & Enterprise Communication' driver total\"]"
+    ]
   }
 ]

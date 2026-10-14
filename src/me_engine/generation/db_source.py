@@ -120,7 +120,7 @@ def fetch_market_evidence(neon_url: str, market_name: str) -> DBEvidence | None:
             ensure_embedded(cur, news_id, keyword or market_name)
         else:
             hit = nearest_report(cur, market_name)
-            if hit and not geography_narrower(hit[1] or "", market_name):
+            if hit and not geography_narrower(hit[1] or "", market_name) and not title_narrower(hit[1] or "", market_name):
                 news_id, _keyword, _similarity = hit
                 cur.execute(
                     f'SELECT {_REPORT_COLUMNS} FROM cmi_reports WHERE "newsId" = %s',  # type: ignore[arg-type]
@@ -146,7 +146,7 @@ def fetch_market_evidence_semantic(neon_url: str, market_name: str) -> DBEvidenc
         if not hit:
             return None
         news_id, keyword, _similarity = hit
-        if geography_narrower(keyword or "", market_name):
+        if geography_narrower(keyword or "", market_name) or title_narrower(keyword or "", market_name):
             return None
         cur.execute(
             f'SELECT {_REPORT_COLUMNS} FROM cmi_reports WHERE "newsId" = %s',  # type: ignore[arg-type]
@@ -189,15 +189,45 @@ def _norm_title(text: str) -> str:
     return re.sub(r"\s+", " ", t).strip()
 
 
+def title_scope_mismatch(report_keyword: str, market_name: str) -> str | None:
+    """Why a report's title (keyword) does not cover the market, or None.
+
+    Same rules as the cited-figure scope check (cited_values.check_scope): the
+    title must name the market without an extra product qualifier ("Curved
+    Televisions" for Televisions) and must name it at all ("eSIM Market" for
+    Smartphones -- matched only because 'Smartphones' is one of its segments
+    in newsSubject)."""
+    from .cited_values import check_scope, title_subject  # local: cited_values imports this module
+
+    title = report_keyword or ""
+    if not re.search(r"\b(market|industry)\b", title, re.IGNORECASE):
+        title = f"{title} Market"
+    verdict = check_scope(title_subject(title), market_name)
+    return None if verdict.ok else verdict.reason
+
+
+def title_narrower(report_keyword: str, market_name: str) -> bool:
+    """True when the title is the market name plus an extra qualifier. Looser
+    than `title_scope_mismatch`: a differently-worded title (semantic hits such
+    as 'Electric Vehicle Charging Infrastructure' for 'EV Charging') passes."""
+    from .cited_values import market_tokens
+
+    want = set(market_tokens(market_name))
+    got = set(market_tokens(report_keyword or ""))
+    return bool(want) and want <= got and bool(got - want)
+
+
 def pick_best_report(market_name: str, term: str, rows: list[tuple]) -> tuple | None:
-    """Rank LIKE candidates: drop reports for a narrower geography, then
-    prefer an exact title match, then a keyword (not just subject-tag) hit,
-    then the richest segmentation (rows arrive longest-first)."""
+    """Rank LIKE candidates: drop reports for a narrower geography and reports
+    whose title doesn't cover the market (a narrower product, or a market word
+    found only in newsSubject/segmentation), then prefer an exact title match,
+    then a keyword (not just subject-tag) hit, then the richest segmentation
+    (rows arrive longest-first)."""
     want = _norm_title(market_name)
     best, best_rank = None, None
     for order, row in enumerate(rows):
         keyword = row[1] or ""
-        if geography_narrower(keyword, market_name):
+        if geography_narrower(keyword, market_name) or title_scope_mismatch(keyword, market_name):
             continue
         rank = (
             0 if _norm_title(keyword) == want else 1,

@@ -1,11 +1,11 @@
 {
   "market": "Wireless Earbuds",
   "vertical": "Consumer Electronics",
-  "started_at": "2026-10-08T13:49:59+00:00",
+  "started_at": "2026-10-09T07:23:54+00:00",
   "1_desk_research": {
     "status": "failed",
-    "error": "ERROR: could not build a DB skeleton for 'Wireless Earbuds'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6168.09it/s]",
-    "minutes": 0.5
+    "error": "ERROR: could not build a DB skeleton for 'Wireless Earbuds'. Try --skeleton <reference.xlsx> instead. |  | Loading weights:   0%|          | 0/103 [00:00<?, ?it/s] | Loading weights: 100%|██████████| 103/103 [00:00<00:00, 7879.57it/s]",
+    "minutes": 0.6
   },
   "log": [
     "[2026-10-08T13:49:59+00:00] 1 Desk Research: start",
@@ -15,24 +15,289 @@
     "[2026-10-08T14:02:10+00:00] 2B Demand: start",
     "[2026-10-08T14:03:05+00:00] 2B Demand: failed in 0.9 min",
     "[2026-10-08T14:03:05+00:00] 3 Supply-Side: start",
-    "[2026-10-08T14:13:42+00:00] 3 Supply-Side: failed in 10.6 min"
+    "[2026-10-08T14:13:42+00:00] 3 Supply-Side: failed in 10.6 min",
+    "[2026-10-09T07:23:54+00:00] 1 Desk Research: start",
+    "[2026-10-09T07:24:30+00:00] 1 Desk Research: failed in 0.6 min",
+    "[2026-10-09T07:24:30+00:00] 2A Demand: start",
+    "[2026-10-09T07:31:12+00:00] 2A Demand: ok in 6.7 min",
+    "[2026-10-09T07:31:12+00:00] 2B Demand: start",
+    "[2026-10-09T08:23:38+00:00] 2B Demand: ok in 52.4 min",
+    "[2026-10-09T08:23:38+00:00] 3 Supply-Side: start",
+    "[2026-10-09T08:23:38+00:00] 3 Supply-Side: failed in 0.0 min"
   ],
   "2A_demand_country_total": {
-    "status": "failed",
-    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: ee932d9f-d451-4a2d-86e4-4c1574143104)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
-    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 279, in <lambda>\n    result[\"2A_demand_country_total\"] = _timed(lambda: run_2a(market, out_dir, cfg), log, \"2A Demand\")\n                                                       ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 159, in run_2a\n    segmentation.approve_segments(segmentation.run_segments_phase(market, cfg, cache_path=CACHE))\n                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandCountry_approach2A\\segmentation.py\", line 39, in run_segments_phase\n    draft = segments.build_segments_draft(\n        llm=llm or GenLLM(config, cache_path=cache_path),\n    ...<7 lines>...\n        search=search,\n    )\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 254, in build_segments_draft\n    top_down = [estimate_shares(llm, market_name, d, countries, base_year, search) for d in dims]\n                ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demand_topdown\\segments.py\", line 205, in estimate_shares\n    data = llm.complete_json(_SHARES_SYSTEM, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: ee932d9f-d451-4a2d-86e4-4c1574143104)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
-    "minutes": 11.7
+    "setup": {
+      "scope": "This market covers wireless earbuds — true wireless stereo (TWS) earbuds and wireless earphones that connect to a source device via Bluetooth or other wireless protocols, including in-ear, open-ear, and on-ear wireless bud form factors sold as consumer audio devices. It excludes wired earphones/headphones, over-ear wireless headphones, wired headsets, and hearing aids, which are separately valued markets. It also excludes the smartphone, charging case, and accessory aftermarket as standalone markets, though smartphone installed-base and replacement-cycle data may be used as intermediate signals to derive earbud demand. Demand is measured at the point of consumer purchase (retail sell-through/shipments to end users), not at component or OEM contract-manufacturing level.",
+      "geography": [
+        "United States",
+        "China",
+        "India",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "Brazil",
+        "Mexico",
+        "South Korea",
+        "Indonesia",
+        "Canada",
+        "Australia",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "wireless earbuds (pairs)"
+    },
+    "driver": {
+      "driver_name": "Annual wireless earbud unit shipments (apparent consumption)",
+      "unit": "wireless earbuds (units shipped)",
+      "final_demand_unit": "wireless earbuds (units shipped)",
+      "conversion_formula": "driver_value"
+    },
+    "global_usd_mn": 15328.001,
+    "regions_usd_mn": {
+      "North America": 3520.0002,
+      "Latin America": 384.0,
+      "Europe": 512.0008,
+      "Asia Pacific": 7072.0,
+      "Rest of World": 3840.0
+    },
+    "countries_usd_mn": {
+      "United States": 3520.0,
+      "China": 3200.0,
+      "India": 3200.0,
+      "Japan": 512.0,
+      "Germany": 0.0005,
+      "United Kingdom": 512.0,
+      "France": 0.0003,
+      "Brazil": 384.0,
+      "Mexico": 0.0,
+      "South Korea": 160.0,
+      "Indonesia": 0.0,
+      "Canada": 0.0002,
+      "Australia": 0.0,
+      "Rest of World": 3840.0
+    },
+    "segments": [
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "True Wireless Stereo (TWS) Earbuds": 12555.2008,
+          "Wireless Earphones (non-TWS)": 2772.8002
+        }
+      },
+      {
+        "dimension": "By Form Factor",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "In-Ear": 12946.5608,
+          "Open-Ear": 1641.9201,
+          "On-Ear": 739.5201
+        }
+      },
+      {
+        "dimension": "By Application",
+        "method": "top_down",
+        "evidence_status": "assumption",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Personal Audio": 7933.1204,
+          "Communication": 2502.4002,
+          "Fitness & Sports": 1950.7201,
+          "Gaming & Entertainment": 1896.3201,
+          "Professional & Enterprise": 1045.4402
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 10043.5206,
+          "Offline Retail": 4518.0804,
+          "Direct Sales": 766.4
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 0.0,
+      "source_found_unverified": 66.7,
+      "assumption": 33.3
+    },
+    "quality_flags": [
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] high_unverified_claim_share: 10/14 country/bucket quantities rest on a source the LLM named but code could not independently verify (source_found_unverified) -- more useful than a bare assumption, but never promoted to observed; this run leans heavily on unverified claims.",
+      "[warning] low_plausibility: Validation plausibility (49%) is below the usual bar.",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own."
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\wireless-earbuds\\2A_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\wireless-earbuds\\2A_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_country_2a\\wireless-earbuds",
+    "status": "ok",
+    "minutes": 6.7
   },
   "2B_demand_usecase_country": {
-    "status": "failed",
-    "error": "RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 1928b892-35ba-44e5-8300-5f6df2faec18)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}",
-    "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 68, in _timed\n    out = fn()\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 282, in <lambda>\n    result[\"2B_demand_usecase_country\"] = _timed(lambda: run_2b(market, out_dir, cfg), log, \"2B Demand\")\n                                                         ~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\run_examples.py\", line 189, in run_2b\n    draft = taxonomy.run_taxonomy_phase(approved_setup, cfg, cache_path=CACHE)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandUseCaseCountry_approach2B\\taxonomy.py\", line 58, in run_taxonomy_phase\n    state.update(agents.usage_decomposition_node(state))\n                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\demandUseCaseCountry_approach2B\\agents.py\", line 213, in usage_decomposition_node\n    data = llm.complete_json(system, user)\n  File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json\n    raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\")\nRuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 1928b892-35ba-44e5-8300-5f6df2faec18)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}}\n",
-    "minutes": 0.9
+    "setup": {
+      "scope": "This market covers True Wireless Stereo (TWS) earbuds: standalone, cable-free earbud pairs that connect to source devices via Bluetooth for personal audio playback and communication. Included are all consumer and professional TWS earbud products sold as finished goods, whether standard, mini, premium, or feature-differentiated (e.g., ANC, spatial audio), and their associated replacement units. Excluded are wired earphones, over-ear and on-ear wireless headphones, bone-conduction headsets, hearing aids, and component-level sales of drivers, chipsets, or batteries that are not part of a finished earbud pair. Also excluded are separately valued services such as music streaming subscriptions, even though streaming demand may be used as an intermediate signal of earbud usage intensity.",
+      "geography": [
+        "United States",
+        "China",
+        "India",
+        "Japan",
+        "Germany",
+        "United Kingdom",
+        "France",
+        "South Korea",
+        "Brazil",
+        "Canada",
+        "Australia",
+        "Mexico",
+        "Indonesia",
+        "Rest of World"
+      ],
+      "base_year": 2025,
+      "physical_unit": "earbuds (single pieces)"
+    },
+    "use_cases": [
+      "Personal Everyday Listening",
+      "Fitness & Active Use",
+      "Commuting & Travel",
+      "Professional & Enterprise Communication",
+      "Gaming & Low-Latency Audio",
+      "Replacement & Spare Units"
+    ],
+    "use_cases_dropped_out_of_scope": [],
+    "related_demand_usd_mn": 0,
+    "global_usd_mn": 12160.0456,
+    "regions_usd_mn": {
+      "North America": 2760.94,
+      "Latin America": 555.9121,
+      "Europe": 1589.52,
+      "Asia Pacific": 5197.4974,
+      "Rest of World": 2056.1761
+    },
+    "countries_usd_mn": {
+      "United States": 2472.1,
+      "China": 1717.5,
+      "India": 1973.1,
+      "Japan": 872.6,
+      "Germany": 631.9,
+      "United Kingdom": 620.2,
+      "France": 337.42,
+      "South Korea": 89.8617,
+      "Brazil": 231.3621,
+      "Canada": 288.84,
+      "Australia": 175.9957,
+      "Mexico": 324.55,
+      "Indonesia": 368.44,
+      "Rest of World": 2056.1761
+    },
+    "segments": [
+      {
+        "dimension": "By Application (bottom-up)",
+        "method": "bottom_up",
+        "evidence_status": "see 02_sizing build-up rows",
+        "taxonomy_source": null,
+        "global_values_usd_mn": {
+          "Personal Everyday Listening": 4889.1902,
+          "Fitness & Active Use": 1272.2929,
+          "Commuting & Travel": 3480.8396,
+          "Professional & Enterprise Communication": 1333.7222,
+          "Gaming & Low-Latency Audio": 265.3624,
+          "Replacement & Spare Units": 918.6383
+        }
+      },
+      {
+        "dimension": "By Product Type",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Standard TWS Earbuds": 4617.9457,
+          "Premium TWS Earbuds": 3146.9166,
+          "Mini/Compact TWS Earbuds": 1593.191,
+          "Feature-Differentiated TWS Earbuds (e.g., ANC, Spatial Audio)": 2801.9923
+        }
+      },
+      {
+        "dimension": "By Distribution Channel",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Online Retail": 6847.8575,
+          "Offline Retail": 4539.38,
+          "Direct Sales (OEM/Enterprise)": 772.8081
+        }
+      },
+      {
+        "dimension": "By Price Tier",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Budget (Under $50)": 3775.1999,
+          "Mid-Range ($50-$150)": 4696.602,
+          "Premium ($150-$300)": 2763.6509,
+          "Luxury (Above $300)": 924.5928
+        }
+      },
+      {
+        "dimension": "By Connectivity Technology",
+        "method": "top_down",
+        "evidence_status": "web_evidence_backed",
+        "taxonomy_source": "llm_proposed",
+        "global_values_usd_mn": {
+          "Bluetooth 5.0 and Below": 2853.6178,
+          "Bluetooth 5.1-5.2": 3430.8732,
+          "Bluetooth 5.3 and Above": 4792.9726,
+          "Other Wireless Technologies (e.g., LE Audio, NFC)": 1082.582
+        }
+      }
+    ],
+    "consistency_checks_passed": true,
+    "evidence_quality_pct": {
+      "verified_observed": 0.0,
+      "derived": 1.1,
+      "source_found_unverified": 8.9,
+      "assumption": 90.0
+    },
+    "quality_flags": [
+      "[warning] high_assumption_share: 75/84 country/bucket quantities are unlabelled assumptions (no real observed or derived figure found) -- this run leans heavily on estimation.",
+      "[warning] no_observed_data: No country-level figure in this run was directly cited/verified in evidence -- every quantity is derived, an unverified LLM claim, or assumed.",
+      "[warning] low_plausibility: Validation plausibility (57%) is below the usual bar.",
+      "[warning] usage_bucket_overlap: Possible double-counting between usage buckets: Personal Everyday Listening ~ Fitness & Active Use (similarity 0.84); Personal Everyday Listening ~ Commuting & Travel (similarity 0.83); Personal Everyday Listening ~ Professional & Enterprise Communication (similarity 0.85)",
+      "[warning] low_usage_coverage: Estimated usage coverage (84.0%, the pipeline's own bounded estimate -- NOT a verified measurement of the real market) is below the configured threshold (85%) -- Included Demand ($12,160.0M) likely understates the real market. Residual/Uncovered is reported separately ($2,316.2M, implied by the coverage gap, NOT built from evidence, NOT distributed into any bucket) rather than silently inflating any existing bucket.",
+      "[warning] missing_usage_category: Usage coverage review flagged possibly missing major physical application(s), evaluated before calculation (flag only -- not added to this run's total): Hearing Enhancement & Assistive Audio (evidence_backed, confidence 70%) -- \"The invisible wireless earbud market is segmented by application into Music & Entertainment, Communication, Sports & Fitness, Healthcare, and Others\"; Industrial & Workplace Safety Communication (evidence_backed, confidence 65%) -- \"Major end-use industries include industrial manufacturing, commercial enterprises, technology-driven sectors, and emerging digital applications.\"",
+      "[warning] low_observed_share: Only 0% of driver/price inputs are directly observed evidence -- this run leans heavily on derived allocations and assumptions; treat the total as directional, not defensible on its own.",
+      "[critical] magnitude_cross_validation_discrepancy: 7 magnitude/cross-source discrepancy flag(s) across ['driver_magnitude', 'price_magnitude'] -- flagged for review, original value(s)/source(s) unchanged: [\"'Personal Everyday Listening' driver total\", \"'Personal Everyday Listening' price\", \"'Commuting & Travel' driver total\", \"'Professional & Enterprise Communication' driver total\"]",
+      "[warning] use_cases_scaled_down_to_country_total: Brazil: use cases added up to 1.9x the 2A country total (12,000,000 wireless earbuds (units shipped)); scaled down to match it",
+      "[warning] use_cases_scaled_down_to_country_total: China: use cases added up to 2.4x the 2A country total (100,000,000 wireless earbuds (units shipped)); scaled down to match it",
+      "[warning] country_total_mismatch: France: use cases are 2,190,588.2x the 2A country total (8 wireless earbuds (units shipped)) -- too far apart to be the same quantity (likely a unit error in one of them); not scaled",
+      "[warning] use_cases_scaled_down_to_country_total: Rest of World: use cases added up to 3.0x the 2A country total (120,000,000 wireless earbuds (units shipped)); scaled down to match it",
+      "[warning] use_cases_scaled_down_to_country_total: South Korea: use cases added up to 3.9x the 2A country total (5,000,000 wireless earbuds (units shipped)); scaled down to match it"
+    ],
+    "workbooks": {
+      "market": "approaches\\examples\\wireless-earbuds\\2B_market.xlsx",
+      "sizing_buildup": "approaches\\examples\\wireless-earbuds\\2B_sizing_buildup.xlsx"
+    },
+    "run_folder": "output\\demand_usage\\wireless-earbuds",
+    "status": "ok",
+    "minutes": 52.4
   },
   "3_supply_side": {
     "status": "failed",
-    "error": "    data = llm.complete_json(_GEOGRAPHY_SYSTEM, f\"Market: {market_name}\") |   File \"C:\\Users\\aimlpc1\\Desktop\\de-agent-fb\\src\\me_engine\\generation\\llm.py\", line 97, in complete_json |     raise RuntimeError(f\"LLM call failed after {retries} attempts: {last_err}\") | RuntimeError: LLM call failed after 3 attempts: Error code: 402 - {'error': {'message': 'Insufficient Balance (request_id: 371f9482-683b-4d4d-9616-87a5f06bbd7c)', 'type': 'unknown_error', 'param': None, 'code': 'invalid_request_error'}} | During task with name 'geography' and id '23ff961d-09c4-1e33-1328-8703135694a7'",
-    "minutes": 10.6
+    "error": "",
+    "minutes": 0.0
   },
-  "finished_at": "2026-10-08T14:13:42+00:00"
+  "finished_at": "2026-10-09T08:23:38+00:00"
 }

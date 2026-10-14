@@ -36,6 +36,15 @@ class GenConfig:
     # every pre-existing `GenConfig(...)` construction (tests, callers) keeps
     # working unchanged.
     evidence_workers: int = 8
+    # Desk Research: fetch the pages behind the market-size search results so
+    # cited figures can be read from the page text, not only the snippet.
+    fetch_pages: bool = False
+    # Cited-figure evidence-quality steps (cited_values.py), each switchable so
+    # one that hurts held-out accuracy can be turned off on its own.
+    title_subject: bool = True    # page title / URL slug names the market when the sentence doesn't
+    size_check: bool = True       # units x price range; reject figures >3x outside
+    source_tiers: bool = True     # anchor on research-report pages / the CMI DB
+    weak_consensus: bool = False  # disputed values -> nearest the size-range middle. OFF: worse on held-out (2026-10-09 eval)
 
     @classmethod
     def load(cls, project_root: Path | str = ".") -> "GenConfig":
@@ -62,6 +71,11 @@ class GenConfig:
             reward_threshold=float(os.environ.get("DEAGENT_REWARD_THRESHOLD", "0.9")),
             per_region_shares=os.environ.get("DEAGENT_PER_REGION_SHARES", "1") == "1",
             evidence_workers=max(1, int(os.environ.get("EVIDENCE_WORKERS", os.environ.get("DEAGENT_EVIDENCE_WORKERS", "8")))),
+            fetch_pages=os.environ.get("DEAGENT_FETCH_PAGES", "1") == "1",
+            title_subject=os.environ.get("DEAGENT_TITLE_SUBJECT", "1") == "1",
+            size_check=os.environ.get("DEAGENT_SIZE_CHECK", "1") == "1",
+            source_tiers=os.environ.get("DEAGENT_SOURCE_TIERS", "1") == "1",
+            weak_consensus=os.environ.get("DEAGENT_WEAK_CONSENSUS", "0") == "1",
         )
 
     @property

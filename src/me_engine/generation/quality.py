@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .cited_values import outside_size_range
+
 # A "global market size" this small or this large is implausible for almost
 # any "Global X Market" report -- catches the class of bug where the LLM
 # returns a nonsensical anchor (e.g. 3.0) that isn't caught by the grounded/
@@ -40,6 +42,35 @@ def compute_demand_quality_flags(state: dict[str, Any]) -> list[dict[str, str]]:
             "severity": "warning",
             "message": "No explicitly cited market-size figure was found in any evidence -- this "
                        "total is the LLM's own best estimate, not grounded in a real citation.",
+        })
+
+    unstable = state.get("market_size_unstable")
+    if unstable:
+        values = ", ".join(f"${float(v):,.0f}M" for v in unstable.get("values", []))
+        flags.append({
+            "code": "market_size_unstable",
+            "severity": "warning",
+            "message": f"The uncited market size changed by more than 2x between passes ({values}); "
+                       f"the median ${float(unstable.get('median') or 0):,.0f}M was used -- verify it.",
+        })
+
+    cited = state.get("cited_anchor") or {}
+    if cited.get("disputed") and cited.get("value_2025_mn"):
+        values = ", ".join(f"${float(v['value_2025_mn']):,.0f}M" for v in cited.get("accepted") or [])
+        flags.append({
+            "code": "cited_values_disputed",
+            "severity": "warning",
+            "message": f"The cited market sizes do not agree (only one value, or a spread above 2x: {values}); "
+                       f"anchor chosen by: {cited.get('method')}.",
+        })
+
+    size_range = cited.get("size_range")
+    if size_range and anchor is not None and outside_size_range(float(anchor), size_range):
+        flags.append({
+            "code": "final_value_outside_size_range",
+            "severity": "warning",
+            "message": f"Global 2025 value (${float(anchor):,.0f}M) is more than 3x outside the independent "
+                       f"units x price range (${size_range['low_mn']:,.0f}M-${size_range['high_mn']:,.0f}M).",
         })
 
     reward = state.get("reward")

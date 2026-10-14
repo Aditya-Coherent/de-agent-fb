@@ -1,0 +1,67 @@
+Desk Research is at ~7–9% held-out median error, close to the ~11% disagreement between
+publishers. Don't tune to individual markets any more. Changes:
+
+1. Commit the current shipped state on a new branch (desk-cited-values). Commit only the files
+   you changed. Leave out PRESENTER_GUIDE.txt, EXAMPLES_SUMMARY.*, the gaming-consoles and
+   wireless-earbuds outputs, and my_companies/.
+2. Research-firm tier: replace the domain/URL keyword rule with a list in config of about 30
+   well-known research firms (IMARC, Grand View, Fortune BI, Mordor, MarketsandMarkets, GMI,
+   Precedence, Allied, Technavio, Statista, Euromonitor, CMI, ...). Keep the URL-path rule as a
+   second test. Write the list from general knowledge, not from the sources in actuals_2025.csv.
+3. Masks-type scope: when a market name has 2 words, keep the rule that lets it drop a word, but
+   only if the dropped word is a narrowing word. The head noun alone ("masks" for "Surgical
+   Masks") must not be accepted.
+4. Markets with no DB report:
+   (a) Have the LLM write a scope definition (what's included and excluded, and whether revenue
+       is at manufacturer or retail level). Pass it through the existing --scope path, so it
+       drives the searches and the LLM scope judge.
+   (b) Use a 2× size check instead of 3× for these markets.
+   (c) Flag "needs_analyst_review" when there are fewer than 2 values from research firms.
+5. Range output: alongside the point value, write low/base/high (the min, median and max of the
+   accepted cited values) and a confidence level (high/medium/low from the number of sources,
+   the spread and the flags). Put them in the Artifacts sheet and the history record. No layout
+   changes to the sheet.
+6. Evaluation: make "inside the published range" the main metric and keep median error second.
+   Run each market 2× and report the spread between runs. Then pick 20 new markets that are not
+   in the current tuning or held-out sets, add their actuals the same way (median of 2–3
+   publishers), and report results on them separately. That is the fair number.
+
+Rules: mock every LLM and web call in tests, keep the full test suite passing, commit nothing
+beyond step 1, and show every market's before/after, including the ones that got worse.
+
+
+Prompt for the next round
+
+Desk Research is at ~7–9% held-out median error, close to the ~11% disagreement between
+publishers. Don't tune to individual markets any more. Changes:
+
+1. Commit the current shipped state on a new branch (desk-cited-values). Commit only the files
+   you changed. Leave out PRESENTER_GUIDE.txt, EXAMPLES_SUMMARY.*, the gaming-consoles and
+   wireless-earbuds outputs, and my_companies/.
+2. Research-firm tier: replace the domain/URL keyword rule with a list in config of about 30
+   well-known research firms (IMARC, Grand View, Fortune BI, Mordor, MarketsandMarkets, GMI,
+   Precedence, Allied, Technavio, Statista, Euromonitor, CMI, ...). Keep the URL-path rule as a
+   second test. Write the list from general knowledge, not from the sources in actuals_2025.csv.
+3. Masks-type scope: when a market name has 2 words, keep the rule that lets it drop a word, but
+   only if the dropped word is a narrowing word. The head noun alone ("masks" for "Surgical
+   Masks") must not be accepted.
+4. Markets with no DB report:
+   (a) Have the LLM write a scope definition (what's included and excluded, and whether revenue
+       is at manufacturer or retail level). Pass it through the existing --scope path, so it
+       drives the searches and the LLM scope judge.
+   (b) Use a 2× size check instead of 3× for these markets.
+   (c) Flag "needs_analyst_review" when there are fewer than 2 values from research firms.
+5. Range output: alongside the point value, write low/base/high (the min, median and max of the
+   accepted cited values) and a confidence level (high/medium/low from the number of sources,
+   the spread and the flags). Put them in the Artifacts sheet and the history record. No layout
+   changes to the sheet.
+6. Evaluation: make "inside the published range" the main metric and keep median error second.
+   Run each market 2× and report the spread between runs. Then pick 20 new markets that are not
+   in the current tuning or held-out sets, add their actuals the same way (median of 2–3
+   publishers), and report results on them separately. That is the fair number.
+
+Rules: mock every LLM and web call in tests, keep the full test suite passing, commit nothing
+beyond step 1, and show every market's before/after, including the ones that got worse.
+
+
+

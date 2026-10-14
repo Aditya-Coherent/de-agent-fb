@@ -1,0 +1,254 @@
+DESK RESEARCH ACCURACY WORK — CONVERSATION RECORD
+Session date: 2026-10-09. Model: Claude Opus 5.5 (Claude Code). Repo: de-agent-fb, branch main, HEAD 6b4beb0.
+Nothing in this session was committed. All changes are in the working tree.
+
+This file records the conversation: what was asked, what was found, what was changed,
+and the results. The user's requests are quoted or closely paraphrased; the assistant's
+answers are summarised.
+
+====================================================================================
+TURN 1 — QUESTION
+====================================================================================
+User: "In the desk research approach when I'm comparing with the actual data then median
+error is coming around 10% which is huge while all the numbers is coming from the llm or
+web search then why so much error?"
+
+ANSWER (summary)
+- The ~10% is close to the floor. Each "actual" in actuals_2025.csv is the median of 2-3
+  published reports, and those reports disagree with each other. A single real published
+  report sits a median of ~11% from that median. Examples:
+    Smartphones 537,620 / 585,630 / 598,920 (+/-8%)
+    Watches     78,800 / 81,300 / 124,500 (up to 53%)
+    Olive Oil   13,590 / 15,700 / 18,750 (up to 19%)
+    Gloves       8,500 (CMI) / 13,800 / 15,860 (up to 38%)
+    Urea        49,720 / 73,500 / 79,730 (up to 32%)
+- Only ~3 of 7 Desk values actually came from a cited figure; the rest were LLM guesses.
+  Desk errors: Smartphones -4.9% (cited), Watches -15% (cited, different publisher),
+  Smartwatches +10.5% (only CAGR cited), Olive Oil -6.9% (ungrounded), Gloves +10.5%
+  (ungrounded), Televisions -87.9% (ungrounded; passes gave 7.8 / 258 / 245 / 245 Bn and the
+  reviewer kept 7.8 Bn because it scored 64% vs 60%), Urea -57.5% (scope mismatch:
+  fertilizer-only vs total urea).
+- Suggested fixes: pick passes by groundedness, flag unstable values, extract cited figures
+  in code and take a median of several, check scope, measure "within published range".
+
+====================================================================================
+TURN 2 — FIRST FIX REQUEST (pasted spec)
+====================================================================================
+User asked for: (1) best-pass choice — record groundedness per pass, grounded beats
+ungrounded, 2x instability guard using the median + "market_size_unstable" flag, penalise
+ungrounded reward; (2) regex extraction of cited values from snippets/page text with year
+and unit handling, 2024/2026 moved to 2025 at the CAGR, drop values >2.5x from the median,
+median of 2+ values as anchor, pass the list to the LLM and record it in the Input Sheet;
+(3) scope check of each cited figure (urea fertilizer vs total urea, surgical vs medical
+gloves), log rejections; (4) add "in_published_range" (min-max of published, +/-5%) next to
+% error. Tests for each, mocked; keep sheet layout and SSE events; rerun the 7 markets and
+give a before/after table.
+
+WHAT WAS BUILT
+- New src/me_engine/generation/cited_values.py: extraction, year/unit normalisation, scope
+  check (keyword; LLM when --scope is given), one figure per source, syndicated repeats
+  counted once, outlier removal, median anchor.
+- agents.py: every pass recorded in pass_history; select_best_pass (grounded first, reward
+  breaks ties; >2x ungrounded spread -> median); -0.15 reward penalty for ungrounded;
+  market-size web queries in quoted form; page fetch for up to 4 relevant URLs; the LLM is
+  told the consensus anchor and the code enforces it; an LLM "grounded" claim only counts if
+  its number appears in the evidence.
+- graph.py: FIXED A PRE-EXISTING BUG — LangGraph silently dropped node updates whose key was
+  not in GenState, so market_size_grounded and quality_flags never reached the final state
+  (the backend never received quality flags; the ungrounded flag never fired).
+- quality.py: market_size_unstable flag. sheet_writer.py: citation audit rows in the
+  existing Artifacts sheet (no layout change). generate_synthetic_input.py: --scope option.
+- compare_desk_vs_actuals.py (new; no script in the repo produced COMPARISON_VS_ACTUAL.md):
+  % error vs median + in_published_range.
+- Tests: test_desk_cited_values.py, test_desk_best_pass.py, test_desk_accuracy_metrics.py.
+
+RESULT — accuracy got WORSE (reported as such)
+- Median error on the 6 markets that ran both times: 12.8% before -> 38.8% after.
+- Smartphones failed: the DB lookup now returned the "eSIM Market" report.
+- Cause: the code worked as specified, but a plain median of whatever ddgs returns is noisy;
+  web sources disagree far more than the curated actuals (TV $165-430 Bn, smartwatches
+  $32-62 Bn, gloves $6.2-15.9 Bn).
+- Scoped urea run: queries still searched "urea fertilizer", and the LLM returned 32,710 =
+  the rejected CMI figure.
+
+====================================================================================
+TURN 3 — SECOND FIX REQUEST (pasted spec)
+====================================================================================
+User asked, in order:
+ A1 use the page title, else URL slug, as the subject when the sentence names no market,
+    then run the normal scope check (titles carried through to collect_cited_values);
+ A2 mask rejected figures in the DB narrative and snippets before the evidence brief;
+    re-ask if an ungrounded answer equals a rejected figure within +/-1%;
+ A3 --scope must drive the web queries and the DB lookup ("urea market size", not
+    "urea fertilizer");
+ A4 pick_best_report: reject titles = market name + product qualifier ("Curved
+    Televisions") and rows where the market word is only in newsSubject; explain the
+    Smartphones -> eSIM match; fall back to dynamic_skeleton instead of failing;
+ B5 independent units x ASP size range (one LLM call), reject cited values >3x outside,
+    check the final value too, skip on failure, log in the Artifacts sheet;
+ B6 source tiers by a general rule (tier 1 = report pages / research-firm domains / CMI DB;
+    tier 2 = LinkedIn, Pinterest, press-release mirrors, blogs); tier 2 only when <2 tier-1
+    values, never the sole anchor;
+ B7 weak consensus (1 value or max/min > 2) -> "cited_values_disputed"; anchor = value
+    nearest the size-range middle, else the CMI DB figure, else the median;
+ C8 relabel the Urea row "Urea (total, all uses)" (value unchanged) and run it with --scope;
+ C9 rerun every "ok" market for: old anchor, current code, new code; tuning vs held-out
+    split fixed before tuning; report held-out separately; show every market.
+Rules: tests for 1-7 with mocks; full suite passes; no sheet/SSE change; no commits; any
+step that hurts held-out accuracy goes behind a config flag, off by default.
+
+WHAT WAS BUILT
+- A1 cited_values.title_subject / _slug_subject; values whose sentence is about a segment,
+  region or share stay rejected even with a title subject.
+- A2 agents._figure_masks/_mask_text ("[figure removed: different scope]" etc.); the
+  "do NOT use" list was removed from the prompt; re-ask up to 2 times.
+- A3 cited_values.scope_search_name (LLM, cached) -> state.market_search_name, used for DB
+  lookup, verification and all web queries; web results now carry the page title.
+- A4 db_source.title_scope_mismatch (LIKE path) and title_narrower (semantic path).
+  WHY SMARTPHONES MATCHED eSIM: the DB has no smartphone report. LIKE '%smartphones%' hit
+  reports whose newsSubject segment lists mention smartphones; eSIM won on segmentation
+  length. Now rejected. dynamic_skeleton.build_generic_skeleton (LLM-proposed dimensions +
+  standard regions), opt-in via generic_fallback=True (used by the Desk CLI only; the web
+  app's segment gate and demand_topdown keep the old contract).
+- B5 cited_values.estimate_size_range + outside_size_range; flag
+  final_value_outside_size_range; Artifacts row "Market size check".
+- B6 cited_values.source_tier; tier-2 values marked "corroborating".
+- B7 disputed logic + flag cited_values_disputed.
+- Config flags (env): DEAGENT_TITLE_SUBJECT, DEAGENT_SIZE_CHECK, DEAGENT_SOURCE_TIERS,
+  DEAGENT_WEAK_CONSENSUS.
+- C8 actuals_2025.csv row relabelled (quoted, because the label contains a comma).
+- C9 compare_desk_vs_actuals.py --eval: three versions, split from
+  approaches/examples/DESK_EVAL_SPLIT.json (hash of market name: 25 tuning, 38 held-out),
+  common-market subset, offline ablation that replays saved evidence with one step flipped
+  (replay verified to reproduce every grounded live run exactly).
+- Batches: old anchor = HEAD worktree, current = snapshot of the uncommitted code taken
+  before editing, after = new code; outputs in output/desk_eval/{before,current,after}/.
+- Bugs found during the runs and fixed: Cloud Computing crashed printing a log line with a
+  narrow no-break space to the cp1252 console (generate_synthetic_input.py now uses
+  errors="replace"); "2030.Cloud Computing" was read as the subject (missing space after a
+  full stop). Cloud Computing was rerun.
+- Tests: tests/test_desk_evidence_quality.py (47 tests). Full suite: 870 passed, 2 skipped.
+
+DECISION UNDER THE "HURTS HELD-OUT" RULE
+- B7 weak consensus made held-out clearly worse (14.2% on vs 6.9% off, common markets), so
+  DEAGENT_WEAK_CONSENSUS is now OFF by default. The tuning set showed no difference, so the
+  held-out set was used for this one decision and is not fully independent for it.
+- Other steps stay on: title subject helps (9.8% off vs 5.7%), size check no measurable
+  effect, source tiers help slightly (8.2% off vs 6.9%).
+
+FINAL RESULTS (median absolute error; in published range)
+Held-out, 26 markets every version could size:
+  old anchor (HEAD)            18.9%   11/26
+  current code                  8.3%   19/26
+  new code, all steps on       14.2%   17/26
+  new code as shipped           6.9%   22/26
+Held-out, every market that got a value:
+  old 17.6% (27 markets), current 8.3% (26), shipped 8.8% (38)
+Tuning, 16 shared markets: current 5.6%, shipped 6.6% (16/16 in range); all 25: 9.2%.
+Versus current code: 17 better, 19 worse, 6 same, 21 newly sized; 60 of 63 final values
+are backed by a cited figure.
+
+PER-MARKET (H = held-out, T = tuning; error vs actual; ✓/✗ = in/out of published range)
+Market | Set | Actual | Old anchor | Current | Shipped | Grounded | vs current
+Animal Feed | H | 483,690 | -91% ✗ | +0% ✓ | +5% ✓ | yes | worse
+Automotive Glass | H | 24,600 | +57% ✗ | -2% ✓ | +6% ✓ | yes | worse
+Automotive Lubricants | H | 75,080 | fail | fail | +5% ✓ | yes | new
+Beer | H | 804,650 | -18% ✗ | +10% ✓ | +1% ✓ | yes | better
+Bicycles | H | 84,250 | fail | fail | -19% ✓ | no | new
+Blood Glucose Monitoring | H | 17,220 | -10% ✗ | -10% ✗ | -10% ✗ | yes | same
+Carbon Black | H | 21,600 | -5% ✓ | +3% ✓ | +14% ✓ | yes | worse
+Cardiac Pacemakers | H | 5,660 | fail | fail | -10% ✓ | yes | new
+Caustic Soda | H | 46,500 | +68% ✗ | +0% ✓ | +2% ✓ | yes | worse
+Chocolate | H | 167,000 | -10% ✓ | -22% ✓ | -22% ✓ | yes | same
+Cosmetics | H | 346,840 | +30% ✗ | +20% ✗ | +4% ✓ | yes | better
+Crop Protection Chemicals | H | 83,320 | +0% ✓ | -1% ✓ | -2% ✓ | yes | same
+Data Center Colocation | H | 83,040 | +231% ✗ | +8% ✗ | -1% ✓ | yes | better
+Drip Irrigation | H | 8,050 | -25% ✗ | +5% ✓ | +1% ✓ | yes | better
+Elevators | H | 98,720 | +3% ✓ | -7% ✓ | -8% ✓ | yes | same
+Energy Drinks | H | 77,160 | -74% ✗ | +7% ✓ | +0% ✓ | yes | better
+Flexible Packaging | H | 269,200 | +11% ✓ | +17% ✓ | +14% ✓ | yes | better
+Forklifts | H | 78,780 | fail | fail | +2% ✓ | yes | new
+Fragrances | H | 60,000 | -43% ✗ | -41% ✗ | -4% ✓ | yes | better
+Hearing Aids | H | 8,800 | -2% ✓ | +14% ✓ | +35% ✓ | yes | worse
+Insulin | H | 29,200 | fail | fail | +1% ✓ | yes | new
+Olive Oil | H | 15,700 | -1% ✓ | +12% ✓ | +39% ✗ | yes | worse
+Paper Cups | H | 13,400 | -16% ✓ | -9% ✓ | -13% ✓ | yes | worse
+Potash Fertilizer | H | 29,560 | -4% ✓ | -7% ✓ | -20% ✓ | yes | worse
+Razors | H | 12,754 | +72% ✗ | +7% ✓ | +5% ✓ | yes | better
+Semiconductors | H | 794,300 | fail | fail | -14% ✗ | yes | new
+Smart Meters | H | 32,550 | fail | fail | -11% ✓ | yes | new
+Smart Speakers | H | 14,250 | +0% ✓ | fail | +9% ✓ | yes | new
+Smartphones | H | 585,630 | fail | fail | -1% ✓ | yes | new
+Smartwatches | H | 38,000 | -20% ✗ | +53% ✗ | -16% ✓ | yes | better
+Surgical Masks | H | 5,060 | -36% ✗ | -4% ✓ | +33% ✗ | yes | worse
+Tablets | H | 64,000 | fail | fail | +14% ✓ | yes | new
+Televisions | H | 64,355 | +211% ✗ | +26% ✗ | +333% ✗ | yes | worse
+Toothpaste | H | 22,300 | -13% ✓ | +2% ✓ | +5% ✓ | yes | worse
+Toys | H | 121,750 | fail | fail | +7% ✗ | yes | new
+Urea (total, all uses) | H | 73,500 | -8% ✓ | +8% ✓ | +0% ✓ | yes | better
+Wine | H | 360,360 | +51% ✗ | +35% ✗ | +18% ✓ | yes | better
+Wireless Earbuds | H | 35,600 | fail | fail | +121% ✗ | yes | new
+Air Compressors | T | 19,700 | fail | fail | -3% ✓ | yes | new
+Aluminum Cans | T | 60,330 | -7% ✓ | -9% ✓ | -3% ✓ | yes | better
+Athletic Footwear | T | 145,490 | -52% ✗ | -19% ✗ | -6% ✓ | yes | better
+Automotive Lead-Acid Batteries | T | 31,300 | +2% ✓ | +5% ✓ | -9% ✓ | yes | worse
+Bottled Water | T | 323,070 | fail | fail | +4% ✓ | yes | new
+Cloud Computing | T | 781,270 | +30% ✗ | +30% ✗ | +15% ✓ | yes | better
+Corrugated Boxes | T | 195,600 | fail | fail | +31% ✗ | yes | new
+Cybersecurity | T | 227,600 | -92% ✗ | -14% ✗ | +3% ✓ | yes | better
+Dental Implants | T | 5,640 | +4% ✓ | -2% ✓ | +20% ✓ | yes | worse
+Diesel Generators | T | 21,440 | -2% ✓ | -1% ✓ | -1% ✓ | yes | same
+Digital Cameras | T | 22,285 | fail | fail | -57% ✗ | yes | new
+LED Lighting | T | 108,990 | -100% ✗ | -10% ✓ | -13% ✓ | no | worse
+Laptops | T | 115,100 | fail | fail | +42% ✗ | yes | new
+Mattresses | T | 49,560 | fail | fail | -38% ✗ | yes | new
+Organic Fertilizers | T | 11,110 | fail | fail | +15% ✓ | yes | new
+Orthopedic Implants | T | 52,400 | fail | fail | -25% ✗ | yes | new
+Paints & Coatings | T | 198,250 | -22% ✗ | +1% ✓ | +5% ✓ | yes | worse
+Plant-Based Milk | T | 22,660 | +2% ✓ | -6% ✓ | -2% ✓ | yes | better
+Shampoo | T | 36,915 | -63% ✗ | -2% ✓ | -8% ✓ | yes | worse
+Sunglasses | T | 43,030 | -71% ✗ | -3% ✓ | -8% ✓ | yes | worse
+Syringes | T | 10,491 | +45% ✓ | +85% ✓ | +65% ✓ | yes | better
+Titanium Dioxide | T | 21,615 | -1% ✓ | +4% ✓ | +3% ✓ | yes | same
+Tractors | T | 84,670 | +5% ✓ | -2% ✓ | +5% ✓ | yes | worse
+Wheelchairs | T | 5,580 | +111% ✗ | +7% ✓ | +13% ✓ | yes | worse
+Wind Turbines | T | 170,900 | fail | fail | -37% ✗ | yes | new
+("fail" = no DB skeleton; the old and current code could not start those markets.)
+
+====================================================================================
+OPEN ITEMS (found on held-out failures, deliberately NOT changed)
+====================================================================================
+1. Televisions +333%: research sites report $119-415 Bn; the "actual" is two hardware-only
+   sources at ~$64 Bn. A definition disagreement, not a parsing error.
+2. Olive Oil +39%: IMARC is not recognised as a research firm by the general tier rule (no
+   keyword in the domain, no report path in the URL), so tier-2 copies joined the median.
+3. Surgical Masks +33%: a generic "masks" figure was accepted; the keyword rule lets a
+   two-word market drop one word.
+4. Markets with no DB report are less accurate: ~10% median error on held-out, ~31% on
+   tuning (e.g. Wireless Earbuds +121%, Digital Cameras -57%).
+5. The LLM scope judge wrongly rejected Fortune's total-urea figure as "narrower".
+6. Web search (ddgs) returns different results each run, so part of every difference is
+   search noise.
+Any fix for 1-3 should be judged on a fresh held-out set, since these were found by looking
+at held-out results.
+
+====================================================================================
+FILES
+====================================================================================
+New:      src/me_engine/generation/cited_values.py
+          compare_desk_vs_actuals.py
+          tests/test_desk_cited_values.py, test_desk_best_pass.py,
+          test_desk_accuracy_metrics.py, test_desk_evidence_quality.py
+          approaches/examples/DESK_EVAL.md / .json, DESK_EVAL_SPLIT.json,
+          DESK_VS_ACTUAL.md / .json
+Changed:  src/me_engine/generation/agents.py, config.py, db_source.py,
+          dynamic_skeleton.py, graph.py, history.py, quality.py, sheet_writer.py,
+          web_evidence.py; generate_synthetic_input.py; actuals_2025.csv (Urea label);
+          PROJECT_STRUCTURE.md
+Not mine: git status also showed changes to approaches/PRESENTER_GUIDE.txt,
+          EXAMPLES_SUMMARY.*, extra gaming-consoles / wireless-earbuds files and two
+          my_companies/ files, apparently from another run during the session. Left alone.
+
+Rebuild the report from saved runs:  python compare_desk_vs_actuals.py --eval
+Rerun one market:                    python generate_synthetic_input.py --market "<name>" --from-db
+                                       --output <x.xlsx> --save-state <x.json> [--scope "<definition>"]

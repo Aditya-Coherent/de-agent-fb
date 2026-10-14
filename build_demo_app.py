@@ -48,8 +48,12 @@ def grid(wb, name):
     return [list(r) for r in ws.iter_rows(values_only=True)], ws.max_row, ws.max_column
 
 
-def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str | None = None) -> Path:
-    hel = ROOT / "output" / "hel"
+def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str | None = None,
+          run_dir: Path | None = None, layout_only: bool = False) -> Path:
+    """`layout_only`: `human_data` is a blank template built from an ME's labels
+    (run_market_e2e --me-structure) -- its numbers are layout markers, never
+    shown or compared."""
+    hel = run_dir or ROOT / "output" / "hel"
     spec = load_json(hel / "structure_spec.json")
     final_path = hel / f"Data File - {market} ({tag}, human structure).xlsx"
     gen_path = ROOT / "agentGeneratedInputSheet" / f"Data File - {market} ({gen_tag or tag}).xlsx"
@@ -68,6 +72,8 @@ def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str |
     gen_mv = dw._market_value(gen_path)
     gen_asp = dw._gen_asp(gen_path, geos)
     hd = ev.read_data_file(human_data, spec)
+    if layout_only:
+        hd = {**hd, "shares": {}, "region_value": {}}
     final_shares = ev.read_data_file(final_path, spec)["shares"]
 
     # ---- real-world driver splits the assumptor used (recomputed from its inputs)
@@ -148,6 +154,8 @@ def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str |
         for c in range(1, hcols + 1):
             h = hg[r - 1][c - 1] if c - 1 < len(hg[r - 1]) else None
             v = fg[r - 1][c - 1] if r - 1 < len(fg) and c - 1 < len(fg[r - 1]) else None
+            if layout_only and isinstance(h, (int, float)) and not isinstance(h, bool):
+                h = None
             if h is None and v is None:
                 continue
             cell = {"r": r, "c": c, "h": h if not isinstance(h, float) else round(h, 6),
@@ -213,6 +221,8 @@ def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str |
         for c in range(1, hcols + 1):
             h = hg[r - 1][c - 1] if c - 1 < len(hg[r - 1]) else None
             v = fg[r - 1][c - 1] if r - 1 < len(fg) and c - 1 < len(fg[r - 1]) else None
+            if layout_only and isinstance(h, (int, float)) and not isinstance(h, bool):
+                h = None
             if h is None and v is None:
                 continue
             cell = {"r": r, "c": c, "h": h if not isinstance(h, float) else round(h, 6),
@@ -247,6 +257,8 @@ def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str |
         for c in range(1, hcols + 1):
             h = hg[r - 1][c - 1] if c - 1 < len(hg[r - 1]) else None
             v = fg[r - 1][c - 1] if r - 1 < len(fg) and c - 1 < len(fg[r - 1]) else None
+            if layout_only and isinstance(h, (int, float)) and not isinstance(h, bool):
+                h = None
             if h is None and v is None:
                 continue
             cell = {"r": r, "c": c, "h": h if not isinstance(h, float) else round(h, 6),
@@ -286,11 +298,18 @@ def build(market: str, human_data: Path, out_dir: Path, tag: str, gen_tag: str |
             "industry_value": usecases.get("industry_value"), "country_value": usecases.get("country_value"),
             "region_value": usecases.get("region_value"), "global_value": usecases.get("global_value"),
             "flags": usecases.get("flags"), "consistency": usecases.get("consistency"),
+            "settings": usecases.get("settings"),
             "mix_profiles": (usecases.get("mix") or {}).get("profiles"),
             "mix_dims": (usecases.get("mix") or {}).get("dimensions") or [],
             "items": [{k: r.get(k) for k in ("industry", "use_case", "own", "spec", "driver_values", "units", "values_mn",
                                               "world_mn", "evidence", "published_context", "self_checks", "reexamined",
-                                              "world_units_estimate", "world_units_formula", "world_units_circular")}
+                                              "world_units_estimate", "world_units_formula", "world_units_circular",
+                                              "price_per_quantity_unit", "driver_meta", "anchor",
+                                              # the machine-model build
+                                              "archetype", "world_inputs", "world_formula", "world_units",
+                                              "driver_total", "driver_share", "bound_violations", "basis_counts",
+                                              "blocked", "flags", "spread", "median_of_samples", "excluded_samples",
+                                              "driver_votes", "samples", "published_gap", "attempts")}
                       for r in usecases.get("use_cases") or []]},
         "shares_final": {d: (v or {}).get("__global__") for d, v in (state.get("shares") or {}).items()},
         "asp_trace": state.get("asp_trace") or {},
@@ -316,11 +335,15 @@ def main() -> int:
     p.add_argument("--human-data", default="src/newinfo/Data file-Global High Energy Laser Market.xlsx")
     p.add_argument("--tag", default="v10")
     p.add_argument("--gen-tag", help="tag of the generation run when --tag reused its Input Sheet")
+    p.add_argument("--dir", default="output/hel", help="run output folder (e.g. output/gearbox)")
+    p.add_argument("--layout-only", action="store_true",
+                   help="--human-data is a blank template from an ME's labels (no human numbers to show)")
     p.add_argument("--serve", action="store_true")
     p.add_argument("--port", type=int, default=8765)
     args = p.parse_args()
     slug = re.sub(r"[^a-z0-9]+", "-", args.market.lower().replace("global ", "").replace(" market", "")).strip("-")
-    out = build(args.market, ROOT / args.human_data, ROOT / "demo" / f"{slug}-{args.tag}", args.tag, args.gen_tag)
+    out = build(args.market, ROOT / args.human_data, ROOT / "demo" / f"{slug}-{args.tag}", args.tag, args.gen_tag,
+                run_dir=ROOT / args.dir, layout_only=args.layout_only)
     print(f"[demo] {out} ({out.stat().st_size / 1e6:.1f} MB)")
     if args.serve:
         import functools

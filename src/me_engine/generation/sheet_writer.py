@@ -259,6 +259,12 @@ def write_input_sheet(state: Mapping[str, Any], out_path: Path, flat: bool = Fal
                     + (state.get("market_size_source") or "LLM estimate, no cited figure"))
     art.cell(ir, 4, cited.get("method", "none"))
     ir += 1
+    if cited.get("low_mn"):
+        art.cell(ir, 1, "Market size range")
+        art.cell(ir, 2, "Lowest-highest accepted cited figure (2025) and confidence (A strong, B fair, C weak)")
+        art.cell(ir, 3, f"${float(cited['low_mn']):,.0f}M-${float(cited['high_mn']):,.0f}M")
+        art.cell(ir, 4, f"confidence {cited.get('confidence') or '-'}")
+        ir += 1
     size_range = cited.get("size_range")
     art.cell(ir, 1, "Market size check")
     art.cell(ir, 2, "Independent size range (global annual units x average selling price)")

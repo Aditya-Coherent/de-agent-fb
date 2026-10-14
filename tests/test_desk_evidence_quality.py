@@ -278,16 +278,136 @@ def test_final_value_outside_size_range_is_flagged():
     ("CMI report DB: Urea Fertilizers Market", 1),
     ("https://www.grandviewresearch.com/industry-analysis/television-market-report", 1),
     ("https://www.imarcgroup.com/report/en/watch-market", 1),
+    ("https://www.imarcgroup.com/olive-oil-market", 1),          # no report path, still established
+    ("https://www.statista.com/outlook/cmo/food/oils-fats/olive-oil", 1),
     ("https://www.mordorintelligence.com/industry-reports/smartphones-market", 1),
-    ("https://www.linkedin.com/pulse/urea-market-booming", 2),
-    ("https://www.einnews.com/pr_news/841835066/disposable-medical-gloves-market", 2),
-    ("https://www.pinterest.com/pin/argan-oil-market", 2),
-    ("https://www.tunisiadailysun.com/article/921246989-olive-oil-market", 2),
-    ("https://www.globenewswire.com/news-release/2025/x-market-report", 2),
-    ("web snippet", 2),
+    ("https://www.gii.co.jp/report/tbrc1668667-urea-global-market-report.html", 1),  # reseller
+    ("https://www.fao.org/statistics/olive-oil", 1),             # official
+    ("https://market.us/report/olive-oil-market/", 2),           # other report page
+    ("https://dataintelo.com/report/global-mattresses-market", 2),
+    ("https://www.marketresearch.biz/report/olive-oil-market/", 2),
+    ("https://www.linkedin.com/pulse/urea-market-booming", 3),
+    ("https://www.einnews.com/pr_news/841835066/disposable-medical-gloves-market", 3),
+    ("https://www.pinterest.com/pin/argan-oil-market", 3),
+    ("https://www.tunisiadailysun.com/article/921246989-olive-oil-market", 3),
+    ("https://www.globenewswire.com/news-release/2025/x-market-report", 3),
+    ("web snippet", 3),
 ])
 def test_source_tier(source, tier):
     assert source_tier(source) == tier
+
+
+def test_two_pages_of_one_site_count_once():
+    anchor = collect_cited_values([
+        ("https://dataintelo.com/report/the-mattress-market", "The mattress market was valued at USD 28.5 billion in 2025."),
+        ("https://dataintelo.com/report/global-mattresses-market", "Global mattresses market valued at $30.8 billion in 2025."),
+        ("https://www.grandviewresearch.com/industry-analysis/mattress-market",
+         "The global mattress market size was valued at USD 49.2 billion in 2025."),
+    ], "Mattresses")
+    assert len(anchor.accepted) == 2
+    assert any("same source" in r.reason for r in anchor.rejected if "dataintelo" in r.source)
+
+
+def test_repost_naming_the_publisher_counts_as_that_publisher():
+    anchor = collect_cited_values([
+        ("https://www.imarcgroup.com/corrugated-box-market",
+         "The global corrugated boxes market size reached USD 212.3 billion in 2025."),
+        ("https://www.linkedin.com/pulse/corrugated-boxes-market",
+         "According to IMARC Group, the global corrugated boxes market was USD 210.1 billion in 2025."),
+        ("https://www.grandviewresearch.com/industry-analysis/corrugated-boxes-market",
+         "The global corrugated boxes market was valued at USD 195.6 billion in 2025."),
+    ], "Corrugated Boxes")
+    assert sorted(v.source.split("/")[2] for v in anchor.accepted) == ["www.grandviewresearch.com", "www.imarcgroup.com"]
+
+
+def test_report_pages_anchor_and_social_posts_only_corroborate():
+    anchor = collect_cited_values([
+        ("https://www.grandviewresearch.com/industry-analysis/x-market", "The global orthopedic implants market was USD 50 billion in 2025."),
+        ("https://www.imarcgroup.com/x-market", "The global orthopedic implants market was USD 58 billion in 2025."),
+        ("https://dataintelo.com/report/x", "The global orthopedic implants market was USD 54 billion in 2025."),
+        ("https://www.linkedin.com/pulse/x", "The global orthopedic implants market was USD 90 billion in 2025."),
+    ], "Orthopedic Implants")
+    assert anchor.value_2025_mn == pytest.approx(54_000)
+    assert [c.source for c in anchor.corroborating] == ["https://www.linkedin.com/pulse/x"]
+    assert anchor.confidence == "A" and anchor.low_mn == 50_000 and anchor.high_mn == 58_000
+
+
+def test_social_post_does_not_move_a_single_report_figure():
+    anchor = collect_cited_values([
+        ("https://www.metastatinsight.com/press-details/air-compressor",
+         "Global Air Compressors market size was USD 19,188.24 million in 2025."),
+        ("https://www.linkedin.com/pulse/air-compressor-market", "Air Compressor Market size was valued at USD 44.53 Billion in 2025."),
+    ], "Air Compressors")
+    assert anchor.value_2025_mn == pytest.approx(19_188.2, rel=1e-3)
+    assert anchor.confidence == "C"
+
+
+def test_confidence_grades():
+    strong = collect_cited_values([
+        ("https://www.grandviewresearch.com/a", "The global olive oil market was USD 15.7 billion in 2025."),
+        ("https://www.imarcgroup.com/b", "The global olive oil market was USD 16.5 billion in 2025."),
+        ("https://www.straitsresearch.com/c", "The global olive oil market was USD 18.0 billion in 2025."),
+    ], "Olive Oil")
+    assert strong.confidence == "A"
+    many = collect_cited_values([
+        (f"https://www.{d}.com/olive-oil", f"The global olive oil market was USD {v} billion in 2025.")
+        for d, v in [("grandviewresearch", 36.8), ("imarcgroup", 38.2), ("straitsresearch", 38.4),
+                     ("mordorintelligence", 35.6), ("fortunebusinessinsights", 36.0), ("futuremarketreport", 16.9)]
+    ], "Olive Oil")
+    assert many.confidence == "A" and not many.disputed   # one stray low figure among six agreeing
+    weak = collect_cited_values([(R1, "The global olive oil market was USD 15.7 billion in 2025.")], "Olive Oil")
+    assert weak.confidence == "C"
+    assert "low_confidence_citation" in [f["code"] for f in compute_demand_quality_flags({"cited_anchor": weak.to_dict()})]
+
+
+def test_segment_figure_in_a_sentence_naming_the_market_is_not_the_total():
+    text = ("The online segment of the global smartwatch market accounted for USD 9.5 billion in 2025. "
+            "The global smartwatch market was valued at USD 38.2 billion in 2024.")
+    vals = extract_values(text, R1)
+    assert "part of the market" in vals[0].reason and not vals[1].reason
+    anchor = collect_cited_values([(R1, text)], "Smartwatches")
+    assert anchor.accepted[0].value_mn == pytest.approx(38_200)
+
+
+def test_total_after_a_segment_heading_still_counts():
+    vals = extract_values("Laptops Market Segment Analysis : By Type , Screen Size: The market size of Laptops "
+                          "Market in 2025 was US $ 134.9 Bn.", R1)
+    assert vals and not vals[0].reason
+
+
+def test_cagr_comes_from_the_figures_own_sentence_not_a_segment():
+    text = ("The global olive oil market was USD 15.0 billion in 2024. The extra virgin type was USD 3.0 billion "
+            "in 2024 and is expected to reach USD 25.0 billion by 2032.")
+    anchor = collect_cited_values([(R1, text)], "Olive Oil")
+    # the 30%/yr implied by the segment's own 3.0 -> 25.0 must not move the total
+    assert anchor.value_2025_mn < 16_500
+
+
+def test_two_word_market_rejects_a_figure_for_the_broader_market():
+    assert not check_scope("turbines", "Wind Turbines").ok
+    assert not check_scope("masks", "Surgical Masks").ok
+    assert check_scope("wind turbine", "Wind Turbines").ok
+    assert check_scope("coatings", "Paints & Coatings").ok   # '&' markets keep the looser rule
+
+
+def test_cmi_report_gap_is_flagged():
+    cited = {"value_2025_mn": 9_000, "accepted": [
+        {"source": "CMI report DB: X Market", "value_2025_mn": 6_000.0, "raw_text": "USD 6 Bn", "reason": ""}]}
+    codes = [f["code"] for f in compute_demand_quality_flags({"global_anchor_2025": 9_000, "cited_anchor": cited})]
+    assert "differs_from_cmi_report" in codes
+    codes = [f["code"] for f in compute_demand_quality_flags({"global_anchor_2025": 6_500, "cited_anchor": cited})]
+    assert "differs_from_cmi_report" not in codes
+
+
+def test_only_scope_and_magnitude_rejections_are_masked():
+    cited = {"accepted": [], "corroborating": [], "rejected": [
+        {"raw_text": "USD 32.71 Bn", "reason": "scope: narrower"},
+        {"raw_text": "USD 15.7 billion", "reason": "no year stated next to the value"},
+        {"raw_text": "USD 9 billion", "reason": "outlier: more than 2.5x from the median of cited values"},
+    ]}
+    assert set(agents._figure_masks(cited)) == {"USD 32.71 Bn"}
+    assert agents._matches_rejected(15_700, {"rejected": [
+        {"raw_text": "USD 15.7 billion", "value_mn": 15_700, "reason": "no year stated next to the value"}]}) is None
 
 
 def test_tier2_only_corroborates_when_two_tier1_values_exist():
@@ -300,12 +420,13 @@ def test_tier2_only_corroborates_when_two_tier1_values_exist():
     assert [c.source for c in anchor.corroborating] == ["https://www.linkedin.com/pulse/olive"]
 
 
-def test_tier2_joins_a_single_tier1_value():
+def test_social_post_only_corroborates_a_single_report_value():
     anchor = collect_cited_values([
         (R1, "The global olive oil market was valued at USD 15 billion in 2025."),
         ("https://www.linkedin.com/pulse/olive", "The global olive oil market was valued at USD 17 billion in 2025."),
     ], "Olive Oil")
-    assert anchor.value_2025_mn == pytest.approx(16_000)
+    assert anchor.value_2025_mn == pytest.approx(15_000)
+    assert len(anchor.corroborating) == 1
 
 
 def test_tier2_is_never_the_sole_anchor():

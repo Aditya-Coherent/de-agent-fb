@@ -65,12 +65,16 @@ def build(llm: Any, ub: dict[str, Any], nesting: dict[str, Any], market: str,
           say: Any = print) -> dict[str, Any]:
     trees = {d: t for d, t in nesting.items() if d != ub["dimension"] and (t or {}).get("__root__")}
     items = ub["use_cases"]
+    from concurrent.futures import ThreadPoolExecutor
+
     profiles = {}
-    for it in items:
-        try:
-            profiles[f"{it['industry']}|{it['use_case']}"] = profile(llm, market, it, trees)
-        except Exception as exc:  # noqa: BLE001
-            say(f"[mix] {it['use_case']}: profile failed ({exc})")
+    with ThreadPoolExecutor(max_workers=8) as pool:  # one independent call per use case
+        futs = {f"{it['industry']}|{it['use_case']}": (it, pool.submit(profile, llm, market, it, trees)) for it in items}
+        for key, (it, fut) in futs.items():
+            try:
+                profiles[key] = fut.result()
+            except Exception as exc:  # noqa: BLE001
+                say(f"[mix] {it['use_case']}: profile failed ({exc})")
     geos = list(ub["country_value"])
     shares: dict[str, dict[str, dict[str, float]]] = {}  # dim -> geo -> "seg" or "parent|child" -> share
     contrib: dict[str, dict[str, dict[str, dict[str, float]]]] = {}  # dim -> geo -> key -> uc -> value_mn

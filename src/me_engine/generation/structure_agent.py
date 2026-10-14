@@ -217,3 +217,168 @@ def save(spec: dict[str, Any], path: Path | str) -> Path:
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
     return p
+
+
+# ---- a Data-file template from an ME's labels ------------------------------------
+_ME_BLOCKS = ("value", "price", "volume")
+_SUM_REF = re.compile(r"^=\s*(?:SUM\()?\s*([A-Z]+)(\d+)(?:\s*[+:,]\s*[A-Z]+\d+)*\)?\s*$")
+# a residual row: "= <row p> - SUM(<siblings>)"; when p is a segment, this row and its siblings are p's children
+_RESIDUAL = re.compile(r"^=\s*\$?[A-Z]+\$?(\d+)\s*-\s*SUM\(([^)]*)\)\s*$", re.I)
+
+
+def _clean(label: Any) -> str:
+    return re.sub(r"\s+", " ", str(label or "")).strip()
+
+
+def me_structure(me_file: Path | str) -> dict[str, Any]:
+    """Labels only from an ME laid out as one sheet per region with Value / Price /
+    Volume blocks (column C = dimension or region, column D = label): the
+    dimensions with their parent -> children nesting (a parent row's formula sums
+    the rows right below it, or a child is written as "parent - SUM(its siblings)"),
+    the countries of each region, and the priced
+    dimension (the one with a Price block). No number is read."""
+    wb = load_workbook(me_file, read_only=True)
+    order: list[str] = []
+    seg: dict[str, list[str]] = {}
+    children: dict[str, dict[str, list[str]]] = {}
+    regions: dict[str, list[str]] = {}
+    region_order: list[str] = []
+    priced = None
+    for ws in wb.worksheets:
+        rows = list(ws.iter_rows(values_only=True))
+        block, dim_rows = None, []
+        for i, r in enumerate(rows, start=1):
+            c, d = (_clean(r[2]) if len(r) > 2 else ""), (_clean(r[3]) if len(r) > 3 else "")
+            if c.lower() in _ME_BLOCKS and not d.startswith("By "):
+                block = c.lower()
+                continue
+            if not c or not d:
+                continue
+            if c.startswith("By "):
+                if block == "price" and priced is None:
+                    priced = c
+                if block != "value" or d == c:
+                    continue
+                if c not in seg:
+                    order.append(c)
+                    seg[c] = []
+                if d not in seg[c]:
+                    seg[c].append(d)
+                dim_rows.append((i, c, d, r[4] if len(r) > 4 else None))
+            elif block == "value" and c == _clean(ws.title) and d != c and " in " not in d:
+                if ws.title == "Global":
+                    if d not in region_order:
+                        region_order.append(d)
+                    continue
+                regions.setdefault(c, [])
+                if d not in regions[c]:
+                    regions[c].append(d)
+        by_row = {i: (dim, lab) for i, dim, lab, _ in dim_rows}
+        for i, dim, lab, f in dim_rows:
+            res = _RESIDUAL.match(f) if isinstance(f, str) else None
+            if res:  # child = parent - SUM(siblings): parent is a segment row above, not the dimension total
+                p = int(res.group(1))
+                refs = [int(x) for x in re.findall(r"[A-Z]+\$?(\d+)", res.group(2))]
+                rng = range(min(refs), max(refs) + 1) if refs and ":" in res.group(2) else refs
+                if p in by_row and by_row[p][0] == dim and p < i:
+                    kids = [lab] + [by_row[x][1] for x in rng if x in by_row and by_row[x][0] == dim]
+                    have = children.setdefault(dim, {}).setdefault(by_row[p][1], [])
+                    have.extend(k for k in kids if k not in have)
+                continue
+            m = _SUM_REF.match(f) if isinstance(f, str) else None
+            if not m:  # parent: its own-sheet formula adds up the rows right below it
+                continue
+            refs = [int(x) for x in re.findall(r"[A-Z]+(\d+)", f)]
+            rng = range(min(refs), max(refs) + 1) if ":" in f else refs
+            kids = [by_row[x][1] for x in rng if x in by_row and by_row[x][0] == dim]
+            if kids and min(refs) == i + 1:
+                children.setdefault(dim, {})[lab] = kids
+    rank = {r: i for i, r in enumerate(region_order)}
+    regions = dict(sorted(regions.items(), key=lambda kv: rank.get(kv[0], len(rank))))
+    nesting = {}
+    for dim in order:
+        kids = children.get(dim, {})
+        kids = {p: sorted(ks, key=seg[dim].index) for p, ks in kids.items()}  # sheet order
+        all_kids = {k for ks in kids.values() for k in ks}
+        nesting[dim] = {"__root__": [s for s in seg[dim] if s not in all_kids], **kids}
+    return {"dimensions": nesting, "order": order, "regions": regions,
+            "geographies": [g for cs in regions.values() for g in cs], "priced_dimension": priced or order[0]}
+
+
+def data_template_from_me(me_file: Path | str, market: str, out: Path | str) -> dict[str, Any]:
+    """A blank Data file (Data / ASP / Market Value sheets, the layout the pipeline
+    reads) built from an ME's labels. Its only numbers are layout markers --
+    1/n shares so the schema reader can see which rows are children, and 1s in
+    the region block -- which the pipeline clears before writing its own values."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment
+
+    st = me_structure(me_file)
+    geos, nest = st["geographies"], st["dimensions"]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Data"
+    ws.cell(1, 2, "Market")
+    ws.cell(1, 3, market)
+    gcol = {g: 3 + i for i, g in enumerate(geos)}
+    for g, c in gcol.items():
+        ws.cell(3, c, g)
+        ws.cell(3, c + 28, g)  # the growth (CAGR) block starts at AE
+    r = 4
+    for dim in st["order"]:
+        ws.cell(r, 2, dim)
+        ws.cell(r, 30, dim)
+        r += 1
+        tops = nest[dim]["__root__"]
+        for top in tops:
+            for lab, share in [(top, 1 / len(tops))] + [(k, 1 / len(nest[dim][top])) for k in nest[dim].get(top, [])]:
+                ws.cell(r, 2, lab)
+                if lab != top:  # children are indented, the analysts' own marking the schema reader trusts
+                    ws.cell(r, 2).alignment = Alignment(indent=1)
+                ws.cell(r, 30, lab)
+                for c in gcol.values():
+                    ws.cell(r, c, share)
+                r += 1
+        r += 1
+    r += 2
+    ws.cell(r, 2, "Region")
+    ws.cell(r, 3, "Market Share")
+    ws.cell(r, 4, "CAGR")
+    ws.cell(r, 5, "Value")
+    ws.cell(r + 1, 2, "Global")
+    ws.cell(r + 1, 3, 1)
+    r += 2
+    for reg, cs in st["regions"].items():
+        for lab in [reg] + cs:
+            ws.cell(r, 2, lab)
+            ws.cell(r, 3, 1)
+            ws.cell(r, 4, 1)
+            r += 1
+    asp = wb.create_sheet("ASP")
+    pdim = st["priced_dimension"]
+    leaves = [s for s in nest[pdim]["__root__"] if s not in nest[pdim]] + \
+             [k for p, ks in nest[pdim].items() if p != "__root__" for k in ks]
+    seq = [x for top in nest[pdim]["__root__"] for x in [top] + nest[pdim].get(top, [])]
+    hr = 3
+    for block in range(4):  # ASP, shares, value, volume -- each under a header row naming the countries
+        if block == 0:
+            asp.cell(hr, 2, "Segment")
+        for g, i in zip(geos, range(len(geos))):
+            asp.cell(hr, 3 + i, g)
+        asp.cell(hr + 1, 2, pdim)
+        for j, lab in enumerate(seq, start=hr + 2):
+            asp.cell(j, 2, lab)
+            if block == 0 and lab in leaves:
+                for i in range(len(geos)):
+                    asp.cell(j, 3 + i, 1)
+        hr = hr + 2 + len(seq) + 3
+    mv = wb.create_sheet("Market Value")
+    mv.cell(2, 3, "Value")
+    mv.cell(2, 5, "Volume")
+    for c, h in enumerate(("Regions", "USD Mn", "Share", "Th Unit", "Share", "CAGR"), start=2):
+        mv.cell(3, c, h)
+    for i, reg in enumerate(list(st["regions"]) + ["Global"], start=4):
+        mv.cell(i, 2, reg)
+    Path(out).parent.mkdir(parents=True, exist_ok=True)
+    wb.save(out)
+    return st

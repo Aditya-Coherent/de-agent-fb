@@ -144,6 +144,14 @@ class Ledger:
                                 weakest(i.weakest_input_label for i in inputs), formula,
                                 [i.number_id for i in inputs], module=module, pass_id=self.pass_id, note=note))
 
+    def derive(self, name: str, value: float, unit: str, geo: str, kind: str, formula: str, inputs: list[Number], *,
+               year: int | None = None, module: str = "calc", note: str = "") -> Number:
+        """A derived number from any formula over ledger inputs (ratios, conversions,
+        an agent's arithmetic re-evaluated by code); the caller computes the value."""
+        if not inputs:
+            raise LedgerError(f"{name}: a derived number needs its inputs")
+        return self._derived(name, value, unit, geo, kind, formula, inputs, year=year, module=module, note=note)
+
     def mul(self, name: str, a: Number, b: Number, unit: str, geo: str, kind: str = "VAL", *,
             factor: float = 1.0, year: int | None = None, note: str = "") -> Number:
         formula = f"{a.number_id} × {b.number_id}" + (f" × {factor:g}" if factor != 1.0 else "")

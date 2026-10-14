@@ -115,12 +115,12 @@ The output is 3 bands (Value / ASP / Volume) × 13 years (2021–2033) per geogr
 | `db_source.py` | Neon Postgres `cmi_reports` lookup (keyword LIKE + pgvector semantic) and LLM match verification |
 | `semantic_search.py` | Local MiniLM embeddings (384-d). Also used by demand_usage. |
 | `web_evidence.py` | `ddgs` web snippets (`gather`, `gather_with_sources`) and `fetch_page_text`. Reused by demand_usage and India. |
-| `cited_values.py` | Cited market-size figures: regex extraction (unit + year; page title / URL slug as subject when the sentence names none), 2024/2026 → 2025 at the cited CAGR, scope check (keyword, or LLM against `--scope`), units × ASP size check (>3× outside rejected), source tiers (research-report pages + CMI DB anchor; other sites corroborate), outliers >2.5× from the median dropped, median = anchor (disputed → value nearest the size range). Flags: `DEAGENT_TITLE_SUBJECT`, `DEAGENT_SIZE_CHECK`, `DEAGENT_SOURCE_TIERS`, `DEAGENT_WEAK_CONSENSUS` |
+| `cited_values.py` | Cited market-size figures: regex extraction (unit + year; page title / URL slug as subject when the sentence names none; segment/share figures rejected), 2024/2026 → 2025 at the CAGR of the figure's own sentence, scope check (keyword — a two-word market must keep both words — or LLM against `--scope`), units × ASP size check (>3× outside rejected), one figure per publisher, source tiers (1 = `ESTABLISHED_PUBLISHERS` list / resellers / official bodies / CMI DB, 2 = other report pages, 3 = social / press / blogs, which only corroborate), outliers >2.5× from the median dropped, median of report pages = anchor; low–high range + confidence grade A/B/C. Flags: `DEAGENT_TITLE_SUBJECT`, `DEAGENT_SIZE_CHECK`, `DEAGENT_SOURCE_TIERS`, `DEAGENT_WEAK_CONSENSUS` |
 | `segment_definition.py` | Phase 0 base-year gate (deterministic) |
 | `sheet_writer.py` | Writes the Input Sheet xlsx |
 | `me_runner.py` | Runs `run_pipeline.py` as a subprocess and parses the gate status |
 | `history.py` | `output/generation_history.jsonl` read/append |
-| `quality.py` | Sanity flags on generated values (incl. `ungrounded_market_size`, `market_size_unstable`, `cited_values_disputed`, `final_value_outside_size_range`) |
+| `quality.py` | Sanity flags on generated values (incl. `ungrounded_market_size`, `market_size_unstable`, `cited_values_disputed`, `low_confidence_citation`, `differs_from_cmi_report` (>25% from CMI's own report), `final_value_outside_size_range`) |
 | `compare.py` | Input Sheet vs human sheet metrics (MAE, RMSE, sMAPE, R², bias) |
 
 **`curve/`: Stage-B agents.** Uses its **own** LLM client (httpx, OpenRouter/OpenAI only). If only a DeepSeek key is set, these agents run offline on canonical priors.
@@ -248,7 +248,7 @@ The CLI is `compare_demand_supply.py`. It writes `output/supply_side/<slug>.json
 | `run_pilot.py` | Desk | Legacy pilot (hard-coded avocado files, `default_taxonomy`) | The original accuracy pilot |
 | `export_market_json.py` / `export_me_json.py` | Desk | **Imported by `backend/main.py`. Don't move or rename.** | Input Sheet / ME workbook → hierarchical JSON |
 | `compare_input_sheets.py` | Desk | Eval tool | Synthetic vs human Input Sheet |
-| `compare_desk_vs_actuals.py` | Desk | Eval tool | Desk global 2025 value vs `actuals_2025.csv`: % error vs median + `in_published_range` (±5%); `--run` reruns the 7 example markets; `--eval` reports all 'ok' markets across `output/desk_eval/{before,current,after}` with the fixed tuning/held-out split (`approaches/examples/DESK_EVAL_SPLIT.json`) |
+| `compare_desk_vs_actuals.py` | Desk | Eval tool | Desk global 2025 value vs `actuals_2025.csv`: % error vs median + `in_published_range` (±5%); `--run` reruns the 7 example markets; `--eval` reports all 'ok' markets across `output/desk_eval/{before,current,after}` with the fixed tuning/held-out split (`approaches/examples/DESK_EVAL_SPLIT.json`); `--eval-run <version>` live-runs all 63 eval markets into `output/desk_eval/<version>/` (resumable); `--refined-report` compares `refined/` with the previous results → `approaches/examples/DESK_REFINED_EVAL.md` |
 | `compare_me_workbooks.py` | Desk | Eval tool | Generated vs reference ME, cell by cell |
 | `backfill_report_embeddings.py` | Desk | Maintenance | Fills the pgvector `embedding` column in Neon |
 | `test_llm.py` | Desk (curve) | Stale. Tests only the curve LLM client. Not a real pytest test: running bare `pytest` at the root may make a live call. | LLM connectivity check |

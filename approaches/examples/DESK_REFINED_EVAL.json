@@ -1,0 +1,2779 @@
+[
+  {
+    "market": "Smartphones",
+    "set": "heldout",
+    "actual": 585630.0,
+    "published": [
+      598920.0,
+      537620.0,
+      585630.0
+    ],
+    "prev_live": {
+      "value": 582043.9,
+      "pct_error": -0.006123490941379329,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 582043.9,
+      "pct_error": -0.006123490941379329,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 520000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.11206734627665932,
+      "in_published_range": true,
+      "published_range": [
+        537620.0,
+        598920.0
+      ]
+    }
+  },
+  {
+    "market": "Smartwatches",
+    "set": "heldout",
+    "actual": 38000.0,
+    "published": [
+      38530.0,
+      32010.0,
+      38000.0
+    ],
+    "prev_live": {
+      "value": 38530.0,
+      "pct_error": 0.013947368421052632,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 32010.0,
+      "pct_error": -0.15763157894736843,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 40965.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 17540.0,
+      "high_mn": 76170.0,
+      "method": "median of 6 cited values",
+      "n_accepted": 6,
+      "sources": [
+        "https://straitsresearch.com/report/Smartwatch-Market",
+        "https://www.fortunebusinessinsights.com/smartwatch-market-106625",
+        "https://www.researchandmarkets.com/reports/5911997/smartwatch-market-size-share-trends-forecast",
+        "https://www.globalgrowthinsights.com/market-reports/smartwatches-market-110996",
+        "https://growthmarketreports.com/report/smartwatch-market",
+        "https://www.intelmarketresearch.com/smartwatches-market-market-13925"
+      ],
+      "flags": [
+        "cited_values_disputed",
+        "low_confidence_citation"
+      ],
+      "pct_error": 0.07802631578947368,
+      "in_published_range": false,
+      "published_range": [
+        32010.0,
+        38530.0
+      ]
+    }
+  },
+  {
+    "market": "Laptops",
+    "set": "tuning",
+    "actual": 115100.0,
+    "published": [
+      115100.0,
+      114000.0,
+      132100.0
+    ],
+    "prev_live": {
+      "value": 134900.0,
+      "pct_error": 0.17202432667245873,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 163806.1,
+      "pct_error": 0.4231633362293658,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 171890.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 143000.0,
+      "high_mn": 212400.0,
+      "method": "median of 7 cited values",
+      "n_accepted": 7,
+      "sources": [
+        "https://www.expertmarketresearch.com/reports/laptop-market",
+        "https://deepmarketinsights.com/vista/insights/laptop-market/global",
+        "https://www.mordorintelligence.com/industry-reports/laptop-market",
+        "https://straitsresearch.com/report/laptop-market",
+        "https://www.imarcgroup.com/laptop-market",
+        "https://dataintelo.com/report/global-laptop-market",
+        "https://www.kenresearch.com/global-laptop-market"
+      ],
+      "flags": [],
+      "pct_error": 0.4933970460469157,
+      "in_published_range": false,
+      "published_range": [
+        114000.0,
+        132100.0
+      ]
+    }
+  },
+  {
+    "market": "Tablets",
+    "set": "heldout",
+    "actual": 64000.0,
+    "published": [
+      92700.0,
+      64000.0,
+      55100.0
+    ],
+    "prev_live": {
+      "value": 50000.0,
+      "pct_error": -0.21875,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 72700.0,
+      "pct_error": 0.1359375,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 76500.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 0.1953125,
+      "in_published_range": true,
+      "published_range": [
+        55100.0,
+        92700.0
+      ]
+    }
+  },
+  {
+    "market": "Televisions",
+    "set": "heldout",
+    "actual": 64355.0,
+    "published": [
+      63900.0,
+      64810.0
+    ],
+    "prev_live": {
+      "value": 119000.0,
+      "pct_error": 0.8491181726361589,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 278965.0,
+      "pct_error": 3.334783622096185,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 231000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 2.589464688058426,
+      "in_published_range": false,
+      "published_range": [
+        63900.0,
+        64810.0
+      ]
+    }
+  },
+  {
+    "market": "Wireless Earbuds",
+    "set": "heldout",
+    "actual": 35600.0,
+    "published": [
+      39300.0,
+      31900.0
+    ],
+    "prev_live": {
+      "value": 78500.0,
+      "pct_error": 1.2050561797752808,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 78500.0,
+      "pct_error": 1.2050561797752808,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 52300.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 27500.0,
+      "high_mn": 78500.0,
+      "method": "median of 3 cited values",
+      "n_accepted": 3,
+      "sources": [
+        "https://dataintelo.com/report/global-wireless-earbuds-market",
+        "https://www.verifiedmarketreports.com/product/wireless-earbuds-market/",
+        "https://www.emergenresearch.com/industry-report/wireless-earbuds-market"
+      ],
+      "flags": [
+        "cited_values_disputed",
+        "low_confidence_citation"
+      ],
+      "pct_error": 0.4691011235955056,
+      "in_published_range": false,
+      "published_range": [
+        31900.0,
+        39300.0
+      ]
+    }
+  },
+  {
+    "market": "Digital Cameras",
+    "set": "tuning",
+    "actual": 22285.0,
+    "published": [
+      24450.0,
+      20120.0
+    ],
+    "prev_live": {
+      "value": 9516.0,
+      "pct_error": -0.5729863136638995,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 9516.0,
+      "pct_error": -0.5729863136638995,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 8065.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 7870.0,
+      "high_mn": 8260.0,
+      "method": "median of 2 cited values",
+      "n_accepted": 2,
+      "sources": [
+        "https://www.datainsightsmarket.com/reports/digital-camera-market-13705",
+        "https://www.verifiedmarketreports.com/product/digital-camera-market/"
+      ],
+      "flags": [
+        "low_confidence_citation"
+      ],
+      "pct_error": -0.6380973749158627,
+      "in_published_range": false,
+      "published_range": [
+        20120.0,
+        24450.0
+      ]
+    }
+  },
+  {
+    "market": "Smart Speakers",
+    "set": "heldout",
+    "actual": 14250.0,
+    "published": [
+      14250.0,
+      12300.0,
+      15570.0
+    ],
+    "prev_live": {
+      "value": 15600.0,
+      "pct_error": 0.09473684210526316,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 15600.0,
+      "pct_error": 0.09473684210526316,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 14253.2,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 14253.2,
+      "high_mn": 14253.2,
+      "method": "single cited value",
+      "n_accepted": 1,
+      "sources": [
+        "CMI report DB: Smart Speakers Market"
+      ],
+      "flags": [
+        "cited_values_disputed",
+        "low_confidence_citation"
+      ],
+      "pct_error": 0.000224561403508823,
+      "in_published_range": true,
+      "published_range": [
+        12300.0,
+        15570.0
+      ]
+    }
+  },
+  {
+    "market": "Olive Oil",
+    "set": "heldout",
+    "actual": 15700.0,
+    "published": [
+      15700.0,
+      18750.0,
+      13590.0
+    ],
+    "prev_live": {
+      "value": 21826.5,
+      "pct_error": 0.39022292993630575,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 21826.5,
+      "pct_error": 0.39022292993630575,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 15500.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size"
+      ],
+      "pct_error": -0.012738853503184714,
+      "in_published_range": true,
+      "published_range": [
+        13590.0,
+        18750.0
+      ]
+    }
+  },
+  {
+    "market": "Chocolate",
+    "set": "heldout",
+    "actual": 167000.0,
+    "published": [
+      129600.0,
+      171600.0,
+      167000.0
+    ],
+    "prev_live": {
+      "value": 129600.0,
+      "pct_error": -0.22395209580838324,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 129600.0,
+      "pct_error": -0.22395209580838324,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 129100.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 113950.0,
+      "high_mn": 147880.0,
+      "method": "median of 7 cited values",
+      "n_accepted": 7,
+      "sources": [
+        "https://dataintelo.com/report/chocolate-market",
+        "https://www.verifiedmarketresearch.com/product/chocolate-market/",
+        "https://www.fortunebusinessinsights.com/chocolate-market-116337",
+        "https://www.mordorintelligence.com/industry-reports/chocolate-market",
+        "https://www.gminsights.com/industry-analysis/chocolate-market",
+        "https://straitsresearch.com/report/chocolate-market",
+        "https://www.futuremarketinsights.com/reports/chocolate-market"
+      ],
+      "flags": [],
+      "pct_error": -0.22694610778443114,
+      "in_published_range": true,
+      "published_range": [
+        129600.0,
+        171600.0
+      ]
+    }
+  },
+  {
+    "market": "Bottled Water",
+    "set": "tuning",
+    "actual": 323070.0,
+    "published": [
+      323070.0,
+      288800.0,
+      353610.0
+    ],
+    "prev_live": {
+      "value": 335820.0,
+      "pct_error": 0.039465131395672766,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 335820.0,
+      "pct_error": 0.039465131395672766,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 325000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 0.00597393753675674,
+      "in_published_range": true,
+      "published_range": [
+        288800.0,
+        353610.0
+      ]
+    }
+  },
+  {
+    "market": "Beer",
+    "set": "heldout",
+    "actual": 804650.0,
+    "published": [
+      882800.0,
+      804650.0,
+      760000.0
+    ],
+    "prev_live": {
+      "value": 815875.0,
+      "pct_error": 0.013950164667868017,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 815875.0,
+      "pct_error": 0.013950164667868017,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 779789.4,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 662878.8,
+      "high_mn": 896700.0,
+      "method": "median of 2 cited values",
+      "n_accepted": 2,
+      "sources": [
+        "CMI report DB: Beer Market",
+        "https://www.stellarmr.com/report/Beer-Market/310"
+      ],
+      "flags": [],
+      "pct_error": -0.030896166034921988,
+      "in_published_range": true,
+      "published_range": [
+        760000.0,
+        882800.0
+      ]
+    }
+  },
+  {
+    "market": "Wine",
+    "set": "heldout",
+    "actual": 360360.0,
+    "published": [
+      360360.0,
+      358500.0,
+      452907.0
+    ],
+    "prev_live": {
+      "value": 424040.5,
+      "pct_error": 0.1767135642135642,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 424040.5,
+      "pct_error": 0.1767135642135642,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 499775.1,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 380000.0,
+      "high_mn": 549640.0,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "https://www.grandviewresearch.com/industry-analysis/wine-market",
+        "https://www.trendvaultresearch.com/report/wine-45283",
+        "https://foreclaroglobalresearch.com/research-report/global-wine-market",
+        "https://www.verifiedmarketreports.com/product/wine-market/"
+      ],
+      "flags": [],
+      "pct_error": 0.3868772893772893,
+      "in_published_range": false,
+      "published_range": [
+        358500.0,
+        452907.0
+      ]
+    }
+  },
+  {
+    "market": "Plant-Based Milk",
+    "set": "tuning",
+    "actual": 22660.0,
+    "published": [
+      21350.0,
+      22660.0,
+      25100.0
+    ],
+    "prev_live": {
+      "value": 21375.5,
+      "pct_error": -0.05668578993821712,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 22130.0,
+      "pct_error": -0.023389232127096204,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 22515.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 21000.0,
+      "high_mn": 24380.0,
+      "method": "median of 6 cited values",
+      "n_accepted": 6,
+      "sources": [
+        "CMI report DB: Plant-Based Milk Market",
+        "https://www.snsinsider.com/reports/plant-based-milk-market-8435",
+        "https://www.futuremarketinsights.com/reports/plant-milk-market",
+        "https://www.grandviewresearch.com/industry-analysis/plant-based-milk-market-report",
+        "https://www.mordorintelligence.com/industry-reports/plant-based-milk-market",
+        "https://www.reportsanddata.com/report-detail/plant-based-milk-market"
+      ],
+      "flags": [],
+      "pct_error": -0.006398940864960283,
+      "in_published_range": true,
+      "published_range": [
+        21350.0,
+        25100.0
+      ]
+    }
+  },
+  {
+    "market": "Energy Drinks",
+    "set": "heldout",
+    "actual": 77160.0,
+    "published": [
+      77160.0,
+      72790.0,
+      86180.0
+    ],
+    "prev_live": {
+      "value": 77160.0,
+      "pct_error": 0.0,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 77160.0,
+      "pct_error": 0.0,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 86000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 0.11456713322965267,
+      "in_published_range": true,
+      "published_range": [
+        72790.0,
+        86180.0
+      ]
+    }
+  },
+  {
+    "market": "Insulin",
+    "set": "heldout",
+    "actual": 29200.0,
+    "published": [
+      29200.0,
+      30760.0,
+      21130.0
+    ],
+    "prev_live": {
+      "value": 58025.8,
+      "pct_error": 0.9871849315068494,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 29403.7,
+      "pct_error": 0.0069760273972602985,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 28970.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 19300.0,
+      "high_mn": 69540.0,
+      "method": "median of 6 cited values",
+      "n_accepted": 6,
+      "sources": [
+        "https://straitsresearch.com/report/insulin-market",
+        "https://www.precedenceresearch.com/insulin-market",
+        "https://www.fortunebusinessinsights.com/insulin-market-116988",
+        "https://www.grandviewresearch.com/industry-analysis/insulin-market-report",
+        "https://www.mordorintelligence.com/industry-reports/insulin-market",
+        "https://www.reanin.com/reports/insulin-market"
+      ],
+      "flags": [],
+      "pct_error": -0.007876712328767124,
+      "in_published_range": true,
+      "published_range": [
+        21130.0,
+        30760.0
+      ]
+    }
+  },
+  {
+    "market": "Hearing Aids",
+    "set": "heldout",
+    "actual": 8800.0,
+    "published": [
+      8800.0,
+      8640.0,
+      15110.0
+    ],
+    "prev_live": {
+      "value": 11876.1,
+      "pct_error": 0.3495568181818182,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 11876.1,
+      "pct_error": 0.3495568181818182,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 9270.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 8642.3,
+      "high_mn": 15110.0,
+      "method": "median of 9 cited values",
+      "n_accepted": 9,
+      "sources": [
+        "CMI report DB: Hearing Aids Market",
+        "https://www.marketsandmarkets.com/Market-Reports/hearing-aids-market-198630754.html",
+        "https://www.maximizemarketresearch.com/market-report/hearing-aids-market/359/",
+        "https://www.polarismarketresearch.com/industry-analysis/global-hearing-aids-market",
+        "https://www.gminsights.com/industry-analysis/hearing-aids-market",
+        "https://www.fortunebusinessinsights.com/industry-reports/hearing-aids-market-101573",
+        "https://www.emergenresearch.com/industry-report/hearing-aids-market",
+        "https://www.grandviewresearch.com/industry-analysis/hearing-aids-market",
+        "https://www.skyquestt.com/report/hearing-aid-market"
+      ],
+      "flags": [],
+      "pct_error": 0.053409090909090906,
+      "in_published_range": true,
+      "published_range": [
+        8640.0,
+        15110.0
+      ]
+    }
+  },
+  {
+    "market": "Surgical Masks",
+    "set": "heldout",
+    "actual": 5060.0,
+    "published": [
+      5060.0,
+      4140.0,
+      5900.0
+    ],
+    "prev_live": {
+      "value": 6755.0,
+      "pct_error": 0.3349802371541502,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 6755.0,
+      "pct_error": 0.3349802371541502,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 4730.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 2500.0,
+      "high_mn": 6409.0,
+      "method": "median of 11 cited values",
+      "n_accepted": 11,
+      "sources": [
+        "https://www.thebusinessresearchcompany.com/report/surgical-masks-global-market-report",
+        "https://straitsresearch.com/report/surgical-masks-market",
+        "https://www.futuremarketinsights.com/reports/surgical-mask-market",
+        "https://www.verifiedmarketreports.com/product/surgical-mask-market/",
+        "https://www.custommarketinsights.com/report/surgical-masks-market/",
+        "https://introspectivemarketresearch.com/reports/surgical-mask-market/",
+        "https://www.verifiedmarketresearch.com/product/surgical-masks-market/",
+        "https://www.maximizemarketresearch.com/market-report/global-surgical-mask-market/29828/",
+        "https://www.researchandmarkets.com/report/surgical-mask",
+        "https://dataintelo.com/report/global-surgical-mask-market",
+        "https://www.marketresearchfuture.com/reports/surgical-masks-market-19211"
+      ],
+      "flags": [],
+      "pct_error": -0.06521739130434782,
+      "in_published_range": true,
+      "published_range": [
+        4140.0,
+        5900.0
+      ]
+    }
+  },
+  {
+    "market": "Dental Implants",
+    "set": "tuning",
+    "actual": 5640.0,
+    "published": [
+      7100.0,
+      5200.0,
+      5640.0
+    ],
+    "prev_live": {
+      "value": 6767.1,
+      "pct_error": 0.19984042553191494,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 6767.1,
+      "pct_error": 0.19984042553191494,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 5552.1,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 5000.0,
+      "high_mn": 13750.2,
+      "method": "median of 10 cited values",
+      "n_accepted": 10,
+      "sources": [
+        "CMI report DB: Dental Implants Market",
+        "https://www.futuremarketreport.com/industry-report/dental-implants-market",
+        "https://www.grandviewresearch.com/industry-analysis/dental-implants-market",
+        "https://www.verifiedmarketresearch.com/product/dental-implants-and-prosthetics-market/",
+        "https://www.expertmarketresearch.com/reports/dental-implants-market",
+        "https://www.mordorintelligence.com/industry-reports/dental-implants-market",
+        "https://www.fortunebusinessinsights.com/industry-reports/dental-implants-market-100443",
+        "https://www.gminsights.com/industry-analysis/dental-implants-market",
+        "https://www.emergenresearch.com/industry-report/dental-implants-market",
+        "https://www.imarcgroup.com/dental-implants-market"
+      ],
+      "flags": [],
+      "pct_error": -0.015585106382978659,
+      "in_published_range": true,
+      "published_range": [
+        5200.0,
+        7100.0
+      ]
+    }
+  },
+  {
+    "market": "Wheelchairs",
+    "set": "tuning",
+    "actual": 5580.0,
+    "published": [
+      5580.0,
+      7420.0,
+      5120.0
+    ],
+    "prev_live": {
+      "value": 7424.0,
+      "pct_error": 0.33046594982078853,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 6330.0,
+      "pct_error": 0.13440860215053763,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 5930.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 3900.0,
+      "high_mn": 10950.5,
+      "method": "median of 11 cited values",
+      "n_accepted": 11,
+      "sources": [
+        "https://www.verifiedmarketresearch.com/product/wheelchair-market/",
+        "https://www.grandviewresearch.com/industry-analysis/wheelchair-market",
+        "https://www.futuremarketreport.com/industry-report/wheelchairs-market/",
+        "https://www.verifiedmarketreports.com/product/wheelchair-market/",
+        "https://dataintelo.com/report/global-wheelchairs-market",
+        "https://www.precedenceresearch.com/wheelchair-market",
+        "https://www.fortunebusinessinsights.com/industry-reports/wheelchairs-market-100523",
+        "https://www.maximizemarketresearch.com/market-report/wheelchair-market/220685/",
+        "https://www.emergenresearch.com/industry-report/wheelchair-market/",
+        "https://www.amecoresearch.com/market-report/wheelchair-market-277140",
+        "https://www.reportsanddata.com/report-detail/wheelchair-market"
+      ],
+      "flags": [],
+      "pct_error": 0.06272401433691756,
+      "in_published_range": true,
+      "published_range": [
+        5120.0,
+        7420.0
+      ]
+    }
+  },
+  {
+    "market": "Blood Glucose Monitoring Devices",
+    "set": "heldout",
+    "actual": 17220.0,
+    "published": [
+      16460.0,
+      17220.0,
+      24200.0
+    ],
+    "prev_live": {
+      "value": 15531.5,
+      "pct_error": -0.09805458768873403,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 15531.5,
+      "pct_error": -0.09805458768873403,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 15515.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 6250.4,
+      "high_mn": 21000.0,
+      "method": "median of 10 cited values",
+      "n_accepted": 10,
+      "sources": [
+        "https://www.grandviewresearch.com/industry-analysis/blood-glucose-monitoring-bgm-devices-market",
+        "https://www.transpireinsight.com/report/blood-glucose-monitoring-devices-market",
+        "https://www.futuremarketreport.com/industry-report/blood-glucose-monitoring-devices-market",
+        "https://www.fortunebusinessinsights.com/industry-reports/blood-glucose-monitoring-market-100648",
+        "https://www.polarismarketresearch.com/industry-analysis/blood-glucose-monitoring-device-market",
+        "https://www.emergenresearch.com/industry-report/blood-glucose-monitoring-devices-market",
+        "https://www.futuremarketinsights.com/reports/blood-glucose-monitoring-devices-market",
+        "https://www.databridgemarketresearch.com/reports/global-glucose-monitoring-devices-market",
+        "https://www.kenresearch.com/global-blood-glucose-monitoring-devices-market",
+        "https://www.marketresearch.com/Grand-View-Research-v4060/Blood-Glucose-Monitoring-Devices-43913968/"
+      ],
+      "flags": [],
+      "pct_error": -0.09901277584204414,
+      "in_published_range": false,
+      "published_range": [
+        16460.0,
+        24200.0
+      ]
+    }
+  },
+  {
+    "market": "Orthopedic Implants",
+    "set": "tuning",
+    "actual": 52400.0,
+    "published": [
+      49730.0,
+      52400.0,
+      58200.0
+    ],
+    "prev_live": {
+      "value": 51650.0,
+      "pct_error": -0.01431297709923664,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 39325.0,
+      "pct_error": -0.24952290076335878,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 49510.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 21945.1,
+      "high_mn": 58200.0,
+      "method": "median of 11 cited values",
+      "n_accepted": 11,
+      "sources": [
+        "https://dataintelo.com/report/global-orthopedic-implants-market",
+        "https://www.grandviewresearch.com/industry-analysis/orthopedic-implants-market",
+        "https://www.verifiedmarketresearch.com/product/Orthopedic-Implants-Market/",
+        "https://www.fortunebusinessinsights.com/industry-reports/orthopedic-implants-market-101659",
+        "https://www.marketsandmarkets.com/Market-Reports/orthopedic-implants-market-5230937.html",
+        "https://www.rootsanalysis.com/reports/orthopedic-implants-market.html",
+        "https://www.emergenresearch.com/industry-report/orthopedic-implants-market/",
+        "https://www.imarcgroup.com/orthopedic-implants-market",
+        "https://www.nextmsc.com/report/orthopedic-implants-market",
+        "https://www.skyquestt.com/report/orthopedic-implants-market",
+        "https://www.giiresearch.com/report/sky1899938-orthopedic-implant-market-size-share-growth.html"
+      ],
+      "flags": [
+        "cited_values_disputed",
+        "low_confidence_citation"
+      ],
+      "pct_error": -0.05515267175572519,
+      "in_published_range": true,
+      "published_range": [
+        49730.0,
+        58200.0
+      ]
+    }
+  },
+  {
+    "market": "Syringes",
+    "set": "tuning",
+    "actual": 10491.0,
+    "published": [
+      10150.0,
+      10491.0,
+      22577.0
+    ],
+    "prev_live": {
+      "value": 17332.2,
+      "pct_error": 0.6521018015441808,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 17332.2,
+      "pct_error": 0.6521018015441808,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 18540.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 10150.0,
+      "high_mn": 26850.0,
+      "method": "median of 10 cited values",
+      "n_accepted": 10,
+      "sources": [
+        "https://www.grandviewresearch.com/industry-analysis/syringes-market",
+        "https://www.verifiedmarketresearch.com/product/Syringe-Market/",
+        "https://www.cognitivemarketresearch.com/syringes-market-report",
+        "https://www.futuremarketinsights.com/reports/syringes-market",
+        "https://www.precedenceresearch.com/syringes-market",
+        "https://www.polarismarketresearch.com/industry-analysis/syringes-market",
+        "https://www.emergenresearch.com/industry-report/syringes-market",
+        "https://www.fortunebusinessinsights.com/syringes-market-115104",
+        "https://www.researchandmarkets.com/report/syringe",
+        "https://www.reportsanddata.com/report-detail/syringes-market"
+      ],
+      "flags": [],
+      "pct_error": 0.7672290534744066,
+      "in_published_range": true,
+      "published_range": [
+        10150.0,
+        22577.0
+      ]
+    }
+  },
+  {
+    "market": "Cardiac Pacemakers",
+    "set": "heldout",
+    "actual": 5660.0,
+    "published": [
+      5300.0,
+      5900.0,
+      5660.0
+    ],
+    "prev_live": {
+      "value": 5092.5,
+      "pct_error": -0.10026501766784453,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 5092.5,
+      "pct_error": -0.10026501766784453,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 5079.8,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 2040.0,
+      "high_mn": 6700.8,
+      "method": "median of 10 cited values",
+      "n_accepted": 10,
+      "sources": [
+        "CMI report DB: Cardiac Pacemaker Market",
+        "https://www.verifiedmarketresearch.com/product/cardiac-pacemaker-market/",
+        "https://www.infinitivedataresearch.com/industry-report/cardiac-pacemaker-market",
+        "https://pmarketresearch.com/worldwide-cardiac-pacemakers-market-research/",
+        "https://www.mordorintelligence.com/industry-reports/cardiac-pacemakers-market",
+        "https://dataintelo.com/report/cardiac-pacemaker-market",
+        "https://www.verifiedmarketreports.com/product/cardiac-pacemakers-market/",
+        "https://www.researchandmarkets.com/reports/5751862/cardiac-pacemakers-market-report",
+        "https://www.skyquestt.com/report/cardiac-pacemaker-market",
+        "https://www.emergenresearch.com/industry-report/cardiac-pacemaker-market"
+      ],
+      "flags": [],
+      "pct_error": -0.10250883392226146,
+      "in_published_range": true,
+      "published_range": [
+        5300.0,
+        5900.0
+      ]
+    }
+  },
+  {
+    "market": "Automotive Lead-Acid Batteries",
+    "set": "tuning",
+    "actual": 31300.0,
+    "published": [
+      31300.0,
+      31790.0,
+      13886.0
+    ],
+    "prev_live": {
+      "value": 28420.0,
+      "pct_error": -0.09201277955271565,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 28420.0,
+      "pct_error": -0.09201277955271565,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 30065.5,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 19734.9,
+      "high_mn": 51660.0,
+      "method": "median of 8 cited values",
+      "n_accepted": 8,
+      "sources": [
+        "https://www.marketsandmarkets.com/Market-Reports/automotive-lead-acid-batteries-market-33272549.html",
+        "https://datahorizzonresearch.com/automotive-lead-acid-battery-market-64331",
+        "https://www.snsinsider.com/reports/automotive-lead-acid-battery-market-6023",
+        "https://www.grandviewresearch.com/industry-analysis/automotive-lead-acid-battery-market-report",
+        "https://www.marketdataforecast.com/market-reports/automotive-lead-acid-batteries-market",
+        "https://www.verifiedmarketresearch.com/product/Automotive-Lead-Acid-Battery-Market/",
+        "https://www.skyquestt.com/report/automotive-lead-acid-battery-market",
+        "https://www.intelmarketresearch.com/automotive-lead-acid-battery-market-12442"
+      ],
+      "flags": [],
+      "pct_error": -0.0394408945686901,
+      "in_published_range": true,
+      "published_range": [
+        13886.0,
+        31790.0
+      ]
+    }
+  },
+  {
+    "market": "Bicycles",
+    "set": "heldout",
+    "actual": 84250.0,
+    "published": [
+      95800.0,
+      71100.0,
+      84250.0
+    ],
+    "prev_live": {
+      "value": 68000.0,
+      "pct_error": -0.19287833827893175,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 68000.0,
+      "pct_error": -0.19287833827893175,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 81960.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 33870.0,
+      "high_mn": 126700.0,
+      "method": "median of 11 cited values",
+      "n_accepted": 11,
+      "sources": [
+        "https://www.reportsinsights.com/industry-forecast/bicycle-market-709743",
+        "https://www.verifiedmarketresearch.com/product/bicycle-market/",
+        "https://www.grandviewresearch.com/industry-analysis/bicycle-market",
+        "https://dataintelo.com/report/global-bicycles-market",
+        "https://www.reanin.com/reports/bicycles-market",
+        "https://www.expertmarketresearch.com/reports/bicycle-market",
+        "https://www.precedenceresearch.com/bicycle-market",
+        "https://www.polarismarketresearch.com/industry-analysis/bicycle-market",
+        "https://univdatos.com/reports/bicycle-market",
+        "https://www.fortunebusinessinsights.com/bicycle-market-104524",
+        "https://straitsresearch.com/report/bicycle-market"
+      ],
+      "flags": [],
+      "pct_error": -0.027181008902077152,
+      "in_published_range": true,
+      "published_range": [
+        71100.0,
+        95800.0
+      ]
+    }
+  },
+  {
+    "market": "Automotive Lubricants",
+    "set": "heldout",
+    "actual": 75080.0,
+    "published": [
+      83700.0,
+      72790.0,
+      75080.0
+    ],
+    "prev_live": {
+      "value": 178140.0,
+      "pct_error": 1.3726691529035695,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 78664.6,
+      "pct_error": 0.04774374001065538,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 86430.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 60880.0,
+      "high_mn": 136270.0,
+      "method": "median of 7 cited values",
+      "n_accepted": 7,
+      "sources": [
+        "https://www.skyquestt.com/report/automotive-lubricants-market",
+        "https://www.persistencemarketresearch.com/market-research/automotive-lubricant-market.asp",
+        "https://www.fortunebusinessinsights.com/automotive-lubricants-market-102681",
+        "https://www.globalgrowthinsights.com/market-reports/automotive-lubricants-market-120939",
+        "https://www.emergenresearch.com/industry-report/automotive-lubricants-market",
+        "https://www.snsinsider.com/reports/automotive-lubricants-market-10311",
+        "https://www.reportsanddata.com/report-detail/automotive-lubricants-market"
+      ],
+      "flags": [],
+      "pct_error": 0.1511720831113479,
+      "in_published_range": true,
+      "published_range": [
+        72790.0,
+        83700.0
+      ]
+    }
+  },
+  {
+    "market": "Automotive Glass",
+    "set": "heldout",
+    "actual": 24600.0,
+    "published": [
+      20000.0,
+      24600.0,
+      25000.0
+    ],
+    "prev_live": {
+      "value": 27710.7,
+      "pct_error": 0.12645121951219515,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 26013.7,
+      "pct_error": 0.057467479674796776,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 22880.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 20000.0,
+      "high_mn": 38500.0,
+      "method": "median of 11 cited values",
+      "n_accepted": 11,
+      "sources": [
+        "CMI report DB: Global Automotive Glass Market",
+        "https://www.marketresearchfuture.com/reports/automotive-glass-market-2045",
+        "https://www.fortunebusinessinsights.com/automotive-glass-market-102579",
+        "https://www.mordorintelligence.com/industry-reports/automotive-glass-market",
+        "https://straitsresearch.com/report/automotive-glass-market",
+        "https://www.imarcgroup.com/automotive-glass-market",
+        "https://www.precedenceresearch.com/automotive-glass-market",
+        "https://www.futuremarketinsights.com/reports/automotive-glass-market",
+        "https://www.grandviewresearch.com/industry-analysis/automotive-glass-market",
+        "https://market.us/report/automotive-glass-market/",
+        "https://www.emergenresearch.com/industry-report/automotive-glass-market"
+      ],
+      "flags": [],
+      "pct_error": -0.06991869918699187,
+      "in_published_range": true,
+      "published_range": [
+        20000.0,
+        25000.0
+      ]
+    }
+  },
+  {
+    "market": "Potash Fertilizer",
+    "set": "heldout",
+    "actual": 29560.0,
+    "published": [
+      32270.0,
+      22600.0,
+      29560.0
+    ],
+    "prev_live": {
+      "value": 24010.0,
+      "pct_error": -0.18775372124492556,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 23560.0,
+      "pct_error": -0.2029769959404601,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 25121.8,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 17350.0,
+      "high_mn": 29550.0,
+      "method": "median of 7 cited values",
+      "n_accepted": 7,
+      "sources": [
+        "https://www.reportsinsights.com/industry-forecast/potash-fertilizer-market-708034",
+        "https://www.futuremarketreport.com/industry-report/potash-fertilizers-market",
+        "https://www.sphericalinsights.com/reports/potash-fertilizers-market",
+        "https://www.expertmarketresearch.com/reports/potash-fertilisers-market",
+        "https://dataintelo.com/report/global-potash-fertilizers-market",
+        "https://www.maximizemarketresearch.com/market-report/global-potash-fertilizer-market/73783/",
+        "https://www.databridgemarketresearch.com/reports/global-potash-fertilizers-market"
+      ],
+      "flags": [],
+      "pct_error": -0.15014208389715836,
+      "in_published_range": true,
+      "published_range": [
+        22600.0,
+        32270.0
+      ]
+    }
+  },
+  {
+    "market": "Organic Fertilizers",
+    "set": "tuning",
+    "actual": 11110.0,
+    "published": [
+      13090.0,
+      11110.0,
+      7710.0
+    ],
+    "prev_live": {
+      "value": 12985.0,
+      "pct_error": 0.16876687668766877,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 12770.0,
+      "pct_error": 0.1494149414941494,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 13110.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 7710.0,
+      "high_mn": 18500.0,
+      "method": "median of 10 cited values",
+      "n_accepted": 10,
+      "sources": [
+        "https://www.grandviewresearch.com/industry-analysis/organic-fertilizers-market-report",
+        "https://dataintelo.com/report/global-organic-fertilizers-market",
+        "https://www.verifiedmarketresearch.com/product/organic-fertilizers-market/",
+        "https://www.researchandmarkets.com/reports/6098058/organic-fertilizers-market-size-share-and-trends",
+        "https://www.marketsandmarkets.com/Market-Reports/organic-fertilizer-Market-171744317.html",
+        "https://straitsresearch.com/report/organic-fertilizers-market",
+        "https://www.reanin.com/reports/organic-fertilizers-market",
+        "https://www.fortunebusinessinsights.com/organic-fertilizers-market-103211",
+        "https://www.precedenceresearch.com/organic-fertilizers-market",
+        "https://growthmarketreports.com/report/organic-fertilizer-market"
+      ],
+      "flags": [],
+      "pct_error": 0.18001800180018002,
+      "in_published_range": true,
+      "published_range": [
+        7710.0,
+        13090.0
+      ]
+    }
+  },
+  {
+    "market": "Crop Protection Chemicals",
+    "set": "heldout",
+    "actual": 83320.0,
+    "published": [
+      83320.0,
+      74640.0,
+      99300.0
+    ],
+    "prev_live": {
+      "value": 50300.0,
+      "pct_error": -0.3963034085453673,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 81250.0,
+      "pct_error": -0.02484397503600576,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 70730.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 50300.0,
+      "high_mn": 83320.0,
+      "method": "median of 5 cited values",
+      "n_accepted": 5,
+      "sources": [
+        "https://www.marketsandmarkets.com/Market-Reports/crop-protection-380.html",
+        "https://www.verifiedmarketresearch.com/product/crop-protection-chemicals-market/",
+        "https://straitsresearch.com/report/crop-protection-chemicals-market",
+        "https://www.psmarketresearch.com/market-analysis/crop-protection-chemicals-market",
+        "https://www.grandviewresearch.com/industry-analysis/crop-protection-chemicals-market"
+      ],
+      "flags": [],
+      "pct_error": -0.15110417666826692,
+      "in_published_range": false,
+      "published_range": [
+        74640.0,
+        99300.0
+      ]
+    }
+  },
+  {
+    "market": "Tractors",
+    "set": "tuning",
+    "actual": 84670.0,
+    "published": [
+      88410.0,
+      80930.0
+    ],
+    "prev_live": {
+      "value": 89245.3,
+      "pct_error": 0.05403684894295504,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 89245.3,
+      "pct_error": 0.05403684894295504,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 83872.6,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 78400.0,
+      "high_mn": 96800.0,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "CMI report DB: Tractors Market",
+        "https://www.strategicrevenueinsights.com/industry/tractors-market",
+        "https://www.emergenresearch.com/industry-report/tractors-market",
+        "https://dimensionmarketresearch.com/report/tractor-market/"
+      ],
+      "flags": [],
+      "pct_error": -0.009417739459076346,
+      "in_published_range": true,
+      "published_range": [
+        80930.0,
+        88410.0
+      ]
+    }
+  },
+  {
+    "market": "Animal Feed",
+    "set": "heldout",
+    "actual": 483690.0,
+    "published": [
+      420820.0,
+      490830.0,
+      483690.0
+    ],
+    "prev_live": {
+      "value": 420820.0,
+      "pct_error": -0.1299799458330749,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 510000.0,
+      "pct_error": 0.05439434348446319,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 548220.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 440340.0,
+      "high_mn": 656100.0,
+      "method": "median of 2 cited values",
+      "n_accepted": 2,
+      "sources": [
+        "https://www.grandviewresearch.com/industry-analysis/animal-feed-market-report",
+        "https://www.businessmarketinsights.com/reports/animal-feed-market"
+      ],
+      "flags": [],
+      "pct_error": 0.13341189604912237,
+      "in_published_range": false,
+      "published_range": [
+        420820.0,
+        490830.0
+      ]
+    }
+  },
+  {
+    "market": "Drip Irrigation",
+    "set": "heldout",
+    "actual": 8050.0,
+    "published": [
+      8760.0,
+      8050.0,
+      6600.0
+    ],
+    "prev_live": {
+      "value": 6284.7,
+      "pct_error": -0.21929192546583853,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 8125.0,
+      "pct_error": 0.009316770186335404,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 7910.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 7200.0,
+      "high_mn": 18600.0,
+      "method": "median of 11 cited values",
+      "n_accepted": 11,
+      "sources": [
+        "https://www.coherentmarketinsights.com/market-insight/drip-irrigation-market-860",
+        "https://www.verifiedmarketresearch.com/product/Drip-Irrigation-Market/",
+        "https://m2squareconsultancy.com/reports/drip-irrigation-market",
+        "https://www.futuremarketreport.com/industry-report/drip-irrigation-market",
+        "https://www.grandviewresearch.com/industry-analysis/drip-irrigation-market-report",
+        "https://dataintelo.com/report/global-drip-irrigation-market",
+        "https://growthmarketreports.com/report/drip-irrigation-market",
+        "https://www.mordorintelligence.com/industry-reports/drip-irrigation-market",
+        "https://www.igtps.com/report/drip-irrigation-market",
+        "https://www.emergenresearch.com/industry-report/drip-irrigation-market/",
+        "https://www.polarismarketresearch.com/industry-analysis/drip-irrigation-systems-market"
+      ],
+      "flags": [
+        "differs_from_cmi_report"
+      ],
+      "pct_error": -0.017391304347826087,
+      "in_published_range": true,
+      "published_range": [
+        6600.0,
+        8760.0
+      ]
+    }
+  },
+  {
+    "market": "Titanium Dioxide",
+    "set": "tuning",
+    "actual": 21615.0,
+    "published": [
+      22000.0,
+      21230.0
+    ],
+    "prev_live": {
+      "value": 22250.0,
+      "pct_error": 0.029377746934998842,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 22250.0,
+      "pct_error": 0.029377746934998842,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 21126.2,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 19250.0,
+      "high_mn": 25490.0,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "CMI report DB: Titanium Dioxide Market",
+        "https://www.valuemarketresearch.com/report/titanium-dioxide-market",
+        "https://www.marketsandmarkets.com/Market-Reports/titanium-dioxide-market-225276554.html",
+        "https://www.marketresearchfuture.com/reports/titanium-dioxide-market-1081"
+      ],
+      "flags": [],
+      "pct_error": -0.02261392551468884,
+      "in_published_range": true,
+      "published_range": [
+        21230.0,
+        22000.0
+      ]
+    }
+  },
+  {
+    "market": "Paints & Coatings",
+    "set": "tuning",
+    "actual": 198250.0,
+    "published": [
+      193900.0,
+      202600.0
+    ],
+    "prev_live": {
+      "value": 207730.0,
+      "pct_error": 0.047818411097099625,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 207730.0,
+      "pct_error": 0.047818411097099625,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 219900.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 194042.0,
+      "high_mn": 279580.0,
+      "method": "median of 3 cited values",
+      "n_accepted": 3,
+      "sources": [
+        "https://straitsresearch.com/report/paints-and-coatings-market",
+        "https://www.precedenceresearch.com/paints-and-coatings-market",
+        "https://www.emergenresearch.com/industry-report/paints-and-coatings-market/"
+      ],
+      "flags": [
+        "differs_from_cmi_report"
+      ],
+      "pct_error": 0.10920554854981085,
+      "in_published_range": false,
+      "published_range": [
+        193900.0,
+        202600.0
+      ]
+    }
+  },
+  {
+    "market": "Carbon Black",
+    "set": "heldout",
+    "actual": 21600.0,
+    "published": [
+      21600.0,
+      18500.0,
+      28860.0
+    ],
+    "prev_live": {
+      "value": 24665.0,
+      "pct_error": 0.14189814814814813,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 24665.0,
+      "pct_error": 0.14189814814814813,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 24570.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 18510.0,
+      "high_mn": 28860.0,
+      "method": "median of 8 cited values",
+      "n_accepted": 8,
+      "sources": [
+        "https://www.fortunebusinessinsights.com/industry-reports/carbon-black-market-101718",
+        "https://www.mordorintelligence.com/industry-reports/carbon-black-market",
+        "https://www.precedenceresearch.com/carbon-black-market",
+        "https://www.grandviewresearch.com/industry-analysis/carbon-black-market",
+        "https://straitsresearch.com/report/carbon-black-market",
+        "https://www.skyquestt.com/report/carbon-black-market",
+        "https://www.igtps.com/report/carbon-black-market",
+        "https://www.imarcgroup.com/carbon-black-market"
+      ],
+      "flags": [
+        "low_confidence"
+      ],
+      "pct_error": 0.1375,
+      "in_published_range": true,
+      "published_range": [
+        18500.0,
+        28860.0
+      ]
+    }
+  },
+  {
+    "market": "Caustic Soda",
+    "set": "heldout",
+    "actual": 46500.0,
+    "published": [
+      50150.0,
+      46440.0,
+      46500.0
+    ],
+    "prev_live": {
+      "value": 27360.0,
+      "pct_error": -0.41161290322580646,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 47600.0,
+      "pct_error": 0.023655913978494623,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 47970.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 30458.4,
+      "high_mn": 54653.4,
+      "method": "median of 8 cited values",
+      "n_accepted": 8,
+      "sources": [
+        "https://www.gminsights.com/industry-analysis/caustic-soda-market",
+        "https://www.precedenceresearch.com/caustic-soda-market",
+        "https://www.fortunebusinessinsights.com/caustic-soda-market-104711",
+        "https://straitsresearch.com/report/caustic-soda-market",
+        "https://www.emergenresearch.com/industry-report/caustic-soda-market",
+        "https://dataintelo.com/report/caustic-soda-market",
+        "https://www.factmr.com/report/caustic-soda-market",
+        "https://market.us/report/global-caustic-soda-market/"
+      ],
+      "flags": [],
+      "pct_error": 0.031612903225806455,
+      "in_published_range": true,
+      "published_range": [
+        46440.0,
+        50150.0
+      ]
+    }
+  },
+  {
+    "market": "Cosmetics",
+    "set": "heldout",
+    "actual": 346840.0,
+    "published": [
+      354680.0,
+      339000.0
+    ],
+    "prev_live": {
+      "value": 412000.0,
+      "pct_error": 0.18786760465920885,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 361858.0,
+      "pct_error": 0.043299504094106794,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 412000.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 349850.0,
+      "high_mn": 683200.0,
+      "method": "median of 5 cited values",
+      "n_accepted": 5,
+      "sources": [
+        "https://www.fortunebusinessinsights.com/cosmetics-market-102614",
+        "https://dataintelo.com/report/cosmetics-market",
+        "https://www.emergenresearch.com/industry-report/cosmetics-market",
+        "https://deepmarketinsights.com/vista/insights/cosmetics-market/global",
+        "https://www.maximizemarketresearch.com/market-report/global-cosmetics-market/72541/"
+      ],
+      "flags": [],
+      "pct_error": 0.18786760465920885,
+      "in_published_range": false,
+      "published_range": [
+        339000.0,
+        354680.0
+      ]
+    }
+  },
+  {
+    "market": "Fragrances",
+    "set": "heldout",
+    "actual": 60000.0,
+    "published": [
+      60000.0,
+      58140.0,
+      72720.0
+    ],
+    "prev_live": {
+      "value": 94550.0,
+      "pct_error": 0.5758333333333333,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 57600.0,
+      "pct_error": -0.04,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 58900.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 30100.0,
+      "high_mn": 60200.0,
+      "method": "median of 3 cited values",
+      "n_accepted": 3,
+      "sources": [
+        "https://market.us/report/fragrances-market/",
+        "https://www.fortunebusinessinsights.com/flavors-and-fragrances-market-102329",
+        "https://www.marketresearchintellect.com/product/fragrances-market/"
+      ],
+      "flags": [],
+      "pct_error": -0.018333333333333333,
+      "in_published_range": true,
+      "published_range": [
+        58140.0,
+        72720.0
+      ]
+    }
+  },
+  {
+    "market": "Shampoo",
+    "set": "tuning",
+    "actual": 36915.0,
+    "published": [
+      38230.0,
+      35600.0
+    ],
+    "prev_live": {
+      "value": 33968.7,
+      "pct_error": -0.07981308411214962,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 33968.7,
+      "pct_error": -0.07981308411214962,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 38200.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 32480.0,
+      "high_mn": 38420.0,
+      "method": "median of 7 cited values",
+      "n_accepted": 7,
+      "sources": [
+        "https://evolvancemarketresearch.com/reports/shampoo-market/",
+        "https://straitsresearch.com/report/shampoo-market",
+        "https://www.marketresearchfuture.com/reports/shampoo-market-7824",
+        "https://www.mordorintelligence.com/industry-reports/shampoo-market",
+        "https://www.verifiedmarketreports.com/product/shampoo-market-size-and-forecast/",
+        "https://trendxinsights.com/syndicated-market-research-reports/shampoo-market/",
+        "https://www.expertmarketresearch.com/reports/shampoo-market"
+      ],
+      "flags": [],
+      "pct_error": 0.03480969795476094,
+      "in_published_range": true,
+      "published_range": [
+        35600.0,
+        38230.0
+      ]
+    }
+  },
+  {
+    "market": "Toothpaste",
+    "set": "heldout",
+    "actual": 22300.0,
+    "published": [
+      29320.0,
+      20140.0,
+      22300.0
+    ],
+    "prev_live": {
+      "value": 23500.0,
+      "pct_error": 0.053811659192825115,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 23500.0,
+      "pct_error": 0.053811659192825115,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 18000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.19282511210762332,
+      "in_published_range": false,
+      "published_range": [
+        20140.0,
+        29320.0
+      ]
+    }
+  },
+  {
+    "market": "Sunglasses",
+    "set": "tuning",
+    "actual": 43030.0,
+    "published": [
+      41600.0,
+      43030.0,
+      43540.0
+    ],
+    "prev_live": {
+      "value": 39800.0,
+      "pct_error": -0.0750639089007669,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 39800.0,
+      "pct_error": -0.0750639089007669,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 43030.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 43000.0,
+      "high_mn": 43580.0,
+      "method": "median of 3 cited values",
+      "n_accepted": 3,
+      "sources": [
+        "https://www.strategicrevenueinsights.com/industry/sunglasses-market",
+        "https://www.verifiedmarketreports.com/product/sunglasses-market/",
+        "https://www.grandviewresearch.com/industry-analysis/sunglasses-market"
+      ],
+      "flags": [],
+      "pct_error": 0.0,
+      "in_published_range": true,
+      "published_range": [
+        41600.0,
+        43540.0
+      ]
+    }
+  },
+  {
+    "market": "Mattresses",
+    "set": "tuning",
+    "actual": 49560.0,
+    "published": [
+      57510.0,
+      49560.0,
+      45800.0
+    ],
+    "prev_live": {
+      "value": 30800.0,
+      "pct_error": -0.3785310734463277,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 30800.0,
+      "pct_error": -0.3785310734463277,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 50810.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 49240.0,
+      "high_mn": 52380.0,
+      "method": "median of 2 cited values",
+      "n_accepted": 2,
+      "sources": [
+        "https://www.verifiedmarketreports.com/product/mattresses-market-size-and-forecast/",
+        "https://pmarketresearch.com/worldwide-mattresses-market-research/"
+      ],
+      "flags": [
+        "low_confidence_citation"
+      ],
+      "pct_error": 0.025221953188054883,
+      "in_published_range": true,
+      "published_range": [
+        45800.0,
+        57510.0
+      ]
+    }
+  },
+  {
+    "market": "Athletic Footwear",
+    "set": "tuning",
+    "actual": 145490.0,
+    "published": [
+      145490.0,
+      130100.0,
+      147500.0
+    ],
+    "prev_live": {
+      "value": 137085.0,
+      "pct_error": -0.05777029349096158,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 137085.0,
+      "pct_error": -0.05777029349096158,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 129175.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 87000.0,
+      "high_mn": 171350.0,
+      "method": "median of 2 cited values",
+      "n_accepted": 2,
+      "sources": [
+        "https://www.mordorintelligence.com/industry-reports/athletic-footwear-market",
+        "https://marketintelo.com/report/athletic-footwear-market"
+      ],
+      "flags": [],
+      "pct_error": -0.1121382912914977,
+      "in_published_range": true,
+      "published_range": [
+        130100.0,
+        147500.0
+      ]
+    }
+  },
+  {
+    "market": "Toys",
+    "set": "heldout",
+    "actual": 121750.0,
+    "published": [
+      123000.0,
+      120500.0
+    ],
+    "prev_live": {
+      "value": 129960.0,
+      "pct_error": 0.06743326488706365,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 129960.0,
+      "pct_error": 0.06743326488706365,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 110000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.09650924024640657,
+      "in_published_range": false,
+      "published_range": [
+        120500.0,
+        123000.0
+      ]
+    }
+  },
+  {
+    "market": "Razors",
+    "set": "heldout",
+    "actual": 12754.0,
+    "published": [
+      13888.0,
+      11620.0
+    ],
+    "prev_live": {
+      "value": 13333.8,
+      "pct_error": 0.04546024776540687,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 13333.8,
+      "pct_error": 0.04546024776540687,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 14500.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 0.1368982280068998,
+      "in_published_range": true,
+      "published_range": [
+        11620.0,
+        13888.0
+      ]
+    }
+  },
+  {
+    "market": "Cloud Computing",
+    "set": "tuning",
+    "actual": 781270.0,
+    "published": [
+      723400.0,
+      781270.0,
+      912770.0
+    ],
+    "prev_live": {
+      "value": 897100.5,
+      "pct_error": 0.14825924456333917,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 897100.5,
+      "pct_error": 0.14825924456333917,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 907439.8,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 754200.0,
+      "high_mn": 1012931.0,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "CMI report DB: Cloud Computing Market",
+        "https://www.grandviewresearch.com/industry-analysis/cloud-computing-industry",
+        "https://www.researchandmarkets.com/reports/6101969/cloud-computing-market-forecast-and-growth",
+        "https://m2squareconsultancy.com/reports/cloud-computing-market"
+      ],
+      "flags": [],
+      "pct_error": 0.16149320977382986,
+      "in_published_range": true,
+      "published_range": [
+        723400.0,
+        912770.0
+      ]
+    }
+  },
+  {
+    "market": "Cybersecurity",
+    "set": "tuning",
+    "actual": 227600.0,
+    "published": [
+      218980.0,
+      227600.0,
+      248000.0
+    ],
+    "prev_live": {
+      "value": 233825.0,
+      "pct_error": 0.0273506151142355,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 233825.0,
+      "pct_error": 0.0273506151142355,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 210000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.0773286467486819,
+      "in_published_range": true,
+      "published_range": [
+        218980.0,
+        248000.0
+      ]
+    }
+  },
+  {
+    "market": "Data Center Colocation",
+    "set": "heldout",
+    "actual": 83040.0,
+    "published": [
+      83040.0,
+      64600.0,
+      84500.0
+    ],
+    "prev_live": {
+      "value": 82450.0,
+      "pct_error": -0.007105009633911368,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 82450.0,
+      "pct_error": -0.007105009633911368,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 72000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.1329479768786127,
+      "in_published_range": true,
+      "published_range": [
+        64600.0,
+        84500.0
+      ]
+    }
+  },
+  {
+    "market": "Semiconductors",
+    "set": "heldout",
+    "actual": 794300.0,
+    "published": [
+      795600.0,
+      793000.0
+    ],
+    "prev_live": {
+      "value": 685030.0,
+      "pct_error": -0.13756766964622938,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 685030.0,
+      "pct_error": -0.13756766964622938,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 700000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.11872088631499433,
+      "in_published_range": false,
+      "published_range": [
+        793000.0,
+        795600.0
+      ]
+    }
+  },
+  {
+    "market": "Air Compressors",
+    "set": "tuning",
+    "actual": 19700.0,
+    "published": [
+      19700.0,
+      18960.0,
+      29670.0
+    ],
+    "prev_live": {
+      "value": 46921.2,
+      "pct_error": 1.3817868020304567,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 19188.2,
+      "pct_error": -0.025979695431472043,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 23193.2,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 18960.0,
+      "high_mn": 27426.4,
+      "method": "median of 2 cited values",
+      "n_accepted": 2,
+      "sources": [
+        "https://www.coherentmarketinsights.com/industry-reports/air-compressor-market",
+        "https://www.fortunebusinessinsights.com/industry-reports/air-compressor-market-101672"
+      ],
+      "flags": [],
+      "pct_error": 0.17731979695431477,
+      "in_published_range": true,
+      "published_range": [
+        18960.0,
+        29670.0
+      ]
+    }
+  },
+  {
+    "market": "Elevators",
+    "set": "heldout",
+    "actual": 98720.0,
+    "published": [
+      87900.0,
+      100230.0,
+      98720.0
+    ],
+    "prev_live": {
+      "value": 90780.0,
+      "pct_error": -0.08042949756888168,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 90780.0,
+      "pct_error": -0.08042949756888168,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 105000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 0.06361426256077796,
+      "in_published_range": true,
+      "published_range": [
+        87900.0,
+        100230.0
+      ]
+    }
+  },
+  {
+    "market": "Forklifts",
+    "set": "heldout",
+    "actual": 78780.0,
+    "published": [
+      78780.0,
+      62850.0,
+      81400.0
+    ],
+    "prev_live": {
+      "value": 80605.0,
+      "pct_error": 0.023165778116273166,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 80605.0,
+      "pct_error": 0.023165778116273166,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 48000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.3907083015993907,
+      "in_published_range": false,
+      "published_range": [
+        62850.0,
+        81400.0
+      ]
+    }
+  },
+  {
+    "market": "LED Lighting",
+    "set": "tuning",
+    "actual": 108990.0,
+    "published": [
+      109110.0,
+      108990.0,
+      56626.0
+    ],
+    "prev_live": {
+      "value": 95000.0,
+      "pct_error": -0.12836040003670063,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 95000.0,
+      "pct_error": -0.12836040003670063,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 87720.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 85300.0,
+      "high_mn": 106900.0,
+      "method": "median of 3 cited values",
+      "n_accepted": 3,
+      "sources": [
+        "https://www.reportsinsights.com/industry-forecast/led-lighting-market-704795",
+        "https://www.grandviewresearch.com/industry-analysis/led-lighting-market",
+        "https://www.skyquestt.com/report/led-lighting-market"
+      ],
+      "flags": [],
+      "pct_error": -0.1951555188549408,
+      "in_published_range": true,
+      "published_range": [
+        56626.0,
+        109110.0
+      ]
+    }
+  },
+  {
+    "market": "Corrugated Boxes",
+    "set": "tuning",
+    "actual": 195600.0,
+    "published": [
+      195600.0,
+      212300.0,
+      179800.0
+    ],
+    "prev_live": {
+      "value": 256810.0,
+      "pct_error": 0.31293456032719835,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 256810.0,
+      "pct_error": 0.31293456032719835,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 210000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": 0.0736196319018405,
+      "in_published_range": true,
+      "published_range": [
+        179800.0,
+        212300.0
+      ]
+    }
+  },
+  {
+    "market": "Aluminum Cans",
+    "set": "tuning",
+    "actual": 60330.0,
+    "published": [
+      53700.0,
+      60330.0,
+      63200.0
+    ],
+    "prev_live": {
+      "value": 58771.0,
+      "pct_error": -0.02584120669650257,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 58771.0,
+      "pct_error": -0.02584120669650257,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 60586.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "B",
+      "low_mn": 47340.0,
+      "high_mn": 75500.0,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "CMI report DB: Aluminum Cans Market",
+        "https://www.skyquestt.com/report/aluminum-cans-market",
+        "https://www.strategicpackaginginsights.com/report/aluminum-cans-market",
+        "https://www.verifiedmarketreports.com/product/aluminum-cans-market/"
+      ],
+      "flags": [],
+      "pct_error": 0.004243328360682911,
+      "in_published_range": true,
+      "published_range": [
+        53700.0,
+        63200.0
+      ]
+    }
+  },
+  {
+    "market": "Flexible Packaging",
+    "set": "heldout",
+    "actual": 269200.0,
+    "published": [
+      242000.0,
+      269200.0,
+      311150.0
+    ],
+    "prev_live": {
+      "value": 307270.6,
+      "pct_error": 0.14142124814264478,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 307270.6,
+      "pct_error": 0.14142124814264478,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 287000.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 266115.3,
+      "high_mn": 314541.2,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "CMI report DB: Flexible Packaging Market",
+        "https://www.grandviewresearch.com/industry-analysis/global-flexible-packaging-market",
+        "https://www.strategicpackaginginsights.com/report/flexible-packaging-market",
+        "https://www.reportsinsights.com/industry-forecast/flexible-packaging-market-702649"
+      ],
+      "flags": [],
+      "pct_error": 0.06612184249628529,
+      "in_published_range": true,
+      "published_range": [
+        242000.0,
+        311150.0
+      ]
+    }
+  },
+  {
+    "market": "Paper Cups",
+    "set": "heldout",
+    "actual": 13400.0,
+    "published": [
+      14600.0,
+      13400.0,
+      9677.0
+    ],
+    "prev_live": {
+      "value": 11690.0,
+      "pct_error": -0.12761194029850748,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 11690.0,
+      "pct_error": -0.12761194029850748,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 11348.7,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 11348.7,
+      "high_mn": 11348.7,
+      "method": "single cited value",
+      "n_accepted": 1,
+      "sources": [
+        "CMI report DB: Paper Cups Market"
+      ],
+      "flags": [
+        "cited_values_disputed",
+        "low_confidence_citation"
+      ],
+      "pct_error": -0.15308208955223876,
+      "in_published_range": true,
+      "published_range": [
+        9677.0,
+        14600.0
+      ]
+    }
+  },
+  {
+    "market": "Wind Turbines",
+    "set": "tuning",
+    "actual": 170900.0,
+    "published": [
+      170900.0,
+      161990.0,
+      171000.0
+    ],
+    "prev_live": {
+      "value": 107090.0,
+      "pct_error": -0.37337624341720305,
+      "in_published_range": false
+    },
+    "prev_shipped": {
+      "value": 107090.0,
+      "pct_error": -0.37337624341720305,
+      "in_published_range": false
+    },
+    "refined": {
+      "value": 95000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.4441193680514921,
+      "in_published_range": false,
+      "published_range": [
+        161990.0,
+        171000.0
+      ]
+    }
+  },
+  {
+    "market": "Diesel Generators",
+    "set": "tuning",
+    "actual": 21440.0,
+    "published": [
+      22200.0,
+      21440.0,
+      20300.0
+    ],
+    "prev_live": {
+      "value": 21198.5,
+      "pct_error": -0.011263992537313432,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 21198.5,
+      "pct_error": -0.011263992537313432,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 21197.0,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "C",
+      "low_mn": 21197.0,
+      "high_mn": 21197.0,
+      "method": "single cited value",
+      "n_accepted": 1,
+      "sources": [
+        "CMI report DB: Diesel Generators Market"
+      ],
+      "flags": [
+        "cited_values_disputed",
+        "low_confidence_citation"
+      ],
+      "pct_error": -0.011333955223880598,
+      "in_published_range": true,
+      "published_range": [
+        20300.0,
+        22200.0
+      ]
+    }
+  },
+  {
+    "market": "Smart Meters",
+    "set": "heldout",
+    "actual": 32550.0,
+    "published": [
+      28830.0,
+      32550.0,
+      32900.0
+    ],
+    "prev_live": {
+      "value": 29078.0,
+      "pct_error": -0.10666666666666667,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 29078.0,
+      "pct_error": -0.10666666666666667,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 32000.0,
+      "status": "ok",
+      "grounded": false,
+      "confidence": "",
+      "low_mn": null,
+      "high_mn": null,
+      "method": "none",
+      "n_accepted": 0,
+      "sources": [],
+      "flags": [
+        "ungrounded_market_size",
+        "low_confidence"
+      ],
+      "pct_error": -0.016897081413210446,
+      "in_published_range": true,
+      "published_range": [
+        28830.0,
+        32900.0
+      ]
+    }
+  },
+  {
+    "market": "Urea (total, all uses)",
+    "set": "heldout",
+    "actual": 73500.0,
+    "published": [
+      79730.0,
+      73500.0,
+      49720.0
+    ],
+    "prev_live": {
+      "value": 73767.5,
+      "pct_error": 0.003639455782312925,
+      "in_published_range": true
+    },
+    "prev_shipped": {
+      "value": 73767.5,
+      "pct_error": 0.003639455782312925,
+      "in_published_range": true
+    },
+    "refined": {
+      "value": 70623.9,
+      "status": "ok",
+      "grounded": true,
+      "confidence": "A",
+      "low_mn": 64200.0,
+      "high_mn": 82760.0,
+      "method": "median of 4 cited values",
+      "n_accepted": 4,
+      "sources": [
+        "CMI report DB: Urea Market",
+        "https://www.grandviewresearch.com/industry-analysis/urea-market-report",
+        "https://www.datamarketanalysis.com/reports/urea-market-size-forecast",
+        "https://www.skyquestt.com/report/urea-market"
+      ],
+      "flags": [],
+      "pct_error": -0.03913061224489804,
+      "in_published_range": true,
+      "published_range": [
+        49720.0,
+        79730.0
+      ]
+    }
+  }
+]

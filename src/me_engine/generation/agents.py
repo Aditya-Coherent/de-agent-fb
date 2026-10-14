@@ -307,8 +307,9 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
     if db_ev is not None and masks:
         db_ev = replace(db_ev, raw_narrative=_mask_text(db_ev.raw_narrative, masks),
                         summary_text=_mask_text(db_ev.summary_text, masks))
+    # dim_snippets stay as found: they feed the segment shares, where a
+    # segment's own figure is evidence, not a wrong market total.
     snippets = [_mask_text(s, masks) for s in snippets]
-    dim_snippets = {d: [_mask_text(s, masks) for s in v] for d, v in dim_snippets.items()}
     return {
         "db_evidence": db_ev, "web_snippets": snippets, "dim_snippets": dim_snippets, "log": log,
         "web_sources": web_results, "cited_anchor": cited, "evidence_sources": sources,
@@ -362,6 +363,7 @@ def _cited_anchor(state: dict[str, Any], db_ev: DBEvidence | None, web_results: 
             log.append(f"Rejected cited figure {r.raw_text} ({r.source}) -- {r.reason}")
     if anchor.grounded:
         log.append(f"Cited market size: {anchor.describe()}")
+        log.append(f"Cited range ${anchor.low_mn:,.0f}M-${anchor.high_mn:,.0f}M, confidence {anchor.confidence}")
         if anchor.disputed:
             log.append("Cited values are disputed (a single value, or a spread above 2x)")
     else:
@@ -372,25 +374,28 @@ def _cited_anchor(state: dict[str, Any], db_ev: DBEvidence | None, web_results: 
     return anchor.to_dict(), sources
 
 
-_MASK_LABELS = (
-    ("scope:", "different scope"), ("magnitude:", "implausible size"), ("outlier:", "outlier"),
-    ("forecast", "forecast year"), ("year ", "other year"), ("no year", "no year stated"),
-    ("value for a part", "segment or region"), ("incremental", "growth increment"),
-)
+# Only figures judged to describe a different market (scope) or an impossible
+# size are hidden. A figure rejected for bookkeeping reasons -- no year next to
+# it, a forecast year, an outlier, a segment value -- may still be the right
+# total or useful context, so the market-size LLM keeps seeing it.
+_MASK_LABELS = (("scope:", "different scope"), ("magnitude:", "implausible size"))
+
+
+def _is_wrong_figure(reason: str) -> bool:
+    return reason.startswith(tuple(key for key, _ in _MASK_LABELS))
 
 
 def _figure_masks(cited: dict[str, Any]) -> dict[str, str]:
-    """raw_text -> replacement for every rejected figure that isn't also the
-    text of an accepted or corroborating one."""
+    """raw_text -> replacement for every figure rejected for scope or
+    magnitude that isn't also the text of an accepted or corroborating one."""
     keep = {v["raw_text"] for v in (cited.get("accepted") or []) + (cited.get("corroborating") or [])}
     masks: dict[str, str] = {}
     for v in cited.get("rejected") or []:
         raw = v.get("raw_text") or ""
         reason = str(v.get("reason", ""))
-        if not raw or raw in keep or raw in masks or reason.startswith(
-                ("another figure from the same source", "same figure as")):
+        if not raw or raw in keep or raw in masks or not _is_wrong_figure(reason):
             continue
-        label = next((lbl for key, lbl in _MASK_LABELS if reason.startswith(key)), "not used")
+        label = next(lbl for key, lbl in _MASK_LABELS if reason.startswith(key))
         masks[raw] = f"[figure removed: {label}]"
     return masks
 
@@ -644,8 +649,8 @@ def _matches_rejected(value: Any, cited_anchor: dict[str, Any]) -> dict[str, Any
         return None
     for r in cited_anchor.get("rejected") or []:
         reason = str(r.get("reason", ""))
-        if reason.startswith(("another figure from the same source", "same figure as")):
-            continue  # bookkeeping duplicates, not figures judged wrong
+        if not _is_wrong_figure(reason):
+            continue  # bookkeeping rejections (no year, outlier, duplicate), not figures judged wrong
         for ref in (r.get("value_mn"), r.get("value_2025_mn")):
             if ref and abs(v - float(ref)) <= 0.01 * float(ref):
                 return r

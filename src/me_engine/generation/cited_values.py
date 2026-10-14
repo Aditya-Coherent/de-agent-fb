@@ -76,6 +76,14 @@ _PART_RE = re.compile(
     r"application|end[- ]users?|end-use|type|component)s?\b",
     re.IGNORECASE,
 )
+# The same, for a sentence that names the market itself ("The online segment
+# of the global smartwatch market accounted for USD 9.5 Bn"): only the clause
+# leading to the value is read, and only words that mark a part, so a total
+# after a "Segment Analysis: ..." heading still counts.
+_PART_CLAUSE_RE = re.compile(
+    r"\b(segments?|sub-segments?|share of|accounted|accounting|held|holding|dominat\w*|categor(?:y|ies))\b",
+    re.IGNORECASE,
+)
 
 # --- scope ------------------------------------------------------------------ #
 _SUBJECT_RE = re.compile(r"\b(market|industry)s?\b", re.IGNORECASE)
@@ -199,6 +207,12 @@ def check_scope(subject: str, market_name: str, *, keyword_rules: bool = True) -
     missing = [t for t in want if t not in got_set]
     if want and want[-1] in missing:
         return ScopeVerdict(False, f"broader/different scope: '{subject}' lacks '{want[-1]}'")
+    # In a two-word market every word carries scope: 'turbines' is broader than
+    # wind turbines, 'masks' than surgical masks. ('Paints & Coatings' is a
+    # pair of markets; the subject walk stops at '&', so it keeps the old rule.)
+    joined = re.search(r"&|\band\b", market_name or "", re.IGNORECASE)
+    if len(want) == 2 and missing and not joined:
+        return ScopeVerdict(False, f"broader scope: '{subject}' lacks {missing}")
     if len(missing) * 2 > len(want):
         return ScopeVerdict(False, f"broader scope: '{subject}' lacks {missing}")
     return ScopeVerdict(True, "subject matches market" + (f" (without {missing})" if missing else ""))
@@ -262,6 +276,9 @@ def _slug_subject(source: str) -> str:
     return title_subject(" ".join(words))
 
 
+PART_REASON = "value for a part of the market (segment/region/share), not the total"
+
+
 def extract_values(text: str, source: str, title: str = "", *, title_subject: bool = True) -> list[CitedValue]:
     """Every market-size figure in `text`, in US$ Mn, with the year next to it.
 
@@ -299,7 +316,9 @@ def extract_values(text: str, source: str, title: str = "", *, title_subject: bo
             if page_subject[0]:
                 cv.subject, cv.subject_basis = page_subject
                 if _PART_RE.search(sentence):
-                    cv.reason = "value for a part of the market (segment/region/share), not the total"
+                    cv.reason = PART_REASON
+        elif cv.subject and _PART_CLAUSE_RE.search(re.split(r"[:;]", text[s_start:start])[-1]):
+            cv.reason = PART_REASON
         if cv.reason:
             pass
         elif forecast and year not in ACCEPTED_YEARS:
@@ -320,20 +339,91 @@ def extract_cagr(text: str) -> float | None:
 
 
 def _implied_cagr(values: list[CitedValue]) -> float | None:
-    """Growth implied by two dated values from one source ('USD 32.7 Bn in 2026
-    ... USD 45.1 Bn by 2033')."""
-    points = sorted({(v.year, v.value_mn) for v in values if v.year})
-    if len(points) >= 2 and points[-1][0] > points[0][0] and points[0][1] > 0:
-        (y0, v0), (y1, v1) = points[0], points[-1]
-        rate = (v1 / v0) ** (1 / (y1 - y0)) - 1
-        return rate if 0 < rate < 0.6 else None
-    return None
+    """Growth implied by two dated values in one sentence ('USD 32.7 Bn in 2026
+    ... USD 45.1 Bn by 2033'). Pairs are only taken within a sentence: across a
+    page they mix the total with segment figures (a 2024 segment value and a
+    2032 total implied 30% a year for olive oil). Median over the sentences."""
+    by_sentence: dict[str, list[CitedValue]] = {}
+    for v in values:
+        if v.year and (not v.reason or v.reason.startswith("forecast")):
+            by_sentence.setdefault(v.sentence, []).append(v)
+    rates = []
+    for vals in by_sentence.values():
+        first = min(vals, key=lambda v: v.year)
+        last = max(vals, key=lambda v: v.year)
+        if last.year > first.year and first.value_mn > 0:
+            rate = (last.value_mn / first.value_mn) ** (1 / (last.year - first.year)) - 1
+            if 0 < rate < 0.6:
+                rates.append(rate)
+    return median(rates) if rates else None
+
+
+def _value_cagr(v: CitedValue, page_vals: list[CitedValue]) -> float | None:
+    """The growth rate that belongs to this figure: one stated in its own
+    sentence, else implied by its own sentence's start and end values."""
+    return extract_cagr(v.sentence) or _implied_cagr([x for x in page_vals if x.sentence == v.sentence])
 
 
 # --- source tiers --------------------------------------------------------------- #
-# Tier 2 = where a figure is re-posted rather than published: social sites,
-# press-release mirrors, news and blogs. A rule about the kind of site, not a
-# list of preferred publishers.
+# Tier 1 = who an analyst would cite: established research publishers (and the
+#          report resellers that carry their reports), official statistics,
+#          industry associations, and CMI's own report DB.
+# Tier 2 = other market-research report pages.
+# Tier 3 = where a figure is re-posted rather than published: social sites,
+#          press-release mirrors, news and blogs.
+# The publisher list is a maintained judgement, not derived from any evaluation
+# data; extend it as needed.
+ESTABLISHED_PUBLISHERS: dict[str, tuple[str, ...]] = {
+    # domain stem: names used when another site quotes the publisher
+    "grandviewresearch": ("grand view research",),
+    "fortunebusinessinsights": ("fortune business insights",),
+    "marketsandmarkets": ("marketsandmarkets",),
+    "imarcgroup": ("imarc group", "imarc"),
+    "mordorintelligence": ("mordor intelligence",),
+    "precedenceresearch": ("precedence research",),
+    "alliedmarketresearch": ("allied market research",),
+    "gminsights": ("global market insights",),
+    "statista": ("statista",),
+    "technavio": ("technavio",),
+    "straitsresearch": ("straits research",),
+    "thebusinessresearchcompany": ("the business research company",),
+    "persistencemarketresearch": ("persistence market research",),
+    "futuremarketinsights": ("future market insights",),
+    "transparencymarketresearch": ("transparency market research",),
+    "marketresearchfuture": ("market research future",),
+    "coherentmarketinsights": ("coherent market insights",),
+    "factmr": ("fact.mr",),
+    "emergenresearch": ("emergen research",),
+    "bccresearch": ("bcc research",),
+    "frost": ("frost & sullivan", "frost and sullivan"),
+    "idc": ("international data corporation",),
+    "gartner": ("gartner",),
+    "counterpointresearch": ("counterpoint research",),
+    "euromonitor": ("euromonitor",),
+    "kenresearch": ("ken research",),
+    "databridgemarketresearch": ("data bridge market research",),
+    "polarismarketresearch": ("polaris market research",),
+    "skyquestt": ("skyquest",),
+    "verifiedmarketresearch": ("verified market research",),
+    "expertmarketresearch": ("expert market research",),
+    "sphericalinsights": ("spherical insights",),
+    "theinsightpartners": ("the insight partners",),
+    "meticulousresearch": ("meticulous research",),
+    "arizton": ("arizton",),
+    "lucintel": ("lucintel",),
+    "freedoniagroup": ("freedonia",),
+    "ibisworld": ("ibisworld",),
+    "visiongain": ("visiongain",),
+    "researchandmarkets": ("researchandmarkets", "research and markets"),
+}
+# Report resellers that carry the publishers above, matched on the full domain
+# (marketresearch.com is a reseller; marketresearch.biz is not).
+RESELLER_DOMAINS = {"marketresearch.com", "giiresearch.com", "gii.co.jp", "gii.tw", "giikorea.co.kr"}
+_OFFICIAL_DOMAIN_RE = re.compile(
+    r"(\.gov(\.[a-z]{2})?$|\.int$|(^|\.)(un|fao|oecd|worldbank|imf|iea|wto|itc)\.org$|"
+    r"association|council|federation|institute)",
+    re.IGNORECASE,
+)
 _TIER2_DOMAIN_RE = re.compile(
     r"linkedin|pinterest|medium\.com|einnews|einpresswire|openpr|globenewswire|prnewswire|businesswire|"
     r"newswire|prweb|yahoo|msn\.com|blogspot|wordpress|substack|slideshare|scribd|reddit|quora|facebook|"
@@ -349,19 +439,77 @@ _RESEARCH_DOMAIN_RE = re.compile(r"research|insight|intelligence|markets?|analyt
                                  re.IGNORECASE)
 
 
+_SECOND_LEVEL = {"co", "com", "org", "net", "ac", "gov", "or", "ne"}
+
+
+def registrable_domain(source: str) -> str:
+    """'https://www.gii.co.jp/report/x' -> 'gii.co.jp'; '' for non-URLs."""
+    if not source.startswith("http"):
+        return ""
+    labels = urlparse(source).netloc.lower().split(":")[0].split(".")
+    labels = [x for x in labels if x]
+    if len(labels) >= 3 and labels[-2] in _SECOND_LEVEL and len(labels[-1]) == 2:
+        return ".".join(labels[-3:])
+    return ".".join(labels[-2:])
+
+
+def _domain_stem(domain: str) -> str:
+    return domain.split(".", 1)[0]
+
+
+def quoted_publisher(text: str) -> str | None:
+    """Domain stem of an established publisher the text explicitly attributes
+    the figure to ('According to IMARC Group ...', "Grand View Research's
+    report"), else None. A bare mention is not enough: search snippets often
+    bundle several publishers' text together."""
+    low = (text or "").lower()
+    for stem, names in ESTABLISHED_PUBLISHERS.items():
+        for n in names:
+            name = re.escape(n)
+            if re.search(rf"(according to|reported by|published by|data from|research by|study by)\s+(the\s+)?{name}(?![a-z])"
+                         rf"|(?<![a-z]){name}(['’]s)?\s+(latest\s+|recent\s+|new\s+)?(report|study|analysis|data)", low):
+                return stem
+    return None
+
+
 def source_tier(source: str) -> int:
-    """1 = a market-research report page or the CMI report DB; 2 = anything else."""
+    """1 = established publisher / reseller / official body / CMI report DB,
+    2 = other market-research report pages, 3 = social, press-release mirrors,
+    news, blogs and anything that is not a URL."""
     if source.startswith("CMI report DB"):
         return 1
     if not source.startswith("http"):
-        return 2
+        return 3
     parsed = urlparse(source)
-    domain = parsed.netloc.lower().removeprefix("www.")
-    if _TIER2_DOMAIN_RE.search(domain):
-        return 2
-    if _TIER1_PATH_RE.search(parsed.path):
+    domain = registrable_domain(source)
+    if domain in RESELLER_DOMAINS or _domain_stem(domain) in ESTABLISHED_PUBLISHERS:
         return 1
-    return 1 if _RESEARCH_DOMAIN_RE.search(domain.rsplit(".", 1)[0]) else 2
+    if _OFFICIAL_DOMAIN_RE.search(domain):
+        return 1
+    if _TIER2_DOMAIN_RE.search(parsed.netloc.lower()):
+        return 3
+    if _TIER1_PATH_RE.search(parsed.path):
+        return 2
+    return 2 if _RESEARCH_DOMAIN_RE.search(domain.rsplit(".", 1)[0]) else 3
+
+
+def publisher_key(v: "CitedValue") -> str:
+    """Who published the figure: an established publisher quoted in the
+    sentence, else the site's registrable domain (two pages of one site are
+    one publisher), else the source label."""
+    if v.source.startswith("CMI report DB"):
+        return "coherentmarketinsights"   # same publisher as its website
+    quoted = quoted_publisher(v.sentence) if source_tier(v.source) == 3 else None
+    return quoted or _domain_stem(registrable_domain(v.source)) or v.source
+
+
+def value_tier(v: "CitedValue") -> int:
+    """Tier of the site, raised to 2 when a lower-tier page quotes an
+    established publisher by name (a second-hand citation of a real report)."""
+    tier = source_tier(v.source)
+    if tier == 3 and quoted_publisher(v.sentence):
+        return 2
+    return tier
 
 
 # --- scope -> search name -------------------------------------------------------- #
@@ -461,6 +609,13 @@ def consolidate(values: list[float], factor: float = OUTLIER_FACTOR) -> tuple[fl
 
 
 DISPUTED_RATIO = 2.0
+# Anchor only on established publishers when 2+ exist (True), or on every
+# report page, one figure per publisher (False). False was better on the
+# tuning set (2026-10-12 replay: median error 7.5% vs 10.4%, 21 vs 18 of 25 in
+# range): large publishers skew high, and the published "actual" is itself a
+# median across publishers. Established publishers still drive the
+# confidence grade.
+ESTABLISHED_FIRST = False
 
 
 @dataclass
@@ -473,6 +628,9 @@ class CitedAnchor:
     corroborating: list[CitedValue] = field(default_factory=list)
     disputed: bool = False
     size_range: dict[str, Any] | None = None
+    low_mn: float | None = None        # lowest / highest accepted 2025 figure
+    high_mn: float | None = None
+    confidence: str = ""               # A / B / C, see confidence_grade
 
     @property
     def grounded(self) -> bool:
@@ -493,6 +651,7 @@ class CitedAnchor:
         return {
             "value_2025_mn": self.value_2025_mn, "cagr": self.cagr, "method": self.method,
             "disputed": self.disputed, "size_range": self.size_range,
+            "low_mn": self.low_mn, "high_mn": self.high_mn, "confidence": self.confidence,
             "accepted": [v.to_dict() for v in self.accepted],
             "corroborating": [v.to_dict() for v in self.corroborating],
             "rejected": [v.to_dict() for v in self.rejected],
@@ -538,7 +697,7 @@ def _reject(v: CitedValue, reason: str, rejected: list[CitedValue]) -> None:
 
 
 def _corroborate(v: CitedValue) -> None:
-    v.status, v.reason = "corroborating", "tier-2 source: corroborates only, never the anchor"
+    v.status, v.reason = "corroborating", f"tier-{v.tier} source: corroborates only, not the anchor"
 
 
 def collect_cited_values(
@@ -554,14 +713,15 @@ def collect_cited_values(
 ) -> CitedAnchor:
     """Consensus 2025 market size from `[(source_label, text[, page_title]), ...]`.
 
-    One figure per source (2025 preferred, then 2024, then 2026), moved to 2025
-    at the source's own CAGR (explicit, else implied by its dated values, else
-    the median CAGR across sources, else 5%). Repeats of the same figure across
-    sources (syndicated press releases) count once. Then, each step optional:
+    One figure per publisher (2025 preferred, then 2024, then 2026), moved to
+    2025 at the CAGR stated or implied in the figure's own sentence (else the
+    page's, else the median CAGR across sources, else 5%). Repeats of the same
+    figure across sources (syndicated press releases) count once. Then, each
+    step optional:
       size_range      reject figures >3x outside the units x ASP range
-      source_tiers    anchor on research-report pages / the CMI DB; other
-                      sites only corroborate unless there are fewer than 2
-                      tier-1 values, and never anchor alone
+      source_tiers    anchor on report pages (established publishers, the CMI
+                      DB, other report sites); social / press / blog figures
+                      only corroborate and never anchor
       weak_consensus  one value or a >2x spread is "disputed"; the anchor is
                       then the value closest to the size-range middle, else
                       the CMI DB figure, else the median
@@ -572,13 +732,15 @@ def collect_cited_values(
         title = item[2] if len(item) > 2 else ""
         vals = extract_values(text, label, title, title_subject=title_subject)
         if vals:
-            per_source.append((label, vals, extract_cagr(text) or _implied_cagr(vals)))
+            # Page-level fallback CAGR: only sentences about this market.
+            own = [v for v in vals if check_scope(v.subject, market_name).ok]
+            per_source.append((label, vals, extract_cagr(text) or _implied_cagr(own)))
     all_cagrs = [c for _, _, c in per_source if c]
     fallback_cagr = median(all_cagrs) if all_cagrs else None
 
     rejected: list[CitedValue] = []
     candidates: list[CitedValue] = []
-    for _label, vals, cagr in per_source:
+    for _label, vals, page_cagr in per_source:
         for v in vals:
             if v.reason:
                 _reject(v, v.reason, rejected)
@@ -587,6 +749,7 @@ def collect_cited_values(
             elif v.year not in ACCEPTED_YEARS:
                 _reject(v, f"year {v.year} outside {ACCEPTED_YEARS[0]}-{ACCEPTED_YEARS[-1]}", rejected)
             else:
+                cagr = _value_cagr(v, vals) or page_cagr
                 if cagr:
                     v.cagr_used, v.cagr_basis = cagr, "cited"
                 elif fallback_cagr:
@@ -615,37 +778,58 @@ def collect_cited_values(
             c.reason = verdict.reason
             scoped.append(c)
 
-    # One figure per source, then one per distinct figure, then the size check.
+    # One figure per publisher (two pages of one site, or a repost that names
+    # the publisher, are one source), then one per distinct figure, then the
+    # size check.
     order = {2025: 0, 2024: 1, 2026: 2}
+    want = set(market_tokens(market_name))
+
+    def _preference(c: CitedValue) -> tuple[int, int]:
+        exact = set(market_tokens(c.subject)) == want
+        return order[c.year], 0 if exact else 1
+
     best_by_source: dict[str, CitedValue] = {}
     for c in scoped:
-        cur = best_by_source.get(c.source)
-        if cur is None or order[c.year] < order[cur.year]:
+        key = publisher_key(c)
+        cur = best_by_source.get(key)
+        if cur is None or _preference(c) < _preference(cur):
             if cur is not None:
                 _reject(cur, "another figure from the same source was used", rejected)
-            best_by_source[c.source] = c
+            best_by_source[key] = c
         else:
             _reject(c, "another figure from the same source was used", rejected)
     unique: list[CitedValue] = []
+
+    def _syndicated(a: CitedValue, b: CitedValue) -> bool:
+        """The same figure re-posted: the identical number (a reseller copy, or
+        search snippets mixing pages), or a repost site. Two report publishers
+        that independently land close (219.26 vs 219.49 Bn) are agreement, not
+        a duplicate."""
+        return (a.value_mn == b.value_mn or a.sentence == b.sentence
+                or 3 in (source_tier(a.source), source_tier(b.source)))
+
     for c in best_by_source.values():
-        dup = next((u for u in unique if u.year == c.year and abs(u.value_mn - c.value_mn) <= 0.005 * u.value_mn), None)
+        dup = next((u for u in unique if u.year == c.year and abs(u.value_mn - c.value_mn) <= 0.005 * u.value_mn
+                    and _syndicated(u, c)), None)
         if dup is not None:
             _reject(c, f"same figure as {dup.source} (counted once)", rejected)
         elif outside_size_range(c.value_2025_mn, size_range):
             _reject(c, f"magnitude: more than {MAGNITUDE_FACTOR:g}x outside the units x ASP range "
                        f"${size_range['low_mn']:,.0f}M-${size_range['high_mn']:,.0f}M", rejected)
         else:
-            c.tier = source_tier(c.source)
+            c.tier = value_tier(c)
             unique.append(c)
 
+    # Anchor on every report page (see ESTABLISHED_FIRST). Social / press /
+    # blog figures only corroborate: they never move the number (one LinkedIn
+    # post next to a single report turned air compressors from -3% into +67%).
     corroborating: list[CitedValue] = []
     pool = unique
     if source_tiers:
         tier1 = [c for c in unique if c.tier == 1]
-        if len(tier1) >= 2:
-            pool, corroborating = tier1, [c for c in unique if c.tier != 1]
-        elif not tier1:
-            pool, corroborating = [], list(unique)
+        reports = [c for c in unique if c.tier in (1, 2)]
+        pool = tier1 if ESTABLISHED_FIRST and len(tier1) >= 2 else reports
+        corroborating = [c for c in unique if c not in pool]
         for c in corroborating:
             _corroborate(c)
 
@@ -653,8 +837,8 @@ def collect_cited_values(
     for i in dropped:
         _reject(pool[i], f"outlier: more than {OUTLIER_FACTOR}x from the median of cited values", rejected)
     accepted = [pool[i] for i in kept]
-    if source_tiers and accepted and not any(c.tier == 1 for c in accepted):
-        # Only tier-2 values survived the outlier step: they may not anchor alone.
+    if source_tiers and accepted and not any(c.tier in (1, 2) for c in accepted):
+        # Only social/press values survived the outlier step: they may not anchor alone.
         for c in accepted:
             _corroborate(c)
         corroborating += accepted
@@ -665,7 +849,7 @@ def collect_cited_values(
         return CitedAnchor(None, None, "none", [], rejected, corroborating, False, size_range)
 
     values = [c.value_2025_mn for c in accepted]
-    disputed = len(values) == 1 or max(values) / min(values) > DISPUTED_RATIO
+    disputed = len(values) == 1 or central_spread(values) > DISPUTED_RATIO
     method = f"median of {len(accepted)} cited values" if len(accepted) >= 2 else "single cited value"
     if disputed and weak_consensus and len(accepted) >= 2:
         db = [c for c in unique if c.source.startswith("CMI report DB")]
@@ -678,4 +862,32 @@ def collect_cited_values(
             anchor, method = db[0].value_2025_mn, "disputed: CMI report DB figure"
     cagrs = [c.cagr_used for c in accepted if c.cagr_basis == "cited" and c.cagr_used]
     return CitedAnchor(round(anchor, 1), median(cagrs) if cagrs else None, method, accepted, rejected,
-                       corroborating, disputed, size_range)
+                       corroborating, disputed, size_range, *confidence_grade(accepted))
+
+
+def central_spread(values: list[float]) -> float:
+    """max/min after dropping the single highest and lowest figure when there
+    are 5+ (one stray figure among ten agreeing ones is not a dispute)."""
+    vals = sorted(values)
+    if len(vals) >= 5:
+        vals = vals[1:-1]
+    return vals[-1] / vals[0] if vals and vals[0] > 0 else float("inf")
+
+
+def confidence_grade(accepted: list[CitedValue]) -> tuple[float | None, float | None, str]:
+    """(low, high, grade) of the accepted 2025 figures.
+    A = 3+ figures, 2+ from established publishers, within 1.5x of each other;
+    B = 2+ figures, 1+ established, within 2x; C = anything weaker."""
+    values = [c.value_2025_mn for c in accepted if c.value_2025_mn]
+    if not values:
+        return None, None, ""
+    lo, hi = min(values), max(values)
+    spread = central_spread(values)
+    established = sum(1 for c in accepted if c.tier == 1)
+    if len(values) >= 3 and established >= 2 and spread <= 1.5:
+        grade = "A"
+    elif len(values) >= 2 and established >= 1 and spread <= DISPUTED_RATIO:
+        grade = "B"
+    else:
+        grade = "C"
+    return lo, hi, grade

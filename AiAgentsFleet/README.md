@@ -141,6 +141,84 @@ independently runnable):
 Output: `AiAgentsFleet/output/<slug>/<slug>-whitepaper.docx` (plus
 the intermediate `charts/` folder and `prose.json`).
 
+## CMI whitepaper template (`cmi_report/`)
+
+A second report format: the CMI whitepaper (`templates/cmi_whitepaper_template.docx`,
+originally the drone-market template) -- Global vs Middle East & Africa,
+2026E-2033F, country tables for every region, per-country segment charts
+for the Middle East and Africa, regulation, vendors, recommendations,
+methodology. Nothing in it is market-specific: run any market name.
+
+```bash
+# one market (runs the fleet first if the market is new)
+python AiAgentsFleet/cmi_report/run_cmi_report.py --market "Global Drone Market"
+python AiAgentsFleet/cmi_report/run_cmi_report.py --market-slug agricultural-biostimulants-market
+
+# many markets: one name per line, done markets skipped, outcomes in output/batch_log.jsonl
+python AiAgentsFleet/cmi_report/run_batch.py --markets markets.txt
+```
+
+Output: everything for a market in one folder, `output/<slug>/`:
+`<slug>-cmi-whitepaper.docx` (+ `.pdf` when MS Word is installed), `charts/`,
+`qa_report.json`, and the data it was built from (`whitepaper_fields.json`,
+`cmi_fields.json`, `cmi_model.json`, `cmi_prose.json`).
+
+How numbers and text are kept consistent:
+
+1. `run_data.py` runs ten more agents (`groups.py`): country splits, Middle
+   East / Africa split, type + demand-segment mixes (the demand dimension --
+   end user, application, crop type... -- is named per market), dynamics,
+   use cases, regulation, vendors, strategy, published third-party figures.
+   Search results that don't mention the market are discarded and the search
+   is retried; published figures are kept only when found verbatim in a
+   snippet, as that year's value, credited to the snippet's own website.
+2. `model.py` builds ONE numeric model from the fleet's reconciled market size
+   and the agents' shares/CAGRs: regions sum to global every year, countries
+   to their region, segments to their geography, Middle East + Africa to MEA.
+3. Every table, chart label and sentence prints numbers through `fmt.py` from
+   that model. The LLM writes the text (`prose.py`) from pre-formatted facts;
+   `guard.py` then drops any sentence with a number not in the model, a
+   largest/fastest/smallest claim that is false for the entity it names, a
+   category the data doesn't have ('Rest of North America'), or draft/
+   disclaimer wording.
+4. `build.py` fills the template element by element and removes the Data
+   status box, the Contact section and the Disclaimer. `run_cmi_report.py`
+   then sets the real TOC page numbers via Word and runs a final QA audit
+   (`qa_report.json`) over the finished document.
+
+### Report standard and audit
+
+The CMI pipeline follows the report standard (consistency, accuracy, relevance):
+client market definition stated first and obeyed by every agent; countries chosen
+per market by real relevance (`geography` agent, validated against region
+membership) with a profile for every table country; parent/subsidiary groups and
+non-comparable businesses kept out of like-for-like share charts; rankings stated
+for their year and ties stated as ties; growth-vs-global claims checked; text
+copied from the template's drone example dropped; estimates labelled, unverified
+regulators / milestones / vendor moves marked [to verify]; executive summary and
+recommendations written last from the body, each recommendation citing its
+finding; no blank or "-" cells; an appendix "Consistency & Verification Log"
+(master data sheet, rankings register, [to verify] list, corrections).
+
+Number integrity: `register.py` builds a Number Register (one row per fact, with an
+ID, its exact meaning, its entity and its single display format) before any text is
+written. Every number in the text, tables and the final sweep must be the register
+value of an entity named in the same sentence or table row (a share of the region
+is never accepted as a share of global; "$4.3B" is rejected where the register says
+"$4.25B"). The sweep runs on the finished document, flagged sentences are removed and
+the sweep repeated; the counts go into the appendix log. The complete register is
+saved as `<slug>-number-register.csv`; the appendix prints its derived facts.
+Every named Middle East / Africa country and each "Rest of" group gets a full
+profile with segment charts; other regions' countries get size-and-reasons profiles
+and no segment claims. Each chapter closes with a sentence setting up the next; the
+executive summary opens with the report's thesis. UK English.
+
+`python AiAgentsFleet/cmi_report/audit.py --market-slug <slug>` writes
+`audit_report.json`: exact computed checks (sums, CAGRs, share claims, ties, blank
+cells, announced counts, profiles, summary-vs-body, labels) plus an AI review of
+judgement calls (missing countries, double counting, segments vs definition,
+regulators, recommendation support) -- the AI review is an assessment, not proof.
+
 ## What this does NOT do (yet)
 
 - Body prose is templated/data-driven, not a literary rewrite per market —

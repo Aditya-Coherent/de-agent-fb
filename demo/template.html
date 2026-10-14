@@ -342,16 +342,91 @@ function substituted(item, geo) {
   for (const [k, v] of Object.entries(s.constants || {})) f = f.replace(new RegExp("\\b" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), String(typeof v === "object" ? v.value : v));
   return f;
 }
+// price per quantity unit, after code converted the quoted price (US$/kg -> US$/t ...)
+function ucPrice(x) { return isNum(x?.price_per_quantity_unit) ? x.price_per_quantity_unit : +(x?.spec?.price_usd_per_unit?.value); }
+function ucUnit(s) { return s?.quantity_unit || s?.units_label || "units"; }
 function constTable(item) {
   const s = item.spec || {}, pr = s.price_usd_per_unit || {}, w = s.world_units_per_year || {};
   const rows = Object.entries(s.constants || {}).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(typeof v === "object" ? v.value : v)}</td><td>${esc(v.unit || "")}</td><td>${esc(v.basis || "")}</td><td>${esc(v.reason || "")}</td></tr>`).join("");
   return `<table class="mini"><tr><th>Input</th><th>Value</th><th>Unit</th><th>Basis</th><th>Why the agent chose it</th></tr>
-    <tr><td><b>world units / yr</b></td><td>${big(+w.value)}</td><td>${esc(s.units_label || "units")}</td><td>${esc(w.basis || "")}</td><td>${esc(w.reason || "")}</td></tr>
-    <tr><td><b>price per unit</b></td><td>${money(+pr.value)}</td><td>US$</td><td>${esc(pr.basis || "")}</td><td>${esc(pr.reason || "")}</td></tr>${rows}</table>
+    <tr><td><b>world units / yr</b></td><td>${big(+w.value)}</td><td>${esc(ucUnit(s))}</td><td>${esc(w.basis || "")}</td><td>${esc(w.reason || "")}</td></tr>
+    <tr><td><b>price</b></td><td>${money(+pr.value)}</td><td>US$ per ${esc(pr.per || ucUnit(s))}${pr.per && ucPrice(item) !== +pr.value ? ` (= ${money(ucPrice(item))} per ${esc(ucUnit(s))}, converted by code)` : ""}</td><td>${esc(pr.basis || "")}</td><td>${esc(pr.reason || "")}</td></tr>${rows}</table>
     <p style="color:#777;font-size:12px">Basis “E<i>n</i>” = the numbered evidence item below; “assumption” = the agent's industry knowledge, stated openly.</p>`;
 }
+/* new build (archetype + structured world inputs, median of samples, driver only spreads) */
+const isNewUC = item => !!(item?.archetype || item?.spec?.archetype || item?.spec?.world);
+const sig = v => !isNum(v) ? "—" : Math.abs(v) >= 100 ? big(v) : +v.toPrecision(3) + "";
+const DURABLE = ["new_machines_per_year", "installed_machines", "product_life_years", "adoption_share", "units_per_machine"];
+const CONSUMABLE = ["world_activity_per_year", "adoption_share", "dose_per_activity_unit"];
+const inputVal = e => (e && typeof e === "object") ? e.value : e;
+function ucInputs(item) {
+  const s = item.spec || {}, arch = item.archetype || s.archetype;
+  return arch === "durable" ? DURABLE : CONSUMABLE;
+}
+function worldFormula(item) {
+  const s = item.spec || {}, w = s.world || {}, x = item.world_inputs || {}, N = item.world_units ?? item.world_units_estimate;
+  const unit = esc(ucUnit(s)), val = k => isNum(x[k]) ? x[k] : +inputVal(w[k]);
+  if ((item.archetype || s.archetype) === "durable") {
+    const [n, i, l, a, u] = DURABLE.map(val);
+    const nb = n * a * u, rep = i / l * a * u;
+    return `<code>(new_machines_per_year ${sig(n)} + installed_machines ${sig(i)} / product_life_years ${sig(l)}) × adoption_share ${sig(a)} × units_per_machine ${sig(u)}</code> = <b>${big(N)}</b> ${unit}/yr (${big(nb)} new builds + ${big(rep)} replacements)`;
+  }
+  const fromDriver = String(inputVal(w.world_activity_per_year)).toLowerCase() === "driver";
+  const act = fromDriver ? item.driver_total : val("world_activity_per_year");
+  return `<code>world_activity_per_year ${sig(act)}${fromDriver ? ` (= world total of ${esc(drvName(s.driver))})` : ""} × adoption_share ${sig(val("adoption_share"))} × dose_per_activity_unit ${sig(val("dose_per_activity_unit"))}</code> = <b>${big(N)}</b> ${unit}/yr`;
+}
+function newInputTable(item) {
+  const s = item.spec || {}, w = s.world || {}, pr = s.price_usd_per_unit || {}, sp = item.spread || {};
+  const rows = ucInputs(item).map(k => {
+    const e = w[k] || {}, d = sp[k];
+    const spread = d ? `${(d.values || []).map(sig).join(", ")}<br><span style="color:#777">min ${sig(d.min)} · median ${sig(d.median)} · max ${sig(d.max)}${isNum(d.max_over_min) ? ` · ×${d.max_over_min.toFixed(2)}` : ""}</span>` : "—";
+    return `<tr><td><code>${esc(k)}</code></td><td><b>${esc(typeof inputVal(e) === "number" ? sig(inputVal(e)) : inputVal(e))}</b></td><td>${esc(e.unit || "")}</td><td>${esc(e.basis || "assumption")}</td><td>${esc(e.reason || "")}</td><td>${spread}</td></tr>`;
+  }).join("");
+  return `<table class="mini"><tr><th>Input (median)</th><th>Value</th><th>Unit</th><th>Basis</th><th>Why the agent chose it</th><th>Samples (spread)</th></tr>${rows}
+    <tr><td><b>price</b></td><td>${money(+pr.value)}</td><td>US$ per ${esc(pr.per || ucUnit(s))}${pr.per && ucPrice(item) !== +pr.value ? ` (= ${money(ucPrice(item))} per ${esc(ucUnit(s))}, converted by code)` : ""}</td><td>${esc(pr.basis || "")}</td><td>${esc(pr.reason || "")}</td><td>${(item.samples || []).map(x => money(x.price)).join(", ") || "—"}</td></tr></table>
+    <p style="color:#777;font-size:12px">Basis “E<i>n</i>” = the numbered evidence item below; “assumption” = the agent's industry knowledge, stated openly.${item.basis_counts ? ` Here ${item.basis_counts.cited} input(s) cite evidence and ${item.basis_counts.assumption} are assumptions.` : ""}</p>`;
+}
+function samplesTable(item) {
+  const ss = item.samples || [];
+  if (!ss.length) return "";
+  const ks = ucInputs(item), used = item.median_of_samples || [];
+  const wsp = (item.spread || {}).world_units_per_sample;
+  return `<details><summary>The ${ss.length} independent samples${wsp && isNum(wsp.max_over_min) ? ` (world units ×${wsp.max_over_min.toFixed(2)} max/min)` : ""}</summary><table class="mini"><tr><th>#</th><th>Tries</th><th>Driver</th>${ks.map(k => `<th>${esc(k)}</th>`).join("")}<th>Units / yr</th><th>Price</th><th>Notes</th></tr>${ss.map(x => `<tr><td>${x.sample}${used.length && !used.includes(x.sample) ? " (excluded)" : ""}</td><td>${x.attempts}</td><td>${esc(drvName(x.driver))}</td>${ks.map(k => `<td>${esc(typeof inputVal((x.world || {})[k]) === "number" ? sig(inputVal(x.world[k])) : inputVal((x.world || {})[k]) ?? "—")}</td>`).join("")}<td>${big(x.world_units)}</td><td>${money(x.price)}</td><td>${(x.violations || []).length ? `<span style="color:#a33">${esc(x.violations.join("; "))}${x.kept_out_of_bounds ? " (kept, flagged)" : ""}</span>` : "ok"}${x.machine ? `<br><i>machine: ${esc(x.machine)}</i>` : ""}</td></tr>`).join("")}</table>
+    ${ss.some(x => (x.feedback || []).length) ? `<details><summary>Code's feedback to the agent on retries</summary><ul>${ss.flatMap(x => (x.feedback || []).map(f => `<li>sample ${x.sample}: ${esc(f)}</li>`)).join("")}</ul></details>` : ""}</details>`;
+}
+function ucFlags(item) {
+  const out = [];
+  for (const f of item.flags || []) out.push(esc(f));
+  if ((item.bound_violations || []).length && !(item.flags || []).some(f => f.startsWith("median inputs"))) out.push("bound violations: " + esc(item.bound_violations.join("; ")));
+  if (item.world_units_circular) out.push("a world input was derived from a published market size divided by a price");
+  const b = item.blocked || {};
+  const blocked = isNum(b.snippets) ? `<p style="color:#777;font-size:12px">Publisher blocklist: ${b.snippets} search snippet(s) and ${b.published_figures || 0} published figure(s) removed before the agent saw them.</p>` : "";
+  return (out.length ? `<div class="warn"><b>Flags.</b><ul>${out.map(x => `<li>${x}</li>`).join("")}</ul></div>` : `<div class="note">No flags: every input within physical bounds.</div>`) + blocked;
+}
+function useCaseCalcNew(item, geo) {
+  const s = item.spec || {}, u = item.units?.[geo], v = item.values_mn?.[geo], pr = ucPrice(item);
+  const N = item.world_units ?? item.world_units_estimate, dv = item.driver_values?.[geo], tot = item.driver_total;
+  const share = item.driver_share?.[geo] ?? (isNum(dv) && tot ? dv / tot : null);
+  const arch = item.archetype || s.archetype;
+  const cited = Object.values(s.world || {}).map(c => c?.basis).concat([s.price_usd_per_unit?.basis]).filter(b => /E\d+/.test(b || "")).flatMap(b => b.match(/E\d+/g));
+  return `<p><b>Archetype:</b> ${esc(arch)} · <b>quantity unit:</b> ${esc(ucUnit(s))}${s.machine ? `<br><b>One machine is:</b> ${esc(s.machine)}` : ""}<br><b>Who buys:</b> ${esc(s.buyers || "—")}</p>
+    <h4>1 · How many units the world buys per year (code's arithmetic on the agent's median inputs)</h4>
+    <p>${worldFormula(item)}</p>
+    ${newInputTable(item)}
+    ${samplesTable(item)}
+    <h4>2 · How much of that ${esc(geo)} buys</h4>
+    <p>The driver <b>${esc(drvName(s.driver))}</b> only spreads the world quantity: <code>world units × driver(${esc(geo)}) / Σ driver</code> = ${big(N)} × ${big(dv)} / ${big(tot)} (${pct(share, 2)}) = <b>${big(u)}</b> ${esc(ucUnit(s))} per year.</p>
+    <h4>3 · Value</h4>
+    <p>${big(u)} ${esc(ucUnit(s))} × ${money(pr)} per ${esc(ucUnit(s))} = <b>${usd(v)}</b>${isNum(item.anchor?.[geo]) ? ` (quantity scaled ×${item.anchor[geo].toPrecision(3)} so ${esc(geo)}'s use cases add up to its official consumption)` : ""}. World: ${big(N)} × ${money(pr)} = <b>${usd(item.world_mn)}</b>.</p>
+    ${ucFlags(item)}
+    <h4>The agent's demand logic</h4><p><i>${esc(s.reasoning || "")}</i></p>
+    ${(item.evidence || []).length ? evidenceList(item.evidence, cited) : "<p>No use-case evidence was found on the web; every input above is the agent's stated assumption.</p>"}
+    ${(item.published_context || []).length ? `<details><summary>What research firms publish for ${esc(item.industry)} (context only; never used to set this number)</summary><table class="mini"><tr><th>Publisher</th><th>Figure (scope-adjusted)</th><th>Status</th></tr>${item.published_context.map(p => `<tr><td>${esc(p.publisher)}</td><td>${usd(p.usd_mn)}</td><td>${p.independent ? "measures this industry" : "whole-market or unattributed"}</td></tr>`).join("")}</table></details>` : ""}
+    ${item.reexamined ? `<div class="warn"><b>Re-examined.</b> ${esc(item.reexamined)}</div>` : ""}`;
+}
 function useCaseCalc(item, geo) {
-  const s = item.spec || {}, u = item.units?.[geo], v = item.values_mn?.[geo], pr = +(s.price_usd_per_unit?.value);
+  if (isNewUC(item)) return useCaseCalcNew(item, geo);
+  const s = item.spec || {}, u = item.units?.[geo], v = item.values_mn?.[geo], pr = ucPrice(item);
   const cal = s.calibration, wu = item.world_units_estimate, wf = item.world_units_formula;
   const share = isNum(u) && isNum(wu) && wu ? u / wu : null;
   const cited = Object.values(s.constants || {}).map(c => c?.basis).concat([s.price_usd_per_unit?.basis, s.world_units_per_year?.basis]).filter(b => /E\d+/.test(b || "")).flatMap(b => b.match(/E\d+/g));
@@ -363,7 +438,7 @@ function useCaseCalc(item, geo) {
     <p><code>units = ${esc(s.units_formula || s.formula)}</code><br><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = ${esc(substituted(item, geo))}</code>${cal ? ` × ${cal.factor.toPrecision(3)}` : ""} = <b>${big(u)}</b> ${esc(s.units_label || "units")} per year${isNum(share) ? ` (${pct(share)} of the world's units)` : ""}.</p>
     ${cal ? `<div class="note"><b>Calibration factor ${cal.factor.toPrecision(3)}:</b> applied to all 26 countries, the agent's formula as written gives ${big(wf)} units per year, but its own physical estimate is ${big(wu)}. Per-dollar rates written as long decimals are easy to get wrong by orders of magnitude, so the physical estimate sets the <i>level</i> and the formula sets <i>how the units are split across countries</i>. ${Math.abs(Math.log(cal.factor)) < Math.log(1.5) ? "Here the two agree closely." : "Here the formula was off, and the factor corrects it."}</div>` : ""}
     <h4>3 · Value</h4>
-    <p>${big(u)} units × ${money(pr)} per unit = <b>${usd(v)}</b>.</p>
+    <p>${big(u)} ${esc(ucUnit(s))} × ${money(pr)} per ${esc(ucUnit(s))} = <b>${usd(v)}</b>${isNum(item.anchor?.[geo]) ? ` (quantity scaled ×${item.anchor[geo].toPrecision(3)} so ${esc(geo)}'s use cases add up to its official consumption)` : ""}.</p>
     <h4>The agent's demand logic</h4><p><i>${esc(s.reasoning || "")}</i></p>
     ${constTable(item)}
     ${(item.evidence || []).length ? evidenceList(item.evidence, cited) : "<p>No use-case evidence was found on the web; every input above is the agent's stated assumption.</p>"}
@@ -374,7 +449,7 @@ function industryTable(industry, geo) {
   const items = ucForIndustry(industry);
   const tot = items.reduce((a, x) => a + (x.values_mn?.[geo] || 0), 0);
   return `<table class="mini"><tr><th>Use case</th><th>Driver in ${esc(geo)}</th><th>Units / yr</th><th>Price / unit</th><th>Value</th><th>Share of ${esc(industry)}</th></tr>${items.map(x =>
-    `<tr><td>${esc(x.use_case)}</td><td>${esc(drvName(x.spec?.driver))}: ${big(x.driver_values?.[geo])}</td><td>${big(x.units?.[geo])}</td><td>${money(+(x.spec?.price_usd_per_unit?.value))}</td><td>${usd(x.values_mn?.[geo])}</td><td>${pct(tot ? (x.values_mn?.[geo] || 0) / tot : null)}</td></tr>`).join("")}
+    `<tr><td>${esc(x.use_case)}</td><td>${esc(drvName(x.spec?.driver))}: ${big(x.driver_values?.[geo])}</td><td>${big(x.units?.[geo])} ${esc(ucUnit(x.spec))}</td><td>${money(ucPrice(x))}</td><td>${usd(x.values_mn?.[geo])}</td><td>${pct(tot ? (x.values_mn?.[geo] || 0) / tot : null)}</td></tr>`).join("")}
     <tr style="border-top:2px solid #999"><td><b>${esc(industry)} total</b></td><td></td><td></td><td></td><td><b>${usd(tot)}</b></td><td>100%</td></tr></table>`;
 }
 function useCaseSteps(cell) {
@@ -390,7 +465,7 @@ function useCaseSteps(cell) {
       <li><b>Share within ${esc(industry)}.</b> ${usd(item.values_mn?.[geo])} ÷ ${esc(industry)} total ${usd(indTot)} = <b>${pct(indTot ? item.values_mn[geo] / indTot : null)}</b>.${industryTable(industry, geo)}</li>`;
   }
   const items = ucForIndustry(industry), single = items.length === 1;
-  return `<li><b>${esc(industry)} in ${esc(geo)} is the sum of its use cases.</b>${industryTable(industry, geo)}${single ? useCaseCalc(items[0], geo) : "<p>Click any use-case row under this industry in the sheet to see its full calculation (driver, units formula, price, evidence).</p>"}</li>
+  return `<li><b>${esc(industry)} in ${esc(geo)} is the sum of its use cases.</b>${industryTable(industry, geo)}${single ? useCaseCalc(items[0], geo) : "<p>Click any use-case row under this industry in the sheet to see its full calculation (world inputs, driver share, price, evidence).</p>"}</li>
     <li><b>Share of ${esc(geo)}'s market.</b> ${usd(indTot)} ÷ ${esc(geo)} total ${usd(countryTot)} (all industries) = <b>${pct(countryTot ? indTot / countryTot : null)}</b>.${countryTable(geo)}</li>`;
 }
 function countryTable(name) {
@@ -631,7 +706,7 @@ function methodology() {
     `<li><a href="${esc(e.url)}" target="_blank">${esc(e.event)}</a> (${esc(e.date)}): ${pts(e.effective_cagr_pp)} on ${esc(e.affects.join(", "))}</li>`).join("");
   const ea = C.events_applied || {};
   const u = UC();
-  const ucRows = u ? (u.items || []).map(x => `<tr><td>${esc(x.industry)}</td><td>${esc(x.use_case)}</td><td>${esc(drvName(x.spec?.driver))}</td><td>${big(x.world_units_estimate)}</td><td>${money(+(x.spec?.price_usd_per_unit?.value))}</td><td>${usd(x.world_mn)}</td></tr>`).join("") : "";
+  const ucRows = u ? (u.items || []).map(x => `<tr><td>${esc(x.industry)}</td><td>${esc(x.use_case)}</td><td>${esc(drvName(x.spec?.driver))}</td><td>${big(x.world_units_estimate)} ${esc(ucUnit(x.spec))}</td><td>${money(ucPrice(x))}</td><td>${usd(x.world_mn)}</td></tr>`).join("") : "";
   const ucSection = !u ? "" : `<h2>How the size is built: demand, use case by use case</h2>
   <p>A human analyst does not average other firms' numbers. They ask <i>who buys this product, for what, how many, and at what price</i> — for olive oil in India: restaurants, households, gifting, each belonging to an industry (food service, retail, gifting). We do the same:</p>
   <div class="flow"><span>Industry</span><i>→</i><span>Use case</span><i>→</i><span>Who buys</span><i>→</i><span>Country driver (World Bank)</span><i>→</i><span>Units / yr</span><i>→</i><span>× price</span><i>→</i><span>Value</span><i>→</i><span>Σ industry → country → region → world</span></div>

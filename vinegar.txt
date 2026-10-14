@@ -31,14 +31,12 @@ Similarly for all the players that have been mapped, the revenue contribution of
 
 
 
-Options (pick one):
-1. Let me run one at a time. It's slower (about 5–6 hours total) but uses half the memory. Closing Outlook helps too.
-2. Run them yourself in a normal terminal, outside Claude Code, so the memory guard can't stop them. Run these one after another:
-cd C:\Users\aimlpc1\Desktop\de-agent-fb
-.venv\Scripts\python run_examples.py --market "Disposable Medical Gloves" --vertical "Healthcare" --approaches 2b,supply
-.venv\Scripts\python run_examples.py --market "Urea Fertilizer" --vertical "Agriculture & Chemicals" --approaches 2b,supply
-.venv\Scripts\python run_examples.py --market "Automotive Tires" --vertical "Automotive"
-.venv\Scripts\python run_examples.py --market "Smartphones" --vertical "Consumer Electronics"
-.venv\Scripts\python run_examples.py --market "Olive Oil" --vertical "Food & Beverages" --approaches desk
-.venv\Scripts\python ppt\build_ppt_artifacts.py --market "Olive Oil"
-   The last line rebuilds every walkthrough page and the index table.
+How your senior's pipeline actually runs (run_market_e2e.py)
+
+1. Structure agent   → copies the layout of the analyst's Data/ME files (labels only, no numbers)
+2. Desk generation   → generate_synthetic_input.py creates the Input Sheet from evidence
+3. Data writer       → moves those numbers into the analyst's Data-file layout
+4a. Assumptor   (--regulate)   ← "numbers from different sources"
+4b. Bottom-up   (--usecases)   ← "cell-wise units bottom-up", the half-built part
+4c. Events      (--events)     → adjusts growth rates (CAGRs) using dated news
+5. Stage B → ME workbook, then the evaluator compares the result with the analyst's files

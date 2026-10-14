@@ -40,7 +40,7 @@ _MARKET_NAME_CELL = (1, 3)  # C1
 _TOP_REGIONS = frozenset({
     "North America", "Europe", "Asia Pacific",
     "Latin America", "Middle East", "Africa",
-    "Middle East & Africa", "South America", "Oceania",
+    "Middle East & Africa", "Middle East and Africa", "South America", "Oceania",
     "Southeast Asia", "Eastern Europe", "Western Europe",
 })
 
@@ -102,11 +102,36 @@ def _extract_dimensions(ws) -> list[DimensionSchema]:
     # --- Pass 2: detect parent-child structure per dimension ---------------
     dimensions: list[DimensionSchema] = []
     for title, seg_rows in raw_dims:
-        parent_map = _detect_hierarchy(ws, seg_rows)
+        parent_map = _hierarchy_from_indent(ws, seg_rows) or _detect_hierarchy(ws, seg_rows)
         segs = tuple(label for label, _ in seg_rows)
         dimensions.append(DimensionSchema(title, segs, parent=parent_map))
 
     return dimensions
+
+
+def _hierarchy_from_indent(ws, seg_rows: list[tuple[str, int]]) -> dict[str, str | None] | None:
+    """Parent -> child from the label cells' indentation, the analysts' own marking
+    (a child is indented under the nearest row above it with less indent). None
+    when the dimension has no indented row, or nests deeper than parent -> child
+    (the pipeline models two levels; such sheets keep the numeric signals)."""
+    indents = []
+    for _, row in seg_rows:
+        try:
+            indents.append(float(ws.cell(row, _COL_LABEL).alignment.indent or 0))
+        except AttributeError:  # read-only cells carry no style
+            return None
+    if not any(indents):
+        return None
+    parent_of: dict[str, str | None] = {}
+    stack: list[tuple[float, str]] = []
+    for (label, _), ind in zip(seg_rows, indents):
+        while stack and stack[-1][0] >= ind:
+            stack.pop()
+        if len(stack) > 1:
+            return None
+        parent_of[label] = stack[-1][1] if stack else None
+        stack.append((ind, label))
+    return parent_of
 
 
 def _detect_hierarchy(ws, seg_rows: list[tuple[str, int]]) -> dict[str, str | None]:
@@ -201,27 +226,28 @@ def _detect_hierarchy(ws, seg_rows: list[tuple[str, int]]) -> dict[str, str | No
 
 def _verify_subshare_sum(ws, seg_rows: list[tuple[str, int]],
                           parent_idx: int, child_count: int) -> bool:
-    """Verify sub-share signal using geography columns with valid numeric data."""
+    """Verify the sub-share signal on every geography column with numeric data:
+    real sub-shares add up to ~1 in each country, an accidental match in the
+    first column does not (seen: a 3% segment followed by 33% + 53% + 13% was
+    read as their parent). Columns whose children are all zero carry no signal."""
     _SUM_TOL = 0.08
     child_rows = [seg_rows[parent_idx + j][1]
                   for j in range(1, child_count + 1)
                   if parent_idx + j < len(seg_rows)]
 
+    checked = 0
     for col in range(_COL_GEO_START, _COL_GEO_END + 1):
-        child_sum = 0.0
-        valid = 0
-        for row in child_rows:
-            v = ws.cell(row, col).value
-            if not isinstance(v, (int, float)):
-                child_sum = 0.0
-                valid = 0
-                break
-            child_sum += float(v)
-            valid += 1
-        if valid >= 2 and abs(child_sum - 1.0) < _SUM_TOL:
-            return True
+        vals = [ws.cell(row, col).value for row in child_rows]
+        if len(vals) < 2 or not all(isinstance(v, (int, float)) for v in vals):
+            continue
+        child_sum = sum(float(v) for v in vals)
+        if child_sum == 0:
+            continue
+        if abs(child_sum - 1.0) >= _SUM_TOL:
+            return False
+        checked += 1
 
-    return True  # if we cannot verify, accept the parent-child grouping tentatively
+    return True  # every column with data agrees (or none could be checked: accept tentatively)
 
 
 def _extract_geographies_from_headers(ws) -> list[str]:

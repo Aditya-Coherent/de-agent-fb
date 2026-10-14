@@ -61,16 +61,28 @@ _RAW = {"population": "SP.POP.TOTL", "gdp_usd": "NY.GDP.MKTP.CD", "military_expe
 _NAMED = {"U.S.": "USA", "Canada": "CAN", "U.K.": "GBR", "Germany": "DEU", "Italy": "ITA", "France": "FRA",
           "Spain": "ESP", "Russia": "RUS", "China": "CHN", "India": "IND", "Japan": "JPN", "South Korea": "KOR",
           "Australia": "AUS", "Brazil": "BRA", "Argentina": "ARG", "Mexico": "MEX", "Israel": "ISR",
-          "South Africa": "ZAF"}
-_GROUPS = {"ASEAN": {"BRN", "KHM", "IDN", "LAO", "MYS", "MMR", "PHL", "SGP", "THA", "VNM"},
+          "South Africa": "ZAF", "Turkey": "TUR", "Türkiye": "TUR", "Egypt": "EGY", "Saudi Arabia": "SAU",
+          "UAE": "ARE", "United Arab Emirates": "ARE", "Qatar": "QAT", "Kuwait": "KWT", "Iran": "IRN", "Iraq": "IRQ",
+          "Nigeria": "NGA", "Kenya": "KEN", "Morocco": "MAR", "Algeria": "DZA", "Indonesia": "IDN",
+          "Thailand": "THA", "Malaysia": "MYS", "Vietnam": "VNM", "Philippines": "PHL", "Singapore": "SGP",
+          "Taiwan": "TWN", "New Zealand": "NZL", "Pakistan": "PAK", "Bangladesh": "BGD", "Netherlands": "NLD",
+          "Poland": "POL", "Belgium": "BEL", "Sweden": "SWE", "Norway": "NOR", "Switzerland": "CHE",
+          "Austria": "AUT", "Denmark": "DNK", "Chile": "CHL", "Colombia": "COL", "Peru": "PER",
+          "United States": "USA", "U.S.A.": "USA", "UK": "GBR", "United Kingdom": "GBR"}
+_ASEAN = {"BRN", "KHM", "IDN", "LAO", "MYS", "MMR", "PHL", "SGP", "THA", "VNM"}
+_GROUPS = {"ASEAN": _ASEAN, "South East Asia": _ASEAN, "Southeast Asia": _ASEAN,
            "GCC": {"SAU", "ARE", "QAT", "KWT", "OMN", "BHR"},
            "North Africa": {"DZA", "EGY", "LBY", "MAR", "TUN", "SDN"}}
 # Afghanistan and Pakistan sit in the World Bank's renamed MENA region but belong to Asia Pacific here
 _CENTRAL_ASIA = {"KAZ", "KGZ", "TJK", "TKM", "UZB", "AFG", "PAK"}
+_MENA = ("Middle East & North Africa", "Middle East, North Africa, Afghanistan & Pakistan")
 _REST = {"Rest of Europe": ("Europe & Central Asia",), "Rest of Asia Pacific": ("East Asia & Pacific", "South Asia"),
-         "Rest of Latin America": ("Latin America & Caribbean",), "Rest of Middle East": ("Middle East & North Africa",
-                                                       "Middle East, North Africa, Afghanistan & Pakistan"),
-         "Central Africa": ("Sub-Saharan Africa",)}
+         "Rest of Latin America": ("Latin America & Caribbean",), "Rest of Middle East": _MENA,
+         "Central Africa": ("Sub-Saharan Africa",),
+         # sheets that keep the Middle East and Africa as one region
+         "Rest of MEA": _MENA + ("Sub-Saharan Africa",), "Rest of Middle East & Africa": _MENA + ("Sub-Saharan Africa",),
+         "Rest of Middle East and Africa": _MENA + ("Sub-Saharan Africa",), "Rest of Africa": ("Sub-Saharan Africa",)}
+_REST_OF_WORLD = ("Rest of World", "Rest of the World", "RoW")
 
 
 def _cache(path: Path, build: Callable[[], Any]) -> Any:
@@ -132,7 +144,7 @@ def bucket_of(iso: str, info: dict[str, Any], geographies: list[str]) -> str | N
     for geo, regions in _REST.items():
         if info.get("region") in regions and geo in geographies:
             return geo
-    return None
+    return next((g for g in _REST_OF_WORLD if g in geographies), None)
 
 
 def driver_by_geo(drivers: dict[str, Any], geographies: list[str], key: str) -> dict[str, float]:

@@ -1,0 +1,336 @@
+"""Extra field groups the CMI whitepaper template needs on top of the
+fleet's whitepaper_fields.json: country splits for every region, the Middle
+East / Africa split, type and demand-segment mixes per geography, MEA
+dynamics, use-case heat maps, regulation, vendors, strategy and published
+third-party estimates.
+
+Same shape as ../field_groups.py: one agent per group (web search -> LLM ->
+optional +/-5-10% randomization). `randomize` says whether the group's
+numbers are estimates to jitter (shares, CAGRs) or must stay as returned
+(1-5 scores, dates, published third-party figures).
+
+`{market}` is the market name; `{context}` is a JSON block of numbers the
+fleet already has for this market (passed so the agents stay consistent
+with them). No numbers live here.
+"""
+from __future__ import annotations
+
+# --------------------------------------------------------------------------- #
+# Geography. The template's regions and table sizes are fixed; WHICH countries
+# are named in each region is chosen per market by the `geography` agent (by
+# real relevance: production, consumption, investment, project pipeline).
+# "Rest of ..." rows are the remainder of the region, never asked for.
+# --------------------------------------------------------------------------- #
+SLOTS = {"North America": 2, "Europe": 5, "Asia Pacific": 5, "Latin America": 5, "Middle East": 4, "Africa": 5}
+DEFAULT_COUNTRIES = {
+    "North America": ["United States", "Canada"],
+    "Europe": ["Germany", "United Kingdom", "France", "Italy", "Spain"],
+    "Asia Pacific": ["China", "Japan", "India", "South Korea", "Australia"],
+    "Latin America": ["Brazil", "Mexico", "Argentina", "Chile", "Colombia"],
+    "Middle East": ["Saudi Arabia", "UAE", "Turkey", "Israel"],
+    "Africa": ["South Africa", "Egypt", "Nigeria", "Morocco", "Kenya"],
+}
+# Region membership (the report's convention: Turkey and Israel are Middle East,
+# Egypt and North Africa are Africa, Russia is Europe, Mexico is Latin America).
+MEMBERS = {
+    "North America": ["United States", "Canada"],
+    "Europe": ["Germany", "United Kingdom", "France", "Italy", "Spain", "Russia", "Netherlands", "Poland", "Belgium",
+               "Sweden", "Norway", "Denmark", "Finland", "Ireland", "Portugal", "Greece", "Austria", "Switzerland",
+               "Czech Republic", "Romania", "Hungary", "Ukraine", "Bulgaria", "Croatia", "Serbia", "Slovakia",
+               "Iceland", "Belarus", "Lithuania", "Latvia", "Estonia", "Slovenia", "Luxembourg"],
+    "Asia Pacific": ["China", "Japan", "India", "South Korea", "Australia", "Indonesia", "Vietnam", "Thailand",
+                     "Malaysia", "Philippines", "Bangladesh", "Pakistan", "Taiwan", "Singapore", "New Zealand",
+                     "Sri Lanka", "Myanmar", "Cambodia", "Nepal", "Kazakhstan", "Uzbekistan", "Hong Kong"],
+    "Latin America": ["Brazil", "Mexico", "Argentina", "Chile", "Colombia", "Peru", "Ecuador", "Venezuela",
+                      "Guatemala", "Honduras", "Costa Rica", "Panama", "Uruguay", "Paraguay", "Bolivia",
+                      "Dominican Republic", "Cuba", "Nicaragua", "El Salvador"],
+    "Middle East": ["Saudi Arabia", "UAE", "Qatar", "Kuwait", "Oman", "Bahrain", "Turkey", "Israel", "Iran", "Iraq",
+                    "Jordan", "Lebanon", "Syria", "Yemen"],
+    "Africa": ["South Africa", "Egypt", "Nigeria", "Algeria", "Morocco", "Kenya", "Ethiopia", "Ghana", "Tunisia",
+               "Tanzania", "Uganda", "Cote d'Ivoire", "Senegal", "Cameroon", "Angola", "Zambia", "Zimbabwe",
+               "Mozambique", "Madagascar", "Libya", "Sudan", "Rwanda", "Mali", "Namibia", "Botswana"],
+}
+_ALIASES = {"united arab emirates": "UAE", "usa": "United States", "us": "United States", "uk": "United Kingdom",
+            "korea": "South Korea", "republic of korea": "South Korea", "turkiye": "Turkey", "ivory coast":
+            "Cote d'Ivoire", "czechia": "Czech Republic", "ksa": "Saudi Arabia"}
+REST = {r: f"Rest of {r}" for r in SLOTS if r != "North America"}
+
+
+def canonical(name: str) -> str:
+    n = (name or "").strip()
+    return _ALIASES.get(n.lower(), n)
+
+
+def validate_geography(raw: dict | None) -> tuple[dict[str, list[str]], dict[str, str], list[str]]:
+    """(countries per region, why each was chosen, notes). Each pick must belong
+    to its region; missing or invalid slots are filled from the defaults."""
+    raw = raw or {}
+    out, why, notes = {}, {}, []
+    for region, n in SLOTS.items():
+        members = {c.lower(): c for c in MEMBERS[region]}
+        picked = []
+        for item in raw.get(region) or []:
+            c = canonical(item.get("country") if isinstance(item, dict) else item)
+            if c.lower() in members and members[c.lower()] not in picked:
+                picked.append(members[c.lower()])
+                why[members[c.lower()]] = (item.get("why") if isinstance(item, dict) else "") or ""
+            elif c:
+                notes.append(f"{c} is not in {region} -- not used there")
+        for d in DEFAULT_COUNTRIES[region]:
+            if len(picked) >= n:
+                break
+            if d not in picked:
+                picked.append(d)
+                if region != "North America":           # fixed by the template, not chosen
+                    notes.append(f"{region}: '{d}' filled in from defaults")
+        out[region] = picked[:n]
+    return out, why, notes
+
+
+def mea_units(geo: dict) -> list[str]:
+    return geo["Middle East"] + [REST["Middle East"]] + geo["Africa"] + [REST["Africa"]]
+
+
+def short(c: str) -> str:
+    """Heat-map column labels."""
+    return {"Saudi Arabia": "KSA", "South Africa": "S. Africa", "United Kingdom": "UK"}.get(c, c)
+
+
+_ANALYST = (
+    "You are a senior market analyst at Coherent Market Insights. You turn web search results into "
+    "structured estimates for a market whitepaper. Where the evidence is silent, give your best "
+    "domain-informed estimate -- never leave a field empty. Keep every estimate consistent with the "
+    "CONTEXT numbers already published for this market and with its DEFINITION. Write in UK English. Return "
+    "ONLY valid JSON."
+)
+
+
+def _country_block(regions: list[str], geo: dict) -> str:
+    """'"Europe": {"Germany": {...}, "France": {...}}, ...' for the schema hint."""
+    cell = '{"share_pct_of_region": <number>, "cagr_2026_2033_pct": <number>}'
+    return ", ".join(f'"{r}": {{' + ", ".join(f'"{c}": {cell}' for c in geo[r]) + "}" for r in regions)
+
+
+def schema_for(g: dict, geo: dict) -> str:
+    """A group's schema with this market's countries filled in."""
+    me_cols = ", ".join(f'"{short(c)}": "High|Medium|Low"' for c in geo["Middle East"]) + ', "Rest of ME": "High|Medium|Low"'
+    af_cols = ", ".join(f'"{short(c)}": "High|Medium|Low"' for c in geo["Africa"])
+    reg_countries = ", ".join(geo["Middle East"] + geo["Africa"])
+    return (g["schema"]
+            .replace("{CB_MAIN}", _country_block(["North America", "Europe", "Asia Pacific", "Latin America"], geo))
+            .replace("{CB_MEA}", _country_block(["Middle East", "Africa"], geo))
+            .replace("{MEA_UNITS}", ", ".join(mea_units(geo)))
+            .replace("{ME_COLS}", me_cols).replace("{AF_COLS}", af_cols)
+            .replace("{REG_COUNTRIES}", reg_countries))
+
+
+GEOGRAPHY_GROUP = {
+    "key": "geography",
+    "randomize": False,
+    "queries": ["{market} largest countries by production consumption", "{market} market by country leading countries",
+                "{market} Middle East Africa leading countries", "{market} Asia Pacific Latin America top countries"],
+    "system": _ANALYST + (
+        " Choose which countries to name individually in each region of the report, by their real relevance to "
+        "THIS market as defined (production, consumption, investment, known project pipeline). Any country with a "
+        "major share of real-world activity in this market MUST be named -- never leave a dominant country inside "
+        "'Rest of'. Use the report's region convention: Turkey and Israel are Middle East; Egypt and North Africa "
+        "are Africa; Russia is Europe; Mexico is Latin America. Order each region's list by relevance. For each, "
+        "give one sentence on why it matters for this market."),
+    "schema": ('{"Europe": [{"country": <string>, "why": <1 sentence>}, x5], "Asia Pacific": [... x5], '
+               '"Latin America": [... x5], "Middle East": [... x4], "Africa": [... x5]}'),
+}
+
+
+GROUPS: list[dict] = [
+    {
+        "key": "countries_main",
+        "randomize": True,
+        "queries": ["{market} market size by country United States China Brazil Germany",
+                    "{market} fastest growing countries CAGR"],
+        "system": _ANALYST + (
+            " For each region give each listed country's share of the REGION's 2026 market value and its "
+            "2026-2033 CAGR. Shares within a region must sum to LESS than 100 (the remainder is 'Rest of "
+            "<region>'), except North America where the two countries sum to 100."),
+        "schema": "{{CB_MAIN}}",
+    },
+    {
+        "key": "countries_mea",
+        "randomize": True,
+        "queries": ["{market} Middle East market by country", "{market} Africa market by country",
+                    "{market} GCC MEA market size CAGR"],
+        "system": _ANALYST + (
+            " Split the Middle East & Africa (MEA) market into the Middle East and Africa, then give each "
+            "listed country's share of ITS sub-region's 2026 value and its 2026-2033 CAGR. Country shares "
+            "must sum to LESS than 100 (the remainder is 'Rest of Middle East' or 'Rest of Africa' -- the "
+            "sub-region's other countries). Also give the remainder's CAGR."),
+        "schema": ('{"middle_east_share_of_mea_pct": <number>, '
+                   '"rest_of_middle_east_cagr_2026_2033_pct": <number>, "rest_of_africa_cagr_2026_2033_pct": <number>, '
+                   '{CB_MEA}}'),
+    },
+    {
+        # Two segment dimensions per market: the supply-side "type" list the
+        # fleet already found (CONTEXT.types), and a demand-side dimension
+        # (end user / application / crop type / industry ...) chosen here.
+        "key": "segments_global",
+        "randomize": ("type_cagr_2026_2033_pct", "demand_segments"),
+        "queries": ["{market} market segmentation by type share CAGR",
+                    "{market} market by end user application share CAGR",
+                    "{market} market segmentation analysis"],
+        "system": _ANALYST + (
+            " Give the global 2026-2033 CAGR for each segment in CONTEXT.types (keep those exact names) and name "
+            "that dimension. Then pick the demand-side segmentation that is standard for THIS market (end user, "
+            "application, crop type, industry vertical... -- whichever reports on this market use), name it, and "
+            "give 4-7 segments with each one's share of the 2026 global market (summing to 100) and 2026-2033 "
+            "CAGR. Dimension names are 1-3 words, Title Case, without the market name. The demand segments MUST "
+            "obey the DEFINITION. First decide what the definition measures: if it measures equipment, systems, "
+            "technology or services, the demand segments are the BUYERS OF THOSE (e.g. types of operators or "
+            "facilities that buy them) -- not consumers of what they produce; if it measures an end product, they "
+            "are the product's buyers or uses. Never upstream suppliers (feed, inputs, raw materials), never "
+            "sales channels (retail, online) for a non-retail market, never something the definition excludes; "
+            "use an 'Other' segment only if it is genuinely needed. "
+            "Each dimension must be mutually exclusive and collectively exhaustive: define every segment in one "
+            "line, and where the source taxonomy overlaps (a type that is also part of a broader category) state "
+            "the allocation rule. "
+            "Then judge, honestly, whether each dimension is a real, commonly reported way to segment THIS market "
+            "(false if the segments are artificial, or if the two dimensions describe the same thing)."),
+        "schema": ('{"type_dimension": {"singular": <e.g. "Product Type">, "plural": <e.g. "Product Types">}, '
+                   '"type_cagr_2026_2033_pct": {"<type>": <number>, ...}, '
+                   '"demand_dimension": {"singular": <e.g. "End User">, "plural": <e.g. "End Users">}, '
+                   '"demand_segments": [{"name": <string>, "share_pct_2026": <number>, "cagr_2026_2033_pct": <number>}, ...], '
+                   '"type_applicable": <true|false>, "demand_applicable": <true|false>, '
+                   '"applicability_reason": <1 sentence>, '
+                   '"segment_definitions": {"type": {"<each type>": <one-line definition>}, '
+                   '"demand": {"<each demand segment>": <one-line definition>}}, '
+                   '"allocation_rules": [<one sentence per unavoidable overlap, e.g. "Seaweed-derived products are '
+                   'counted under Seaweed Extracts, not Extract-Based Biostimulants.">; [] if the segments are '
+                   'already mutually exclusive]}'),
+    },
+    {
+        "key": "segments_mea",
+        "randomize": True,
+        "queries": ["{market} Middle East demand by application end user",
+                    "{market} Africa demand by application end user",
+                    "{market} Middle East Africa market segmentation"],
+        "system": _ANALYST + (
+            " For EVERY listed MEA country or remainder group, give the 2026 mix of the market by type and by "
+            "demand segment (each mix sums to 100; use exactly the names in CONTEXT.types and "
+            "CONTEXT.demand_segments) and each segment's 2026-2033 CAGR in that country. Mixes must differ by "
+            "country according to its economy, industry structure and policy priorities."),
+        "schema": ('{"<country or remainder group>": {"type": {"<name>": {"share_pct": <number>, '
+                   '"cagr_pct": <number>}, ...}, "demand": {"<name>": {"share_pct": <number>, "cagr_pct": '
+                   '<number>}, ...}}, ... one entry for each of: {MEA_UNITS}}'),
+    },
+    {
+        "key": "dynamics",
+        "randomize": False,
+        "queries": ["{market} trends 2026", "{market} Middle East Africa growth drivers challenges",
+                    "{market} Middle East Africa opportunities investment"],
+        "system": _ANALYST + (
+            " Describe the market's structural dynamics with a focus on the Middle East & Africa (MEA). "
+            "Impact numbers are percentage points (pp) of MEA CAGR versus a neutral baseline: drivers "
+            "+0.5 to +3.0, restraints -0.3 to -2.0."),
+        "schema": ('{"trends": [{"title": <2-4 words>, "tagline": <6-10 words>}, x6], '
+                   '"mea_drivers": [{"name": <3-7 words>, "impact_pp": <number>}, x6], '
+                   '"mea_restraints": [{"name": <3-7 words>, "impact_pp": <negative number>}, x6], '
+                   '"impact_matrix": [{"factor": <string>, "type": "Driver|Restraint", "impact": "High|Medium|Low", '
+                   '"timeframe": "Short|Short-Mid|Mid|Mid-Long|Short-Long", "most_exposed": <2-3 MEA countries or groups>}, '
+                   'x8, 4 drivers then 4 restraints]}'),
+    },
+    {
+        "key": "use_cases",
+        "randomize": False,
+        "queries": ["{market} use cases applications Middle East GCC",
+                    "{market} applications adoption Africa"],
+        "system": _ANALYST + (" Rate how attractive each use case is in each country (High, Medium or Low). List "
+                              "only use cases that really exist for this market in that region; return an empty "
+                              "list for a region where the market has no distinct use cases."),
+        "schema": ('{"middle_east": [{"use_case": <string>, {ME_COLS}}, x5-7 use cases], '
+                   '"africa": [{"use_case": <string>, {AF_COLS}}, x5-6 use cases]}'),
+    },
+    {
+        "key": "regulation",
+        "randomize": False,
+        "queries": ["{market} regulation Middle East GCC regulator",
+                    "{market} regulation Africa regulator",
+                    "{market} regulatory framework approval requirements",
+                    "{market} new regulation law 2025 2026",
+                    "{market} regulation European Union United States"],
+        "system": _ANALYST + (
+            " Describe the regulatory environment, focusing on MEA. Name the CURRENT, SPECIFIC government agency "
+            "that actually registers or approves this product in each country as of today -- not just its parent "
+            "ministry (ministries are often renamed, merged or split -- check); "
+            "never list a research institute or an industry association as a regulator. Milestones must each be "
+            "a DIFFERENT jurisdiction and real; give the year only unless the month is certain. For every "
+            "regulator and milestone set verified=true ONLY if the EVIDENCE explicitly confirms it, else false. "
+            "Scores are 1 (restrictive) to 5 (enabling), integers, and are an assessment. If the market has no "
+            "product- or sector-specific regulation worth a chapter, set applicable to false."),
+        "schema": ('{"applicable": <true|false>, "milestones": [{"date": <e.g. "Jul 2022" or "2025">, '
+                   '"jurisdiction": <string>, "event": <8-14 words>, "verified": <true|false>}, x5, chronological, '
+                   '5 different jurisdictions], '
+                   '"scorecard_dimensions": [<5 short names of the regulatory dimensions that matter for THIS '
+                   'market, e.g. "Registration framework", "Approval speed", "Import & licensing">], '
+                   '"scorecard": {"<country>": [<5 integer scores>], ... one per country in: {REG_COUNTRIES}}, '
+                   '"snapshot": [{"country": <string>, "regulator": <current government authority>, '
+                   '"requirements": <1-2 sentences>, "verified": <true|false>}, one per country in: {REG_COUNTRIES}], '
+                   '"watchlist": [{"theme": <string>, "what_to_watch": <string>, "implication": <string>}, x5]}'),
+    },
+    {
+        "key": "vendors",
+        "randomize": True,
+        "queries": ["{market} value chain suppliers manufacturers distribution margins",
+                    "{market} Middle East Africa companies distributors market share",
+                    "{market} company acquisitions partnerships Middle East Africa 2025"],
+        "system": _ANALYST + (
+            " Describe the vendor landscape. Name only real, verifiable companies. Capability scores are integers "
+            "1 (limited) to 5 (leading) and are an assessment. MEA shares are % of 2025 MEA market value, count a "
+            "parent and its subsidiaries as ONE group, include only companies that earn the revenue the DEFINITION "
+            "measures (not suppliers of excluded inputs), include the largest real local/regional players, and "
+            "must sum to 100 including 'Regional & Other'. Classify every company in CONTEXT.top_companies: its "
+            "parent group, business type, and whether it earns the revenue the DEFINITION measures. For each "
+            "dashboard row set verified=true only if the EVIDENCE confirms the MEA moves described."),
+        "schema": ('{"value_chain": [{"stage": <1-3 words>, "examples": [<3-4 items, 1-3 words each>], '
+                   '"share_low_pct": <number>, "share_high_pct": <number>}, x5 stages from inputs to the sales '
+                   'channel; the end-user stage is added automatically], '
+                   '"mea_shares": [{"vendor": <string>, "share_pct": <number>}, x7, then {"vendor": "Regional & Other", '
+                   '"share_pct": <number>}], '
+                   '"capability_dimensions": [<6 short names (1-3 words) of the capabilities that differentiate vendors '
+                   'in THIS market; the last one is "MEA presence">], '
+                   '"capabilities": {"<vendor>": [<6 integer scores>], ... x10 vendors}, '
+                   '"dashboard": [{"vendor": <string>, "hq": <country>, "core_strength": <string>, '
+                   '"mea_footprint": <1 sentence on MEA presence and recent moves>, "verified": <true|false>, '
+                   '"ownership_note": <"now part of X", "formerly Y", "acquired Z in 2024" -- current ownership, '
+                   'mergers and rebrands; "" if none>}, x8], '
+                   '"company_classification": [{"company": <name exactly as in CONTEXT.top_companies>, '
+                   '"parent_group": <string>, "business_type": <e.g. "producer", "technology provider", '
+                   '"input supplier">, "earns_defined_revenue": <true|false>}, one per company in CONTEXT.top_companies]}'),
+    },
+    {
+        "key": "strategy",
+        "randomize": False,
+        "queries": ["{market} market entry strategy distribution partnerships",
+                    "{market} growers adoption barriers recommendations"],
+        "system": _ANALYST + " Turn the outlook into concrete, market-specific recommendations focused on MEA.",
+        "schema": ('{"phases": [{"name": <2-3 words>, "window": <e.g. "0-12 MONTHS">, "actions": [<3 actions, 4-8 '
+                   'words each>]}, x3], '
+                   '"stakeholders": [{"stakeholder": <string>, "priority_moves": <2-3 sentences>, "kpis": <3 KPIs, '
+                   'semicolon-separated>}, x6], '
+                   '"priority_actions": [<5 actions for 2026-27, 1 sentence each>]}'),
+    },
+    {
+        "key": "published",
+        "randomize": False,
+        "queries": ["{market} market size 2025 USD billion", "{market} market size 2024 report CAGR",
+                    "{market} Middle East Africa market size report", "{market} market size Grand View Research",
+                    "{market} market size MarketsandMarkets Mordor Intelligence"],
+        "system": (
+            "You extract PUBLISHED third-party market-size figures from web search results. Use ONLY figures "
+            "that appear in the EVIDENCE, copied exactly; name the publisher as it appears there. Only figures for "
+            "THIS market's scope as in the DEFINITION -- never a parent or adjacent market (e.g. the whole shrimp "
+            "market is not 'super-intensive shrimp farming'). Never estimate or invent. Return ONLY valid JSON."),
+        "schema": ('{"global_2025": [{"publisher": <string>, "value_usd_bn": <number, the 2025 value in USD '
+                   'billion>, "quote": <the evidence text it came from>}, ... up to 6], '
+                   '"references": [{"name": <"Publisher: scope", e.g. "Mordor Intelligence: Middle East & Africa">, '
+                   '"scope": <string>, "published_value": <e.g. "$4.2B (2025) to $8.9B (2030), 16.2% CAGR">, '
+                   '"quote": <the evidence text it came from>}, ... up to 7, prefer regional / MEA / country figures]}'),
+    },
+]

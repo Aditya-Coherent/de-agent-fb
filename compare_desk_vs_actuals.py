@@ -18,6 +18,8 @@ Usage:
     python compare_desk_vs_actuals.py --run --market Televisions
     python compare_desk_vs_actuals.py --run --scope "Urea (total, all uses)=Total urea market, fertilizer + industrial uses"
     python compare_desk_vs_actuals.py --eval             # all 'ok' markets, before/current/after, tuning vs held-out
+    python compare_desk_vs_actuals.py --eval-run refined # live-run all 63 eval markets (resumable)
+    python compare_desk_vs_actuals.py --refined-report   # refined runs vs the previous results
 """
 from __future__ import annotations
 
@@ -189,7 +191,41 @@ SPLIT_FILE = EXAMPLES / "DESK_EVAL_SPLIT.json"
 VERSIONS = ("before", "current", "after")
 VERSION_LABELS = {"before": "old anchor (HEAD)", "current": "current code", "after": "after this change"}
 EXTRA_MARKETS = ["Urea (total, all uses)"]
-ABLATIONS = ("title_subject", "size_check", "source_tiers", "weak_consensus")
+EVAL_SCOPES = {"Urea (total, all uses)": "Total urea market, fertilizer + industrial uses"}
+
+
+def eval_markets() -> list[str]:
+    return [m for m, a in load_actuals().items() if a["confidence"] == "ok"] + EXTRA_MARKETS
+
+
+def run_eval_version(version: str, markets: list[str], workers: int = 3, timeout: int = 3600) -> None:
+    """Live Desk Research run of every eval market into output/desk_eval/<version>/<slug>/
+    (input_sheet.xlsx, desk_state.json, desk_research.log). Markets that already
+    have a desk_state.json are skipped, so an interrupted batch can be resumed."""
+    def one(market: str) -> str:
+        out = EVAL_DIR / version / _eval_slug(market)
+        if (out / "desk_state.json").exists():
+            return f"{market}: already done"
+        out.mkdir(parents=True, exist_ok=True)
+        cmd = [sys.executable, "generate_synthetic_input.py", "--market", market, "--from-db",
+               "--output", str(out / "input_sheet.xlsx"), "--save-state", str(out / "desk_state.json")]
+        if market in EVAL_SCOPES:
+            cmd += ["--scope", EVAL_SCOPES[market]]
+        try:
+            proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
+                                  errors="replace", timeout=timeout)
+            (out / "desk_research.log").write_text(proc.stdout + "\n" + proc.stderr, encoding="utf-8")
+            return f"{market}: exit {proc.returncode}"
+        except subprocess.TimeoutExpired:
+            (out / "desk_research.log").write_text(f"TIMEOUT after {timeout}s\n", encoding="utf-8")
+            return f"{market}: TIMEOUT"
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        for line in pool.map(one, markets):
+            print(line, flush=True)
+
+
+ABLATIONS =("title_subject", "size_check", "source_tiers", "weak_consensus")
 # Defaults as shipped (config.py). weak_consensus is off: it made held-out
 # accuracy worse in the 2026-10-09 evaluation.
 SHIPPED_FLAGS = {"title_subject": True, "size_check": True, "source_tiers": True, "weak_consensus": False}
@@ -335,6 +371,112 @@ def run_eval() -> str:
     return report
 
 
+# --------------------------------------------------------------------------- #
+# --refined-report: the refined live runs vs the previous results
+# --------------------------------------------------------------------------- #
+REFINED_VERSION = "refined"
+_MISS = 0.25   # "badly off" threshold for the summary
+
+
+def _stats(rows: list[dict[str, Any]], key: str) -> dict[str, Any]:
+    errs = [abs(r[key]["pct_error"]) for r in rows if r[key].get("pct_error") is not None]
+    inr = [r[key]["in_published_range"] for r in rows if r[key].get("in_published_range") is not None]
+    if not errs:
+        return {"n": 0}
+    return {"n": len(errs), "median": median(errs), "mean": sum(errs) / len(errs),
+            "in_range": sum(inr), "badly_off": sum(1 for e in errs if e > _MISS)}
+
+
+def _fmt_stats(s: dict[str, Any]) -> str:
+    if not s.get("n"):
+        return "— | — | — | — | 0"
+    return (f"{s['median']:.1%} | {s['mean']:.1%} | {s['in_range']}/{s['n']} | "
+            f"{s['badly_off']} | {s['n']}")
+
+
+def run_refined_report() -> str:
+    """Refined live runs (output/desk_eval/refined/) against the previous
+    results as saved in DESK_EVAL.json before this change (previous live run,
+    and its shipped-defaults replay). Writes DESK_REFINED_EVAL.md / .json."""
+    actuals = load_actuals()
+    previous = {r["market"]: r for r in json.loads((EXAMPLES / "DESK_EVAL.json").read_text(encoding="utf-8"))}
+    rows = []
+    for m in eval_markets():
+        act, prev = actuals[m], previous.get(m, {})
+        st = _eval_state(REFINED_VERSION, m)
+        value = st.get("global_anchor_2025") if st else None
+        cited = (st or {}).get("cited_anchor") or {}
+        rows.append({
+            "market": m, "set": prev.get("set", "heldout"), "actual": act["actual"], "published": act["published"],
+            "prev_live": {k: (prev.get("after") or {}).get(k) for k in ("value", "pct_error", "in_published_range")},
+            "prev_shipped": {k: (prev.get("shipped") or {}).get(k) for k in ("value", "pct_error", "in_published_range")},
+            "refined": {"value": value, "status": "ok" if st else _eval_failure(REFINED_VERSION, m),
+                        "grounded": (st or {}).get("market_size_grounded"),
+                        "confidence": cited.get("confidence") or "", "low_mn": cited.get("low_mn"),
+                        "high_mn": cited.get("high_mn"), "method": cited.get("method"),
+                        "n_accepted": len(cited.get("accepted") or []),
+                        "sources": [v.get("source") for v in cited.get("accepted") or []],
+                        "flags": [f.get("code") for f in (st or {}).get("quality_flags") or []],
+                        **score(value, act)},
+        })
+
+    versions = [("prev_shipped", "Previous code, shipped defaults (offline replay)"),
+                ("prev_live", "Previous code, live run"), ("refined", "Refined code, live run")]
+    lines = [
+        "# Desk Research: refined code vs previous, all 63 markets (2025, US$ Mn, global)",
+        "",
+        "% error vs the median of published values; in range = within [min, max] published ±5%; "
+        f"badly off = more than {_MISS:.0%} from the actual. Previous results are frozen from DESK_EVAL.json "
+        "(2026-10-09 runs). The refined runs are new live runs (2026-10-12), so part of every difference is "
+        "web-search noise. The held-out set was not used to tune the refinements.",
+        "",
+    ]
+    for name, subset in (("Held-out", [r for r in rows if r["set"] == "heldout"]),
+                         ("Tuning", [r for r in rows if r["set"] == "tuning"]), ("All", rows)):
+        lines += [f"## {name} ({len(subset)} markets)", "",
+                  "| Version | Median abs error | Mean abs error | In range | Badly off | n |", "|---|---|---|---|---|---|"]
+        for key, label in versions:
+            lines.append(f"| {label} | {_fmt_stats(_stats(subset, key))} |")
+        common = [r for r in subset if all(r[k].get("pct_error") is not None for k, _ in versions)]
+        lines += ["", f"Same {len(common)} markets in every version:", "",
+                  "| Version | Median abs error | Mean abs error | In range | Badly off | n |", "|---|---|---|---|---|---|"]
+        for key, label in versions:
+            lines.append(f"| {label} | {_fmt_stats(_stats(common, key))} |")
+        lines.append("")
+
+    graded = [r for r in rows if r["refined"]["confidence"] and r["refined"]["pct_error"] is not None]
+    if graded:
+        lines += ["## Does the confidence grade mean anything?", "",
+                  "| Grade | Markets | Median abs error | In range |", "|---|---|---|---|"]
+        for g in ("A", "B", "C"):
+            sub = [r for r in graded if r["refined"]["confidence"] == g]
+            s = _stats(sub, "refined")
+            if s.get("n"):
+                lines.append(f"| {g} | {s['n']} | {s['median']:.1%} | {s['in_range']}/{s['n']} |")
+        lines.append("")
+
+    def cell(x: dict[str, Any]) -> str:
+        if x.get("value") is None:
+            return f"{x.get('status') or 'fail'} | — | —"
+        return f"{x['value']:,.0f} | {_pct(x['pct_error'])} | {_yn(x['in_published_range'])}"
+
+    lines += ["## Every market", "",
+              "| Market | Set | Actual | Published range | Prev shipped | Err | In range | Prev live | Err | In range | "
+              "Refined | Err | In range | Conf. | Cited range | Figures | Flags |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in sorted(rows, key=lambda r: (r["set"], r["market"])):
+        ref = r["refined"]
+        rng = (f"{ref['low_mn']:,.0f}–{ref['high_mn']:,.0f}" if ref.get("low_mn") else "—")
+        pub = f"{min(r['published']):,.0f}–{max(r['published']):,.0f}" if r["published"] else "—"
+        lines.append(
+            f"| {r['market']} | {r['set']} | {r['actual']:,.0f} | {pub} | {cell(r['prev_shipped'])} | "
+            f"{cell(r['prev_live'])} | {cell(ref)} | {ref['confidence'] or '—'} | {rng} | {ref['n_accepted']} | "
+            f"{', '.join(ref['flags']) or '—'} |")
+    report = "\n".join(lines) + "\n"
+    (EXAMPLES / "DESK_REFINED_EVAL.md").write_text(report, encoding="utf-8")
+    (EXAMPLES / "DESK_REFINED_EVAL.json").write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
+    return report
+
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -345,7 +487,17 @@ def main() -> int:
     p.add_argument("--workers", type=int, default=2)
     p.add_argument("--eval", action="store_true",
                    help="report all 'ok' markets across output/desk_eval/{before,current,after} (no runs)")
+    p.add_argument("--eval-run", metavar="VERSION",
+                   help="live-run every eval market into output/desk_eval/VERSION/ (resumable)")
+    p.add_argument("--refined-report", action="store_true",
+                   help="compare output/desk_eval/refined/ with the previous results in DESK_EVAL.json")
     args = p.parse_args()
+    if args.refined_report:
+        sys.stdout.buffer.write(run_refined_report().encode("utf-8"))
+        return 0
+    if args.eval_run:
+        run_eval_version(args.eval_run, args.market or eval_markets(), workers=args.workers)
+        return 0
     if args.eval:
         sys.stdout.buffer.write(run_eval().encode("utf-8"))
         return 0

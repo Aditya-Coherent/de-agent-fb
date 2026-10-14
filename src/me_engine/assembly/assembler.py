@@ -118,7 +118,9 @@ class Assembler:
         if not rows:
             fallback = child_bands[0].total if child_bands else Series({})
             return BandResult(band=band_kind, total=fallback, rows_by_label={})
-        total = self._sum_series(r.series for r in rows.values())
+        # the children's own totals, not the sum of rows: parent rows of a nested priced
+        # dimension (shown for reading) would count their children twice
+        total = self._sum_series(b.total for b in child_bands)
         rows = self._attach_shares(rows, total)
         return BandResult(band=band_kind, total=total, rows_by_label=rows)
 

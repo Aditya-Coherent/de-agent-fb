@@ -19,6 +19,7 @@ from .cited_values import outside_size_range
 _MIN_PLAUSIBLE_USD_MN = 10.0
 _MAX_PLAUSIBLE_USD_MN = 5_000_000.0
 _LOW_CONFIDENCE_REWARD = 0.70
+_CMI_GAP = 0.25
 
 
 def compute_demand_quality_flags(state: dict[str, Any]) -> list[dict[str, str]]:
@@ -63,6 +64,31 @@ def compute_demand_quality_flags(state: dict[str, Any]) -> list[dict[str, str]]:
             "message": f"The cited market sizes do not agree (only one value, or a spread above 2x: {values}); "
                        f"anchor chosen by: {cited.get('method')}.",
         })
+
+    if cited.get("value_2025_mn") and cited.get("confidence") == "C":
+        flags.append({
+            "code": "low_confidence_citation",
+            "severity": "warning",
+            "message": f"The cited market size is weakly supported (confidence C: one figure, no established "
+                       f"publisher, or a spread above 2x; range ${float(cited.get('low_mn') or 0):,.0f}M-"
+                       f"${float(cited.get('high_mn') or 0):,.0f}M) -- review the sources.",
+        })
+
+    # CMI's own report: a published house figure this run disagrees with is a
+    # commercial problem as well as an accuracy one. Flag only.
+    cmi = next((v for v in (cited.get("accepted") or []) + (cited.get("corroborating") or [])
+                + (cited.get("rejected") or [])
+                if str(v.get("source", "")).startswith("CMI report DB") and v.get("value_2025_mn")
+                and not str(v.get("reason", "")).startswith(("scope:", "magnitude:"))), None)
+    if cmi and anchor:
+        gap = float(anchor) / float(cmi["value_2025_mn"]) - 1
+        if abs(gap) > _CMI_GAP:
+            flags.append({
+                "code": "differs_from_cmi_report",
+                "severity": "warning",
+                "message": f"Global 2025 value (${float(anchor):,.0f}M) is {gap:+.0%} from CMI's own report "
+                           f"(${float(cmi['value_2025_mn']):,.0f}M, {cmi.get('raw_text')}) -- reconcile before publishing.",
+            })
 
     size_range = cited.get("size_range")
     if size_range and anchor is not None and outside_size_range(float(anchor), size_range):

@@ -40,8 +40,17 @@ class GenState(TypedDict, total=False):
     regional: dict[str, dict[str, float]]
     global_anchor_2025: float
     global_cagr: float
+    market_size_grounded: bool
+    # scope.py: which end-use segments the cited figure covers, and the
+    # segment market sizes added for the rest (cached per cited text)
+    scope_reconciliation: dict[str, Any] | None
     geo: dict[str, dict[str, dict[str, float]]]
     shares: dict[str, dict[str, dict[str, float]]]
+    # evidence trail per decision: numbered evidence items + the LLM's reasons
+    shares_trace: dict[str, Any]
+    market_trace: dict[str, Any]
+    geo_trace: dict[str, Any]
+    asp_trace: dict[str, Any]
     asp: dict[str, float]
     artifacts: list[dict[str, Any]]
     reward: float

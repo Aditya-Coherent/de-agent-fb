@@ -1,17 +1,17 @@
-"""Phase 1 (2A): Market Setup draft -- reuses 2B's `market_setup_draft_node`
-unchanged (scope, country list, base year, units); only the checkpoint
-location differs."""
+"""Phase 1 (2A): Market Setup draft -- `engine.setup.market_setup_draft_node`
+(forked from 2B) proposes scope, country list, base year and units; only the
+checkpoint location differs."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from me_engine.demandUseCaseCountry_approach2B.setup import market_setup_draft_node
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 
 from . import checkpoints
+from .engine.setup import market_setup_draft_node
 
 _SETUP_FIELDS = ("market_name", "scope", "geography", "base_year", "market_unit", "physical_unit")
 

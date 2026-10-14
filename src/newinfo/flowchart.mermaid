@@ -1,0 +1,72 @@
+flowchart TD
+    START(["Market brief"]) --> SCOPE["Setup and scope<br/>market, in/out of scope,<br/>countries to regions, base year, unit"]
+    SCOPE --> STRAT{"Strategy?"}
+
+    STRAT -->|2A| A_DRV["One driver per country<br/>production + imports − exports"]
+    STRAT -->|2B| B_TAX["Use-case taxonomy<br/>+ scope check"]
+    STRAT -->|2C| C_TAX["2B taxonomy, then<br/>LLM lists product types per use case"]
+    B_TAX --> B_DRV["One driver per use case<br/>no shared drivers"]
+    C_TAX --> C_MIX["Volume mix per country<br/>price per type, cell budget"]
+
+    A_DRV --> PASS
+    B_DRV --> PASS
+    C_MIX --> PASS
+    PASS["Start pass n<br/>driver-validity check (DeepSeek reasoner)"] --> PLAN
+
+    subgraph DATA["Data fetching layer (custom scripts)"]
+        PLAN["Evidence planner (DeepSeek)"] --> T1["Tier 1: National statistics"]
+        T1 -->|miss| T2["Tier 2: FAOSTAT"]
+        T2 -->|miss| T3["Tier 3: UN Comtrade + World Bank"]
+        T3 -->|miss| T4["Tier 4: Industry bodies"]
+        T4 -->|miss| T5["Tier 5: Web, PDF, CSV, XLSX"]
+        T5 -.->|optional, off by default| AIO["Google AI Overview via SERP API<br/>leads only, never evidence"]
+        AIO -.->|fetch cited pages| T5
+    end
+
+    T1 & T2 & T3 & T4 & T5 --> EXTRACT["Extractor (DeepSeek, JSON)<br/>verbatim quote required"]
+    EXTRACT --> VERIFY{"Verifier<br/>value in text? metric, geo,<br/>year, unit match?"}
+    VERIFY -->|fail| REJECT["Reject and log reason"]
+    VERIFY -->|pass| LEDGER[("Evidence store<br/>+ number ledger")]
+
+    LEDGER --> GAP{"Data for this<br/>country or cell?"}
+    GAP -->|no| SIGNAL["Signal model + Estimator<br/>estimated_from_facts, under ceiling"]
+    GAP -->|yes| PRICE
+    SIGNAL --> PRICE["Pricing agent<br/>value basis + price-vs-income curve"]
+    PRICE --> CALC["Calc engine (code only)<br/>quantity × price, units, FX"]
+    CALC --> ROLL["Roll-up<br/>type → use case → country → region → global"]
+
+    ROLL --> ANCH{"2B or 2C with<br/>a 2A run?"}
+    ANCH -->|yes| ANC["Anchor to 2A<br/>within 1.5×, factor logged"]
+    ANCH -->|no| XCHK
+    ANC --> XCHK["Cross-check vs published sizes<br/>warning only"]
+    XCHK --> SEG["Top-down segments<br/>every table re-adds to total"]
+
+    SEG --> CHECKS{"Hard checks pass?"}
+    CHECKS -->|no| STOP(["Stop: nothing written"])
+    CHECKS -->|yes| REVIEW["Reviewer (DeepSeek reasoner)<br/>market-researcher rubric"]
+    REVIEW --> SCORE["Plausibility score<br/>excludes closeness to published"]
+    SCORE --> REDO{"Score below 7<br/>and passes below 3?"}
+    REDO -->|yes, targeted redo| PASS
+    REDO -->|no| BEST["Keep best pass"]
+
+    BEST --> PUB{"Publisher on?"}
+    PUB -->|yes| BLEND["Blend with consensus<br/>adjust price only, state factor k"]
+    PUB -->|no| OUT
+    BLEND --> OUT(["Outputs: tables, ledger,<br/>documentation.md, progress chart"])
+
+    subgraph LEGEND["Build status"]
+        L1["Implemented"]
+        L2["In progress, not committed"]
+        L3["Design only"]
+        L4["New in this design"]
+    end
+
+    classDef done fill:#d4edda,stroke:#2e7d32,color:#1b3a1f
+    classDef wip fill:#fff3cd,stroke:#b8860b,color:#4a3800
+    classDef design fill:#eeeeee,stroke:#777777,color:#333333,stroke-dasharray:5 5
+    classDef new fill:#dbe9ff,stroke:#1f5fbf,color:#0d2a57
+
+    class SCOPE,STRAT,A_DRV,B_TAX,B_DRV,PLAN,T1,T2,T3,T4,T5,EXTRACT,VERIFY,REJECT,PRICE,CALC,ROLL,ANCH,ANC,XCHK,SEG,CHECKS,STOP,L1 done
+    class PASS,REVIEW,SCORE,REDO,BEST,SIGNAL,GAP,PUB,BLEND,L2 wip
+    class C_TAX,C_MIX,L3 design
+    class AIO,LEDGER,OUT,L4 new

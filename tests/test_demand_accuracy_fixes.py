@@ -95,7 +95,7 @@ def test_use_cases_scaled_down_to_country_total():
     quantities = {"Consumer": {"India": _q(300.0)}, "Enterprise": {"India": _q(100.0)}}
     buckets = [{"name": "Consumer"}, {"name": "Enterprise"}]
     ref = {"India": {"quantity": 160.0, "unit": "smartphones (units shipped)", "provenance": "verified_observed"}}
-    flags = anchor.apply_country_anchor(quantities, buckets, ref, [])
+    flags = anchor.apply_country_anchor(quantities, buckets, ref, [], target="total")
     assert abs(quantities["Consumer"]["India"]["value"] - 120.0) < 1e-6
     assert abs(quantities["Enterprise"]["India"]["value"] - 40.0) < 1e-6
     assert flags[0]["code"] == "use_cases_scaled_down_to_country_total"
@@ -122,9 +122,29 @@ def test_official_anchor_scales_use_cases_up():
     quantities = {"Household": {"Spain": _q(100.0, "tonnes")}, "Foodservice": {"Spain": _q(100.0, "tonnes")}}
     ref = {"Spain": {"quantity": 480.0, "unit": "tonnes", "provenance": "derived", "official": True,
                      "source": "FAOSTAT Food Balances"}}
-    flags = anchor.apply_country_anchor(quantities, [{"name": "Household"}, {"name": "Foodservice"}], ref, [])
+    flags = anchor.apply_country_anchor(quantities, [{"name": "Household"}, {"name": "Foodservice"}], ref, [],
+                                        target="total")
     assert flags[0]["code"] == "use_cases_scaled_up_to_country_total"
     assert quantities["Household"]["Spain"]["value"] == 240.0
+
+
+def test_anchor_ceiling_target_scales_to_the_band_edge(monkeypatch):
+    # design default (system.md §7.3): 400 vs 160 -> r = 2.5 > 1.5 -> f = 1.5 / 2.5 = 0.6 -> sum = 240 = 1.5 x 160
+    monkeypatch.delenv("DEAGENT_ANCHOR_TARGET", raising=False)
+    quantities = {"Consumer": {"India": _q(300.0)}, "Enterprise": {"India": _q(100.0)}}
+    ref = {"India": {"quantity": 160.0, "unit": "smartphones", "provenance": "verified_observed"}}
+    flags = anchor.apply_country_anchor(quantities, [{"name": "Consumer"}, {"name": "Enterprise"}], ref, [])
+    assert abs(quantities["Consumer"]["India"]["value"] - 180.0) < 1e-6
+    assert abs(quantities["Enterprise"]["India"]["value"] - 60.0) < 1e-6
+    assert flags[0]["code"] == "use_cases_scaled_down_to_band_edge" and abs(flags[0]["factor"] - 0.6) < 1e-9
+    assert quantities["Consumer"]["India"]["anchor_target"] == "ceiling"
+
+    # official, below band: 200 vs 480 -> r = 0.4167 -> f = 0.6667 / 0.4167 = 1.6 -> sum = 320 = 480 / 1.5
+    quantities = {"Household": {"Spain": _q(100.0, "tonnes")}, "Foodservice": {"Spain": _q(100.0, "tonnes")}}
+    ref = {"Spain": {"quantity": 480.0, "unit": "tonnes", "provenance": "derived", "official": True}}
+    flags = anchor.apply_country_anchor(quantities, [{"name": "Household"}, {"name": "Foodservice"}], ref, [])
+    assert abs(quantities["Household"]["Spain"]["value"] - 160.0) < 1e-6
+    assert flags[0]["code"] == "use_cases_scaled_up_to_band_edge"
 
 
 def test_load_anchor_from_2a_output(tmp_path):

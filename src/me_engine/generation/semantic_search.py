@@ -17,10 +17,40 @@ EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 EMBED_DIM = 384
 
 
+class _FastEmbedModel:
+    """Same model through `fastembed` (ONNX, no PyTorch) -- used when
+    sentence-transformers can't be installed (e.g. PyTorch's install hits the
+    Windows 260-character path limit). Same 384-dim L2-normalised vectors."""
+
+    def __init__(self) -> None:
+        from fastembed import TextEmbedding
+        self._m = TextEmbedding(EMBED_MODEL_NAME)
+
+    def encode(self, texts, batch_size: int = 64, normalize_embeddings: bool = True, show_progress_bar: bool = False):
+        import numpy as np
+        single = isinstance(texts, str)
+        vecs = np.array(list(self._m.embed([texts] if single else list(texts), batch_size=batch_size)))
+        if normalize_embeddings:
+            vecs = vecs / np.linalg.norm(vecs, axis=1, keepdims=True)
+        return vecs[0] if single else vecs
+
+
 @lru_cache(maxsize=1)
 def _model():
-    from sentence_transformers import SentenceTransformer
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError:
+        return _FastEmbedModel()
     return SentenceTransformer(EMBED_MODEL_NAME)
+
+
+def available() -> bool:
+    """True when either embedding backend can be loaded."""
+    try:
+        _model()
+    except Exception:  # noqa: BLE001
+        return False
+    return True
 
 
 def embed(text: str) -> list[float]:

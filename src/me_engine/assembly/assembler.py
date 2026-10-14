@@ -20,14 +20,16 @@ from ..domain.runtime_taxonomy import RuntimeTaxonomy, default_taxonomy
 from ..domain.taxonomy import Band, Dimension
 from .model import BandResult, GeographyResult, MarketResult, MetricRow
 
-VOLUME_UNIT_SCALE = 1000.0     # US$ Mn / (US$ per unit) -> Th Liters
+VOLUME_UNIT_SCALE = 1000.0     # default: US$ Mn / (US$ per unit) -> thousands (Th Liters / Th Units)
+# The unit comes from the ME's volume band title (structure_agent.volume_scale): 'Units' -> 1e6, 'Th ...' -> 1e3.
 
 
 class Assembler:
     """Turns drivers into a fully-resolved `MarketResult`."""
 
-    def __init__(self, taxonomy: RuntimeTaxonomy | None = None) -> None:
+    def __init__(self, taxonomy: RuntimeTaxonomy | None = None, volume_scale: float = VOLUME_UNIT_SCALE) -> None:
         self._taxonomy = taxonomy or default_taxonomy()
+        self._volume_scale = volume_scale
 
     def assemble(self, drivers: DriverSet) -> MarketResult:
         results = {
@@ -120,8 +122,7 @@ class Assembler:
         rows = self._attach_shares(rows, total)
         return BandResult(band=band_kind, total=total, rows_by_label=rows)
 
-    @staticmethod
-    def _rollup_asp_band(value_band: BandResult, volume_band: BandResult) -> BandResult:
+    def _rollup_asp_band(self, value_band: BandResult, volume_band: BandResult) -> BandResult:
         """ASP is never summed/averaged — it's re-derived from the rolled-up
         Value and Volume, the same identity used everywhere else:
         volume = value / asp * 1000  =>  asp = value / volume * 1000."""
@@ -130,21 +131,49 @@ class Assembler:
             product: MetricRow(
                 product,
                 value_band.rows_by_label[product].series.divided_by(
-                    volume_band.rows_by_label[product].series, VOLUME_UNIT_SCALE),
+                    volume_band.rows_by_label[product].series, self._volume_scale),
                 share_of_parent=None,
             )
             for product in common
         }
-        placeholder_total = next(iter(rows.values())).series if rows else value_band.total
-        return BandResult(band=Band.ASP, total=placeholder_total, rows_by_label=rows)
+        total = (value_band.total.divided_by(volume_band.total, self._volume_scale) if rows
+                 else value_band.total)  # total ASP = total value / total volume
+        return BandResult(band=Band.ASP, total=total, rows_by_label=rows)
 
     # --- per geography ------------------------------------------------------
     def _assemble_geography(self, geo: GeographyDrivers) -> GeographyResult:
         value_band = self._value_band(geo)
         asp_band = self._asp_band(geo)
         volume_band = self._volume_band(value_band, asp_band, geo)
+        asp_band, volume_band = self._add_priced_parents(value_band, asp_band, volume_band)
         bands = {Band.VALUE: value_band, Band.ASP: asp_band, Band.VOLUME: volume_band}
         return GeographyResult(name=geo.name, bands=bands)
+
+    def _add_priced_parents(self, value_band: BandResult, asp_band: BandResult,
+                            volume_band: BandResult) -> tuple[BandResult, BandResult]:
+        """Parent rows of the priced dimension (e.g. 'Solid-State Lasers' over
+        Nd:YAG/Yb:YAG/...) and the band totals: parent volume = sum of its
+        children's volume; parent ASP = parent value / parent volume (the same
+        identity as the leaves); total ASP = total value / total volume."""
+        if not volume_band.rows_by_label:
+            return asp_band, volume_band
+        priced = self._taxonomy.priced_dimension
+        vol_rows = dict(volume_band.rows_by_label)
+        asp_rows = dict(asp_band.rows_by_label)
+        for parent in dict.fromkeys(p for s in priced.segments if (p := priced.parent_of(s)) is not None):
+            kids = [vol_rows[s].series for s in priced.segments if priced.parent_of(s) == parent and s in vol_rows]
+            if not kids or parent in vol_rows:
+                continue
+            vol = self._sum_series(kids)
+            vol_rows[parent] = MetricRow(parent, vol, share_of_parent=None)
+            if parent in value_band.rows_by_label:
+                asp_rows[parent] = MetricRow(parent, value_band.rows_by_label[parent].series.divided_by(
+                    vol, self._volume_scale), share_of_parent=None)
+        leaf_total = volume_band.total
+        volume_band = BandResult(band=Band.VOLUME, total=leaf_total,
+                                 rows_by_label=self._attach_shares(vol_rows, leaf_total))
+        asp_total = value_band.total.divided_by(leaf_total, self._volume_scale)
+        return BandResult(band=Band.ASP, total=asp_total, rows_by_label=asp_rows), volume_band
 
     def _value_band(self, geo: GeographyDrivers) -> BandResult:
         rows = self._segment_rows(geo.value, geo)
@@ -202,7 +231,7 @@ class Assembler:
             product: MetricRow(
                 product,
                 value_band.rows_by_label[product].series.divided_by(
-                    asp_band.rows_by_label[product].series, VOLUME_UNIT_SCALE),
+                    asp_band.rows_by_label[product].series, self._volume_scale),
                 share_of_parent=None,
             )
             for product in common_products

@@ -1,7 +1,7 @@
 """Draft/approved JSON checkpoint paths for approach 2A.
 
 Same `slugify`/`write_json`/`read_json` contract as
-`me_engine.demandUseCaseCountry_approach2B.checkpoints` (imported, not copied), rooted at
+`engine.checkpoints` (2A's own fork of 2B's), rooted at
 `output/demand_country_2a/<slug>/` so a 2A run never collides with a 2B run of
 the same market.
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from me_engine.demandUseCaseCountry_approach2B.checkpoints import read_json, slugify, write_json
+from .engine.checkpoints import read_json, slugify, write_json
 
 __all__ = ["read_json", "write_json", "slugify", "run_dir"]
 

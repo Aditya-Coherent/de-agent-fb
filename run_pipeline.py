@@ -59,6 +59,8 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--output",    required=True,  help="Path to write the generated ME workbook")
     p.add_argument("--reference", default=None,   help="Optional: ground-truth ME workbook for Gate 3 diff")
     p.add_argument("--template",  default=None,   help="Style template workbook (defaults to reference if provided)")
+    p.add_argument("--volume-scale", type=float, default=None,
+                   help="US$ Mn / (US$ per unit) -> volume unit (default: from the template's volume band title)")
     p.add_argument("--no-agents", action="store_true", help="Skip agents, use flat priors only")
     p.add_argument("--save-metadata", action="store_true",
                    help="Write WorkbookInspector JSON to output/extracted_metadata/ (debug only)")
@@ -72,6 +74,21 @@ def _collect_agent_rationale(drivers) -> dict[str, str]:
     if hasattr(drivers, "curve_rationale"):
         return drivers.curve_rationale()
     return {}
+
+
+def _volume_scale(template: Path | None, override: float | None) -> float:
+    """The volume unit comes from the ME's volume band title ('Units' -> 1e6,
+    'Th Liters' / 'Th Units' -> 1e3); default 1e3 when there is no template."""
+    if override:
+        return override
+    if template and template.exists():
+        from openpyxl import load_workbook
+        from me_engine.generation.structure_agent import volume_scale
+        ws = load_workbook(template, read_only=True, data_only=True).worksheets[0]
+        for (marker,) in ws.iter_rows(min_col=4, max_col=4, values_only=True):
+            if isinstance(marker, str) and marker.strip().lower().startswith("market volume"):
+                return volume_scale(marker)
+    return 1000.0
 
 
 def main() -> int:
@@ -143,7 +160,9 @@ def main() -> int:
 
     # ── ASSEMBLER ───────────────────────────────────────────────────────────
     print("┌─ ASSEMBLER: Building MarketResult ─────────────────────────────")
-    result = Assembler(taxonomy).assemble(drivers)
+    volume_scale = _volume_scale(template, args.volume_scale)
+    print(f"  Volume unit scale: x{volume_scale:g} (US$ Mn / US$ per unit -> volume unit)")
+    result = Assembler(taxonomy, volume_scale=volume_scale).assemble(drivers)
     print(f"  Built {len(result.geographies)} geography results.")
     print("└─ Assembly done.\n")
 
@@ -173,7 +192,7 @@ def main() -> int:
     # ── GATE 3 ──────────────────────────────────────────────────────────────
     print("┌─ GATE 3: Output Validation ─────────────────────────────────────")
     rationale = _collect_agent_rationale(builder)
-    gate3 = OutputValidator(taxonomy).validate(result, ref_path, rationale)
+    gate3 = OutputValidator(taxonomy, volume_scale=volume_scale).validate(result, ref_path, rationale)
     print(gate3)
     if gate3.passed():
         print("└─ Gate 3 passed.\n")

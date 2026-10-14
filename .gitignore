@@ -44,3 +44,14 @@ Thumbs.db
 
 # Downloaded official statistics (FAOSTAT bulk files)
 data/official/
+src/data/official/
+
+# Third-party browser extensions (nested repo, large binaries)
+src/me_engine/demandCountry_approach2A/chrome-scraper-extensions/
+
+# Demo app builds: keep only the latest
+demo/high-energy-laser-*/
+!demo/high-energy-laser-v17/
+
+# Headless browser profiles used for screenshots
+demo/.chrome-profile/

@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Market Estimate Explorer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --grid: #d4d4d4; --head: #f3f3f3; --head-text: #444; --sel: #217346; --ink: #1f1f1f;
+    --good: #e3f1e6; --fair: #fff2cc; --far: #f8d7d3; --none: #ffffff; --muted: #6b6b6b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: "Segoe UI", Calibri, Arial, sans-serif; color: var(--ink); }
+  body { display: flex; flex-direction: column; background: #fff; }
+  /* ribbon */
+  .ribbon { background: var(--sel); color: #fff; padding: 8px 14px; display: flex; align-items: center; gap: 18px; }
+  .ribbon h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .ribbon .sub { font-size: 12px; opacity: .9; }
+  .ribbon .spacer { flex: 1; }
+  .ribbon button { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); color: #fff;
+                   padding: 5px 10px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+  .ribbon button.on { background: #fff; color: var(--sel); }
+  .toolbar { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--grid);
+             font-size: 12px; background: #fafafa; flex-wrap: wrap; }
+  .toolbar .seg { display: inline-flex; border: 1px solid #bbb; border-radius: 3px; overflow: hidden; }
+  .toolbar .seg button { border: 0; background: #fff; padding: 4px 9px; font-size: 12px; cursor: pointer; }
+  .toolbar .seg button.on { background: var(--sel); color: #fff; }
+  .legend span { display: inline-block; padding: 1px 6px; margin-left: 4px; border: 1px solid #ccc; }
+  .kpis { display: flex; gap: 14px; margin-left: auto; color: #333; }
+  .kpis b { color: var(--sel); }
+  /* formula bar */
+  .fbar { display: flex; align-items: center; border-bottom: 1px solid var(--grid); font-size: 13px; height: 28px; }
+  .fbar .name { width: 90px; border-right: 1px solid var(--grid); padding: 0 8px; color: #333; }
+  .fbar .fx { width: 30px; text-align: center; color: #888; font-style: italic; border-right: 1px solid var(--grid); }
+  .fbar .val { padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  /* grid */
+  .main { flex: 1; display: flex; min-height: 0; }
+  .sheet-wrap { flex: 1; overflow: auto; position: relative; }
+  table.xl { border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  table.xl th, table.xl td { border: 1px solid var(--grid); height: 21px; padding: 0 5px; white-space: nowrap;
+                              overflow: hidden; text-overflow: ellipsis; }
+  table.xl thead th { position: sticky; top: 0; background: var(--head); color: var(--head-text); font-weight: 400;
+                      z-index: 2; text-align: center; }
+  table.xl th.rh { position: sticky; left: 0; background: var(--head); color: var(--head-text); font-weight: 400;
+                   width: 42px; text-align: center; z-index: 1; }
+  table.xl thead th.corner { left: 0; z-index: 3; }
+  table.xl td { cursor: cell; max-width: 130px; }
+  table.xl td.num { text-align: right; }
+  table.xl td.lab { color: #222; }
+  table.xl td.title { font-weight: 600; }
+  table.xl td.l1 { font-weight: 600; }
+  table.xl td.l2 { padding-left: 18px; color: #444; }
+  table.xl td.l2::before { content: "↳ "; color: #9a9a9a; }
+  table.xl td.sel { outline: 2px solid var(--sel); outline-offset: -2px; }
+  td.g-good { background: var(--good); } td.g-fair { background: var(--fair); } td.g-far { background: var(--far); }
+  td.g-missing { background: repeating-linear-gradient(45deg, #fff, #fff 4px, #f1f1f1 4px, #f1f1f1 8px); color: #999; }
+  /* tabs */
+  .tabs { display: flex; border-top: 1px solid var(--grid); background: #f3f3f3; font-size: 12px; }
+  .tabs div { padding: 6px 16px; cursor: pointer; border-right: 1px solid var(--grid); }
+  .tabs div.on { background: #fff; color: var(--sel); font-weight: 600; border-bottom: 3px solid var(--sel); }
+  /* document panel */
+  .doc { width: 520px; border-left: 1px solid #ccc; overflow: auto; background: #fcfcfc; display: none; }
+  .doc.open { display: block; }
+  .doc .head { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #e3e3e3; padding: 12px 16px; }
+  .doc .head .x { float: right; cursor: pointer; color: #888; font-size: 18px; line-height: 14px; }
+  .doc .head h2 { font-size: 15px; margin: 0 0 4px; }
+  .doc .head .addr { font-size: 12px; color: var(--muted); }
+  .doc .body { padding: 6px 16px 30px; font-size: 13.5px; line-height: 1.55; }
+  .doc h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--sel); margin: 18px 0 6px; }
+  .doc .cmp { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 8px 0; }
+  .doc .cmp div { background: #fff; border: 1px solid #e3e3e3; border-radius: 4px; padding: 8px; text-align: center; }
+  .doc .cmp .k { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+  .doc .cmp .v { font-size: 17px; font-weight: 600; margin-top: 2px; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge.good { background: #cfe8d5; color: #1d5b2c; } .badge.fair { background: #ffe8a3; color: #6b5200; }
+  .badge.far { background: #f3c1bb; color: #7a1d12; } .badge.na { background: #e6e6e6; color: #555; }
+  ol.steps { padding-left: 20px; margin: 6px 0; } ol.steps li { margin: 5px 0; }
+  .doc table.mini { border-collapse: collapse; width: 100%; font-size: 12px; margin: 6px 0; }
+  .doc table.mini th, .doc table.mini td { border: 1px solid #e3e3e3; padding: 3px 6px; text-align: left; }
+  .doc table.mini th { background: #f5f5f5; font-weight: 600; }
+  .doc .note { background: #f4f8f5; border-left: 3px solid var(--sel); padding: 6px 10px; margin: 8px 0; }
+  .doc .warn { background: #fff7e6; border-left: 3px solid #d39b00; padding: 6px 10px; margin: 8px 0; }
+  .doc code { background: #f1f1f1; padding: 0 4px; border-radius: 3px; font-size: 12px; }
+  .doc a { color: #155eab; }
+  .doc details { margin: 6px 0; } .doc summary { cursor: pointer; color: #155eab; font-size: 12.5px; }
+  /* methodology overlay */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 20; }
+  .overlay.open { display: block; }
+  .overlay .paper { position: absolute; inset: 30px 8%; background: #fff; border-radius: 6px; overflow: auto;
+                    padding: 26px 40px 40px; font-size: 14.5px; line-height: 1.65; box-shadow: 0 8px 40px rgba(0,0,0,.25); }
+  .overlay .paper h1 { color: var(--sel); font-size: 22px; margin-top: 0; }
+  .overlay .paper h2 { font-size: 16px; margin-top: 24px; color: #222; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+  .overlay .close { position: absolute; right: 14px; top: 10px; cursor: pointer; font-size: 22px; color: #777; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; font-size: 12.5px; }
+  .flow span { background: #eef6f0; border: 1px solid #b9d8c2; border-radius: 4px; padding: 5px 9px; }
+  .flow i { color: #8a8a8a; font-style: normal; }
+</style>
+</head>
+<body>
+<div class="ribbon">
+  <h1 id="title">Market Estimate Explorer</h1>
+  <span class="sub" id="subtitle"></span>
+  <span class="spacer"></span>
+  <button id="btn-method">How this estimate is built</button>
+</div>
+<div class="toolbar">
+  <span>Show:</span>
+  <span class="seg" id="view">
+    <button data-v="ours" class="on">Our numbers</button><button data-v="human">Human analyst</button><button data-v="gap">Gap</button>
+  </span>
+  <label><input type="checkbox" id="heat" checked> Colour by closeness to human</label>
+  <span class="legend">Legend:<span style="background:var(--good)">close</span><span style="background:var(--fair)">moderate</span><span style="background:var(--far)">far</span><span class="g-missing" style="background:repeating-linear-gradient(45deg,#fff,#fff 4px,#f1f1f1 4px,#f1f1f1 8px)">not produced</span></span>
+  <span class="kpis" id="kpis"></span>
+</div>
+<div class="fbar"><div class="name" id="fb-name">A1</div><div class="fx">fx</div><div class="val" id="fb-val">Click any cell to see how its number was made and why it differs from the human analyst.</div></div>
+<div class="main">
+  <div class="sheet-wrap" id="wrap"></div>
+  <div class="doc" id="doc"><div class="head"><span class="x" id="doc-x">×</span><h2 id="doc-title"></h2><div class="addr" id="doc-addr"></div></div><div class="body" id="doc-body"></div></div>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="overlay" id="ov"><div class="paper"><span class="close" id="ov-x">×</span><div id="method"></div></div></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const C = DATA.context;
+let current = DATA.order[0], view = "ours", heat = true, selected = null;
+
+/* ---------- formatting ---------- */
+const isNum = v => typeof v === "number" && isFinite(v);
+const pct = (v, d = 1) => isNum(v) ? (v * 100).toFixed(d) + "%" : "—";
+const usd = v => !isNum(v) ? "—" : Math.abs(v) >= 1000 ? "$" + (v / 1000).toFixed(2) + "B" : "$" + v.toFixed(1) + "M";
+const money = v => !isNum(v) ? "—" : "$" + Math.round(v).toLocaleString("en-US");
+const pts = v => isNum(v) ? (v >= 0 ? "+" : "") + v.toFixed(1) + " pts" : "—";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[ch]));
+const colName = n => { let s = ""; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+const isShareKind = k => ["share", "geo_share", "mv_share", "asp_share"].includes(k);
+const isCagrKind = k => ["geo_cagr", "mv_cagr", "seg_cagr", "geo_total_cagr"].includes(k);
+const isValueKind = k => ["geo_value", "mv_value", "asp_value"].includes(k);
+
+function fmtCell(cell, which) {
+  const v = which === "human" ? cell.h : cell.v;
+  if (v === null || v === undefined) return "";
+  if (!isNum(v)) return String(v);
+  if (isShareKind(cell.k) || isCagrKind(cell.k)) return pct(v);
+  if (isValueKind(cell.k)) return usd(v);
+  if (cell.k === "asp") return money(v);
+  if (cell.k === "asp_volume" || cell.k === "asp_total") return Math.round(v).toLocaleString();
+  if (Math.abs(v) < 1) return pct(v);
+  return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString() : v.toFixed(2);
+}
+
+/* ---------- closeness ---------- */
+function gap(cell) {
+  const h = cell.h, v = cell.v;
+  if (!isNum(h) && !isNum(v)) return {cls: "", grade: null};
+  if (isNum(h) && !isNum(v)) return {cls: "g-missing", grade: "na", text: "not produced"};
+  if (!isNum(h)) return {cls: "", grade: null};
+  if (isShareKind(cell.k) || isCagrKind(cell.k)) {
+    const d = (v - h) * 100, a = Math.abs(d);
+    const lim = isCagrKind(cell.k) ? [1, 3] : [2, 5];
+    const grade = a <= lim[0] ? "good" : a <= lim[1] ? "fair" : "far";
+    return {cls: "g-" + grade, grade, text: pts(d), d};
+  }
+  if (h > 0 && v > 0) {
+    const r = v / h, x = Math.max(r, 1 / r);
+    const grade = x <= 1.25 ? "good" : x <= 1.6 ? "fair" : "far";
+    return {cls: "g-" + grade, grade, text: "×" + r.toFixed(2), r};
+  }
+  return {cls: "", grade: null};
+}
+const gradeWord = g => ({good: "close", fair: "moderate gap", far: "far", na: "not produced"}[g] || "—");
+
+/* ---------- grid ---------- */
+function render() {
+  const sh = DATA.sheets[current];
+  const byKey = new Map(sh.cells.map(c => [c.r + ":" + c.c, c]));
+  const cols = Math.min(sh.cols, 90), rows = sh.rows;
+  let html = '<table class="xl"><colgroup><col style="width:42px">';
+  for (let c = 1; c <= cols; c++) html += `<col style="width:${c === 2 ? 230 : c === 30 || c === 58 ? 200 : 86}px">`;
+  html += '</colgroup><thead><tr><th class="corner"></th>';
+  for (let c = 1; c <= cols; c++) html += `<th>${colName(c)}</th>`;
+  html += "</tr></thead><tbody>";
+  for (let r = 1; r <= rows; r++) {
+    html += `<tr><th class="rh">${r}</th>`;
+    for (let c = 1; c <= cols; c++) {
+      const cell = byKey.get(r + ":" + c);
+      if (!cell) { html += "<td></td>"; continue; }
+      const g = gap(cell);
+      let txt;
+      if (view === "gap") txt = cell.k === "label" ? fmtCell(cell, "ours") || fmtCell(cell, "human") : (g.text || "");
+      else txt = fmtCell(cell, view === "human" ? "human" : "ours") || (view === "ours" && cell.k === "label" ? fmtCell(cell, "human") : "");
+      const numeric = isNum(view === "human" ? cell.h : cell.v) && cell.k !== "label";
+      const cls = [numeric || view === "gap" ? "num" : "lab", heat && cell.k !== "label" ? g.cls : "",
+                   cell.lvl === 1 ? "l1" : cell.lvl === 2 ? "l2" : "",
+                   cell.k === "label" && /^By |^Region|^Market|^Segment/.test(String(cell.h || cell.v)) ? "title" : ""].join(" ");
+      html += `<td class="${cls}" data-r="${r}" data-c="${c}" title="${esc(txt)}">${esc(txt)}</td>`;
+    }
+    html += "</tr>";
+  }
+  html += "</tbody></table>";
+  document.getElementById("wrap").innerHTML = html;
+  document.querySelectorAll("#tabs div").forEach(d => d.classList.toggle("on", d.dataset.s === current));
+}
+
+document.getElementById("wrap").addEventListener("click", e => {
+  const td = e.target.closest("td[data-r]");
+  if (!td) return;
+  document.querySelectorAll("td.sel").forEach(x => x.classList.remove("sel"));
+  td.classList.add("sel");
+  const r = +td.dataset.r, c = +td.dataset.c;
+  const cell = DATA.sheets[current].cells.find(x => x.r === r && x.c === c);
+  if (!cell) return;
+  document.getElementById("fb-name").textContent = colName(c) + r;
+  document.getElementById("fb-val").textContent = `Ours: ${fmtCell(cell, "ours") || "—"}    Human: ${fmtCell(cell, "human") || "—"}`;
+  openDoc(cell);
+});
+
+/* ---------- documents ---------- */
+function rowLabel(cell) {
+  const sh = DATA.sheets[current];
+  const lab = sh.cells.find(x => x.r === cell.r && x.c === 2);
+  return lab ? (lab.h || lab.v) : "";
+}
+function cmpBox(cell) {
+  const g = gap(cell);
+  return `<div class="cmp"><div><div class="k">Our number</div><div class="v">${fmtCell(cell, "ours") || "—"}</div></div>
+          <div><div class="k">Human analyst</div><div class="v">${fmtCell(cell, "human") || "—"}</div></div>
+          <div><div class="k">Gap</div><div class="v">${g.text || "—"}</div><span class="badge ${g.grade || "na"}">${gradeWord(g.grade)}</span></div></div>`;
+}
+function levelSentence() {
+  const g = C.global || {};
+  if (!isNum(g.ratio)) return "";
+  return `Our whole market is <b>${usd(g.generated)}</b> against the human analyst's <b>${usd(g.human)}</b> (×${g.ratio.toFixed(2)}). Every value in the sheet carries this difference in level before any split is applied.`;
+}
+function segTable(seg) {
+  const a = (C.segments || {})[seg];
+  if (!a) return "";
+  const consts = Object.entries(a.constants || {}).map(([k, v]) =>
+    `<tr><td><code>${esc(k)}</code></td><td>${esc(typeof v === "object" ? v.value : v)}</td><td>${esc(typeof v === "object" ? v.reason : "")}</td></tr>`).join("");
+  const arts = (a.artifacts || []).map(x => `<tr><td>${esc(x.publisher)}</td><td>${usd(x.usd_mn)}</td><td>${x.independent ? "independent" : "context only"}</td></tr>`).join("");
+  return `<p>The assumptor sized <b>${esc(seg)}</b> worldwide at <b>${usd(a.value_mn)}</b> from real-world data: the driver is <b>${esc(a.driver.replace(/_/g, " "))}</b> (global total ${usd(a.driver_total_usd_bn * 1000)}). Formula (${esc(a.how)}): <code>${esc(a.formula)}</code></p>
+    ${consts ? `<table class="mini"><tr><th>Constant</th><th>Value</th><th>Why the assumptor chose it</th></tr>${consts}</table>` : ""}
+    <p><i>${esc(a.reasoning)}</i></p>
+    ${arts ? `<p>Published figures it read as artifacts (${a.n_independent} independent):</p><table class="mini"><tr><th>Publisher</th><th>Scope-adjusted</th><th>Status</th></tr>${arts}</table>` : "<p>No verifiable published figure existed for this segment, so the number rests on the assumptor's formula alone.</p>"}
+    ${(a.flags || []).map(f => `<div class="warn">${esc(f)}</div>`).join("")}`;
+}
+function eventsBlock(geo) {
+  const names = (C.events_for || {})[geo] || [];
+  const evs = (C.events || []).filter(e => names.includes(e.event));
+  if (!evs.length) return "<p>No verified news event in the last 18 months was found to affect this geography's growth.</p>";
+  return `<table class="mini"><tr><th>Event</th><th>Date</th><th>Effect on 2025-33 CAGR</th></tr>${evs.map(e =>
+    `<tr><td><a href="${esc(e.url)}" target="_blank">${esc(e.event)}</a><br><span style="color:#777">${esc(e.mechanism)}</span></td><td>${esc(e.date)}</td><td>${pts(e.effective_cagr_pp)}</td></tr>`).join("")}</table>`;
+}
+
+function blockCheck(cell) {
+  if (current !== "Data" || !cell.path) return "";
+  const parent = cell.path.length === 2 ? cell.path[0] : null;
+  const sibs = DATA.sheets.Data.cells.filter(x => x.k === "share" && x.geo === cell.geo && x.dim === cell.dim &&
+    x.path.length === cell.path.length && (parent ? x.path[0] === parent : true));
+  const sum = which => sibs.reduce((a, x) => a + (isNum(x[which]) ? x[which] : 0), 0);
+  const ours = sum("v"), human = sum("h");
+  const ok = Math.abs(ours - 1) <= 0.005;
+  const rows = sibs.map(x => `<tr${x === cell ? ' style="background:#eef6f0;font-weight:600"' : ""}><td>${esc(x.path[x.path.length - 1])}</td><td>${pct(x.v)}</td><td>${pct(x.h)}</td></tr>`).join("");
+  return `<h3>Block check</h3><p>${parent ? `The sub-segments of <b>${esc(parent)}</b>` : `The top-level segments of <b>${esc(cell.dim)}</b>`} in ${esc(cell.geo)} form one block. ${ok ? "Ours adds up to 100%." : "<b>Ours does not add up to 100%.</b>"}</p>
+    <table class="mini"><tr><th>Segment</th><th>Ours</th><th>Human analyst</th></tr>${rows}
+    <tr style="border-top:2px solid #999"><td><b>Total</b></td><td><b>${pct(ours)}</b></td><td><b>${pct(human)}</b></td></tr></table>
+    ${Math.abs(human - 1) > 0.005 ? `<div class="warn">The human analyst's block adds up to ${pct(human)}, not 100%.</div>` : ""}
+    <p style="color:#777;font-size:12px">The sheet mixes levels in one column (each segment is followed by its own sub-segments), so a whole column adds to more than 100%; each block adds to 100%.</p>`;
+}
+
+function evidenceList(items, citedIds) {
+  if (!items || !items.length) return "<p>No evidence items were recorded for this decision.</p>";
+  const cited = items.filter(x => citedIds.includes(x.id)), rest = items.filter(x => !citedIds.includes(x.id));
+  const row = x => `<tr><td><b>${esc(x.id)}</b></td><td>${esc(x.source)}</td><td>${esc(String(x.text).slice(0, 420))}${String(x.text).length > 420 ? "…" : ""}</td></tr>`;
+  return (cited.length ? `<p>Evidence it cited for this decision:</p><table class="mini"><tr><th>Id</th><th>Source</th><th>Text</th></tr>${cited.map(row).join("")}</table>` : "") +
+    (rest.length ? `<details><summary>${cited.length ? "Other evidence it read" : "Evidence it read"} (${rest.length} items)</summary><table class="mini"><tr><th>Id</th><th>Source</th><th>Text</th></tr>${rest.map(row).join("")}</table></details>` : "");
+}
+
+function traceFor(name) {
+  /* regions are decided in the market-size step, countries in the country-split step */
+  const isRegion = !!(C.regions || {})[name] || name === "Global";
+  const tr = isRegion ? C.market_trace : C.geo_trace;
+  if (!tr || !tr.evidence) return null;
+  const parent = isRegion ? null : Object.entries(C.regions || {}).find(([r, cs]) => cs.includes(name));
+  const reason = (tr.reasons || {})[name === "Global" ? "global" : isRegion ? name : (parent ? parent[0] : name)] || "";
+  return {tr, reason, step: isRegion ? "market-size step" : "country-split step", scope: isRegion ? name : (parent ? parent[0] : name)};
+}
+function traceSteps(name, what) {
+  const t = traceFor(name);
+  if (!t) return `<li>${what}. <span style="color:#a33">This run did not record the evidence and reasoning behind it (runs from v12 on do).</span></li>`;
+  const cited = (t.reason.match(/E\d+/g) || []);
+  return `<li><b>Evidence.</b> In the ${t.step} the generator read ${t.tr.evidence.length} numbered items.${evidenceList(t.tr.evidence, cited)}</li>
+          <li><b>Decision.</b> ${what}.${t.reason ? `<div class="note"><b>Its reasoning (${esc(t.scope)}):</b> ${esc(t.reason)}</div>` : `<div class="warn">No reasoning was returned for ${esc(t.scope)}.</div>`}</li>`;
+}
+
+function generatorSteps(cell) {
+  const tr = (C.shares_trace || {})[cell.dim];
+  const seg = cell.path[cell.path.length - 1], parent = cell.path.length === 2 ? cell.path[0] : null;
+  let html = "";
+  if (!tr) {
+    html += `<li>The generator proposed <b>${pct(cell.gen)}</b> for ${esc(cell.geo)}. <span style="color:#a33">This run did not record the evidence and reasoning behind the number (runs from v12 on do).</span></li>`;
+    return html;
+  }
+  const groupKey = cell.path.length === 2 ? cell.path[0] : "__root__";
+  const reason = (tr.reasons || {})[cell.region] || (tr.group_reasons || {})[groupKey] || "";
+  const globalMode = !!tr.group_reasons;
+  const cited = (reason.match(/E\d+/g) || []);
+  html += `<li><b>Evidence.</b> For <i>${esc(cell.dim)}</i> the generator read ${tr.evidence.length} numbered items (web results for the market and for this dimension, CMI's research database, and the end-use consensus).${evidenceList(tr.evidence, cited)}</li>`;
+  const fromMean = (tr.filled_from_global_mean || []).includes(cell.region);
+  const rawGroup = ((tr.raw_llm_shares || {})[groupKey]) || null;
+  html += globalMode
+    ? `<li><b>Decision.</b> It set <b>one worldwide split</b> for ${parent ? `the sub-segments of <b>${esc(parent)}</b>` : `the top level of <i>${esc(cell.dim)}</i>`} (this run is configured for one split per group, so every region gets the same split): <b>${esc(seg)}</b> = <b>${pct(cell.regional)}</b>.`
+      + (rawGroup ? `<table class="mini"><tr><th>Segment</th><th>LLM's raw share</th><th>After normalising to 100%</th></tr>${Object.entries(rawGroup).map(([k, v]) => `<tr${k === seg ? ' style="background:#eef6f0;font-weight:600"' : ""}><td>${esc(k)}</td><td>${isNum(+v) ? pct(+v) : esc(v)}</td><td>${pct((((C.shares_final || {})[cell.dim] || {})[groupKey] || {})[k])}</td></tr>`).join("")}</table>` : "")
+      + (reason ? `<div class="note"><b>Its reasoning for this group:</b> ${esc(reason)}</div>` : `<div class="warn">No reasoning was returned for this group.</div>`) + "</li>"
+    : `<li><b>Regional decision.</b> It set a split for each region. For <b>${esc(cell.region)}</b>, ${parent ? `within <b>${esc(parent)}</b>, ` : ""}<b>${esc(seg)}</b> = <b>${pct(cell.regional)}</b>.`
+       + (fromMean ? " (No answer was returned for this region, so the average of the other regions was used.)" : "")
+       + (reason ? `<div class="note"><b>Its reasoning for ${esc(cell.region)}:</b> ${esc(reason)}</div>` : `<div class="warn">No reasoning was returned for this region.</div>`) + "</li>";
+  if (globalMode) html = html.replace(/<li><b>Regional decision\.<\/b>[\s\S]*$/, "");
+  const same = isNum(cell.gen) && isNum(cell.regional) && Math.abs(cell.gen - cell.regional) < 0.0006;
+  html += same
+    ? `<li><b>Country.</b> ${esc(cell.geo)} takes ${globalMode ? "the worldwide" : `the ${esc(cell.region)}`} share (${pct(cell.gen)}): the evidence does not separate countries for this dimension, so no country-specific number is invented.</li>`
+    : `<li><b>Country.</b> ${esc(cell.geo)} shows ${pct(cell.gen)} against the regional ${pct(cell.regional)}. <span style="color:#a33">The difference comes from an arbitrary ±6% per-country nudge in older runs — it carries no information and is switched off from v12.</span></li>`;
+  return html;
+}
+
+/* ---------- bottom-up use-case documentation ---------- */
+const UC = () => C.usecases;
+const big = v => !isNum(v) ? "—" : Math.abs(v) >= 1e12 ? (v / 1e12).toFixed(2) + " tn" : Math.abs(v) >= 1e9 ? (v / 1e9).toFixed(2) + " bn" : Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(2) + " mn" : Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-US") : v.toFixed(2);
+const DRIVER_NAMES = {military_expenditure_usd: "military expenditure (US$)", manufacturing_value_added_usd: "manufacturing value added (US$)",
+  medhigh_tech_manufacturing_usd: "medium/high-tech manufacturing value added (US$)", industry_value_added_usd: "industry value added (US$)",
+  health_expenditure_usd: "health expenditure (US$)", hospital_beds: "hospital beds", physicians: "physicians", rd_expenditure_usd: "R&D expenditure (US$)",
+  researchers: "researchers in R&D", high_tech_exports_usd: "high-tech exports (US$)", air_passengers: "air passengers per year",
+  fixed_broadband_subscriptions: "fixed broadband subscriptions", gdp_usd: "GDP (US$)", population: "population"};
+const drvName = k => DRIVER_NAMES[k] || String(k || "").replace(/_/g, " ");
+function ucItem(industry, useCase) { return (UC()?.items || []).find(x => x.industry === industry && x.use_case === useCase); }
+function ucForIndustry(industry) { return (UC()?.items || []).filter(x => x.industry === industry); }
+function substituted(item, geo) {
+  const s = item.spec || {};
+  let f = String(s.units_formula || s.formula || "");
+  const dv = item.driver_values?.[geo];
+  for (const name of ["driver", s.driver].filter(Boolean)) f = f.split(name).join(String(dv ?? "?"));
+  for (const [k, v] of Object.entries(s.constants || {})) f = f.replace(new RegExp("\\b" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), String(typeof v === "object" ? v.value : v));
+  return f;
+}
+function constTable(item) {
+  const s = item.spec || {}, pr = s.price_usd_per_unit || {}, w = s.world_units_per_year || {};
+  const rows = Object.entries(s.constants || {}).map(([k, v]) => `<tr><td><code>${esc(k)}</code></td><td>${esc(typeof v === "object" ? v.value : v)}</td><td>${esc(v.unit || "")}</td><td>${esc(v.basis || "")}</td><td>${esc(v.reason || "")}</td></tr>`).join("");
+  return `<table class="mini"><tr><th>Input</th><th>Value</th><th>Unit</th><th>Basis</th><th>Why the agent chose it</th></tr>
+    <tr><td><b>world units / yr</b></td><td>${big(+w.value)}</td><td>${esc(s.units_label || "units")}</td><td>${esc(w.basis || "")}</td><td>${esc(w.reason || "")}</td></tr>
+    <tr><td><b>price per unit</b></td><td>${money(+pr.value)}</td><td>US$</td><td>${esc(pr.basis || "")}</td><td>${esc(pr.reason || "")}</td></tr>${rows}</table>
+    <p style="color:#777;font-size:12px">Basis “E<i>n</i>” = the numbered evidence item below; “assumption” = the agent's industry knowledge, stated openly.</p>`;
+}
+function useCaseCalc(item, geo) {
+  const s = item.spec || {}, u = item.units?.[geo], v = item.values_mn?.[geo], pr = +(s.price_usd_per_unit?.value);
+  const cal = s.calibration, wu = item.world_units_estimate, wf = item.world_units_formula;
+  const share = isNum(u) && isNum(wu) && wu ? u / wu : null;
+  const cited = Object.values(s.constants || {}).map(c => c?.basis).concat([s.price_usd_per_unit?.basis, s.world_units_per_year?.basis]).filter(b => /E\d+/.test(b || "")).flatMap(b => b.match(/E\d+/g));
+  return `<p><b>Who buys:</b> ${esc(s.buyers || "—")}<br><b>One unit is:</b> ${esc(s.units_label || "—")}</p>
+    <h4>1 · How many units the world buys per year</h4>
+    ${(() => { const w = s.world_units_per_year || {}; return isNum(+w.buyers_worldwide) && +w.buyers_worldwide > 0 ? `<p>The agent stipulates physical demand: <b>${big(+w.buyers_worldwide)}</b> buyers worldwide (${esc(w.buyer || "buyers")}) × <b>${(+w.units_per_buyer_per_year).toPrecision(3)}</b> units each per year = <b>${big(wu)}</b> ${esc(s.units_label || "units")} per year. <i>${esc(w.reason || "")}</i></p>` : `<p>The agent reasons about physical demand first: about <b>${big(wu)}</b> ${esc(s.units_label || "units")} bought worldwide per year. <i>${esc(w.reason || "")}</i></p>`; })()}${item.world_units_circular ? `<div class="warn"><b>Caution:</b> this estimate was derived from a published market size divided by a price, not from physical demand, even after the agent was asked to rebuild it. Treat it as weak.</div>` : ""}
+    <h4>2 · How much of that ${esc(geo)} buys</h4>
+    <p>Demand follows <b>${esc(drvName(s.driver))}</b> (World Bank): ${esc(geo)} = <b>${big(item.driver_values?.[geo])}</b>. The agent's demand formula:</p>
+    <p><code>units = ${esc(s.units_formula || s.formula)}</code><br><code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = ${esc(substituted(item, geo))}</code>${cal ? ` × ${cal.factor.toPrecision(3)}` : ""} = <b>${big(u)}</b> ${esc(s.units_label || "units")} per year${isNum(share) ? ` (${pct(share)} of the world's units)` : ""}.</p>
+    ${cal ? `<div class="note"><b>Calibration factor ${cal.factor.toPrecision(3)}:</b> applied to all 26 countries, the agent's formula as written gives ${big(wf)} units per year, but its own physical estimate is ${big(wu)}. Per-dollar rates written as long decimals are easy to get wrong by orders of magnitude, so the physical estimate sets the <i>level</i> and the formula sets <i>how the units are split across countries</i>. ${Math.abs(Math.log(cal.factor)) < Math.log(1.5) ? "Here the two agree closely." : "Here the formula was off, and the factor corrects it."}</div>` : ""}
+    <h4>3 · Value</h4>
+    <p>${big(u)} units × ${money(pr)} per unit = <b>${usd(v)}</b>.</p>
+    <h4>The agent's demand logic</h4><p><i>${esc(s.reasoning || "")}</i></p>
+    ${constTable(item)}
+    ${(item.evidence || []).length ? evidenceList(item.evidence, cited) : "<p>No use-case evidence was found on the web; every input above is the agent's stated assumption.</p>"}
+    ${(item.published_context || []).length ? `<details><summary>What research firms publish for ${esc(item.industry)} (context only; never used to set this number)</summary><table class="mini"><tr><th>Publisher</th><th>Figure (scope-adjusted)</th><th>Status</th></tr>${item.published_context.map(p => `<tr><td>${esc(p.publisher)}</td><td>${usd(p.usd_mn)}</td><td>${p.independent ? "measures this industry" : "whole-market or unattributed"}</td></tr>`).join("")}</table></details>` : ""}
+    ${item.reexamined ? `<div class="warn"><b>Re-examined.</b> ${esc(item.reexamined)}<br>The revision was accepted only because it moved the industry total towards plausibility; the numbers above are the revised ones.</div>` : ""}`;
+}
+function industryTable(industry, geo) {
+  const items = ucForIndustry(industry);
+  const tot = items.reduce((a, x) => a + (x.values_mn?.[geo] || 0), 0);
+  return `<table class="mini"><tr><th>Use case</th><th>Driver in ${esc(geo)}</th><th>Units / yr</th><th>Price / unit</th><th>Value</th><th>Share of ${esc(industry)}</th></tr>${items.map(x =>
+    `<tr><td>${esc(x.use_case)}</td><td>${esc(drvName(x.spec?.driver))}: ${big(x.driver_values?.[geo])}</td><td>${big(x.units?.[geo])}</td><td>${money(+(x.spec?.price_usd_per_unit?.value))}</td><td>${usd(x.values_mn?.[geo])}</td><td>${pct(tot ? (x.values_mn?.[geo] || 0) / tot : null)}</td></tr>`).join("")}
+    <tr style="border-top:2px solid #999"><td><b>${esc(industry)} total</b></td><td></td><td></td><td></td><td><b>${usd(tot)}</b></td><td>100%</td></tr></table>`;
+}
+function useCaseSteps(cell) {
+  const u = UC();
+  if (!u || cell.dim !== u.dimension) return null;
+  const geo = cell.geo, industry = cell.path[0];
+  if (!(u.industries || []).includes(industry)) return null;
+  const countryTot = u.country_value?.[geo], indTot = u.industry_value?.[geo]?.[industry];
+  if (cell.path.length === 2) {
+    const item = ucItem(industry, cell.path[1]);
+    if (!item) return null;
+    return `<li><b>Bottom-up calculation: ${esc(cell.path[1])} in ${esc(geo)}</b>${useCaseCalc(item, geo)}</li>
+      <li><b>Share within ${esc(industry)}.</b> ${usd(item.values_mn?.[geo])} ÷ ${esc(industry)} total ${usd(indTot)} = <b>${pct(indTot ? item.values_mn[geo] / indTot : null)}</b>.${industryTable(industry, geo)}</li>`;
+  }
+  const items = ucForIndustry(industry), single = items.length === 1;
+  return `<li><b>${esc(industry)} in ${esc(geo)} is the sum of its use cases.</b>${industryTable(industry, geo)}${single ? useCaseCalc(items[0], geo) : "<p>Click any use-case row under this industry in the sheet to see its full calculation (driver, units formula, price, evidence).</p>"}</li>
+    <li><b>Share of ${esc(geo)}'s market.</b> ${usd(indTot)} ÷ ${esc(geo)} total ${usd(countryTot)} (all industries) = <b>${pct(countryTot ? indTot / countryTot : null)}</b>.${countryTable(geo)}</li>`;
+}
+function countryTable(name) {
+  const u = UC(); if (!u) return "";
+  const isRegion = !!(C.regions || {})[name], isGlobal = name === "Global";
+  const geos = isGlobal ? C.geographies : isRegion ? C.regions[name] : [name];
+  const val = ind => geos.reduce((a, g) => a + (u.industry_value?.[g]?.[ind] || 0), 0);
+  const tot = (u.industries || []).reduce((a, i) => a + val(i), 0);
+  return `<table class="mini"><tr><th>Industry</th><th>Use cases</th><th>Value</th><th>Share</th></tr>${(u.industries || []).map(i => `<tr><td>${esc(i)}</td><td>${ucForIndustry(i).length}</td><td>${usd(val(i))}</td><td>${pct(tot ? val(i) / tot : null)}</td></tr>`).join("")}
+    <tr style="border-top:2px solid #999"><td><b>Total ${esc(name)}</b></td><td>${(u.items || []).length}</td><td><b>${usd(tot)}</b></td><td>100%</td></tr></table>`;
+}
+function countryBuild(name) {
+  const u = UC(); if (!u) return "";
+  const isRegion = !!(C.regions || {})[name], isGlobal = name === "Global";
+  let html = `<h3>Bottom-up build of ${esc(name)}</h3><p>${isGlobal ? "The world market is the sum of all 26 geographies" : isRegion ? `${esc(name)} is the sum of its countries (${esc(C.regions[name].join(", "))})` : `${esc(name)} is the sum of its industries`}; every industry is the sum of its use cases, and every use case is <i>units bought per year × price per unit</i>, where units follow a real-world driver of that country.</p>` + countryTable(name);
+  if (isRegion || isGlobal) {
+    const geos = isGlobal ? C.geographies : C.regions[name];
+    html += `<table class="mini"><tr><th>${isGlobal ? "Geography" : "Country"}</th><th>Value</th><th>Share</th></tr>${geos.map(g => `<tr><td>${esc(g)}</td><td>${usd(u.country_value?.[g])}</td><td>${pct(u.country_value?.[g] / geos.reduce((a, x) => a + (u.country_value?.[x] || 0), 0))}</td></tr>`).join("")}</table>`;
+  } else {
+    html += (u.industries || []).map(i => `<details><summary>${esc(i)}: use cases in ${esc(name)}</summary>${industryTable(i, name)}</details>`).join("");
+  }
+  return html;
+}
+function useCaseDiff(cell) {
+  const u = UC(); if (!u) return "";
+  return `<li>Our level comes from physical demand (units × price per use case), not from any published market size. ${levelSentence()}</li>
+    ${(u.flags || []).length ? `<li>Industries re-examined because they were more than 3× from every published figure: ${(u.flags || []).map(esc).join("; ")}.</li>` : ""}`;
+}
+
+function mixSteps(cell) {
+  const u = UC();
+  if (!u || !(u.mix_dims || []).includes(cell.dim) || !u.mix_profiles) return null;
+  const geo = cell.geo, seg = cell.path[0], child = cell.path.length === 2 ? cell.path[1] : null;
+  const rows = (u.items || []).map(x => {
+    const pr = (u.mix_profiles[x.industry + "|" + x.use_case] || {})[cell.dim];
+    const v = x.values_mn?.[geo] || 0;
+    if (!pr) return null;
+    const mTop = pr.top?.[seg] || 0, mSub = child ? (pr.sub?.[seg]?.[child] || 0) : null;
+    return {x, pr, v, mTop, mSub, base: v * mTop, part: child ? v * mTop * mSub : v * mTop, tot: v};
+  }).filter(Boolean);
+  const denom = child ? rows.reduce((a, r) => a + r.base, 0) : rows.reduce((a, r) => a + r.tot, 0);
+  const numer = rows.reduce((a, r) => a + r.part, 0);
+  const shown = rows.filter(r => r.part > 0).sort((a, b) => b.part - a.part);
+  const zero = rows.filter(r => r.part <= 0 && r.v > 0);
+  const tbl = `<table class="mini"><tr><th>Use case</th><th>Value in ${esc(geo)}</th><th>Goes to ${esc(seg)}</th>${child ? `<th>of which ${esc(child)}</th>` : ""}<th>Contribution</th></tr>
+    ${shown.map(r => `<tr><td><b>${esc(r.x.use_case)}</b> <span style="color:#777">(${esc(r.x.industry)})</span></td><td>${usd(r.v)}</td><td>${pct(r.mTop)}</td>${child ? `<td>${pct(r.mSub)}</td>` : ""}<td><b>${usd(r.part)}</b></td></tr>
+    <tr><td colspan="${child ? 5 : 4}" style="font-size:12px;color:#444;padding-left:14px;border-top:none">Why (agent): ${esc(r.pr.reason)} <span style="color:#777">[${esc(r.pr.basis)}]</span>${r.pr.answered ? "" : ' <span style="color:#a33">(no answer: spread evenly)</span>'}</td></tr>`).join("")}
+    <tr style="border-top:2px solid #999"><td><b>Sum</b></td><td>${usd(rows.reduce((a, r) => a + r.tot, 0))}</td><td></td>${child ? "<td></td>" : ""}<td><b>${usd(numer)}</b></td></tr></table>
+    ${zero.length ? `<p style="color:#777;font-size:12px">Use cases in ${esc(geo)} that buy no ${esc(child || seg)}: ${zero.map(r => esc(r.x.use_case)).join(", ")}.</p>` : ""}`;
+  return `<li><b>Start from what ${esc(geo)} actually buys.</b> The market in ${esc(geo)} is built from ${rows.filter(r => r.v > 0).length} use cases (each = units bought per year × price, from ${esc(geo)}'s own real-world drivers; open the By Application cells for each calculation).</li>
+    <li><b>What each use case buys.</b> For every use case the agent states which ${esc(cell.dim.replace(/^By /, "").toLowerCase())} it needs — physically (technology, power, operating mode, buyer) — and why. ${child ? `Here: how much of each use case goes to <b>${esc(seg)}</b>, and within that to <b>${esc(child)}</b>.` : `Here: how much of each use case goes to <b>${esc(seg)}</b>.`}${tbl}</li>
+    <li><b>Share.</b> ${usd(numer)} ÷ ${child ? `${usd(denom)} (all ${esc(seg)} in ${esc(geo)})` : `${usd(denom)} (all of ${esc(geo)})`} = <b>${pct(denom ? numer / denom : null)}</b>. ${esc(geo)} differs from other countries only because its mix of use cases differs (e.g. more defense or more manufacturing) — no country-specific share was assumed.</li>`;
+}
+
+function docShare(cell) {
+  const seg = cell.path.join(" › "), level = cell.path.length;
+  const parentTxt = level === 2 ? `of the <b>${esc(cell.path[0])}</b> category` : `of the whole market`;
+  let html = `<h3>What this cell is</h3><p>The share ${parentTxt} in <b>${esc(cell.geo)}</b> that belongs to <b>${esc(cell.path[cell.path.length - 1])}</b>, within the dimension <b>${esc(cell.dim)}</b>. Shares in one block add up to 100% for each country.</p>` + cmpBox(cell);
+  const g = gap(cell);
+  html += "<h3>How we got this number</h3><ol class='steps'>";
+  const ucs = useCaseSteps(cell) || mixSteps(cell);
+  html += ucs || generatorSteps(cell);
+  if (ucs) {
+    html += `<li>Final share written to the sheet: <b>${pct(cell.v)}</b>.</li>`;
+  } else if (cell.regulated) {
+    html += `<li>The assumptor set the worldwide size of every ${esc(C.partition_dim)} segment from real-world data, so ${esc(cell.path[0])} is <b>${pct(cell.our_global)}</b> of the world market (human analyst: ${pct(cell.human_global)}).</li>`;
+    html += `<li>Allocating that segment by its real-world driver would give ${esc(cell.geo)} <b>${pct(cell.drv)}</b>.</li>`;
+    html += `<li>Guardrail: the generator's country pattern is kept unless it is more than 3× away from the driver-implied share.</li>`;
+    html += `<li>Reconciliation: the country × segment table is rebalanced so that every country adds up to its own value <i>and</i> every segment adds up to the assumptor's world total, keeping each country's relative pattern. Final: <b>${pct(cell.v)}</b>.</li>`;
+  } else if (cell.consistency) {
+    html += `<li>Consistency pass: this dimension describes the same market by end use, so it was aligned with the assumptor's ${esc(C.partition_dim)} mix (${esc((C.consistency_notes || []).find(n => n.startsWith(cell.dim)) || "")}). Final: <b>${pct(cell.v)}</b>.</li>`;
+  } else {
+    html += `<li>No further adjustment: this dimension does not depend on end use, so the generator's evidence-based share stands. Final: <b>${pct(cell.v)}</b>.</li>`;
+  }
+  html += "</ol><h3>Why it differs from the human analyst</h3>";
+  const reasons = [];
+  if (ucs) reasons.push(useCaseDiff(cell).replace(/^<li>|<\/li>\s*$/g, ""));
+  if (!ucs && cell.regulated && isNum(cell.our_global) && isNum(cell.human_global)) {
+    const d = (cell.our_global - cell.human_global) * 100;
+    if (Math.abs(d) >= 2) reasons.push(`<b>Different view of the segment's world size.</b> Our real-world-data assumption makes ${esc(cell.path[0])} ${pct(cell.our_global)} of the market; the human analyst's split implies ${pct(cell.human_global)} (${pts(d)}). That difference reaches every country.`);
+  }
+  if (isNum(cell.gen) && isNum(cell.h) && isNum(cell.v)) {
+    const before = Math.abs(cell.gen - cell.h), after = Math.abs(cell.v - cell.h);
+    if (cell.regulated || cell.consistency) {
+      if (after + 0.005 < before) reasons.push(`The adjustment moved our number <b>towards</b> the human value (from ${pct(cell.gen)} to ${pct(cell.v)}).`);
+      else if (after > before + 0.005) reasons.push(`The adjustment moved our number <b>away</b> from the human value (from ${pct(cell.gen)} to ${pct(cell.v)}): the real-world data disagrees with the analyst's split for this country.`);
+    }
+  }
+  if (cell.bias && Math.abs(cell.bias[0]) >= 3 && (cell.bias[1] >= 0.8 * cell.bias[2] || cell.bias[1] <= 0.2 * cell.bias[2])) {
+    const higher = cell.bias[0] > 0;
+    reasons.unshift(`<b>A systematic difference, not country noise.</b> Our share for ${esc(cell.path[cell.path.length - 1])} is ${higher ? "above" : "below"} the analyst's in ${higher ? cell.bias[1] : cell.bias[2] - cell.bias[1]} of ${cell.bias[2]} countries, by ${pts(cell.bias[0])} on average. That points to a different view of how big this segment is everywhere (how the segment is defined, or how much weight its evidence gets), rather than a country-specific error.`);
+  }
+  if (isNum(cell.hdisp) && isNum(cell.odisp) && Math.abs(cell.hdisp - cell.odisp) > 1.5) {
+    reasons.push(cell.hdisp < cell.odisp
+      ? `<b>Country variation.</b> The human analyst keeps this share almost the same in every country (spread ±${cell.hdisp} pts); our evidence lets it vary more (±${cell.odisp} pts).`
+      : `<b>Country variation.</b> The human analyst varies this share across countries more (±${cell.hdisp} pts) than our evidence does (±${cell.odisp} pts).`);
+  }
+  const dm = (C.by_dimension || {})[cell.dim];
+  if (!ucs && !cell.regulated && !cell.consistency) reasons.push(`Country-level splits for <i>${esc(cell.dim)}</i> are rarely published, so the generator relies on regional evidence and judgement. Across this dimension our shares are on average ${dm ? dm.mae_pts : "—"} points from the analyst's.`);
+  if (level === 2) reasons.push(`This is a sub-segment share within its parent; a gap here does not change the parent's total.`);
+  if (g.grade === "good") reasons.unshift("The two numbers are close; the remaining difference is within normal analyst-to-analyst variation.");
+  html += "<ul>" + reasons.map(x => `<li>${x}</li>`).join("") + "</ul>";
+  html += blockCheck(cell);
+  if (!ucs && cell.regulated) html += `<h3>The assumptor's evidence for ${esc(cell.path[0])}</h3>` + segTable(cell.path[0]);
+  return html;
+}
+
+function docGeoValue(cell) {
+  if (UC()) return `<h3>What this cell is</h3><p>The 2025 market value of <b>${esc(cell.geo)}</b> in US$ million, built bottom-up from use cases.</p>` + cmpBox(cell) + countryBuild(cell.geo)
+    + `<h3>Why it differs from the human analyst</h3><ul>${useCaseDiff(cell)}<li>Open any use-case cell in the Data sheet to see the exact calculation behind each component.</li></ul>`;
+  const name = cell.geo, isRegion = !!(C.regions || {})[name], isGlobal = name === "Global";
+  let html = `<h3>What this cell is</h3><p>The 2025 market value of <b>${esc(name)}</b> in US$ million.</p>` + cmpBox(cell);
+  html += "<h3>How we got this number</h3><ol class='steps'>";
+  if (isGlobal) {
+    const mt = C.market_trace || {};
+    if (mt.evidence) html += traceSteps("Global", `The generator's own total was ${usd(mt.llm_global_value_2025)}${mt.cited_figure ? ` (citing: “${esc(mt.cited_figure).slice(0, 200)}”)` : " (no citable figure)"}${mt.corrections ? `; code checks: ${esc(mt.corrections).slice(0, 300)}` : ""}. That total is <i>not</i> what the sheet uses — see the next step`);
+    html += `<li>Each end-use segment was sized worldwide by the assumptor from real-world data (military spend, manufacturing value added, health spend, R&D spend, high-tech exports, GDP), with published figures used only as bounds.</li>`;
+    html += `<li>The segments add up to <b>${usd(cell.v)}</b>.</li></ol>`;
+    html += "<table class='mini'><tr><th>Segment</th><th>Ours</th><th>How</th><th>Independent publishers</th></tr>" +
+      Object.entries(C.segments || {}).map(([s, a]) => `<tr><td>${esc(s)}</td><td>${usd(a.value_mn)}</td><td>${esc(a.driver.replace(/_/g, " "))}</td><td>${a.n_independent}</td></tr>`).join("") + "</table>";
+  } else {
+    html += traceSteps(name, `The generator's share for ${esc(name)} gave <b>${usd(cell.gen)}</b> (its share × its global total)`);
+    html += `<li>The global total was replaced by the assumptor's real-world-data total, and ${esc(name)}'s share was checked against real-world drivers${isNum(cell.drv_share_global) ? ` (driver-implied ${pct(cell.drv_share_global)} of the world)` : ""}.</li>`;
+    const flag = (C.guard || []).find(f => f.startsWith(name + ":"));
+    html += flag ? `<li>Guardrail applied: ${esc(flag)}.</li>` : "<li>The generator's share was within 3× of the driver-implied share, so it was kept.</li>";
+    html += `<li>Final: <b>${usd(cell.v)}</b>.</li></ol>`;
+  }
+  html += "<h3>Why it differs from the human analyst</h3><ul>";
+  const g = C.global || {};
+  if (isNum(g.ratio)) html += `<li>${levelSentence()}</li>`;
+  if (!isGlobal && isNum(cell.h) && isNum(cell.v) && isNum(g.ratio)) {
+    const shareRatio = (cell.v / cell.h) / g.ratio;
+    html += `<li>After removing that level difference, ${esc(name)}'s <b>share</b> of the market is ×${shareRatio.toFixed(2)} the analyst's${Math.abs(Math.log(shareRatio)) < Math.log(1.15) ? " — essentially the same split" : ""}.</li>`;
+  }
+  if (isGlobal) html += `<li>Industrial, defense and research rest on the assumptor's formulas without an independent published figure for that exact scope, which is where most of the level gap comes from.</li>`;
+  html += "</ul>";
+  return html;
+}
+
+function docGeoShare(cell) {
+  const name = cell.geo;
+  if (UC()) {
+    const u = UC(), parentV = cell.parent ? u.region_value?.[cell.parent] : u.global_value;
+    const own = (C.regions || {})[name] ? u.region_value?.[name] : u.country_value?.[name];
+    return `<h3>What this cell is</h3><p>${cell.parent ? `<b>${esc(name)}</b>'s share of <b>${esc(cell.parent)}</b>` : `<b>${esc(name)}</b>'s share of the world market`} in 2025.</p>` + cmpBox(cell)
+      + `<h3>How we got this number</h3><p>${esc(name)}'s bottom-up value ${usd(own)} ÷ ${esc(cell.parent || "world")} ${usd(parentV)} = <b>${pct(parentV ? own / parentV : null)}</b>. No share was assumed: it falls out of the use-case demand in each country.</p>`
+      + countryBuild(name) + `<h3>Why it differs from the human analyst</h3><ul>${useCaseDiff(cell)}</ul>`;
+  }
+  let html = `<h3>What this cell is</h3><p>${cell.parent ? `<b>${esc(name)}</b>'s share of <b>${esc(cell.parent)}</b>` : `<b>${esc(name)}</b>'s share of the world market`} in 2025.</p>` + cmpBox(cell);
+  html += `<h3>How we got this number</h3><ol class='steps'>` + traceSteps(name, `The generator set ${esc(name)}'s share at <b>${pct(cell.gen)}</b>`);
+  if (isNum(cell.drv_share_region)) html += `<li>Real-world drivers imply ${pct(cell.drv_share_region)} of ${esc(cell.parent)}.</li>`;
+  else if (isNum(cell.drv_share_global)) html += `<li>Real-world drivers imply ${pct(cell.drv_share_global)} of the world.</li>`;
+  const flag = (C.guard || []).find(f => f.startsWith(name + ":"));
+  html += flag ? `<li>Guardrail applied: ${esc(flag)}.</li>` : "<li>Within 3× of the driver-implied share, so the evidence-based split was kept.</li>";
+  html += `<li>Final: <b>${pct(cell.v)}</b>.</li></ol><h3>Why it differs from the human analyst</h3><ul>`;
+  const g = gap(cell);
+  if (g.grade === "good") html += "<li>Close to the analyst's split.</li>";
+  else html += `<li>Country splits are seldom published; ours come from regional evidence checked against real economic size, the analyst's from their own judgement. Across all countries our split is ${C.metrics?.country_share_in_region?.mae_pts ?? "—"} points from the analyst's on average.</li>`;
+  html += "</ul>";
+  return html;
+}
+
+function docCagr(cell) {
+  const name = cell.geo, ea = C.events_applied || {};
+  const ch = (C.event_changes || {})[name] || (name === "Global" && isNum(ea.global_cagr_baseline)
+    ? {baseline_cagr: ea.global_cagr_baseline, delta_pp: ea.global_delta_pp, adjusted_cagr: ea.global_cagr_adjusted} : null);
+  let html = `<h3>What this cell is</h3><p>The expected annual growth rate (CAGR) of <b>${esc(name)}</b> from 2025 to 2033.</p>` + cmpBox(cell);
+  html += "<h3>How we got this number</h3><ol class='steps'>";
+  const base = ch ? ch.baseline_cagr : cell.gen;
+  html += traceSteps(name, `The generator set ${esc(name)}'s baseline growth at <b>${pct(base, 2)}</b>`);
+  html += ch ? `<li>Real-world events from the news moved it by <b>${pts(ch.delta_pp)}</b> (each event weighted by how long it lasts and how likely it is).</li>`
+             : "<li>No verified recent event changed this geography's growth.</li>";
+  html += `<li>Final: <b>${pct(cell.v, 2)}</b>.</li></ol><h3>Events applied</h3>` + eventsBlock(name);
+  html += "<h3>Why it differs from the human analyst</h3><ul>";
+  if (isNum(base) && isNum(cell.h)) {
+    const d = (base - cell.h) * 100;
+    html += `<li>Before any news event, our evidence-based growth is ${pts(d)} versus the analyst${Math.abs(d) < 1 ? " — essentially the same" :
+      d > 0 ? ": the published forecasts the generator reads run above the analyst's for this geography" : ": the published forecasts the generator reads run below the analyst's for this geography"}.</li>`;
+  }
+  if (ch) html += `<li>The analyst's figure does not include the news events above; ours does.</li>`;
+  html += "</ul>";
+  return html;
+}
+
+function docAsp(cell) {
+  if (isNum(cell.v) && cell.v === 0) {
+    return `<h3>What this cell is</h3><p><b>${esc(cell.segment)}</b> is a parent category: its price is not set directly but follows from the products under it, so this cell is zero in both files by convention.</p>` + cmpBox(cell);
+  }
+  let html = `<h3>What this cell is</h3><p>The average selling price of one <b>${esc(cell.segment)}</b> unit in <b>${esc(cell.geo)}</b>, in US$.</p>` + cmpBox(cell);
+  const at = C.asp_trace || {};
+  const ar = (at.reasons || {})[cell.segment] || "";
+  html += `<h3>How we got this number</h3><ol class='steps'>` + (at.evidence
+    ? `<li><b>Evidence.</b> The pricing step read ${at.evidence.length} numbered items.${evidenceList(at.evidence, ar.match(/E\d+/g) || [])}</li>
+       <li><b>Decision.</b> One worldwide price per unit for <b>${esc(cell.segment)}</b>: <b>${money(cell.gen)}</b>.${ar ? `<div class="note"><b>Its reasoning:</b> ${esc(ar)}</div>` : `<div class="warn">No reasoning was returned for this product.</div>`}</li>
+       <li><b>Country.</b> ${esc(cell.geo)} uses the worldwide price: no country-level price evidence was found, so no country difference is invented.</li>`
+    : `<li>The generator estimated a worldwide price per unit. <span style="color:#a33">This run did not record the evidence and reasoning behind it (runs from v12 on do).</span></li>`)
+    + `<li>Prices have not yet been regulated by the assumptor or by publisher consensus.</li></ol>`;
+  html += `<h3>Why it differs from the human analyst</h3><ul><li>Prices are our weakest area: across all products and countries ours are typically ×${C.metrics?.asp?.typical_x ?? "—"} away from the analyst's, and mostly lower. The likely cause is the price basis — we price a typical unit, while the analyst's prices for high-power and military systems are far higher (e.g. chemical lasers in the millions).</li><li>This is the next area to fix: price evidence will go through the same honest-consensus and assumptor steps as market size.</li></ul>`;
+  return html;
+}
+
+function docNotProduced(cell) {
+  const what = {seg_cagr: "the growth rate of this segment in this country", geo_total_cagr: "the country's total growth rate in the segment block",
+                trend_code: "the analyst's internal curve-template code", asp_value: "the value of this product in this country",
+                asp_volume: "the number of units sold", asp_total: "a total of the block below"}[cell.k] || "this cell";
+  return `<h3>What this cell is</h3><p>In the analyst's file this cell holds ${what}.</p>` + cmpBox(cell) +
+    `<h3>Why we have no number here</h3><p>${cell.k === "trend_code"
+      ? "This is a code from the analyst's own forecasting toolkit (a named growth-curve template). It is a working choice, not market evidence, so it is never copied."
+      : "This demonstration stops at the Input Sheet. Segment growth rates, product values and unit volumes are produced in the next stage (the ME workbook), which is switched off here."}</p>`;
+}
+
+function docLabel(cell) {
+  return `<h3>Label cell</h3><p>“${esc(cell.h ?? cell.v)}” is part of the sheet's structure, copied from the analyst's file so both can be compared cell by cell. Structure (segments, countries, order) matches the analyst's exactly.</p>`;
+}
+
+function openDoc(cell) {
+  let title = "", html = "";
+  if (cell.k === "share") { title = `${cell.path[cell.path.length - 1]} · ${cell.geo}`; html = docShare(cell); }
+  else if (cell.k === "geo_value" || cell.k === "mv_value") { title = `Market value · ${cell.geo}`; html = docGeoValue(cell); }
+  else if (cell.k === "geo_share" || cell.k === "mv_share") { title = `Share · ${cell.geo}`; html = docGeoShare(cell); }
+  else if (cell.k === "geo_cagr" || cell.k === "mv_cagr") { title = `Growth 2025-33 · ${cell.geo}`; html = docCagr(cell); }
+  else if (cell.k === "asp") { title = `Price · ${cell.segment} · ${cell.geo}`; html = docAsp(cell); }
+  else if (cell.k === "asp_share") { title = `${cell.segment} · ${cell.geo}`; html = docShare(Object.assign({}, cell, {path: [cell.segment], dim: "By Laser Type"})); }
+  else if (cell.k === "label") { title = String(cell.h ?? cell.v); html = docLabel(cell); }
+  else { title = `${rowLabel(cell) || "Cell"} · ${cell.geo || ""}`; html = docNotProduced(cell); }
+  document.getElementById("doc-title").textContent = title;
+  document.getElementById("doc-addr").textContent = `${current} ! ${colName(cell.c)}${cell.r}`;
+  document.getElementById("doc-body").innerHTML = html;
+  document.getElementById("doc").classList.add("open");
+}
+document.getElementById("doc-x").onclick = () => document.getElementById("doc").classList.remove("open");
+
+/* ---------- methodology ---------- */
+function methodology() {
+  const segs = Object.entries(C.segments || {}).map(([s, a]) =>
+    `<tr><td>${esc(s)}</td><td>${usd(a.value_mn)}</td><td>${esc(a.driver.replace(/_/g, " "))}</td><td><code>${esc(a.formula)}</code></td><td>${a.n_independent}</td></tr>`).join("");
+  const evs = (C.events || []).slice().sort((a, b) => Math.abs(b.effective_cagr_pp) - Math.abs(a.effective_cagr_pp)).slice(0, 8).map(e =>
+    `<li><a href="${esc(e.url)}" target="_blank">${esc(e.event)}</a> (${esc(e.date)}): ${pts(e.effective_cagr_pp)} on ${esc(e.affects.join(", "))}</li>`).join("");
+  const ea = C.events_applied || {};
+  const u = UC();
+  const ucRows = u ? (u.items || []).map(x => `<tr><td>${esc(x.industry)}</td><td>${esc(x.use_case)}</td><td>${esc(drvName(x.spec?.driver))}</td><td>${big(x.world_units_estimate)}</td><td>${money(+(x.spec?.price_usd_per_unit?.value))}</td><td>${usd(x.world_mn)}</td></tr>`).join("") : "";
+  const ucSection = !u ? "" : `<h2>How the size is built: demand, use case by use case</h2>
+  <p>A human analyst does not average other firms' numbers. They ask <i>who buys this product, for what, how many, and at what price</i> — for olive oil in India: restaurants, households, gifting, each belonging to an industry (food service, retail, gifting). We do the same:</p>
+  <div class="flow"><span>Industry</span><i>→</i><span>Use case</span><i>→</i><span>Who buys</span><i>→</i><span>Country driver (World Bank)</span><i>→</i><span>Units / yr</span><i>→</i><span>× price</span><i>→</i><span>Value</span><i>→</i><span>Σ industry → country → region → world</span></div>
+  <ol>
+    <li><b>Use cases.</b> Every Application sub-segment is a use case belonging to its industry (e.g. <i>Industrial Manufacturing → Welding</i>). ${(u.items || []).length} use cases in ${(u.industries || []).length} industries.</li>
+    <li><b>Physical demand first.</b> For each use case the agent states how many units the world buys per year, and why (installed base, replacement cycle, programme counts) — citing web evidence where it exists, saying “assumption” where it does not.</li>
+    <li><b>Country demand.</b> It picks the real-world quantity that creates the demand (military budget for counter-drone lasers, manufacturing output for welding, physicians for aesthetic lasers, …) and writes a formula for units per year per country. Code evaluates it for every country. The world estimate sets the level; the formula spreads it across countries.</li>
+    <li><b>Price.</b> A price per unit, with its basis. Value = units × price, computed by code.</li>
+    <li><b>Add up.</b> Use cases → industry → country → region → world. Every share in the sheet for this dimension, and every country and region value, is the result of this sum — no share is assumed.</li>
+    <li><b>What others predict.</b> Research-firm figures are shown next to each industry as context. They are never averaged and never set a number; if an industry lands more than 3× from <i>every</i> published figure, the agent is asked to re-examine its units and prices, and the revision is kept only if it is more plausible.</li>
+  </ol>
+  <table class="mini"><tr><th>Industry</th><th>Use case</th><th>Driver</th><th>World units / yr</th><th>Price / unit</th><th>World value</th></tr>${ucRows}
+  <tr style="border-top:2px solid #999"><td colspan="5"><b>World total</b></td><td><b>${usd(u.global_value)}</b></td></tr></table>`;
+  return `<h1>How this market estimate is built</h1>
+  <p><b>${esc(C.market)}</b>. This page explains the thinking behind the estimate in the terms a market researcher uses every day: <i>where does each number come from, how much can I trust it, and why might it disagree with another analyst?</i></p>
+
+  <h2>1. The idea in one paragraph</h2>
+  <p>Published market sizes are opinions. Different research firms define the same market differently and arrive at very different numbers, and every firm has an interest in its own figure. So we never adopt anyone's number as the answer. We read all of them as <b>evidence</b>, count honestly how many independent firms really measure the same thing, and then build our own estimate from <b>real-world economic data</b> that no research firm controls — military budgets, manufacturing output, health spending, R&D spending, trade. Published figures keep our estimate realistic; they do not decide it. Finally the forecast is adjusted for <b>what is happening in the world right now</b>, from dated news.</p>
+
+  ${ucSection}
+  <h2>2. The steps</h2>
+  <div class="flow"><span>Copy the analyst's structure</span><i>→</i><span>Gather evidence</span><i>→</i><span>Honest publisher consensus</span><i>→</i><span>Assumptor: real-world data</span><i>→</i><span>Guardrails & consistency</span><i>→</i><span>News events</span><i>→</i><span>Compare with the analyst</span></div>
+  <ol>
+    <li><b>Copy the structure, never the numbers.</b> The segments, sub-segments, countries and layout are taken from the analyst's Data file so every cell can be compared one to one. Not a single number is copied.</li>
+    <li><b>Gather evidence.</b> Web results, published market reports, and Coherent Market Insights' own reports on neighbouring markets (medical lasers, industrial laser systems, laser diodes, directed-energy weapons, …). An internal report that looked like this exact market turned out to contain another report's text, and was correctly rejected.</li>
+    <li><b>Honest consensus.</b> For each end-use segment every published figure is listed with its publisher. A figure counts as <i>independent evidence</i> only if a named firm measures that segment itself; the number must literally appear in the source; each firm counts once; a whole-market figure that we would have to scale down ourselves is kept as context, not counted. The result is the median and the range of independent firms — and an honest count of how many there really are.</li>
+    <li><b>The assumptor.</b> For every end-use segment, the assumptor picks the real-world quantity that drives its demand and writes its own formula, e.g. <code>global health expenditure × share spent on medical lasers</code>, with every constant justified. Code evaluates the formula. If the result is wildly out of line with every published figure, the assumptor is told so and must correct itself; if two or more independent firms exist, the result must fall inside their range.</li>
+    <li><b>Guardrails, reconciliation and consistency.</b> Each country keeps its evidence-based share unless it is more than 3× away from what its real economic size implies. The country × end-use table is then rebalanced so it adds up both ways — every country to its value, every end use to the assumptor's world total — so a country cannot quietly contradict the world view. Dimensions that describe the same market by end use (End User, Mobility) are aligned with the end-use mix so the sheet tells one consistent story.</li>
+    <li><b>News events.</b> Wars, contracts, sanctions, regulations and technology milestones from the last 18 months are read from dated news. An event is used only if its quote is verified in the article. Its effect on growth is bounded (at most ±3 points per event, ±5 points in total) and weighted by how long it lasts and how likely it is.</li>
+    <li><b>Compare with the analyst.</b> Every cell is graded against the human analyst's file. The analyst is a reference, not the truth: where we differ, the explanation says why.</li>
+  </ol>
+
+  <h2>3. The result</h2>
+  <p>${levelSentence()} ${isNum(ea.global_cagr_baseline) ? `Growth 2025-33: ${pct(ea.global_cagr_baseline, 2)} before news events, <b>${pct(ea.global_cagr_adjusted, 2)}</b> after.` : ""}</p>
+  ${u ? countryTable("Global") : `<table class="mini"><tr><th>End-use segment</th><th>Our value</th><th>Real-world driver</th><th>Assumptor's formula</th><th>Independent publishers</th></tr>${segs}</table>`}
+  <p>Largest news effects on growth:</p><ul>${evs || "<li>none</li>"}</ul>
+
+  <h2>4. How to read a cell</h2>
+  <p>Click any cell. The document shows: what the cell means; our number, the analyst's and the gap; the exact steps that produced our number; the reasons it differs from the analyst's, computed from the data; and the evidence behind it. Colours: green = close, amber = moderate gap, red = far, hatched = not produced at this stage.</p>
+
+  <h2>5. Where we are honest about weaknesses</h2>
+  <ul>
+    <li>Three of the six end-use segments (industrial, defense, research) have no independent published figure for their exact scope; they rest on the assumptor's formula, and that is where most of the difference in total size comes from.</li>
+    <li>Prices are not yet regulated and are typically ×${C.metrics?.asp?.typical_x ?? "—"} away from the analyst's.</li>
+    <li>Growth rates and news effects use the model's judgement for the size of each effect; the judgement is shown, bounded and conservative, but it is a judgement.</li>
+    <li>Evidence and news change from day to day, so two runs on different days can differ — by design, the estimate follows the world.</li>
+  </ul>
+  ${C.narrative ? `<h2>6. Independent reviewer's diagnosis</h2><div>${esc(C.narrative).replace(/\*\*(.*?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</div>` : ""}`;
+}
+document.getElementById("btn-method").onclick = () => { document.getElementById("method").innerHTML = methodology(); document.getElementById("ov").classList.add("open"); };
+document.getElementById("ov-x").onclick = () => document.getElementById("ov").classList.remove("open");
+document.getElementById("ov").onclick = e => { if (e.target.id === "ov") e.target.classList.remove("open"); };
+
+/* ---------- chrome ---------- */
+document.getElementById("title").textContent = C.market;
+document.getElementById("subtitle").textContent = `Input Sheet · run ${C.tag} · compared with the human analyst's Data file`;
+const g = C.global || {};
+document.getElementById("kpis").innerHTML = isNum(g.ratio)
+  ? `<span>Market 2025: <b>${usd(g.generated)}</b> vs analyst ${usd(g.human)}</span><span>Segment shares off by <b>${C.metrics?.segment_shares?.mae_pts ?? "—"} pts</b> on average</span>` : "";
+document.getElementById("tabs").innerHTML = DATA.order.map(s => `<div data-s="${esc(s)}">${esc(s)}</div>`).join("");
+document.getElementById("tabs").addEventListener("click", e => { const d = e.target.closest("div[data-s]"); if (d) { current = d.dataset.s; render(); } });
+document.getElementById("view").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return;
+  view = b.dataset.v; document.querySelectorAll("#view button").forEach(x => x.classList.toggle("on", x === b)); render(); });
+document.getElementById("heat").onchange = e => { heat = e.target.checked; render(); };
+render();
+
+/* deep links: #cell=Data!D66 opens that cell's document, #method opens the methodology */
+function openFromHash() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h === "method") { document.getElementById("btn-method").click(); return; }
+  const m = h.match(/^cell=(.+)!([A-Z]+)(\d+)$/);
+  if (!m || !DATA.sheets[m[1]]) return;
+  current = m[1]; render();
+  let col = 0; for (const ch of m[2]) col = col * 26 + (ch.charCodeAt(0) - 64);
+  const td = document.querySelector(`td[data-r="${+m[3]}"][data-c="${col}"]`);
+  if (td) { td.click(); td.scrollIntoView({block: "center", inline: "center"}); }
+}
+window.addEventListener("hashchange", openFromHash);
+openFromHash();
+</script>
+</body>
+</html>

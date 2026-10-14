@@ -4,9 +4,10 @@ Format mirrors the human Input Sheet: a `Data` sheet (per-country share-of-paren
 an `ASP` sheet (per-country prices), a `Market Value` sheet (regional value/CAGR),
 and an `Artifacts` sheet (brain-agent justifications).
 
-Agents decide ONE representative share vector per sibling group. We expand it to
-per-country columns with a small *deterministic* dispersion (hash-seeded, no RNG)
-and re-normalise each group within each country so shares still sum to 1.
+Agents decide share vectors per REGION. Each country takes its region's vector:
+a country-level split is only shown where evidence produced one. (An earlier
+version added a hash-seeded +/-6% "dispersion" per country -- variation with no
+information behind it; it is off unless DEAGENT_COUNTRY_DISPERSION=1.)
 """
 from __future__ import annotations
 
@@ -53,6 +54,9 @@ def _write_confidence(ws, row: int, col: int, score: float | None, has_evidence:
 
 
 def _country_factor(key: str, spread: float = 0.12) -> float:
+    import os
+    if os.environ.get("DEAGENT_COUNTRY_DISPERSION", "0") != "1":
+        return 1.0  # no fabricated country variation
     h = int(hashlib.sha256(key.encode("utf-8")).hexdigest(), 16)
     return 1.0 + ((h % 1000) / 1000.0 - 0.5) * spread
 

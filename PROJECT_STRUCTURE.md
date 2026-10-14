@@ -18,7 +18,7 @@ another's computation.
 | # | Approach | Idea | Engine package | Entry point(s) |
 |---|---|---|---|---|
 | 1 | **Desk Research** (top-down, secondary research). Previously mislabelled "demand-side". | Cite or estimate numbers from published material (CMI report DB + web), write an **Input Sheet**, then expand it into a full **ME (Market Estimation) workbook** | `src/me_engine/generation/` (Input Sheet) + `curve/`, `io/`, `assembly/`, `validation/` (ME workbook) | Web app tab "Desk Research"; `generate_synthetic_input.py`; `run_pipeline.py` |
-| 2A | **Demand-Side, country total** (bottom-up to global, segments top-down) | One total-demand line per country (quantity × price) → region → global; every segment split top-down. Reuses 2B's sizing graph. | `src/me_engine/demandCountry_approach2A/` + `demand_topdown/` | `demand_country_2a_pipeline.py` (CLI only) |
+| 2A | **Demand-Side, country total** (bottom-up to global, segments top-down) | One total-demand line per country (quantity × price) → region → global; every segment split top-down. Self-contained: owns forks of 2B's sizing engine (`engine/`) and of `demand_topdown` (`topdown/`), so it can change without affecting 2B. | `src/me_engine/demandCountry_approach2A/` | `demand_country_2a_pipeline.py` (CLI only) |
 | 2 / 2B | **Demand-Side, usage-based** (bottom-up) | Build the market from demand: use cases → drivers → quantities → prices → value. It never looks up a published market size. Phases 4–5 (`segments` / `report`) keep Application bottom-up and split other segments top-down. | `src/me_engine/demandUseCaseCountry_approach2B/` + `demand_topdown/` | Web app tab "Demand Usage" (phases 1–3); `demand_usage_pipeline.py` |
 | 2C | **Demand-Side, product × application × country** | Not implemented; design notes only | `src/me_engine/demandProductUseCase_approach2C/` | — |
 | 2b | **Demand-Side, India variant** | Same as #2 with geography fixed to India and one extra level: Major Use Case → Actual Use Case | `src/me_engine/demand_usage_india/` (reuses #2) | Web app tab "Demand India"; `demand_usage_india_pipeline.py` |
@@ -193,6 +193,24 @@ It imports `demandUseCaseCountry_approach2B` and never modifies it. The hierarch
 
 The size lock is keyed on `"<market> (India)"`, so an India run never collides with a global run of the same market.
 
+### 4.4 2A autonomous agent and the `src/newinfo/` design
+
+`src/newinfo/` holds the target design for 2A/2B/2C: `system.md` (architecture, checks, agent loop), `documentation.md` (number ledger format and an audit of the strategy-note numbers) and `flowchart.mermaid`. `demand_country_2a_agent.py` runs the 2A agent (`demandCountry_approach2A/agent.py`), which implements it:
+
+| Module | Purpose |
+|---|---|
+| `price_curve.py` | Per-country price for mass-measured markets: UN Comtrade unit values (import CIF for importers, export FOB for producers) over the market's HS headings; others from `ln P = a + b ln GDPpc`; 3×IQR outliers dropped |
+| `ledger.py`, `ledger_2a.py` | Number ledger (`R001-2A-ESP-VAL-0042`, five labels, weakest input, formula); recomputes every derived number and flags mismatches with the engine; writes `ledger.{json,csv,parquet}` and `documentation.md` |
+| `checks.py` | Hard checks (labels/NaN/negatives, sum conservation, segment re-add, share sums, basis mixing) block all output; soft flags (magnitude, triangulation 25%, dominance 50%, verified coverage 50%, price outliers) only warn |
+| `plausibility.py` | 0–10 pass score: reviewer rubric 0.4, physical 0.2, verified coverage 0.2, soft flags 0.1, mix 0.1; accept ≥ 7 with no hard flag; never uses distance to published sizes |
+| `review.py` | Driver-validity gate + five-point market-researcher rubric |
+| `progress.py` | `progress.mermaid` per run from the design flowchart |
+| `strategy2c.py` | 2C core: recipe chains, cell budget (< 0.5% of anchor → estimator), unattributed residual line, type-mix check |
+| `design_config.py` | All thresholds; override with `DEAGENT_DESIGN_CONFIG=<json>` |
+| `assumptor/` | Calibrated estimates where no source exists, with a reward-driven learning loop. `strategies.py` (peer-income, peer-region, income elasticity, global median, and an LLM brain that gives its own estimate and picks analog countries — code computes), `policy.py` (learned per-context bias, robust error, softmax weights, 80%-interval scale; Thompson sampling for when to pay for the LLM), `gym.py` (episodes that hide a real FAOSTAT country value and reveal 3–20 others; reward = −log interval score; train/test split by product), `agent.py` (`assume()`: estimate + P10/P90 + realism guard + track record), `fill.py` (replaces the sizing engine's `assumption` quantities in 2A). Train with `train_assumptor.py`; policy in `output/assumptor/policy.json`, report in `output/assumptor/training_report.md` |
+
+The Publisher (`publisher.py`, `--publisher` on the agent CLI) is off by default; it blends P = w·B + (1−w)·median(published), applies k = P/B to price only and always reports the raw B. The Google AI Overview (`engine/ai_overview.py`) is off by default (`ME_AI_OVERVIEW=1`) and lead-only: only its cited pages reach the Verifier. The 2B anchor (`anchor.py`) scales to the band edge by default (`DEAGENT_ANCHOR_TARGET=ceiling|total`). Each agent run writes `output/demand_country_2a/<slug>/runs/<RUN>/`.
+
 ---
 
 ## 5. Approach 3 — Supply-Side (`src/me_engine/supply/`)
@@ -235,6 +253,8 @@ The CLI is `compare_demand_supply.py`. It writes `output/supply_side/<slug>.json
 | `demand_usage_pipeline.py` | Demand | Current | Phases setup / approve-setup / taxonomy / approve-taxonomy / size |
 | `demand_usage_india_pipeline.py` | Demand India | Current | Same commands, India variant |
 | `demand_country_2a_pipeline.py` | Demand 2A | Current | setup / driver / size / segments / report, each with an approve step |
+| `demand_country_2a_agent.py` | Demand 2A | Current | Autonomous 2A agent (review loop, ledger, checks; see §4.4) |
+| `train_assumptor.py` | Demand 2A | Current | Trains the assumptor policy on hidden FAOSTAT truths; baseline vs trained on held-out products |
 | `run_pipeline_smoke_test.py` + `generate_smoke_test_data.py` | Demand | Dev tools | Feed `smoke_test_data_5000.json` through `calculate_node` |
 | `compare_demand_supply.py` | Supply | **The only Supply-Side entry point** | Runs supply-side and compares it with Desk Research |
 | `artifacts/build_india_vinegar.py` | Experiment | Standalone, no LLM | Comtrade + World Bank nested demand, 20k-trial Monte Carlo (P10/P50/P90) |
@@ -294,6 +314,7 @@ cd frontend && npm install && npm run dev  # http://localhost:3000  (NEXT_PUBLIC
 |---|---|
 | `README.md` | Desk Research quick-start, `run_pipeline.py` flags |
 | `ARCHITECTURE_LLD.md` | How the three methodologies are separated, and the naming history |
+| `src/newinfo/system.md`, `documentation.md`, `flowchart.mermaid` | Target design for 2A/2B/2C (agent loop, ledger, checks, Publisher); implemented by the 2A agent (§4.4) |
 | `PROJECT-STATUS.md` | Gate/agent architecture and avocado accuracy results (dated June 2026) |
 | `AGENT-FLEET.md`, `CURVE-AGENT.md` | Curve/seg/ASP agent design; how the growth curve was reverse-engineered |
 | `SPEC-stage1-assembler.md` | ME workbook layout and assembler identities |

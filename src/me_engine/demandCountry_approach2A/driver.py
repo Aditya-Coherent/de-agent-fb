@@ -2,9 +2,9 @@
 
 2A sizes the WHOLE market per country in one line (no application split), so
 the "taxonomy" here is exactly one physical-consumption bucket. Its demand
-driver comes from 2B's `demand_driver_node` (reused unchanged), which proposes
+driver comes from `engine.agents.demand_driver_node` (forked from 2B), which proposes
 the driver, unit, conversion and evidence strategy for that bucket. The
-output has the same shape as a 2B approved taxonomy, so 2B's sizing graph
+output has the same shape as a 2B approved taxonomy, so the engine's sizing graph
 runs on it as-is.
 """
 from __future__ import annotations
@@ -13,12 +13,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_topdown import official_data
-from me_engine.demandUseCaseCountry_approach2B import agents, evidence_strategy
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 
 from . import checkpoints
+from .engine import agents, evidence_strategy
+from .topdown import official_data
 
 
 def _now_iso() -> str:
@@ -60,10 +60,16 @@ def official_driver(official: dict[str, Any]) -> dict[str, Any]:
 def run_driver_phase(
     approved_setup: dict[str, Any], config: GenConfig,
     cache_path: Path | None = None, root: Path | None = None,
+    feedback: str | None = None,
 ) -> dict[str, Any]:
+    """`feedback` (from the 2A agent's review of a previous pass) is appended
+    to the bucket description, so the driver LLM and every sizing node that
+    reads the description see what to fix."""
     market_name = approved_setup["market_name"]
     llm = GenLLM(config, cache_path=cache_path)
     bucket = total_demand_bucket(market_name, approved_setup.get("physical_unit", ""))
+    if feedback:
+        bucket["description"] += f" Reviewer notes from the previous pass (fix these): {feedback.strip()}"
     state: dict[str, Any] = {
         "market_name": market_name,
         "config": config,

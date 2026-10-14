@@ -1,10 +1,9 @@
 """Shared top-down segmentation layer for the Demand-Side approaches.
 
-Used by BOTH demand-side packages that need it, never by Desk Research or
-Supply-Side:
+Used by `demandUseCaseCountry_approach2B`, never by Desk Research or
+Supply-Side. (Approach 2A has its own fork of this package at
+`demandCountry_approach2A/topdown/`.)
 
-- `demandCountry_approach2A`: country total demand (bottom-up) -> global, then
-  EVERY segmentation dimension is split top-down from the country totals.
 - `demandUseCaseCountry_approach2B`: application x country (bottom-up) ->
   country -> global; the application dimension stays bottom-up and every
   OTHER segmentation dimension is split top-down here.

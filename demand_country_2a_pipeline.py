@@ -37,12 +37,9 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from me_engine.demandCountry_approach2A import checkpoints, driver, segmentation, setup  # noqa: E402
-from me_engine.demandCountry_approach2A.graph import run_sizing_phase  # noqa: E402
-from me_engine.demandUseCaseCountry_approach2B import run_lock  # noqa: E402
-from me_engine.demandUseCaseCountry_approach2B.buildup_writer import (  # noqa: E402
-    build_report_dict, write_buildup_workbook,
-)
-from me_engine.demand_topdown.writer import format_terminal_summary  # noqa: E402
+from me_engine.demandCountry_approach2A.graph import run_sizing_phase, write_sizing_outputs  # noqa: E402
+from me_engine.demandCountry_approach2A.engine import run_lock  # noqa: E402
+from me_engine.demandCountry_approach2A.topdown.writer import format_terminal_summary  # noqa: E402
 from me_engine.generation.config import GenConfig  # noqa: E402
 
 # Keeps a 2A sizing run from colliding with a concurrent 2B run of the same market.
@@ -142,13 +139,7 @@ def cmd_size(args: argparse.Namespace) -> int:
     for line in state.get("log", []):
         print("  " + line)
 
-    prefix = checkpoints.sizing_output_prefix(args.market)
-    report = build_report_dict(state)
-    report["methodology"] = "demand_side_country_total_2a"
-    report["country_region"] = state.get("country_region", {})
-    report["region_totals_usd_mn"] = state.get("region_totals", {})
-    json_path = checkpoints.write_json(prefix.with_suffix(".json"), report)
-    xlsx_path = write_buildup_workbook(state, prefix.with_suffix(".xlsx"))
+    json_path, xlsx_path = write_sizing_outputs(state)
     print(f"\nWrote {json_path} and {xlsx_path}")
 
     eq = (state.get("validation") or {}).get("evidence_quality", {})

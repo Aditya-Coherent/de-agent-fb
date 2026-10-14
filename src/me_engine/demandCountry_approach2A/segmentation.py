@@ -3,18 +3,18 @@
 Reads the country totals from `02_sizing.json`, proposes the market's
 segmentation (Application included -- 2A has no bottom-up application
 layer), estimates per-country shares, and after approval splits each
-country total by those shares (`me_engine.demand_topdown`).
+country total by those shares (`me_engine.demandCountry_approach2A.topdown`).
 """
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from me_engine.demand_topdown import segments, writer
 from me_engine.generation.config import GenConfig
 from me_engine.generation.llm import GenLLM
 
 from . import checkpoints
+from .topdown import segments, writer
 
 METHODOLOGY = (
     "Demand-Side 2A: total demand sized per country (quantity x price), summed country -> "
@@ -57,14 +57,21 @@ def approve_segments(edited: dict[str, Any], root: Path | None = None, approved_
     return approved
 
 
-def run_report_phase(market_name: str, root: Path | None = None) -> tuple[dict[str, Any], Path, Path]:
+def run_report_phase(market_name: str, root: Path | None = None,
+                     write: bool = True) -> tuple[dict[str, Any], Path | None, Path | None]:
     approved = checkpoints.read_json(checkpoints.segments_approved_path(market_name, root))
     if approved is None:
         raise FileNotFoundError(
             f"No approved 2A segments for '{market_name}' -- run `segments` and `approve-segments` first."
         )
     report = segments.finalize_report(approved, METHODOLOGY)
+    if not write:  # the 2A agent writes only after the hard checks pass
+        return report, None, None
+    return (report, *write_report(report, market_name, root))
+
+
+def write_report(report: dict[str, Any], market_name: str, root: Path | None = None) -> tuple[Path, Path]:
     prefix = checkpoints.report_prefix(market_name, root)
     json_path = writer.write_report_json(report, prefix.with_suffix(".json"))
     xlsx_path = writer.write_report_workbook(report, prefix.with_suffix(".xlsx"))
-    return report, json_path, xlsx_path
+    return json_path, xlsx_path

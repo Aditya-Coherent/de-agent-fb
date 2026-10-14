@@ -97,26 +97,36 @@ def _stamp_verification_status(fact: dict[str, Any]) -> dict[str, Any]:
     return fact
 
 _SCALE_WORDS = {
-    "trillion": 1e12, "billion": 1e9, "bn": 1e9,
-    "million": 1e6, "mn": 1e6, "thousand": 1e3, "k": 1e3,
+    "trillion": 1e12, "billion": 1e9, "bn": 1e9, "bln": 1e9,
+    "million": 1e6, "mn": 1e6, "mln": 1e6, "thousand": 1e3, "k": 1e3,
+    # Indian number words (src/newinfo/system.md §5): 12 lakh = 1.2 million, 0.12 crore = 1.2 million
+    "lakh": 1e5, "lakhs": 1e5, "lac": 1e5, "lacs": 1e5, "crore": 1e7, "crores": 1e7, "cr": 1e7,
 }
 _NUM_RE = re.compile(
-    r"([-+]?\d[\d,]*\.?\d*)\s*(trillion|billion|bn|million|mn|thousand|k)?\b",
+    r"([-+]?\d[\d,]*\.?\d*)(?:\s*(%)|\s*(trillion|billion|bn|bln|million|mn|mln|thousand|k|lakhs?|lacs?|crores?|cr)\b)?",
     re.IGNORECASE,
 )
+# European thousands separators: "1.200.000" -> "1200000" (two or more dot groups only,
+# so a decimal like "1.200" is left alone).
+_DOT_THOUSANDS = re.compile(r"\b\d{1,3}(?:\.\d{3}){2,}\b")
 _REL_TOL = 0.03  # 3% -- snippet text is prose, not a structured field
 
 
 def _numbers_in_text(text: str) -> list[float]:
+    text = _DOT_THOUSANDS.sub(lambda m: m.group(0).replace(".", ""), text or "")
     out: list[float] = []
-    for m in _NUM_RE.finditer(text or ""):
-        raw, scale = m.group(1), m.group(2)
+    for m in _NUM_RE.finditer(text):
+        raw, pct, scale = m.group(1), m.group(2), m.group(3)
         try:
+            # Indian digit grouping ("12,00,000") and Western grouping both drop their commas.
             val = float(raw.replace(",", ""))
         except ValueError:
             continue
-        if val == 0 and not scale:
+        if val == 0 and not (scale or pct):
             continue  # bare "0" matches are noise, not real figures
+        if pct:
+            out.extend([val, val / 100.0])  # "8%" matches a claimed 8 or 0.08
+            continue
         if scale:
             val *= _SCALE_WORDS[scale.lower()]
         out.append(val)

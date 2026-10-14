@@ -5,26 +5,33 @@ split ONE country total, so together they cannot be much larger than it.
 2A sizes exactly that total per country (one line per country, official data
 first), so when a 2A run exists for the same market it is the anchor:
 
-  - use cases sum to more than 1.5x the 2A country quantity -> every use
-    case in that country is scaled down by the same factor so they add up to
-    the 2A quantity (their split between use cases is kept), and flagged;
-  - use cases sum to less than 1/1.5 of it -> scaled UP to the 2A quantity
-    when that quantity is official statistics (FAOSTAT etc.), the way the
-    Olive Oil 2B page reconciles household/foodservice/industry to FAO;
-    otherwise flagged only (likely a missing use case).
+  - use cases sum to more than BAND (1.5) x the 2A country quantity -> every
+    use case in that country is scaled down by the same factor (their split
+    between use cases is kept), and flagged;
+  - use cases sum to less than 1/BAND of it -> scaled UP when that quantity
+    is official statistics (FAOSTAT etc.), the way the Olive Oil 2B page
+    reconciles household/foodservice/industry to FAO; otherwise flagged only
+    (likely a missing use case).
+
+Scaling target (`src/newinfo/system.md` §7.3, env DEAGENT_ANCHOR_TARGET):
+  "ceiling" (default) -- scale to the band edge (1.5x or 1/1.5x the 2A total);
+  "total"             -- scale all the way to the 2A total.
+The factor is written on every scaled cell (`anchor_scale`) and in the flag.
 
 Only anchors that are NOT assumptions are used. Deterministic, no LLM call.
 """
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from . import evidence, units
 
-OVER_RATIO = 1.5
-UNDER_RATIO = 1 / 1.5
+BAND = float(os.environ.get("DEAGENT_ANCHOR_BAND", "1.5"))
+OVER_RATIO = BAND
+UNDER_RATIO = 1 / BAND
 # Beyond this the two figures can't describe the same thing (e.g. a 2A
 # figure read as "14" instead of 14 million): flag, never scale.
 IMPLAUSIBLE_RATIO = 20.0
@@ -72,15 +79,22 @@ def _to_unit(value: float, from_unit: str, to_unit: str) -> float | None:
     return None
 
 
+def anchor_target() -> str:
+    target = os.environ.get("DEAGENT_ANCHOR_TARGET", "ceiling").strip().lower()
+    return target if target in ("ceiling", "total") else "ceiling"
+
+
 def apply_country_anchor(
     quantities: dict[str, dict[str, dict[str, Any]]],
     buckets: list[dict[str, Any]],
     anchor: dict[str, dict[str, Any]] | None,
     log: list[str],
+    target: str | None = None,
 ) -> list[dict[str, str]]:
     """Scale/flag in place; returns quality flags."""
     if not anchor:
         return []
+    target = target or anchor_target()
     flags: list[dict[str, str]] = []
     core = [b["name"] for b in buckets if b.get("bucket_category", "physical_consumption") == "physical_consumption"]
     countries = {c for name in core for c in (quantities.get(name) or {})}
@@ -108,22 +122,28 @@ def apply_country_anchor(
             log.append(f"[country_anchor] {msg}")
             flags.append({"code": "country_total_mismatch", "severity": "warning", "message": msg})
         elif ratio > OVER_RATIO or (ratio < UNDER_RATIO and ref.get("official")):
-            factor = ref["quantity"] / total
+            if target == "total":
+                factor = ref["quantity"] / total
+            else:  # band edge: OVER_RATIO x (or UNDER_RATIO x) the 2A quantity
+                factor = (OVER_RATIO if ratio > OVER_RATIO else UNDER_RATIO) / ratio
+            goal = "the 2A total" if target == "total" else f"{(OVER_RATIO if ratio > 1 else UNDER_RATIO):.3f}x the 2A total (band edge)"
             for name in converted:
                 cell = quantities[name][c]
                 cell["value"] = round(float(cell["value"]) * factor, 6)
                 cell["provenance"] = evidence.worse_of(cell.get("provenance") or "assumption", "derived")
                 cell["note"] = (
-                    f"{cell.get('note', '')} [scaled x{factor:.3f}: the use cases added up to {ratio:.1f}x "
-                    f"this country's total annual demand from 2A ({ref['quantity']:,.0f} {ref['unit']}"
+                    f"{cell.get('note', '')} [scaled x{factor:.3f} to {goal}: the use cases added up to "
+                    f"{ratio:.1f}x this country's total annual demand from 2A ({ref['quantity']:,.0f} {ref['unit']}"
                     f"{', ' + ref['source'] if ref.get('source') else ''})]"
                 ).strip()
                 cell["anchor_scale"] = factor
+                cell["anchor_target"] = target
             direction = "down" if ratio > 1 else "up"
             msg = (f"{c}: use cases added up to {ratio:.1f}x the 2A country total "
-                   f"({ref['quantity']:,.0f} {ref['unit']}); scaled {direction} to match it")
+                   f"({ref['quantity']:,.0f} {ref['unit']}); scaled {direction} x{factor:.3f} to {goal}")
             log.append(f"[country_anchor] {msg}")
-            flags.append({"code": f"use_cases_scaled_{direction}_to_country_total", "severity": "warning", "message": msg})
+            flags.append({"code": f"use_cases_scaled_{direction}_to_{'country_total' if target == 'total' else 'band_edge'}",
+                          "severity": "warning", "message": msg, "factor": factor, "target": target})
         elif ratio < UNDER_RATIO:
             msg = (f"{c}: use cases cover only {ratio:.0%} of the 2A country total "
                    f"({ref['quantity']:,.0f} {ref['unit']}) -- a use case may be missing")

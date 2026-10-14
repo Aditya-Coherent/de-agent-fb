@@ -22,6 +22,8 @@ from .llm import GenLLM
 from .quality import compute_demand_quality_flags
 from .skeleton import Skeleton
 from .web_evidence import gather
+from .scope import (bottom_up as bottom_up_scope, brief as scope_brief, cmi_report_snippets,
+                    figures_in as scope_figures, product_term, reconcile as reconcile_scope)
 
 
 # --------------------------------------------------------------------------- #
@@ -54,11 +56,36 @@ def _evidence_brief(state: dict[str, Any], dim: str | None = None) -> str:
     snippets = state.get("web_snippets") or []
     if snippets:
         parts.append("WEB EVIDENCE:\n" + "\n".join(f"- {s}" for s in snippets[:10]))
+    scope_text = scope_brief(state.get("scope_reconciliation"))
+    if scope_text:
+        parts.append(scope_text)
     if dim is not None:
         dim_snippets = (state.get("dim_snippets") or {}).get(dim) or []
         if dim_snippets:
             parts.append(f"DIMENSION-SPECIFIC EVIDENCE ({dim}):\n" + "\n".join(f"- {s}" for s in dim_snippets))
     return "\n\n".join(parts) if parts else "(no external evidence available)"
+
+
+def _evidence_numbered(state: dict[str, Any], dim: str | None = None) -> tuple[str, list[dict[str, str]]]:
+    """The same evidence as `_evidence_brief`, numbered [E1], [E2], ... so a
+    decision can cite exactly what it relied on; returns (text, items) and the
+    items are kept in the run's trace."""
+    items: list[dict[str, str]] = []
+    db: DBEvidence | None = state.get("db_evidence")
+    if db is not None and db.raw_narrative:
+        items.append({"source": "CMI research database", "text": db.raw_narrative[:1500]})
+    for s in (state.get("web_snippets") or [])[:10]:
+        items.append({"source": "web search (market)", "text": s})
+    scope_text = scope_brief(state.get("scope_reconciliation"))
+    if scope_text:
+        items.append({"source": "scope reconciliation (publisher consensus by end use)", "text": scope_text})
+    if dim is not None:
+        for s in (state.get("dim_snippets") or {}).get(dim) or []:
+            items.append({"source": f"web search ({dim})", "text": s})
+    for i, it in enumerate(items, start=1):
+        it["id"] = f"E{i}"
+    text = "\n".join(f"[{it['id']}] ({it['source']}) {it['text']}" for it in items) or "(no external evidence available)"
+    return "EVIDENCE (cite by id):\n" + text, items
 
 
 _UNIT_TO_MN = {"trillion": 1_000_000, "billion": 1_000, "million": 1, "bn": 1_000, "mn": 1}
@@ -200,10 +227,15 @@ def structure_node(state: dict[str, Any]) -> dict[str, Any]:
             f"{sk.market_name} regional share North America Europe Asia Pacific",
             f"{sk.market_name} market segmentation components pricing",
         ]
-        try:
-            snippets = gather(queries)
-        except Exception as exc:  # noqa: BLE001
-            log.append(f"Could not fetch live web results: {exc}")
+        for attempt in range(3):  # the search backend returns nothing when throttled
+            try:
+                snippets = gather(queries)
+            except Exception as exc:  # noqa: BLE001
+                log.append(f"Could not fetch live web results: {exc}")
+            if snippets:
+                break
+            import time
+            time.sleep(8 * (attempt + 1))
 
         # Per-dimension queries: the broad/flat dimensions (many near-equal
         # segments) are the ones the shares agent gets most wrong when it only
@@ -258,14 +290,19 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
             "Apply the critique concretely — adjust the named number(s) in the stated "
             "direction; do not just return the same numbers."
         )
+    evidence_text, evidence_items = _evidence_numbered(state)
     user = (
-        f"Market: {sk.market_name}\nRegions: {regions}\n\n{_evidence_brief(state)}{refine}\n\n"
+        f"Market: {sk.market_name}\nRegions: {regions}\n\n{evidence_text}{refine}\n\n"
         "global_value_2025 is in US$ MILLIONS (e.g. USD 15.2 billion -> 15200; USD 850 million -> 850).\n"
         'Return JSON: {"global_value_2025": number, "global_cagr": number, "grounded": <true|false>, '
         '"cited_figure": "<the real figure you grounded on, or empty string if none>", '
-        '"regions": {"<region>": {"value_share": number, "cagr": number}}}'
+        '"regions": {"<region>": {"value_share": number, "cagr": number}}, '
+        '"reasons": {"global": "<how you reached the global value and CAGR: evidence ids and steps>", '
+        '"<region>": "<2-3 sentences: evidence ids used for this region\'s share and CAGR, and where you '
+        'used judgement because no evidence covered it>"}}'
     )
     data = llm.complete_json(system, user)
+    market_reasons = data.get("reasons") if isinstance(data.get("reasons"), dict) else {}
     regional_raw = data.get("regions", {}) or {}
     shares = {r: float(regional_raw.get(r, {}).get("value_share", 0.0) or 0.0) for r in regions}
     shares = _normalize(shares)
@@ -317,14 +354,97 @@ def market_size_node(state: dict[str, Any]) -> dict[str, Any]:
             correction_note += f" [value ${global_anchor:,.0f}M reset to {why}]"
             global_anchor = round(target, 1)
 
+    # A "grounded" claim must cite a market VALUE (seen: a regional-share sentence
+    # with only a CAGR was cited as grounding for an invented total).
+    if grounded and cited and not (_extract_cited_value_mn(cited) or scope_figures(cited)):
+        grounded = False
+        correction_note += " [cited text states no market value -> treated as ungrounded]"
+
+    # Scope reconciliation (scope.py): the anchor must measure the market the
+    # taxonomy describes. Two checks, both cached so the reward loop can't undo them:
+    #   judge     -- which end-use segments a CITED figure covers; add the rest
+    #   bottom-up -- every end-use segment sized on its own; replaces the anchor when
+    #                there is no citable total, or when the segments add up to more
+    #                than 1.5x the anchor with at least half of that sum cited
+    prev = state.get("scope_reconciliation") or {}
+    cache = dict(prev.get("cache") or {})
+    scope_rec = prev or None
+    if getattr(cfg, "is_online", False) and getattr(cfg, "enable_web", False):
+        search = lambda qs: gather(qs, per_query=5, cap=10)  # noqa: E731
+        noun = (product_term(sk.market_name).split() or ["product"])[-1]
+
+        def extra(segment: str) -> list[str]:  # CMI's own neighbouring-market reports
+            try:
+                own = product_term(sk.market_name).lower() + " market'"  # never the market's own report
+                return [s for s in (cmi_report_snippets(cfg.neon_url, segment, noun) if cfg.neon_url else [])
+                        if own not in s.lower()]
+            except Exception:  # noqa: BLE001
+                return []
+        try:
+            if "bottom_up" not in cache:
+                cache["bottom_up"] = bottom_up_scope(llm, sk.market_name, sk.nesting, global_anchor, search, extra)
+            if grounded and cited and cache.get("judge_for") != cited:
+                cache["judge"] = reconcile_scope(llm, sk.market_name, sk.nesting, global_anchor, cited, search, extra)
+                cache["judge_for"] = cited
+        except Exception as exc:  # noqa: BLE001 -- keep the anchor
+            state.setdefault("log", []).append(f"Scope check failed: {exc}")
+        bu = cache.get("bottom_up")
+        jr = cache.get("judge") if grounded and cache.get("judge_for") == cited else None
+        # Unbiased by construction: one firm's total is a cross-check, not the answer. The
+        # whole market is the sum of per-segment publisher CONSENSUS whenever that build is
+        # backed by 2+ publishers for at least half its value; otherwise fall back.
+        chosen, decision = None, "anchor kept"
+        if bu and bu["grounded_share_of_added"] >= 0.5:
+            chosen, decision = bu, (f"sum of per-segment publisher consensus "
+                                    f"({bu['grounded_share_of_added']:.0%} of value from 2+ publishers)"
+                                    + (f"; single cited total ${global_anchor:,.0f}M kept as a cross-check"
+                                       if grounded else ""))
+        elif jr and jr.get("changed"):
+            chosen, decision = jr, "cited figure covers only part of the taxonomy"
+        elif bu and not grounded:
+            chosen, decision = bu, "no citable total"
+        elif bu and bu["anchor_mn"] > 1.5 * global_anchor:
+            chosen, decision = bu, (f"end-use segments add up to {bu['anchor_mn'] / global_anchor:.1f}x the anchor "
+                                    "-- the anchor's scope is narrower than the taxonomy")
+        if chosen:
+            global_anchor = round(chosen["anchor_mn"], 1)
+            correction_note += f" [scope: {decision} -> ${global_anchor:,.0f}M]"
+        scope_rec = {**(chosen or {"changed": False}), "decision": decision, "cache": cache}
+
     note = (f"grounded on: {cited}" if grounded and cited else "no cited figure found — ungrounded estimate") + correction_note
     state.setdefault("log", []).append(
         f"Estimated total market size: ${global_anchor:,.0f}M for 2025, growing {global_cagr:.1%} per year ({note})"
     )
     return {
         "regional": regional, "global_anchor_2025": global_anchor, "global_cagr": global_cagr,
-        "market_size_grounded": grounded,
+        "market_size_grounded": grounded, "scope_reconciliation": scope_rec,
+        "market_trace": {"evidence": evidence_items, "reasons": {k: str(v)[:800] for k, v in market_reasons.items()},
+                         "cited_figure": cited, "grounded": grounded, "corrections": correction_note.strip(),
+                         "llm_global_value_2025": data.get("global_value_2025"), "llm_global_cagr": data.get("global_cagr"),
+                         "llm_regions": data.get("regions")},
     }
+
+
+def explain_missing_groups(llm: GenLLM, market: str, dim: str, evidence_text: str,
+                           shares: dict[str, dict[str, float]], missing: list[str]) -> dict[str, str]:
+    """Follow-up: every share group must carry its reasoning. For groups the
+    model skipped, ask it to explain the shares it chose (same evidence),
+    citing evidence ids or saying plainly where it used judgement."""
+    if not missing:
+        return {}
+    try:
+        data = llm.complete_json(
+            "You set market-segment shares and must document how. For each group below, explain how its shares "
+            "were reached: which evidence ids you relied on and how they became these numbers; say plainly which "
+            "segments are judgement because no evidence covered them. Return json.",
+            f"Market: {market}\nDimension: {dim}\nShares you set: "
+            f"{json.dumps({g: shares.get(g, {}) for g in missing}, ensure_ascii=False)}\n\n{evidence_text}\n\n"
+            'Return JSON: {"reasons": {"<group>": "<2-4 sentences>"}}',
+        )
+    except Exception:  # noqa: BLE001
+        return {}
+    reasons = data.get("reasons") if isinstance(data.get("reasons"), dict) else {}
+    return {g: f"(given on follow-up) {str(reasons[g])[:900]}" for g in missing if reasons.get(g)}
 
 
 def _shares_global(state, sk, llm, regions, critique, prior):
@@ -332,6 +452,7 @@ def _shares_global(state, sk, llm, regions, critique, prior):
     near-uniform across geographies; every region is set to the same vector."""
     dim_critique = state.get("dim_critique", {}) or {}
     all_shares: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+    trace: dict[str, Any] = {}
     # Desk Research Phase 0 gate (segment_definition.py) -- for any dimension
     # the user has explicitly defined base-year regional shares for, those
     # shares are authoritative and REPLACE this LLM call entirely for that
@@ -359,13 +480,19 @@ def _shares_global(state, sk, llm, regions, critique, prior):
                 "Apply the critique concretely — shift the named segments in the stated "
                 "direction; do not return the same numbers."
             )
+        evidence_text, evidence_items = _evidence_numbered(state, dim)
         user = (
             f"Market: {sk.market_name}\nDimension: {dim}\n"
             f"Sibling groups (parent -> segments): {json.dumps(group_spec, ensure_ascii=False)}\n\n"
-            f"{_evidence_brief(state, dim)}{refine}\n\n"
-            'Return JSON: {"<parent>": {"<segment>": share, ...}, ...} for every group.'
+            f"{evidence_text}{refine}\n\n"
+            'Return JSON: {"shares": {"<parent>": {"<segment>": share, ...}, ...}, '
+            '"reasons": {"<parent>": "<2-4 sentences: which evidence ids you used for this group and exactly how '
+            'they became these shares (e.g. a cited percentage, a ratio between cited figures); say plainly which '
+            'segments are your judgement because no evidence covered them>"}} for every group.'
         )
-        data = llm.complete_json(system, user)
+        resp = llm.complete_json(system, user)
+        data = resp.get("shares") if isinstance(resp.get("shares"), dict) else resp
+        reasons = resp.get("reasons") if isinstance(resp.get("reasons"), dict) else {}
         glob: dict[str, dict[str, float]] = {}
         for parent, children in groups:
             raw = data.get(parent, {}) or {}
@@ -375,11 +502,17 @@ def _shares_global(state, sk, llm, regions, critique, prior):
         for region in regions:
             dim_out[region] = {p: dict(v) for p, v in glob.items()}
         all_shares[dim] = dim_out
+        group_reasons = {k: str(v)[:900] for k, v in reasons.items()}
+        group_reasons.update(explain_missing_groups(llm, sk.market_name, dim, evidence_text, glob,
+                                                    [parent for parent, _ in groups if parent not in group_reasons]))
+        trace[dim] = {"evidence": evidence_items, "mode": "one worldwide split per group (every region the same)",
+                      "group_reasons": group_reasons,
+                      "raw_llm_shares": {parent: (data.get(parent) or {}) for parent, _ in groups}}
     log_line = f"Estimated segment splits across {len(all_shares)} categories (e.g. by product type, by application)"
     if user_shares:
         log_line += f"; {len(user_shares)} of them used the user-approved base-year segment definition verbatim"
     state.setdefault("log", []).append(log_line)
-    return {"shares": all_shares}
+    return {"shares": all_shares, "shares_trace": trace}
 
 
 def _group_global_mean(groups, present_regions):
@@ -416,11 +549,15 @@ def geo_node(state: dict[str, Any]) -> dict[str, Any]:
         f"Market: {sk.market_name}\n"
         f"Regions and members: {json.dumps(sk.regions, ensure_ascii=False)}\n"
         f"Region value shares/CAGRs: {json.dumps(regional, ensure_ascii=False)}\n\n"
-        f"{_evidence_brief(state)}\n\n"
-        'Return JSON: {"<region>": {"<country>": {"share_of_region": number, "cagr": number}}}'
+        f"{_evidence_numbered(state)[0]}\n\n"
+        'Return JSON: {"split": {"<region>": {"<country>": {"share_of_region": number, "cagr": number}}}, '
+        '"reasons": {"<region>": "<2-3 sentences: evidence ids used, and where you used judgement>"}}'
     )
+    reasons: dict[str, Any] = {}
     try:
-        data = llm.complete_json(system, user)
+        resp = llm.complete_json(system, user)
+        data = resp.get("split") if isinstance(resp.get("split"), dict) else resp
+        reasons = resp.get("reasons") if isinstance(resp.get("reasons"), dict) else {}
     except Exception as exc:  # noqa: BLE001
         data = {}
         state.setdefault("log", []).append(f"Could not split the market by country: {exc}")
@@ -438,7 +575,8 @@ def geo_node(state: dict[str, Any]) -> dict[str, Any]:
     state.setdefault("log", []).append(
         f"Split the market across {sum(len(v) for v in geo.values())} countries within their regions"
     )
-    return {"geo": geo}
+    state["geo_trace"] = {"evidence": _evidence_numbered(state)[1], "reasons": {r: str(v)[:700] for r, v in reasons.items()}}
+    return {"geo": geo, "geo_trace": state.get("geo_trace")}
 
 
 def shares_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -458,6 +596,7 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
         return _shares_global(state, sk, llm, regions, critique, prior)
 
     all_shares: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+    trace: dict[str, Any] = {}
     # Desk Research Phase 0 gate (segment_definition.py) -- same bypass as
     # `_shares_global`: a dimension the user has defined base-year regional
     # shares for skips this LLM call entirely.
@@ -485,14 +624,19 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
                 f"\nPREVIOUS GLOBAL-MEAN ATTEMPT: {json.dumps(prior[dim]['__global__'])}\n"
                 f"REVIEWER CRITIQUE: {dcrit}\nProduce an improved, better-differentiated split."
             )
+        evidence_text, evidence_items = _evidence_numbered(state, dim)
         user = (
             f"Market: {sk.market_name}\nDimension: {dim}\nRegions: {regions}\n"
             f"Sibling groups (parent -> segments): {json.dumps(group_spec, ensure_ascii=False)}\n\n"
-            f"{_evidence_brief(state, dim)}{refine}\n\n"
-            'Return JSON: {"<region>": {"<parent>": {"<segment>": share, ...}, ...}, ...} '
+            f"{evidence_text}{refine}\n\n"
+            'Return JSON: {"shares": {"<region>": {"<parent>": {"<segment>": share, ...}, ...}, ...}, '
+            '"reasons": {"<region>": "<2-3 sentences: which evidence ids you used and how you turned them into '
+            'these shares; say plainly where you used judgement because no evidence covered it>"}} '
             "for EVERY region and EVERY group."
         )
-        data = llm.complete_json(system, user)
+        resp = llm.complete_json(system, user)
+        data = resp.get("shares") if isinstance(resp.get("shares"), dict) else resp
+        reasons = resp.get("reasons") if isinstance(resp.get("reasons"), dict) else {}
 
         present_regions: dict[str, dict[str, dict[str, float]]] = {}
         for region in regions:
@@ -515,6 +659,9 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
                     reg_map[parent] = dict(glob[parent])
             dim_out[region] = reg_map
         all_shares[dim] = dim_out
+        trace[dim] = {"evidence": evidence_items, "reasons": {r: str(v)[:700] for r, v in reasons.items()},
+                      "llm_regions": sorted(present_regions), "filled_from_global_mean":
+                      [r for r in regions if r not in present_regions]}
 
     filled = sum(1 for d in all_shares.values() for r in d if r != "__global__")
     log_line = (
@@ -524,7 +671,7 @@ def shares_node(state: dict[str, Any]) -> dict[str, Any]:
     if user_shares:
         log_line += f"; {len(user_shares)} of them used the user-approved base-year segment definition verbatim"
     state.setdefault("log", []).append(log_line)
-    return {"shares": all_shares}
+    return {"shares": all_shares, "shares_trace": trace}
 
 
 def finalize_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -573,10 +720,13 @@ def asp_node(state: dict[str, Any]) -> dict[str, Any]:
         )
     user = (
         f"Market: {sk.market_name}\nPriced products ({sk.priced_dimension}): "
-        f"{json.dumps(products, ensure_ascii=False)}\n\n{_evidence_brief(state)}{refine}\n\n"
-        'Return JSON: {"<product>": asp_number, ...}'
+        f"{json.dumps(products, ensure_ascii=False)}\n\n{_evidence_numbered(state)[0]}{refine}\n\n"
+        'Return JSON: {"prices": {"<product>": asp_number, ...}, "reasons": {"<product>": "<one sentence: '
+        'evidence id used, or that it is your judgement>"}}'
     )
-    data = llm.complete_json(system, user)
+    resp = llm.complete_json(system, user)
+    data = resp.get("prices") if isinstance(resp.get("prices"), dict) else resp
+    asp_reasons = resp.get("reasons") if isinstance(resp.get("reasons"), dict) else {}
     asp = {}
     for leaf in products:
         try:
@@ -585,7 +735,8 @@ def asp_node(state: dict[str, Any]) -> dict[str, Any]:
             val = 0.0
         asp[leaf] = round(val if val > 0 else 100.0, 2)
     state.setdefault("log", []).append(f"Estimated prices for {len(asp)} products")
-    return {"asp": asp}
+    return {"asp": asp, "asp_trace": {"evidence": _evidence_numbered(state)[1],
+                                      "reasons": {k: str(v)[:400] for k, v in asp_reasons.items()}}}
 
 
 def brain_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -773,6 +924,10 @@ def reward_node(state: dict[str, Any]) -> dict[str, Any]:
             "market_size_grounded": state.get("market_size_grounded"),
             "geo": state.get("geo"),
             "asp": state.get("asp"),
+            "shares_trace": state.get("shares_trace"),
+            "market_trace": state.get("market_trace"),
+            "geo_trace": state.get("geo_trace"),
+            "asp_trace": state.get("asp_trace"),
             "dim_score": dim_score,
             "market_score": market_score,
             "asp_score": asp_score,

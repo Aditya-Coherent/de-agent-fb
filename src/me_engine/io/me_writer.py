@@ -51,12 +51,14 @@ class MEWorkbookWriter:
         expected = 0
         written = 0
 
+        by_trimmed = {s.strip(): s for s in wb.sheetnames}  # templates carry stray spaces ('Middle East ')
         for name, geo in result.geographies.items():
-            if name not in wb.sheetnames:
+            sheet = name if name in wb.sheetnames else by_trimmed.get(name.strip())
+            if sheet is None:
                 missing_sheets.append(name)
                 expected += sum(len(b.rows_by_label) for b in geo.bands.values())
                 continue
-            ws = wb[name]
+            ws = wb[sheet]
             layout = SheetLayout.discover(ws)
             for band_result in geo.bands.values():
                 w, e, miss = self._write_band(ws, layout, band_result)
@@ -90,10 +92,17 @@ class MEWorkbookWriter:
         """Write every row of `band`; return (written, expected, missing_labels)."""
         written = 0
         missing: list[str] = []
+        # dimension title rows ('By Laser Type', 'By Application', ...) carry the band total
+        for (b, label), coords in (layout.rows_all or {}).items():
+            if b == band.band and label.startswith("By ") and label not in band.rows_by_label                     and not label.lower().endswith("check"):
+                for coord in coords:
+                    self._write_row(ws, coord, MetricRow(label, band.total, None))
         for label, row in band.rows_by_label.items():
-            coord = layout.row_of.get((band.band, label))
-            if coord is not None:
-                self._write_row(ws, coord, row)
+            key = (band.band, label) if (band.band, label) in layout.row_of else (band.band, label.strip())
+            coords = (layout.rows_all or {}).get(key) or ((layout.row_of[key],) if key in layout.row_of else ())
+            if coords:
+                for coord in coords:  # a label repeated across dimensions gets the same row everywhere
+                    self._write_row(ws, coord, row)
                 written += 1
             else:
                 missing.append(label)

@@ -26,6 +26,22 @@ COL_SHARE_START = 37           # AK: first share year (2021)
 _BAND_BY_TITLE = {b.value: b for b in Band}
 
 
+def band_for_title(marker: object) -> Band | None:
+    """Band of a band-title cell. Volume titles vary by market ('Market Volume
+    (Th Liters)', 'Market Volume (Units)', ...), so any 'Market Volume (...)'
+    title is the volume band."""
+    if not isinstance(marker, str):
+        return None
+    m = marker.strip()
+    if m in _BAND_BY_TITLE:
+        return _BAND_BY_TITLE[m]
+    if m.lower().startswith("market volume"):
+        return Band.VOLUME
+    if m.lower().startswith("market value"):
+        return Band.VALUE
+    return None
+
+
 def metric_col(year: int) -> int:
     return COL_METRIC_START + YEARS.index(year)
 
@@ -47,7 +63,9 @@ class SheetLayout:
     """Discovered positions for one geography sheet."""
 
     band_title_row: Mapping[Band, int]
-    row_of: Mapping[tuple[Band, str], int]      # (band, label) -> row number
+    row_of: Mapping[tuple[Band, str], int]      # (band, label) -> row number (last occurrence)
+    rows_all: Mapping[tuple[Band, str], tuple[int, ...]] = None  # every row with that label (duplicates
+                                                                  # across dimensions, e.g. 'Medical')
 
     @classmethod
     def discover(cls, ws: Worksheet) -> "SheetLayout":
@@ -59,19 +77,24 @@ class SheetLayout:
         """
         titles: dict[Band, int] = {}
         rows: dict[tuple[Band, str], int] = {}
+        rows_all: dict[tuple[Band, str], list[int]] = {}
         current: Band | None = None
 
         for r in range(1, ws.max_row + 1):
-            marker = ws.cell(r, COL_METRIC_START).value          # band title (col D)
-            if isinstance(marker, str) and marker in _BAND_BY_TITLE:
-                current = _BAND_BY_TITLE[marker]
+            band = band_for_title(ws.cell(r, COL_METRIC_START).value)   # band title (col D)
+            if band is not None:
+                current = band
                 titles[current] = r
                 continue
             label = ws.cell(r, COL_LABEL).value
             if current is not None and isinstance(label, str) and label.strip():
-                rows[(current, label)] = r
+                # labels match after trimming: templates carry stray spaces ('Middle East ')
+                for key in {(current, label), (current, label.strip())}:
+                    rows[key] = r
+                    rows_all.setdefault(key, []).append(r)
 
-        return cls(band_title_row=titles, row_of=rows)
+        return cls(band_title_row=titles, row_of=rows,
+                   rows_all={k: tuple(dict.fromkeys(v)) for k, v in rows_all.items()})
 
     def labels_in(self, band: Band) -> tuple[str, ...]:
         return tuple(label for (b, label) in self.row_of if b == band)

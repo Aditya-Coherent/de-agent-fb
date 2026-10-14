@@ -109,4 +109,5 @@ def test_shares_node_still_calls_the_llm_when_no_segment_definition_is_present()
     llm = _StubLLM()
     state = {"skeleton": sk, "llm": llm, "config": _StubConfig(), "log": []}
     agents.shares_node(state)
-    assert llm.calls == 1
+    # the stub returns no reasons, so a follow-up asks the model to document its shares
+    assert llm.calls >= 1

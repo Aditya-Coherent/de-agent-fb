@@ -142,7 +142,7 @@ def run_desk(market: str, out_dir: Path) -> dict[str, Any]:
 def run_2a(market: str, out_dir: Path, cfg: Any) -> dict[str, Any]:
     from me_engine.demandCountry_approach2A import checkpoints, driver, segmentation, setup
     from me_engine.demandCountry_approach2A.graph import run_sizing_phase
-    from me_engine.demandUseCaseCountry_approach2B.buildup_writer import build_report_dict, write_buildup_workbook
+    from me_engine.demandCountry_approach2A.engine.buildup_writer import build_report_dict, write_buildup_workbook
 
     approved_setup = setup.approve_setup(setup.run_setup_phase(market, cfg, cache_path=CACHE))
     approved_driver = driver.approve_driver(driver.run_driver_phase(approved_setup, cfg, cache_path=CACHE))

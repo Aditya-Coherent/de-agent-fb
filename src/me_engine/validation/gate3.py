@@ -137,7 +137,8 @@ class Gate3Report:
 class OutputValidator:
     """Validates the assembled MarketResult and optionally diffs vs a reference."""
 
-    def __init__(self, taxonomy: RuntimeTaxonomy | None = None) -> None:
+    def __init__(self, taxonomy: RuntimeTaxonomy | None = None, volume_scale: float = 1000.0) -> None:
+        self._volume_scale = volume_scale
         self._taxonomy = taxonomy or default_taxonomy()
 
     def validate(
@@ -211,7 +212,7 @@ class OutputValidator:
                     vol = vol_band.rows_by_label[product].series.at(y)
                     if asp == 0:
                         continue
-                    expected_vol = val / asp * 1000
+                    expected_vol = val / asp * self._volume_scale
                     if abs(vol - expected_vol) / max(abs(expected_vol), 1e-9) > _VOLUME_TOL:
                         ir.violations.append(IdentityViolation(
                             "volume-identity", geo_name,

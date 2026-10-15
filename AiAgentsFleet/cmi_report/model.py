@@ -494,16 +494,7 @@ def build(fleet: dict, cmi: dict) -> dict:
                              f"i.e. it measures a different market scope")
     merge_notes += pub_notes
 
-    # value-chain share ranges: midpoints must sum to ~100% (share of a whole)
-    vchain = [dict(s) for s in (c.get("vendors") or {}).get("value_chain") or []]
-    mids = sum((float(s.get("share_low_pct") or 0) + float(s.get("share_high_pct") or 0)) / 2 for s in vchain)
-    if vchain and mids and abs(mids - 100) > 2:
-        k = 100 / mids
-        for s in vchain:
-            s["share_low_pct"] = round(float(s.get("share_low_pct") or 0) * k)
-            s["share_high_pct"] = round(float(s.get("share_high_pct") or 0) * k)
-        merge_notes.append(f"Value-chain share ranges rescaled so their midpoints sum to 100% (they summed to "
-                           f"{mids:.0f}%)")
+    vchain = value_chain_ranges((c.get("vendors") or {}).get("value_chain") or [], merge_notes)
 
     def fold(shares, keep=7):
         """The slices a donut shows: the `keep` largest named vendors plus one
@@ -558,6 +549,31 @@ def build(fleet: dict, cmi: dict) -> dict:
         "fleet_drivers": {k: v for k, v in (f.get("drivers_restraints") or {}).items() if k != "_sources"},
         "corrections": merge_notes,
     }
+
+
+def value_chain_ranges(stages: list[dict], notes: list[str]) -> list[dict]:
+    """Value-chain share ranges: midpoints must sum to ~100% (share of a whole), and every
+    stage's range runs low <= high and is at least 1 pt wide (after rounding)."""
+    vchain = [dict(s) for s in stages or [] if isinstance(s, dict)]
+    mids = sum((float(s.get("share_low_pct") or 0) + float(s.get("share_high_pct") or 0)) / 2 for s in vchain)
+    if vchain and mids and abs(mids - 100) > 2:
+        k = 100 / mids
+        for s in vchain:
+            s["share_low_pct"] = round(float(s.get("share_low_pct") or 0) * k)
+            s["share_high_pct"] = round(float(s.get("share_high_pct") or 0) * k)
+        notes.append(f"Value-chain share ranges rescaled so their midpoints sum to 100% (they summed to "
+                     f"{mids:.0f}%)")
+    for s in vchain:
+        if s.get("share_low_pct") is None or s.get("share_high_pct") is None:
+            continue
+        lo, hi = sorted((float(s["share_low_pct"]), float(s["share_high_pct"])))
+        if hi - lo < 1:
+            hi = lo + 1
+        if (lo, hi) != (float(s["share_low_pct"]), float(s["share_high_pct"])):
+            notes.append(f"Value-chain stage '{s.get('stage')}': range {s['share_low_pct']}-{s['share_high_pct']}% "
+                         f"set to {lo:g}-{hi:g}% (low <= high, at least 1 pt wide)")
+        s["share_low_pct"], s["share_high_pct"] = (int(lo), int(hi)) if lo.is_integer() and hi.is_integer() else (lo, hi)
+    return vchain
 
 
 def size_check(fleet: dict) -> dict:

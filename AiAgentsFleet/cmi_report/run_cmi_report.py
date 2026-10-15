@@ -5,9 +5,12 @@
 
 Steps: fleet fields (+ consistency pass) -> CMI agents (run_data.py, skipped if
 cmi_fields.json exists unless --refresh-data) -> numeric model -> prose ->
-charts -> .docx -> Word pass (real TOC page numbers + PDF) -> QA audit.
+charts -> .docx -> Word pass (real TOC page numbers + PDF) -> QA audit -> release gate.
 
-Output: AiAgentsFleet/output/<slug>/<slug>-cmi-whitepaper.docx (+ .pdf, charts/, qa_report.json)
+Output: AiAgentsFleet/output/<slug>/<slug>-cmi-whitepaper.docx (+ .pdf, charts/, qa_report.json,
+audit_report.json, <slug>-internal-qa.md). A report that fails the release gate
+(audit.py) is saved as <slug>-cmi-whitepaper.DRAFT.docx (and .pdf), its blockers
+are printed, and the command exits with code 3.
 
 Numbers are never jittered on this path: the run stops if AIFLEET_RANDOMIZE is
 set, unless --allow-randomize is passed (see randomizer.py).
@@ -61,7 +64,18 @@ def ensure_fleet(market: str | None, slug: str) -> Path:
     return d
 
 
+def clear_charts(cdir: Path) -> int:
+    """Deletes the chart files of an earlier run, so charts/ holds only this run's charts
+    (no demand_qatar.png left over for a country this report no longer profiles)."""
+    cdir.mkdir(parents=True, exist_ok=True)
+    old = list(cdir.glob("*.png"))
+    for p in old:
+        p.unlink()
+    return len(old)
+
+
 def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
+    clear_charts(cdir)
     C = {}
     C["cover"] = ch.cover(m, cdir / "cover.png")
     C["kpi"] = ch.kpi_panel(m, cdir / "kpi.png")
@@ -73,6 +87,7 @@ def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
     C["regions_stacked"] = ch.stacked_years({r: m["regions"][r]["series"] for r in ch.REGION_COLORS},
                                             ch.REGION_COLORS, cdir / "regions_stacked.png")
     C["scenarios"] = ch.scenarios(m, cdir / "scenarios.png")
+    # country charts only for the countries with a profile section (m["profiled"])
     geos = ["Global", "Middle East", "Africa"] + m["profiled"]["Middle East"] + m["profiled"]["Africa"]
     sec = m["sections"]
     for gname in geos:
@@ -368,12 +383,13 @@ def main() -> int:
         builder.build(TEMPLATE, out, m, pr, ag, charts, definition)
         q = qa(out, m, ag, root)
     verification["final_sweep"] = len(q["numbers_not_in_model"])
-    log = builder.build(TEMPLATE, out, m, pr, ag, charts, definition, verification=verification)
+    internal: dict = {}           # the internal QA log (the client document carries none of it)
+    log = builder.build(TEMPLATE, out, m, pr, ag, charts, definition, verification=verification, internal=internal)
     if not a.no_word:
         pages = word_pass(out, None)
         if pages:
             log = builder.build(TEMPLATE, out, m, pr, ag, charts, definition, toc_pages=pages,
-                                verification=verification)
+                                verification=verification, internal=internal)
             word_pass(out, out.with_suffix(".pdf"))
     # the complete Number Register beside the report (the appendix carries its derived facts)
     import csv
@@ -385,7 +401,7 @@ def main() -> int:
             w.writerow([e["id"], e["fact"], e["display"], e["metric"], "; ".join(x for x in e["entities"] if x)])
     report = {"build_log": log, "prose_dropped": pr.get("dropped"), "verification": verification,
               "headline_size_check": {k: m["size_check"].get(k) for k in ("status", "notes", "source")},
-              **qa(out, m, ag, root)}
+              "internal_log": internal, **qa(out, m, ag, root)}
     (cdir / "qa_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"QA: {len(report['numbers_not_in_model'])} text block(s) with numbers not in the model, "
           f"{len(report['template_leftovers'])} template leftover(s), {len(report['drone_wording'])} drone-wording hit(s), "
@@ -394,8 +410,39 @@ def main() -> int:
           f"{report['facts_stated_more_than_once']} facts stated more than once")
     for r in report["removed_sections"]:
         print(f"  section left out -- {r}")
-    print(f"Done: {out}")
-    return 0
+    # blocking release gate (audit.py --gate): a report that fails it is renamed to .DRAFT
+    from AiAgentsFleet.cmi_report import audit as auditor
+    res = auditor.audit(slug, use_ai=True, gate=True, market_dir=cdir, qa_report=report, llm=llm, m=m, ag=ag,
+                        fleet=fleet, prose=pr)
+    gate = res["gate"]
+    final = finalize(out, gate["ready"])
+    if gate["ready"]:
+        print(f"Release gate: READY ({len(gate['warnings'])} warning(s)); internal QA: {res['internal_qa']}")
+    else:
+        print(f"Release gate: NOT READY -- {len(gate['blockers'])} blocker(s); internal QA: {res['internal_qa']}")
+        for b in gate["blockers"]:
+            print(f"  BLOCKER {b}")
+    print(f"Done: {final}")
+    return 0 if gate["ready"] else NOT_READY
+
+
+NOT_READY = 3      # exit code: the report was built but failed the release gate (saved as .DRAFT)
+
+
+def draft_path(out: Path) -> Path:
+    return out.with_name(out.stem + ".DRAFT" + out.suffix)
+
+
+def finalize(out: Path, ready: bool) -> Path:
+    """A ready report keeps its client name (any older DRAFT is removed); one that failed the
+    gate becomes <slug>-cmi-whitepaper.DRAFT.docx (and .pdf), so it can't be taken for finished."""
+    pairs = [(out, draft_path(out)), (out.with_suffix(".pdf"), draft_path(out.with_suffix(".pdf")))]
+    for src, dst in pairs:
+        if ready:
+            dst.unlink(missing_ok=True)
+        elif src.exists():
+            src.replace(dst)
+    return out if ready else draft_path(out)
 
 
 if __name__ == "__main__":

@@ -211,33 +211,37 @@ def skipped(m: dict) -> tuple[set[int], list[str]]:
 
 def to_verify_items(b: "Builder", ag: dict, m: dict) -> list[str]:
     """Every [to verify] item exactly as printed in the finished document (text
-    and tables), plus the milestones marked on the timeline chart -- so the
-    appendix count matches the report."""
+    and tables), plus the milestones marked on the timeline chart -- for the
+    internal QA report. A sentence that only explains the marker is not an item."""
+    explains = re.compile(r"items? (?:marked|flagged) \[to verify\]", re.I)
     items = []
     for el in b.out:
         if el.tag == qn("w:tbl"):
             for tr in el.iter(qn("w:tr")):
                 cells = ["".join(t.text or "" for t in tc.iter(qn("w:t"))) for tc in tr.findall(qn("w:tc"))]
-                if any("[to verify]" in c for c in cells):
+                if any("[to verify]" in c and not explains.search(c) for c in cells):
                     items.append(" | ".join(c for c in cells if c)[:200])
         else:
             text = "".join(t.text or "" for t in el.iter(qn("w:t")))
-            items.extend(x[:200] for x in sentences(text) if "[to verify]" in x)
+            items.extend(x[:200] for x in sentences(text) if "[to verify]" in x and not explains.search(x))
     if m["sections"]["regulation"]["show"] and m["sections"]["milestones"]["show"]:
         items += [f"Timeline chart: {x.get('date')} {x.get('jurisdiction', '')} -- {x.get('event')} [to verify]"
                   for x in (ag.get("regulation") or {}).get("milestones") or [] if x.get("verified") is False]
     return list(dict.fromkeys(items))
 
 
-def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: list[str],
-                 verification: dict | None = None, register: list[dict] | None = None) -> None:
-    """Appendix 'Consistency & Verification Log': master data sheet, rankings
-    register, [to verify] list and the corrections made while building."""
+APPENDIX_TITLE = "Appendix: Master Data and Registers"
+
+
+def add_appendix(b: "Builder", m: dict, register: list[dict] | None = None) -> None:
+    """The client appendix: master data sheet, number register (derived facts) and rankings
+    register. The [to verify] list, the corrections and the consistency log are internal: they
+    go to the internal QA report (internal_log), never into the client document."""
     from AiAgentsFleet.cmi_report.prose import _rank
-    H1, H2, BODYP, BULLET, TBL5, TBL3, CAP, SRC = 385, 387, 392, 381, 117, 313, 40, 42
+    H1, H2, BODYP, TBL5, TBL3, CAP, SRC = 385, 387, 392, 117, 313, 40, 42
     br = b.el(181)                                   # page break paragraph
     b.out.append(br)
-    b.out.append(set_h1(b.el(H1), num="11   ", title="Appendix: Consistency & Verification Log"))
+    b.out.append(set_h1(b.el(H1), num="11   ", title=APPENDIX_TITLE))
     b.para(BODYP, "Every figure in this report is drawn from the master data sheet below; every ranking from the "
                   "rankings register. Values are CMI estimates (to 2026) and forecasts (2027 onward).")
     # contents entry for the appendix (cloned from chapter 10's entry, placed right after it)
@@ -265,13 +269,20 @@ def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: li
 
     # A.2 Number register: every DERIVED fact (shares, gaps, multiples, scenarios, vendor and value-chain
     # shares, published figures) with its ID; the full register (incl. every segment value) is the CSV
-    # saved beside this report
+    # saved beside this report. Vendor share rows only for a share chart the report prints.
     b.out.append(set_text(b.el(H2), "A.2 Number register (derived facts)"))
     b.para(BODYP, "Each derived figure used in the report, with its register ID. The complete register, including "
                   "every segment value, is supplied with this report as a CSV file.")
+    sec = m["sections"]
+    vendor_ok = {"global": bool(m.get("vendor_chart_global")) and (sec.get("vendor_global") or {}).get("show", True),
+                 "MEA": bool(m.get("vendor_chart_mea")) and (sec.get("vendor_mea") or {}).get("show", True)}
+
+    def shown(e):
+        mm = re.search(r"vendor share, (global|MEA)\b", e["fact"])
+        return not mm or vendor_ok[mm.group(1)]
     derived = [e for e in register or [] if e["metric"] in ("share_parent", "share_global", "gap_pp", "multiple",
                                                             "share", "published")
-               and not e["id"].startswith("S-")]
+               and not e["id"].startswith("S-") and shown(e)]
     derived += [e for e in register or [] if e["id"].startswith("SC-")]
     b.caption(CAP, "Table", "Number register: derived facts")
     b.table(TBL3, [[e["id"], e["fact"], e["display"] + (" pp" if e["metric"] == "gap_pp" else "")]
@@ -296,11 +307,13 @@ def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: li
     b.table(TBL3, rrows, header=["Comparison set", "Ranking", "Result"])
     b.keep(SRC)
 
-    b.out.append(set_text(b.el(H2), "A.4 Items marked [to verify]"))
-    tv = to_verify_items(b, ag, m)
-    b.bullets(BULLET, tv or ["No item in this report is marked [to verify]."])
 
-    b.out.append(set_text(b.el(H2), "A.5 Corrections made during the self-audit"))
+def internal_log(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: list[str],
+                 verification: dict | None = None) -> dict:
+    """What used to be appendix A.4-A.6 (the [to verify] list, the corrections made while
+    building, the consistency log), for the internal QA report only. The counts agree: a
+    sentence removed by the prose guards and one removed by the final sweep are counted apart."""
+    tv = to_verify_items(b, ag, m)
     corr = list(m.get("corrections") or []) + list(removed_notes)
     dropped = prose.get("dropped") or {}
     n_drop = sum(len(v) for v in dropped.values())
@@ -312,34 +325,66 @@ def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: li
                        else "repeat" if x.startswith("[repeat]") else "headline restated" if "headline" in x
                        else "caveat" if "caveat" in x else "claim")
                 why[key] += 1
-        corr.append(f"{n_drop} generated sentence(s) removed before publication: " + ", ".join(
+        corr.append(f"{n_drop} sentence(s) removed by the prose guards while writing: " + ", ".join(
             f"{v} {k}" for k, v in {"with a number not in the master sheet": why["numbers not in model"],
                                     "with a ranking the register does not support": why["claim"],
                                     "naming a category absent from the data": why["names"],
                                     "repeating an earlier sentence": why["repeat"],
                                     "restating the headline outside the summary": why["headline restated"],
                                     "with template or draft wording": why["caveat"]}.items() if v))
-    corr += [x for x in b.log if "incomplete row" in x]
-    b.bullets(BULLET, corr or ["No corrections were needed."])
-
-    b.out.append(set_text(b.el(H2), "A.6 Consistency & Verification Log"))
+    corr += [x for x in b.log if "incomplete row" in x or x.startswith("empty heading removed")]
     v = verification or {}
-    log = [
-        "Every value, share, gap and ranking was derived from the master data sheet (A.1), the number "
-        "register (A.2) and the rankings register (A.3) before any text was written; text, tables and chart labels print them in one format. "
-        + fmt.PRECISION_RULE,
-        "Checked: children sum to parents for every year (countries to sub-regions, sub-regions to regions, "
-        "regions to global, segments to totals); every CAGR recomputed from its start and end values; every "
-        "incremental value equals end minus start; every share uses its own denominator; every ranking and tie "
-        "is taken from the rankings register; share sets sum to 100%.",
-    ]
+    log = ["Every value, share, gap and ranking was derived from the master data sheet (A.1), the number "
+           "register (A.2) and the rankings register (A.3) before any text was written. " + fmt.PRECISION_RULE,
+           "Checked: children sum to parents for every year (countries to sub-regions, sub-regions to regions, "
+           "regions to global, segments to totals); every CAGR recomputed from its start and end values; every "
+           "incremental value equals end minus start; every share uses its own denominator; every ranking and tie "
+           "is taken from the rankings register; share sets sum to 100%."]
     if v:
         log.append(f"Number consistency sweep of the finished report: {v.get('checked', 0)} numbers checked; "
                    f"{v.get('first_sweep', 0)} text block(s) with a number not matching the register in the first "
-                   f"sweep; {v.get('fixed', 0)} sentence(s) removed or corrected; {v.get('final_sweep', 0)} "
-                   f"mismatch(es) remaining after the final sweep.")
-    log.append(f"{len(tv)} item(s) are marked [to verify] (A.4).")
-    b.bullets(BULLET, log)
+                   f"sweep; {v.get('fixed', 0)} sentence(s) removed by the sweep (besides the {n_drop} removed by "
+                   f"the prose guards); {v.get('final_sweep', 0)} mismatch(es) remaining after the final sweep.")
+    log.append(f"{len(tv)} item(s) marked [to verify] in the document.")
+    return {"to_verify": tv, "corrections": corr, "consistency_log": log,
+            "prose_guard_removed": n_drop, "sweep_removed": v.get("fixed", 0)}
+
+
+_NUMBERED = re.compile(r"^\s*\d+(?:\.\d+)*\s")
+
+
+def heading_is_empty(level: int, text: str, nxt_level: int | None, nxt_text: str | None, at_end: bool) -> bool:
+    """A heading has no body when the next block (blank paragraphs aside) is the end, or a heading of
+    the same or a higher level. A numbered heading followed by an UNnumbered one of the same level
+    ('3.5 Regional Analysis' -> 'North America ... by Country') is that heading's parent, not empty."""
+    if at_end:
+        return True
+    if nxt_level is None or nxt_level > level:
+        return False
+    if nxt_level == level and _NUMBERED.match(text) and not _NUMBERED.match(nxt_text or ""):
+        return False
+    return True
+
+
+def empty_headings(els: list) -> list[int]:
+    """Indices (in `els`, the builder's body elements) of headings whose section has no body."""
+    def level(el) -> int | None:
+        mm = re.fullmatch(r"Heading(\d)", _style(el)) if el.tag == qn("w:p") else None
+        return int(mm.group(1)) if mm else None
+
+    def blank(el) -> bool:
+        return el.tag == qn("w:p") and not el.xpath("string(.)").strip() and el.find(".//" + qn("w:drawing")) is None
+
+    out = []
+    for k, el in enumerate(els):
+        lv = level(el)
+        if lv is None:
+            continue
+        nxt = next((e for e in els[k + 1:] if not blank(e) and e.tag != qn("w:sectPr")), None)
+        if heading_is_empty(lv, el.xpath("string(.)"), level(nxt) if nxt is not None else None,
+                            nxt.xpath("string(.)") if nxt is not None else None, nxt is None):
+            out.append(k)
+    return out
 
 
 def size_basis_text(m: dict, root: str) -> str:
@@ -528,6 +573,17 @@ class Builder:
             cell.append(p)
         self.out.append(tbl)
 
+    def drop_empty_headings(self):
+        """Removes every heading whose section ended up with no body (repeated, so a chapter left
+        with only empty sub-sections goes too); logged for the internal QA report."""
+        while True:
+            idx = empty_headings(self.out)
+            if not idx:
+                return
+            for k in reversed(idx):
+                self.log.append(f"empty heading removed: {self.out[k].xpath('string(.)').strip()[:80]}")
+                del self.out[k]
+
     def save(self, path: Path, header: str, footer_label: str):
         for c in list(self.body.iterchildren()):
             self.body.remove(c)
@@ -558,7 +614,9 @@ def _root(market: str) -> str:
 
 def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts: dict[str, Path],
           definition: dict | None, toc_pages: dict[int, int] | None = None,
-          verification: dict | None = None) -> list[str]:
+          verification: dict | None = None, internal: dict | None = None) -> list[str]:
+    """Builds the client .docx. `internal`, when given, is filled with the internal QA log
+    (to-verify items, corrections, consistency log) that the client document does not carry."""
     b = Builder(template)
     S = prose.get("slots", {})
     root = _root(m["market"])
@@ -698,8 +756,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             level = f"Value-chain level: {dfn['value_chain_level']}." if dfn.get("value_chain_level") else ""
             units =(f"Market values are CMI estimates in USD (current prices): {Y0 - 1} is the base year, {Y0}E the "
                      f"estimate year and {Y0 + 1}F-{Y1}F are forecasts. Scores, ratings and shares of value are CMI "
-                     f"assessments unless attributed to a named source; items marked [to verify] could not be "
-                     f"confirmed from public sources.")
+                     f"assessments unless attributed to a named source.")
             scope = " ".join(x for x in sentences(s("about_scope", "") or "")
                              if not re.search(r"market values|base year|forecasts?\b|excludes|scope covers", x, re.I))
             b.box(i, None, [x for x in (f"Market definition: {what}" if what else "",
@@ -1215,8 +1272,11 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             else:
                 b.keep(i)
 
-    toc_titles[11] = "Appendix: Consistency & Verification Log"
-    add_appendix(b, m, ag, prose, removed_notes, verification, register)
+    toc_titles[11] = APPENDIX_TITLE
+    add_appendix(b, m, register)
+    b.drop_empty_headings()
+    if internal is not None:
+        internal.update(internal_log(b, m, ag, prose, removed_notes, verification))
     renumber(b, toc_titles, toc_pages)
     b.save(out_path, f"The {root} Market Outlook {Y0}-{Y1}", "Whitepaper")
     return removed_notes + b.log + [f"guard dropped: {d}" for d in dropped]

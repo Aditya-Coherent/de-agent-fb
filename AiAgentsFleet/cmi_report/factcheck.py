@@ -67,13 +67,23 @@ def _entity_before(clause: str, pos: int, names: list[str]) -> str | None:
     return best
 
 
+_YEAR_AFTER = re.compile(r"\s*(?:\(\s*|,\s*)?(?:(?:in|by|for|of|during|through|until)\s+)?(?:the\s+year\s+)?"
+                         r"(20[2-3]\d)[EF]?\b", re.I)
+
+
 def _year_near(clause: str, pos: int, end: int) -> str | None:
-    """'$X by 2033F' / '$X in 2026E': the year right after the number; else the nearest year before it."""
-    after = _YEAR.search(clause[end:end + 14])
+    """The year a number belongs to. A year attached directly after it ('$X by 2033F', '$X in 2026E',
+    '$X (2026E)') wins; otherwise the nearest year BEFORE it in the clause ('in 2026E at $X and in 2033F
+    at $Y': $X is 2026E, although 2033F follows a few characters later); a later year counts only when
+    the clause has no year before the number."""
+    after = _YEAR_AFTER.match(clause, end)
     if after:
         return after.group(1)
     before = [m.group(1) for m in _YEAR.finditer(clause[:pos])]
-    return before[-1] if before else None
+    if before:
+        return before[-1]
+    later = _YEAR.search(clause[end:end + 14])
+    return later.group(1) if later else None
 
 
 def entities_in(clause: str, names: list[str]) -> list[str]:

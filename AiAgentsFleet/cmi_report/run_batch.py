@@ -6,9 +6,10 @@ Numbers are never jittered: the batch stops if AIFLEET_RANDOMIZE is set,
 unless --allow-randomize is passed (it is then passed on to each market).
 
 Markets are run one at a time (the web search throttles parallel use). A
-market whose .docx already exists is skipped unless --redo. A failure is
-logged and the batch moves on; batch_log.jsonl records every outcome and
-each market's QA counts.
+market whose .docx (or .DRAFT.docx) already exists is skipped unless --redo.
+A failure is logged and the batch moves on; batch_log.jsonl records every
+outcome, each market's QA counts and whether it passed the release gate
+("ready"; a report that did not is saved as .DRAFT.docx).
 """
 from __future__ import annotations
 
@@ -27,6 +28,8 @@ ROOT = FLEET.parent
 sys.path.insert(0, str(ROOT))
 
 from AiAgentsFleet import randomizer  # noqa: E402
+
+NOT_READY = 3      # run_cmi_report.py exit code: built, failed the release gate
 
 
 def slug(name: str) -> str:
@@ -47,22 +50,29 @@ def main() -> int:
     for k, name in enumerate(names, start=1):
         s = slug(name)
         docx = FLEET / "output" / s / f"{s}-cmi-whitepaper.docx"
-        if docx.exists() and not a.redo:
-            print(f"[{k}/{len(names)}] skip (done): {name}")
+        draft = docx.with_name(docx.stem + ".DRAFT.docx")
+        if (docx.exists() or draft.exists()) and not a.redo:
+            print(f"[{k}/{len(names)}] skip (done{'' if docx.exists() else ', not ready'}): {name}")
             continue
         print(f"[{k}/{len(names)}] {name}")
         t0 = time.time()
         cmd = [sys.executable, str(HERE / "run_cmi_report.py"), "--market", name]
         res = subprocess.run(cmd + (["--allow-randomize"] if a.allow_randomize else []), cwd=ROOT)
+        built = res.returncode in (0, NOT_READY)             # NOT_READY: built, but failed the release gate
         qa_path = docx.parent / "qa_report.json"
-        qa = json.loads(qa_path.read_text(encoding="utf-8")) if qa_path.exists() and res.returncode == 0 else {}
-        entry = {"market": name, "slug": s, "ok": res.returncode == 0, "minutes": round((time.time() - t0) / 60, 1),
+        qa = json.loads(qa_path.read_text(encoding="utf-8")) if qa_path.exists() and built else {}
+        au_path = docx.parent / "audit_report.json"
+        gate = (json.loads(au_path.read_text(encoding="utf-8")).get("gate") or {}) if au_path.exists() and built else {}
+        entry = {"market": name, "slug": s, "ok": built, "minutes": round((time.time() - t0) / 60, 1),
                  "at": datetime.now(timezone.utc).isoformat(),
+                 "ready": res.returncode == 0 and bool(gate.get("ready")),
+                 "blockers": len(gate.get("blockers") or []),
                  "qa": {k2: len(qa.get(k2) or []) for k2 in ("numbers_not_in_model", "template_leftovers",
                                                              "drone_wording")}}
         with log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
-        print(f"   -> {'OK' if entry['ok'] else 'FAILED'} in {entry['minutes']} min, QA {entry['qa']}")
+        print(f"   -> {'FAILED' if not built else 'READY' if entry['ready'] else 'NOT READY (DRAFT)'} in "
+              f"{entry['minutes']} min, {entry['blockers']} blocker(s), QA {entry['qa']}")
     return 0
 
 

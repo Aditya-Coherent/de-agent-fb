@@ -10,6 +10,7 @@ Africa, and a share of the region is never confused with a share of global.
 """
 from __future__ import annotations
 
+import hashlib
 import re
 
 from AiAgentsFleet.cmi_report import fmt
@@ -22,10 +23,32 @@ def _code(s: str) -> str:
     return re.sub(r"[^A-Z0-9]+", "", s.upper())[:10] or "X"
 
 
+def _code_namer():
+    """A collision-safe `_code` for one register: two different names that truncate to the same
+    code ('Ascorbic Acid (pure)' / 'Ascorbic Acid derivatives') get a short hash of the full name."""
+    by_code: dict[str, str] = {}
+    done: dict[str, str] = {}
+
+    def code(s: str) -> str:
+        s = s or ""
+        if s not in done:
+            base = _code(s)
+            owner = by_code.setdefault(base, s)
+            done[s] = base if owner == s else f"{base}{hashlib.sha1(s.encode('utf-8')).hexdigest()[:4].upper()}"
+        return done[s]
+    return code
+
+
 def build_register(m: dict, ag: dict) -> list[dict]:
     reg: list[dict] = []
+    _code = _code_namer()                 # noqa: F841 -- shadows the module-level _code inside this register
+    used: dict[str, int] = {}
 
     def add(fid, fact, entities, display, metric):
+        # the same fact listed twice (a driver also given as a restraint) still gets its own ID
+        used[fid] = used.get(fid, 0) + 1
+        if used[fid] > 1:
+            fid = f"{fid}-{used[fid]}"
         reg.append({"id": fid, "fact": fact, "entities": entities, "display": display, "metric": metric})
 
     def node(prefix, label, ents, n, parent=None, parent_label=None, glob=None):
@@ -101,6 +124,8 @@ def build_register(m: dict, ag: dict) -> list[dict]:
         add(f"P-{_code(p.get('publisher', ''))}", f"{p.get('publisher')} published {Y0 - 1} global estimate",
             [p.get("publisher", "")],                      # the publisher must be named with its figure
             fmt.usd(float(p["value_usd_bn"]) * 1000), "published")
+    ids = [e["id"] for e in reg]
+    assert len(ids) == len(set(ids)), f"duplicate register IDs: {sorted({i for i in ids if ids.count(i) > 1})}"
     return reg
 
 

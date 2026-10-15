@@ -363,9 +363,122 @@ def test_model_records_divergent_mix_as_warning_after_reask_and_blocker_without(
     assert abs(sa["Sodium Ascorbate"]["v26"] / sum(v["v26"] for v in sa.values()) - 0.80) < 1e-9
 
 
-def test_segments_mea_prompt_shows_the_global_mix_and_asks_for_a_reason():
+class MeaLLM:
+    """segments_mea agent: returns `answers` in turn and records every prompt."""
+
+    def __init__(self, answers):
+        self.answers, self.prompts = [copy.deepcopy(a) for a in answers], []
+
+    def complete_json(self, system, user):
+        self.prompts.append(user)
+        return self.answers.pop(0)
+
+
+def _run_mea(monkeypatch, tmp_path, answers):
+    """run_data.run(only=segments_mea) on a fixture market with the LLM and search mocked."""
+    from AiAgentsFleet.cmi_report import run_data
+    d = tmp_path / "output" / "vc"
+    d.mkdir(parents=True)
+    f = fleet()
+    f["fields"]["market_size"]["forecast_series_usd_mn"] = {str(y): 1000 * 1.06 ** (y - 2025) for y in range(2025, 2034)}
+    (d / "whitepaper_fields.json").write_text(json.dumps(f), encoding="utf-8")
+    (d / "cmi_fields.json").write_text(json.dumps(cmi()), encoding="utf-8")
+    llm = MeaLLM(answers)
+    monkeypatch.setattr(run_data, "FLEET", tmp_path)
+    monkeypatch.setattr(run_data.GenConfig, "load", staticmethod(lambda root: None))
+    monkeypatch.setattr(run_data, "GenLLM", lambda cfg, cache_path=None: llm)
+    monkeypatch.setattr(run_data, "search", lambda *a, **k: [{"text": "Vitamin C demand in Egypt", "url": "u",
+                                                              "domain": "fao.org"}])
+    run_data._SHOWN.clear()
+    run_data.run("vc", {"segments_mea"})
+    out = json.loads((d / "cmi_fields.json").read_text(encoding="utf-8"))["fields"]
+    return llm.prompts, out
+
+
+COPY = seg_mea()                                         # every country = the global mix
+OWN = {u: mix({"Sodium Ascorbate": 20 if i % 2 else 40, "Ascorbic Acid": 70 if i % 2 else 50, "Calcium Ascorbate": 10},
+              {"Dietary Supplements": 30 if i % 2 else 55, "Pharmaceuticals": 40 if i % 2 else 25,
+               "Food & Beverage Fortification": 30 if i % 2 else 20})
+       for i, u in enumerate(UNITS)}
+
+
+def test_the_first_call_does_not_show_the_global_mix(monkeypatch, tmp_path):
+    prompts, out = _run_mea(monkeypatch, tmp_path, [OWN])
+    assert len(prompts) == 1                                 # country-specific, within x2: no re-ask
+    assert "global_mix" not in prompts[0] and "GLOBAL MIX" not in prompts[0]
     g = next(x for x in GROUPS if x["key"] == "segments_mea")
-    assert "global_mix" in g["system"] and "mea_reason" in g["schema"]
+    assert "global_mix" not in g["system"] and "mea_reason" not in g["schema"]
+    assert out["segment_review"]["segments_mea"]["copied_first"] is False
+
+
+def test_the_reask_shows_the_global_mix_for_a_x2_conflict(monkeypatch, tmp_path):
+    bad = seg_mea({"Sodium Ascorbate": 80, "Ascorbic Acid": 15, "Calcium Ascorbate": 5})
+    prompts, out = _run_mea(monkeypatch, tmp_path, [bad, OWN])
+    assert len(prompts) == 2
+    assert "GLOBAL MIX" not in prompts[0] and "GLOBAL MIX" in prompts[1] and '"Sodium Ascorbate": 30.0' in prompts[1]
+    assert out["segments_mea"] == OWN | {"_sources": out["segments_mea"]["_sources"]}
+
+
+def test_a_copied_mix_is_flagged_and_reasked(monkeypatch, tmp_path):
+    prompts, out = _run_mea(monkeypatch, tmp_path, [COPY, OWN])
+    rec = out["segment_review"]["segments_mea"]
+    assert rec["copied_first"] and rec["reasked"] and rec["copied_after"] is False
+    assert len(prompts) == 2 and "copy, not an estimate" in prompts[1] and "GLOBAL MIX" in prompts[1]
+    assert out["segments_mea"]["Saudi Arabia"]["type"]["Sodium Ascorbate"]["share_pct"] == 40   # the re-ask kept
+    m = model.build(fleet(), {"fields": out})
+    assert "MEA mixes copy the global mix (first answer; the re-ask gave country-specific mixes)" in \
+        m["segment_review"]["warnings"]
+
+
+def test_a_copied_mix_reask_that_fails_x2_is_not_kept():
+    g = {"type": {"A": 50.0, "B": 50.0}}
+    copy_ = {u: {"type": {"A": {"share_pct": 50}, "B": {"share_pct": 50}}} for u in UNITS}
+    wild = {u: {"type": {"A": {"share_pct": 95}, "B": {"share_pct": 5}}} for u in UNITS}
+    fields = {"segments_mea": copy_}
+    rec = segments_check.review_mea(fields, {u: 1.0 for u in UNITS}, g, lambda k, n: copy.deepcopy(wild), [])
+    assert rec["copied_first"] and rec["copied_reask_rejected"] and fields["segments_mea"] is copy_
+    assert rec["copied_after"] is True
+    m = model.build(fleet(), cmi(smea=COPY, review={"segments_mea": rec}))
+    assert "MEA mixes copy the global mix (still copied after one re-ask)" in m["segment_review"]["warnings"]
+
+
+# --------------------------------------------------------------------------- #
+# 3b. the false-split test applies to manufacturer / vendor / retail markets only
+# --------------------------------------------------------------------------- #
+SYSTEMS = ["Super-intensive lined ponds", "Super-intensive raceways", "Controlled-environment indoor farms (RAS)",
+           "High-density biofloc systems"]
+SYSTEM_SG = {
+    "demand_segments": [{"name": "Processors", "share_pct_2026": 60, "cagr_2026_2033_pct": 8},
+                        {"name": "Retail Chains", "share_pct_2026": 40, "cagr_2026_2033_pct": 7}],
+    "segment_definitions": {
+        "type": {"Super-intensive lined ponds": "HDPE-lined grow-out ponds stocked above 150 shrimp per square metre.",
+                 "Super-intensive raceways": "Long flow-through channels with continuous water exchange.",
+                 "Controlled-environment indoor farms (RAS)": "Enclosed tanks recirculating filtered water indoors.",
+                 "High-density biofloc systems": "Zero-exchange tanks where microbial floc treats the water."},
+        "demand": {"Processors": "Plants that buy whole shrimp to peel and freeze.",
+                   "Retail Chains": "Supermarkets buying fresh shrimp."}},
+    "type_split_check": [{"a": a, "b": b, "buyers_differentiate": False, "basis": "production history"}
+                         for i, a in enumerate(SYSTEMS) for b in SYSTEMS[i + 1:]],
+    "type_merges": []}
+
+
+def test_a_farm_gate_market_keeps_its_production_system_split():
+    assert segments_check.check_global(SYSTEM_SG, SYSTEMS, SHRIMP) == []
+    res = segments_check.resolve(SYSTEM_SG, SYSTEMS, SHRIMP)
+    assert res["names"]["type"] == SYSTEMS and res["type_off"] is None
+    note = segments_check.reask_note_global([], SYSTEM_SG, SHRIMP)
+    assert "distinct production systems" in note and "differ only by production history" not in note
+
+
+def test_a_manufacturer_market_still_has_its_false_split_flagged():
+    # an allocation rule separates the nested names, so only the false split is left to act on
+    sg = seg_global(allocation_rules=["Synthetic ascorbic acid is counted under Ascorbic Acid (Synthetic), "
+                                      "fermentation-derived under Ascorbic Acid (Fermentation-Derived)."])
+    probs = segments_check.check_global(sg, TYPE_NAMES, model.definition(fleet()))
+    assert any(p["kind"] == "false_split" for p in probs)
+    assert segments_check.resolve(sg, TYPE_NAMES, model.definition(fleet()))["type_off"]
+    # same answer, farm-gate level: no false split
+    assert not any(p["kind"] == "false_split" for p in segments_check.check_global(sg, TYPE_NAMES, SHRIMP))
 
 
 # --------------------------------------------------------------------------- #

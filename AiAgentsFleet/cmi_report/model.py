@@ -389,9 +389,17 @@ def build(fleet: dict, cmi: dict) -> dict:
         gl = {n: seg["Global"][dim][n]["v26"] * 100 / G[Y0] for n in names}
         me = {n: (seg["Middle East"][dim][n]["v26"] + seg["Africa"][dim][n]["v26"]) * 100 / mea26 for n in names}
         mix_problems += segments_check.check_mix(gl, me, dim, (c.get("segments_mea") or {}).get("mea_reason"))
+    # every country's mix a copy (+/-10%) of the global one is not an estimate either
+    dims = (("type", type_names), ("demand", dem_names))
+    copied = segments_check.copies_global(
+        {u: {dim: {n: seg[u][dim][n]["v26"] * 100 / (sum(x["v26"] for x in seg[u][dim].values()) or 1)
+                   for n in names} for dim, names in dims}
+         for r in ("Middle East", "Africa") for u in countries[r]},
+        {dim: {n: seg["Global"][dim][n]["v26"] * 100 / G[Y0] for n in names} for dim, names in dims})
     segment_review = segments_check.review(
         dfn, c.get("segment_review"), global_problems=global_problems, resolved=resolved,
-        mix_problems=mix_problems, uc_problems=segments_check.check_use_cases(c.get("use_cases"), dfn))
+        mix_problems=mix_problems, uc_problems=segments_check.check_use_cases(c.get("use_cases"), dfn),
+        copied=copied)
     seg_defs = {dim: {n: d for n in names if (d := segments_check.defs(sg, dim).get(n.lower()))}
                 for dim, names in (("type", type_names), ("demand", dem_names))}
 

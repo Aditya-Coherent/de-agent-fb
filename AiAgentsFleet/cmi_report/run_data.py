@@ -352,18 +352,18 @@ def run(slug: str, only: set[str] | None = None) -> Path:
         fields["geo_review"] = review
         print("  done: geo_review")
     if any(g["key"] == "segments_mea" for g in wanted):
-        # the segments the model keeps (excluded ones dropped, merges applied) and their global mix
+        # the segments the model keeps (excluded ones dropped, merges applied). The global mix is NOT
+        # shown on the first call -- the agent answers from the evidence; only a re-ask shows it.
         sg = fields.get("segments_global") or {}
         resolved = segments_check.resolve(sg, [t["name"] for t in types], definition)
         mix = segments_check.global_mix(types, sg, resolved)
-        ctx = {**context, "types": resolved["names"]["type"], "demand_segments": resolved["names"]["demand"],
-               "global_mix": {d: {n: round(v, 1) for n, v in m.items()} for d, m in mix.items()}}
+        ctx = {**context, "types": resolved["names"]["type"], "demand_segments": resolved["names"]["demand"]}
         g = next(g for g in GROUPS if g["key"] == "segments_mea")
 
         def ask_mea(key: str, note: str) -> dict:
             return run_group(market, g, ctx, definition, llm, log, schema_for(g, geo), note=note)
         fields["segments_mea"] = ask_mea("segments_mea", "")
-        # the MEA aggregate against the global mix: re-asked once when beyond x2, never blended
+        # the MEA mix against the global mix: re-asked once when beyond x2 or a copy of it, never blended
         try:
             from AiAgentsFleet.cmi_report.model import geography
             gg = geography(data, fields)

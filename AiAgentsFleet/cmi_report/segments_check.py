@@ -31,6 +31,10 @@ from AiAgentsFleet.cmi_report.guard import NEGATED, excluded_hit, market_stems, 
 OVERLAP_MAX = 0.60          # two segment definitions sharing more content words than this overlap
 MIX_FACTOR = 2.0            # MEA share vs global share, either way
 MIX_MIN_GAP_PP = 2.0        # ...and at least this many points apart (tiny segments swing by ratio alone)
+COPY_TOL = 0.10             # every country within +/-10% (relative) of the global mix on every segment = a copy
+# the "false split" test (do buyers price/specify the types differently) applies to these levels only; a
+# farm-gate output, producer or service market may split by production system, technology or species
+FALSE_SPLIT_LEVELS = {"manufacturer", "vendor/software", "retail"}
 DIMS = ("type", "demand")
 
 
@@ -101,9 +105,17 @@ def names_of(sg: dict | None, type_names: list[str]) -> dict[str, list[str]]:
     return {"type": types, "demand": dem}
 
 
-def false_splits(sg: dict | None, type_names: list[str]) -> list[tuple[str, str, str]]:
+def false_split_applies(definition: dict | None) -> bool:
+    return str((definition or {}).get("value_chain_level") or "").lower() in FALSE_SPLIT_LEVELS
+
+
+def false_splits(sg: dict | None, type_names: list[str],
+                 definition: dict | None = None) -> list[tuple[str, str, str]]:
     """Type pairs the agent says buyers do not price or specify differently
-    (only production history differs), and that it has not merged."""
+    (only production history differs), and that it has not merged. Only for
+    manufacturer, vendor/software and retail markets (FALSE_SPLIT_LEVELS)."""
+    if not false_split_applies(definition):
+        return []
     mm = merge_map(sg, type_names)
     low = {n.lower(): n for n in type_names}
     out = []
@@ -204,15 +216,17 @@ def check_global(sg: dict | None, type_names: list[str], definition: dict | None
             why = (f"{jac:.0%} of their definitions' words shared" if jac > OVERLAP_MAX
                    else "one name contains the other, and no allocation rule separates them")
             out.append(_problem(dim, "overlap", [a, b], f"'{a}' and '{b}' overlap ({why})"))
-    for a, b, basis in false_splits(sg, type_names):
+    for a, b, basis in false_splits(sg, type_names, definition):
         out.append(_problem("type", "false_split", [a, b], f"'{a}' vs '{b}' is a false split ({basis}): buyers do "
                                                           f"not price or specify them differently"))
     return out
 
 
-def reask_note_global(problems: list[dict], previous: dict) -> str:
+def reask_note_global(problems: list[dict], previous: dict, definition: dict | None = None) -> str:
     """Appended to segments_global's original prompt for its one re-ask."""
     prev = {k: v for k, v in (previous or {}).items() if k != "_sources"}
+    why = ("they overlap, or differ only by production history" if false_split_applies(definition)
+           else "they genuinely overlap; distinct production systems, technologies or species stay separate")
     return ("\n\nYOUR PREVIOUS ANSWER (below) failed these checks against the DEFINITION:\n"
             + "\n".join(f"- {p['dim']}: {p['detail']}" for p in problems)
             + "\nFix them and return a corrected answer in exactly the same shape:\n"
@@ -221,9 +235,9 @@ def reask_note_global(problems: list[dict], previous: dict) -> str:
               "replace it with an in-scope one where the dimension needs it;\n"
               "- give every segment a one-line definition, and make the segments of each dimension mutually "
               "exclusive (rewrite overlapping definitions, or use an allocation rule);\n"
-              "- the type names are fixed by CONTEXT.types: if two types are really one product (they overlap, or "
-              "differ only by production history), list them in \"type_merges\": [{\"merge\": [<type>, <type>], "
-              "\"name\": <merged name>, \"definition\": <one line>}].\n"
+              f"- the type names are fixed by CONTEXT.types: if two types are really one ({why}), list them in "
+              "\"type_merges\": [{\"merge\": [<type>, <type>], \"name\": <merged name>, \"definition\": "
+              "<one line>}].\n"
             + f"PREVIOUS ANSWER:\n{json.dumps(prev, ensure_ascii=False)}")
 
 
@@ -258,7 +272,7 @@ def review_global(fields: dict, type_names: list[str], definition: dict | None,
                + " -- re-asking once")
     rec["reasked"] = True
     try:
-        again = ask("segments_global", reask_note_global(probs, sg))
+        again = ask("segments_global", reask_note_global(probs, sg, definition))
     except Exception as exc:  # noqa: BLE001
         log.append(f"[segments_global] re-ask failed: {exc}")
         again = None
@@ -303,7 +317,7 @@ def resolve(sg: dict | None, type_names: list[str], definition: dict | None) -> 
                     merge[dim][x] = into
                 names[dim] = [into if n == a else n for n in names[dim] if n != b]
                 notes.append(f"{dim}: '{a}' and '{b}' overlap -- merged as '{into}'")
-    fs = [(a, b) for a, b, _ in false_splits(sg, type_names) if (merge["type"].get(a, a) in names["type"]
+    fs = [(a, b) for a, b, _ in false_splits(sg, type_names, definition) if (merge["type"].get(a, a) in names["type"]
                                                                  and merge["type"].get(b, b) in names["type"]
                                                                  and merge["type"].get(a, a) != merge["type"].get(b, b))]
     type_off = (f"false split: {'; '.join(f'{a} vs {b}' for a, b in fs)} differ only in production history"
@@ -407,6 +421,51 @@ def check_mix(global_shares: dict[str, float], mea: dict[str, float], dim: str,
     return out
 
 
+def unit_mix(smea: dict | None, unit: str, dim: str, names: list[str],
+             merge: dict[str, str] | None = None) -> dict[str, float] | None:
+    """One country's mix as {segment: % of that country}, or None if it gave none."""
+    from AiAgentsFleet.cmi_report.geo_check import keyed
+    raw = merge_raw((keyed(smea).get(unit) or {}).get(dim), merge or {})
+    low = {k.lower(): x for k, x in raw.items() if isinstance(x, dict)}
+    shares = {n: max(_num((low.get(n.lower()) or {}).get("share_pct")) or 0, 0) for n in names}
+    tot = sum(shares.values())
+    return {n: v * 100 / tot for n, v in shares.items()} if tot > 0 else None
+
+
+def copies_global(unit_mixes: dict[str, dict[str, dict[str, float] | None]],
+                  global_mix: dict[str, dict[str, float]]) -> bool:
+    """True when EVERY country's type and demand mix is within COPY_TOL
+    (relative) of the global mix on every segment: the global mix was
+    copied, not estimated per country."""
+    if not unit_mixes:
+        return False
+    for mixes in unit_mixes.values():
+        for dim, g in global_mix.items():
+            m = (mixes or {}).get(dim)
+            if not m:
+                return False
+            if any(gv > 0 and abs(m.get(n, 0) - gv) / gv > COPY_TOL for n, gv in g.items()):
+                return False
+    return True
+
+
+def _unit_mixes(smea, units, global_mix, merge) -> dict:
+    return {u: {dim: unit_mix(smea, u, dim, list(g), (merge or {}).get(dim)) for dim, g in global_mix.items()}
+            for u in units}
+
+
+def reask_note_copied(global_mix: dict[str, dict[str, float]], previous: dict) -> str:
+    """The re-ask for MEA mixes that copy the global mix."""
+    prev = {k: v for k, v in (previous or {}).items() if k != "_sources"}
+    return ("\n\nYOUR PREVIOUS ANSWER (below) gives every MEA country practically the same mix as the GLOBAL "
+            "market (within 10% on every segment).\nGLOBAL MIX (% of the 2026 global market): "
+            + json.dumps({d: {n: round(v, 1) for n, v in m.items()} for d, m in global_mix.items()}, ensure_ascii=False)
+            + "\nThat is a copy, not an estimate. Re-examine the EVIDENCE and give each country its own mix, based on "
+              "what it actually grows or makes (crops, industry structure) and its policy priorities; keep a share "
+              "close to the global one only where the evidence supports it. Return exactly the same shape.\n"
+            + f"PREVIOUS ANSWER:\n{json.dumps(prev, ensure_ascii=False)}")
+
+
 def reask_note_mea(problems: list[dict], global_mix: dict[str, dict[str, float]], previous: dict) -> str:
     prev = {k: v for k, v in (previous or {}).items() if k != "_sources"}
     return ("\n\nYOUR PREVIOUS ANSWER (below) gives an MEA segment mix that contradicts the GLOBAL mix "
@@ -441,6 +500,30 @@ def review_mea(fields: dict, unit_values: dict[str, float], global_mix: dict[str
     rec: dict = {"problems": probs, "reasked": False}
     if not probs:
         rec["after"] = []
+        # no x2 conflict -- but mixes that just copy the global one are not estimates either
+        rec["copied_first"] = copies_global(_unit_mixes(smea, unit_values, global_mix, merge), global_mix)
+        if rec["copied_first"]:
+            log.append("[segments_mea] MEA mixes copy the global mix -- re-asking once for country-specific mixes")
+            rec["reasked"] = True
+            try:
+                again = ask("segments_mea", reask_note_copied(global_mix, smea))
+            except Exception as exc:  # noqa: BLE001
+                log.append(f"[segments_mea] re-ask failed: {exc}")
+                again = None
+            from AiAgentsFleet.cmi_report.geo_check import keyed
+            if not (isinstance(again, dict) and "error" not in again and set(keyed(again)) >= set(unit_values)):
+                rec["reask_failed"] = True
+            elif problems(again):            # kept only if it passes the x2 check
+                rec["copied_reask_rejected"] = [p["detail"] for p in problems(again)]
+                log.append("[segments_mea] re-asked mixes fail the x2 check -- first answer kept: "
+                           + "; ".join(rec["copied_reask_rejected"])[:300])
+            else:
+                fields["segments_mea"] = again
+                rec["changes"] = ["country-specific mixes from the re-ask kept"]
+            rec["copied_after"] = copies_global(_unit_mixes(fields["segments_mea"], unit_values, global_mix, merge),
+                                                global_mix)
+            log.append(f"[segments_mea] after re-ask: the mixes {'still copy' if rec['copied_after'] else 'no longer copy'}"
+                       f" the global mix")
         return rec
     log.append("[segments_mea] " + "; ".join(f"{p['dim']}: {p['detail']}" for p in probs)[:500] + " -- re-asking once")
     rec["reasked"] = True
@@ -458,6 +541,7 @@ def review_mea(fields: dict, unit_values: dict[str, float], global_mix: dict[str
     else:
         rec["reask_failed"] = True
     rec["after"] = problems(fields["segments_mea"])
+    rec["copied_after"] = copies_global(_unit_mixes(fields["segments_mea"], unit_values, global_mix, merge), global_mix)
     log.append(f"[segments_mea] after re-ask: {len(rec['after'])} segment(s) still beyond x{MIX_FACTOR:g}")
     return rec
 
@@ -524,7 +608,7 @@ def review_use_cases(fields: dict, definition: dict | None, ask: Callable[[str, 
 # final verdict (computed by model.build from the final answers)
 # --------------------------------------------------------------------------- #
 def review(definition: dict, record: dict | None, *, global_problems: list[dict], resolved: dict,
-           mix_problems: list[dict], uc_problems: list[dict]) -> dict:
+           mix_problems: list[dict], uc_problems: list[dict], copied: bool = False) -> dict:
     """m["segment_review"]: every check on the answers the model was built
     from, and what happened to each failure. A check that failed with no
     re-ask on record (data from before PLAN-04) is a blocker; a mix still
@@ -556,6 +640,11 @@ def review(definition: dict, record: dict | None, *, global_problems: list[dict]
         else:
             blockers.append(line + " (not re-asked)")
 
+    if copied or mrec.get("copied_first"):
+        outcome = ("still copied after one re-ask" if copied and mrec.get("reasked") else
+                   "not re-asked" if copied else "first answer; the re-ask gave country-specific mixes")
+        warnings.append(f"MEA mixes copy the global mix ({outcome})")
+
     urec = record.get("use_cases") or {}
     for p in uc_problems:
         blockers.append(f"use cases ({p['dim']}): {p['detail']}" + ("" if urec.get("reasked") else " (not re-asked)"))
@@ -568,7 +657,8 @@ def review(definition: dict, record: dict | None, *, global_problems: list[dict]
                          "merged": {d: {a: b for a, b in v.items() if a != b} for d, v in resolved["merge"].items() if v},
                          "type_off": resolved.get("type_off")},
             "segments_mea": {"first_problems": mrec.get("problems") or [], "reasked": bool(mrec.get("reasked")),
-                             "changes": mrec.get("changes") or [], "problems": mix_problems},
+                             "changes": mrec.get("changes") or [], "problems": mix_problems,
+                             "copied_first": bool(mrec.get("copied_first")), "copied": copied},
             "use_cases": {"first_problems": urec.get("problems") or [], "reasked": bool(urec.get("reasked")),
                           "removed": urec.get("removed") or [], "problems": uc_problems},
             "changes": resolved.get("notes") or [],

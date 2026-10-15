@@ -231,9 +231,12 @@ GROUPS: list[dict] = [
             "Each dimension must be mutually exclusive and collectively exhaustive: define EVERY segment in one "
             "line (segment_definitions), and where the source taxonomy overlaps (a type that is also part of a "
             "broader category) state the allocation rule. "
-            "For every pair of types (except 'Other ...'), say whether buyers actually price or specify them "
-            "differently (grade, form, purity, application) rather than only by production history or route; two "
-            "types that are really one product go in type_merges. "
+            "If the value-chain level is 'manufacturer', 'vendor/software' or 'retail', say for every pair of types "
+            "(except 'Other ...') whether buyers actually price or specify them differently (grade, form, purity, "
+            "application) rather than only by production history or route; two types that are really one product "
+            "go in type_merges. For 'farm-gate output', 'producer' or 'service' markets a type dimension by "
+            "production system, technology or species is a valid split: keep those types distinct (type_split_check "
+            "[]) and merge only types that genuinely overlap. "
             "Then judge, honestly, whether each dimension is a real, commonly reported way to segment THIS market "
             "(false if the segments are artificial, or if the two dimensions describe the same thing)."),
         "schema": ('{"type_dimension": {"singular": <e.g. "Product Type">, "plural": <e.g. "Product Types">}, '
@@ -248,8 +251,8 @@ GROUPS: list[dict] = [
                    'counted under Seaweed Extracts, not Extract-Based Biostimulants.">; [] if the segments are '
                    'already mutually exclusive], '
                    '"type_split_check": [{"a": <type>, "b": <type>, "buyers_differentiate": <true|false>, '
-                   '"basis": "grade|form|purity|application|production history|other"}, one per pair of types], '
-                   '"type_merges": [{"merge": [<type>, <type>], "name": <merged name>, "definition": <one line>}; '
+                   '"basis": "grade|form|purity|application|production history|other"}, one per pair of types; [] for farm-gate output, producer and service '
+                   'markets], "type_merges": [{"merge": [<type>, <type>], "name": <merged name>, "definition": <one line>}; '
                    '[] if every type is a distinct product]}'),
     },
     {
@@ -262,14 +265,10 @@ GROUPS: list[dict] = [
             " For EVERY listed MEA country or remainder group, give the 2026 mix of the market by type and by "
             "demand segment (each mix sums to 100; use exactly the names in CONTEXT.types and "
             "CONTEXT.demand_segments) and each segment's 2026-2033 CAGR in that country. Mixes must differ by "
-            "country according to its economy, industry structure and policy priorities, but start from the "
-            "GLOBAL mix in CONTEXT.global_mix: across MEA as a whole a segment stays within about half to twice its "
-            "global share unless the evidence shows a concrete reason, which you then give in mea_reason."),
+            "country according to the evidence on its economy, crops or industry structure and policy priorities."),
         "schema": ('{"<country or remainder group>": {"type": {"<name>": {"share_pct": <number>, '
                    '"cagr_pct": <number>}, ...}, "demand": {"<name>": {"share_pct": <number>, "cagr_pct": '
-                   '<number>}, ...}}, ... one entry for each of: {MEA_UNITS}, '
-                   '"mea_reason": {"<segment whose MEA share is far from its global share>": <1 sentence with the '
-                   'evidence>; {} if none}}'),
+                   '<number>}, ...}}, ... one entry for each of: {MEA_UNITS}}'),
     },
     {
         "key": "dynamics",

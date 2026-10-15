@@ -332,7 +332,7 @@ def internal_log(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: li
                                     "repeating an earlier sentence": why["repeat"],
                                     "restating the headline outside the summary": why["headline restated"],
                                     "with template or draft wording": why["caveat"]}.items() if v))
-    corr += [x for x in b.log if "incomplete row" in x or x.startswith("empty heading removed")]
+    corr += [x for x in b.log if "incomplete row" in x or x.startswith(("empty heading removed", "figure left out"))]
     v = verification or {}
     log = ["Every value, share, gap and ranking was derived from the master data sheet (A.1), the number "
            "register (A.2) and the rankings register (A.3) before any text was written. " + fmt.PRECISION_RULE,
@@ -465,10 +465,20 @@ class Builder:
     def el(self, i: int):
         return copy.deepcopy(self.src[i])
 
+    def _source_of_skipped_figure(self, text: str) -> bool:
+        """True for the 'Source: ...' line right after a figure that was left out (image(None))."""
+        skip, self.skip_source = getattr(self, "skip_source", False), False
+        return skip and text.lstrip().startswith("Source")
+
     def keep(self, i: int):
-        self.out.append(self.el(i))
+        el = self.el(i)
+        if self._source_of_skipped_figure(el.xpath("string(.)")):
+            return
+        self.out.append(el)
 
     def para(self, i: int, text: str | None, bold: bool | None = None):
+        if self._source_of_skipped_figure(text or ""):
+            return
         if text:
             self.out.append(set_text(self.el(i), text, bold))
         else:
@@ -490,7 +500,19 @@ class Builder:
             n = self.tbl
         self.out.append(set_text(self.el(i), f"{kind} {n}: {text}", True))
 
-    def image(self, i: int, path: Path):
+    def image(self, i: int, path: Path | None):
+        """Places a chart. `path` None = the chart was skipped (charts.py: nothing to draw, e.g. a
+        zero-value unit): the figure is left out cleanly -- its caption (and figure number) and its
+        source line go too, and the omission is logged."""
+        if path is None:
+            last = self.out[-1] if self.out else None
+            cap = last.xpath("string(.)").strip() if last is not None and last.tag == qn("w:p") else ""
+            if re.match(r"Figure \d+:", cap):
+                self.out.pop()
+                self.fig -= 1
+            self.skip_source = True
+            self.log.append(f"figure left out (no data to chart): {re.sub(r'^Figure \d+:\s*', '', cap) or f'element {i}'}")
+            return
         el = self.el(i)
         r_id, _ = self.doc.part.get_or_add_image(str(path))
         with Image.open(path) as im:

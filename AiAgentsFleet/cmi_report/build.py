@@ -947,7 +947,15 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                 cme, caf = seg["Middle East"][fdim][fme]["cagr"], seg["Africa"][fdim][faf]["cagr"]
                 mea_fast = (f"{fme} (Middle East {fmt.pct(cme)}; Africa {fmt.pct(caf)})" if fme == faf else
                             f"{fme} (Middle East {fmt.pct(cme)}); {faf} (Africa {fmt.pct(caf)})")
-                rows.append([f"Fastest-growing {fdim_label}", f"{fastest['Global']} ({fmt.pct(ft['cagr'])})", mea_fast])
+                from AiAgentsFleet.cmi_report import rules
+
+                def lead(geo):          # near-ties (rules.TIE_PP) are named together, never one "fastest"
+                    tied = rules.top_tied(seg[geo][fdim], "cagr")
+                    return " and ".join(tied) + " (similar)" if len(tied) > 1 else tied[0]
+                if any(len(rules.top_tied(seg[geo][fdim], "cagr")) > 1 for geo in ("Global", "Middle East", "Africa")):
+                    mea_fast = (f"{lead('Middle East')} (Middle East {fmt.pct(cme)}); "
+                                f"{lead('Africa')} (Africa {fmt.pct(caf)})")
+                rows.append([f"Fastest-growing {fdim_label}", f"{lead('Global')} ({fmt.pct(ft['cagr'])})", mea_fast])
             rows += [["Primary growth catalyst", *two("primary_catalyst")],
                      ["Primary constraint", *two("primary_constraint")]]
             b.table(i, rows)

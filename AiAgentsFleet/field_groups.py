@@ -158,7 +158,10 @@ FIELD_GROUPS: list[dict] = [
         "system": (
             "You summarize web search results into a regional market breakdown, Google AI-Overview "
             "style. Regions MUST be exactly these five: North America, Europe, Asia Pacific, "
-            "Latin America, Middle East & Africa -- do not use any other region names."
+            "Latin America, Middle East & Africa -- do not use any other region names. Region "
+            "convention: North America is the United States and Canada ONLY; Mexico is Latin America; "
+            "Turkey and Israel are Middle East & Africa (Middle East); Egypt and North Africa are Middle "
+            "East & Africa (Africa); Russia is Europe. Count and list each country only in its own region."
         ),
         "schema_hint": (
             '{"regions": {"North America": {"value_usd_mn": <number>, "share_pct_of_global": <number>, '

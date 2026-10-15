@@ -28,8 +28,12 @@ MAIN_REGIONS = ["North America", "Europe", "Asia Pacific", "Latin America", "Mid
 GROUP_REGIONS = {"countries_main": ["North America", "Europe", "Asia Pacific", "Latin America"],
                  "countries_mea": ["Middle East", "Africa"]}
 REGION_GROUP = {r: k for k, rs in GROUP_REGIONS.items() for r in rs}
-# kinds the re-ask decides: still present after it -> warning, not blocker
-SOFT = {"rest_too_small", "convention"}
+# split problems the re-ask decides: still present after it -> warning, not blocker.
+# Every regional problem left after its re-asks (sum aside) is a blocker.
+SOFT = {"rest_too_small"}
+REGIONS_ROW = "Global regions"        # the sanity table's region rows
+BAL_OTHERS = 0.10                     # single-region balancing: every other region moved less than this,
+BAL_FACTOR, BAL_SHARE = 2.0, 0.60     # while one moved more than 2x or took > 60% of the total change
 
 
 def _num(x) -> float | None:
@@ -161,6 +165,48 @@ def check_regions(regional: dict | None, global_value: float) -> list[dict]:
     return out
 
 
+def _values(regional: dict | None) -> dict[str, float]:
+    regions = (regional or {}).get("regions") or {}
+    return {r: _num((regions.get(r) or {}).get("value_usd_mn")) or 0.0 for r in MAIN_REGIONS}
+
+
+def balancing(before: dict | None, after: dict | None) -> list[dict]:
+    """A re-ask that closed the gap to the global headline by moving one region:
+    that region moved by >= 10% and either more than 2x or more than 60% of the
+    total change, while every other region moved less than 10%."""
+    b, a = _values(before), _values(after)
+    if not all(b.values()) or not all(a.values()):
+        return []
+    rel = {r: abs(a[r] / b[r] - 1) for r in MAIN_REGIONS}
+    total = sum(abs(a[r] - b[r]) for r in MAIN_REGIONS)
+    out = []
+    for r in MAIN_REGIONS:
+        factor = max(a[r] / b[r], b[r] / a[r])
+        if (rel[r] >= BAL_OTHERS and all(rel[o] < BAL_OTHERS for o in MAIN_REGIONS if o != r)
+                and (factor > BAL_FACTOR or abs(a[r] - b[r]) > BAL_SHARE * total)):
+            out.append(_problem(r, "balancing",
+                                f"single-region balancing: {r} moved from ${b[r]:,.1f}M to ${a[r]:,.1f}M "
+                                f"({factor:.1f}x) while every other region moved less than 10%"))
+    return out
+
+
+def _valid_regions(answer) -> bool:
+    regs = answer.get("regions") if isinstance(answer, dict) else None
+    return isinstance(regs, dict) and all(_num((regs.get(r) or {}).get("value_usd_mn")) is not None and
+                                          _num((regs.get(r) or {}).get("cagr_2025_2030_pct")) is not None
+                                          for r in MAIN_REGIONS)
+
+
+def _region_changes(before: dict | None, after: dict | None) -> list[str]:
+    b, a = _values(before), _values(after)
+    return [f"{r}: {b[r]:g} -> {a[r]:g}" for r in MAIN_REGIONS]
+
+
+def _spread_note(probs: list[dict]) -> str:
+    return " ".join(f"You closed the gap by inflating {p['region']} alone. The gap must be spread across the "
+                    f"regions according to the evidence, not dumped into one region." for p in probs)
+
+
 def elsewhere_values(regional: dict | None) -> tuple[dict[str, float], dict[str, float]]:
     """({country: value}, {region: value}) from the regional agent's answer;
     the Middle East and Africa each get the whole MEA value (the countries are
@@ -209,8 +255,9 @@ def changes(before: dict, after: dict, regions: list[str]) -> list[str]:
 def reask_regions(regional: dict, global_value: float, ask: Callable[[str], dict | None],
                   log: list[str]) -> dict:
     """Checks the regional agent's answer; when it fails, asks once more
-    (`ask(note)` returns the agent's new JSON). Returns the record kept in
-    cmi_fields geo_review["regional"] (with the second answer, if any)."""
+    (`ask(note)` returns the agent's new JSON). If that re-ask closed the gap
+    by inflating one region (balancing), asks one more time. Returns the record
+    kept in cmi_fields geo_review["regional"] (with the kept answer, if any)."""
     probs = check_regions(regional, global_value)
     rec: dict = {"problems": probs, "reasked": False, "global_value_usd_mn": global_value}
     if not probs:
@@ -219,22 +266,33 @@ def reask_regions(regional: dict, global_value: float, ask: Callable[[str], dict
     rec["reasked"] = True
     extra = (f"The global market is ${global_value:,.1f}M in the base year (the market_size desk research); "
              f"the five regions are slices of it and must sum to it.")
-    try:
-        again = ask(reask_note(probs, regional, extra))
-    except Exception as exc:  # noqa: BLE001
-        log.append(f"[regional] re-ask failed: {exc}")
-        again = None
-    regs = again.get("regions") if isinstance(again, dict) else None
-    if isinstance(regs, dict) and all(_num((regs.get(r) or {}).get("value_usd_mn")) is not None and
-                                      _num((regs.get(r) or {}).get("cagr_2025_2030_pct")) is not None
-                                      for r in MAIN_REGIONS):
-        rec["answer"] = {k: v for k, v in again.items() if k != "_sources"}
-        before = (regional or {}).get("regions") or {}
-        rec["changes"] = [f"{r}: {(before.get(r) or {}).get('value_usd_mn')} -> "
-                          f"{(again['regions'].get(r) or {}).get('value_usd_mn')}" for r in MAIN_REGIONS]
-    else:
+
+    def ask_once(note: str) -> dict | None:
+        try:
+            again = ask(note)
+        except Exception as exc:  # noqa: BLE001
+            log.append(f"[regional] re-ask failed: {exc}")
+            return None
+        return {k: v for k, v in again.items() if k != "_sources"} if _valid_regions(again) else None
+
+    answer = ask_once(reask_note(probs, regional, extra))
+    if answer is None:
         rec["reask_failed"] = True
-    rec["after"] = check_regions(rec.get("answer") or regional, global_value)
+    else:
+        bal = balancing(regional, answer)
+        if bal:
+            log.append("[regional] " + "; ".join(p["detail"] for p in bal) + " -- re-asking once more")
+            rec["balancing"] = bal
+            rec["balancing_answer"] = answer
+            rec["reasked_balancing"] = True
+            again = ask_once(reask_note(bal + check_regions(answer, global_value), answer,
+                                        extra + " " + _spread_note(bal)))
+            if again is not None:
+                answer = again
+        rec["answer"] = answer
+        rec["changes"] = _region_changes(regional, answer)
+    final = rec.get("answer") or regional
+    rec["after"] = check_regions(final, global_value) + (balancing(regional, final) if rec.get("answer") else [])
     log.append(f"[regional] after re-ask: {len(rec['after'])} problem(s)")
     return rec
 
@@ -278,18 +336,28 @@ def review_splits(fields: dict, geo: dict, ask: Callable[[str, str], dict | None
 # --------------------------------------------------------------------------- #
 SANITY_SYSTEM = (
     "You are a sceptical senior market analyst at Coherent Market Insights, reviewing the final country table "
-    "of a market whitepaper before it goes to a client. List ONLY countries (or 'Rest of' groups) whose size or "
-    "rank is implausible for THIS market as defined, each with a concrete reason backed by the EVIDENCE or by "
+    "of a market whitepaper before it goes to a client. List ONLY regions, countries or 'Rest of' groups whose "
+    "size, share or rank is implausible for THIS market as defined, each with a concrete reason backed by the EVIDENCE or by "
     "well-known facts about the market (e.g. 'Turkey produces more poultry feed than the UK, yet is sized "
     "smaller'). Do not flag small differences or matters of taste. If nothing is implausible, return an empty "
     "list. Write in UK English. Return ONLY valid JSON.")
-SANITY_SCHEMA = ('{"flags": [{"country": <name exactly as in TABLE>, "region": <its region exactly as in TABLE>, '
+SANITY_SCHEMA = ('{"flags": [{"country": <row name exactly as in TABLE; the region name for a region row>, '
+                 '"region": <its TABLE section exactly, "Global regions" for a region row>, '
                  '"problem": "too large|too small", "reason": <1-2 sentences with the evidence>}, ... 0-8 flags]}')
 
 
-def table(countries: dict[str, dict[str, dict]], rest: dict[str, list[str]]) -> dict:
-    """The country table the reviewer sees: 2026E value, share of region, CAGR."""
+def table(countries: dict[str, dict[str, dict]], rest: dict[str, list[str]],
+          regions: dict[str, dict] | None = None) -> dict:
+    """The table the reviewer sees: the five regions (2026E value, share of
+    global, CAGR) and every country (2026E value, share of region, CAGR)."""
     out = {}
+    if regions:
+        tot = sum(v["v26"] for v in regions.values()) or 1
+        out[REGIONS_ROW] = {r: {"usd_mn_2026": round(v["v26"], 1),
+                                "share_of_global_pct": round(v["v26"] / tot * 100, 1),
+                                "cagr_2026_2033_pct": (round(((v["v33"] / v["v26"]) ** (1 / 7) - 1) * 100, 1)
+                                                       if v["v26"] > 0 and v.get("v33") else None)}
+                            for r, v in regions.items()}
     for r, d in countries.items():
         tot = sum(v["v26"] for v in d.values()) or 1
         out[r] = {k: {"usd_mn_2026": round(v["v26"], 1), "share_of_region_pct": round(v["v26"] / tot * 100, 1),
@@ -306,21 +374,34 @@ def sanity_prompt(market: str, tbl: dict, evidence: list[str]) -> str:
 
 
 def resolve_flags(raw: dict | None, tbl: dict, fields: dict, geo: dict, ask: Callable[[str, str], dict | None],
-                  log: list[str], *, regional: dict | None = None) -> dict:
+                  log: list[str], *, regional: dict | None = None,
+                  ask_regional: Callable[[str], dict | None] | None = None, global_value: float | None = None,
+                  regional_first: dict | None = None) -> dict:
     """For each region with a flagged country, re-asks its country agent once
     (flags attached). A region's re-asked split is kept only if it passes
-    check_split; every flag and its outcome is recorded."""
+    check_split. Flagged region rows re-ask the regional agent once
+    (`ask_regional`); its answer is kept (as "regional_answer") only if it
+    passes check_regions and is not single-region balancing against the
+    agent's first answer (`regional_first`). Every flag and its outcome is
+    recorded."""
     flags = []
     for f in (raw or {}).get("flags") or []:
         if not isinstance(f, dict):
             continue
         r, c = f.get("region"), canonical(f.get("country") or "")
+        if c in MAIN_REGIONS:
+            r = REGIONS_ROW
         c = next((k for k in (tbl.get(r) or {}) if k.lower() == c.lower()), None)
         if c is None:
             flags.append({**f, "outcome": "ignored: not a row of the table", "open": False})
             continue
+        row = tbl[r][c]
         flags.append({"country": c, "region": r, "problem": f.get("problem"), "reason": f.get("reason"),
-                      "share_before": tbl[r][c]["share_of_region_pct"]})
+                      "share_before": row.get("share_of_region_pct", row.get("share_of_global_pct"))})
+    out: dict = {"flags": flags}
+    mine = [f for f in flags if f.get("region") == REGIONS_ROW and "outcome" not in f]
+    if mine:
+        out.update(_resolve_region_flags(mine, regional, ask_regional, global_value, regional_first, log))
     ew, rv = elsewhere_values(regional)
     for key, regions in GROUP_REGIONS.items():
         mine = [f for f in flags if f.get("region") in regions and "outcome" not in f]
@@ -351,7 +432,42 @@ def resolve_flags(raw: dict | None, tbl: dict, fields: dict, geo: dict, ask: Cal
                                   "re-asked split rejected (" + "; ".join(p["detail"] for p in probs) + ")" if probs
                                   else "re-ask gave no split for this region"),
                          open=not moved)
-    return {"flags": flags}
+    return out
+
+
+def _resolve_region_flags(mine: list[dict], regional: dict | None, ask_regional, global_value,
+                          regional_first: dict | None, log: list[str]) -> dict:
+    """Region-row flags: one re-ask of the regional agent, kept only if coherent."""
+    if ask_regional is None or not global_value:
+        for f in mine:
+            f.update(outcome="not re-asked: no regional agent", open=True)
+        return {}
+    extra = ("A sceptical review of the final table flagged these regions:\n" + "\n".join(
+        f"- {f['country']}: {f['problem']} -- {f['reason']}" for f in mine)
+        + f"\nThe global market is ${global_value:,.1f}M in the base year; the five regions must sum to it. "
+          "Spread any correction across the regions according to the evidence, not into one region.")
+    log.append(f"[geo_review] {len(mine)} region flag(s) -- re-asking the regional agent once")
+    try:
+        again = ask_regional(reask_note([], regional or {}, extra))
+    except Exception as exc:  # noqa: BLE001
+        log.append(f"[geo_review] regional re-ask failed: {exc}")
+        again = None
+    probs = (check_regions(again, global_value) + balancing(regional_first or regional, again)
+             if _valid_regions(again) else None)
+    accepted = probs == []
+    new = _values(again) if accepted else {}
+    tot = sum(new.values()) or 1
+    for f in mine:
+        after = round(new[f["country"]] / tot * 100, 1) if accepted else f["share_before"]
+        f.update(share_after=after,
+                 outcome=("re-asked regions kept" if accepted else
+                          "re-asked regions rejected (" + "; ".join(p["detail"] for p in probs) + ")" if probs
+                          else "re-ask gave no valid regions"),
+                 open=not (accepted and abs(after - f["share_before"]) >= 0.1))
+    if not accepted:
+        return {}
+    ans = {k: v for k, v in again.items() if k != "_sources"}
+    return {"regional_answer": ans, "regional_changes": _region_changes(regional, ans)}
 
 
 # --------------------------------------------------------------------------- #
@@ -369,7 +485,7 @@ def review(splits: dict[str, dict], geo: dict, record: dict | None, *, regional_
     regional = {"regions": (reg_rec.get("answer") or {}).get("regions")} if reg_rec.get("answer") else regional_raw
     blockers, warnings, log = [], [], []
 
-    def verdict(label: str, probs: list[dict], reasked: bool) -> str:
+    def verdict(label: str, probs: list[dict], reasked: bool, soft: set[str] = SOFT) -> str:
         if not probs:
             return "ok"
         kinds = {p["kind"] for p in probs}
@@ -380,24 +496,27 @@ def review(splits: dict[str, dict], geo: dict, record: dict | None, *, regional_
         if kinds == {"sum"}:
             log.append(f"{label}: {detail} after one re-ask -- normalised proportionally")
             return "normalised"
-        hard = [p for p in probs if p["kind"] not in SOFT | {"sum"}]
+        hard = [p for p in probs if p["kind"] not in soft | {"sum"}]
         if hard:
             blockers.append(f"{label}: {'; '.join(p['detail'] for p in hard)} (still failing after one re-ask)")
             return "blocker"
-        warnings.append(f"{label}: {'; '.join(p['detail'] for p in probs if p['kind'] in SOFT)} "
+        warnings.append(f"{label}: {'; '.join(p['detail'] for p in probs if p['kind'] in soft)} "
                         f"(kept after one re-ask)")
         if "sum" in kinds:
             log.append(f"{label}: sum still off after one re-ask -- normalised proportionally")
         return "warning"
 
-    reg_probs = check_regions(regional, global_value)
+    reg_probs = check_regions(regional, global_value) + (balancing(regional_raw, regional)
+                                                         if reg_rec.get("answer") else [])
     total = sum(_num((d or {}).get("value_usd_mn")) or 0 for d in ((regional or {}).get("regions") or {}).values())
     regional_out = {"sum_usd_mn": round(total, 1), "global_usd_mn": round(global_value, 1),
                     "ratio": round(total / global_value, 3) if global_value else None,
                     "source": "re-asked regional answer" if reg_rec.get("answer") else "regional agent (fields_raw)",
                     "problems": reg_probs, "first_problems": reg_rec.get("problems"),
                     "reasked": bool(reg_rec.get("reasked")), "changes": reg_rec.get("changes") or []}
-    regional_out["status"] = verdict("Regions", reg_probs, bool(reg_rec.get("reasked")))
+    regional_out["balancing_first"] = reg_rec.get("balancing") or []
+    regional_out["sanity_changes"] = reg_rec.get("sanity_changes") or []
+    regional_out["status"] = verdict("Regions", reg_probs, bool(reg_rec.get("reasked")), soft=set())
 
     ew, rv = elsewhere_values(regional)
     probs = check_splits(splits, geo, elsewhere=ew, region_values=rv)

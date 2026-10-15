@@ -239,10 +239,12 @@ def _regional(data: dict, fields: dict) -> dict | None:
 
 def sanity_review(market: str, data: dict, fields: dict, geo: dict, definition: dict, llm: GenLLM, log: list,
                   ask_group) -> dict:
-    """One sceptical review of the final country table (geo_check), with a
-    re-ask of the country agent for every flagged region."""
+    """One sceptical review of the final region and country table (geo_check),
+    with a re-ask of the country agent for every region with a flagged country,
+    and of the regional agent when a region row is flagged."""
     from AiAgentsFleet.cmi_report.model import geography
-    tbl = geo_check.table(geography(data, fields)["countries"], rest_members(geo))
+    gg = geography(data, fields)
+    tbl = geo_check.table(gg["countries"], rest_members(geo), gg["reg"])
     ev = search(market, [f"{market} production consumption by country largest",
                          f"{market} top countries market share"], "geo_review", log)
     try:
@@ -251,7 +253,10 @@ def sanity_review(market: str, data: dict, fields: dict, geo: dict, definition: 
     except Exception as exc:  # noqa: BLE001
         log.append(f"[geo_review] sanity review failed: {exc}")
         return {"error": str(exc), "flags": []}
-    rec = geo_check.resolve_flags(raw, tbl, fields, geo, ask_group, log, regional=_regional(data, fields))
+    rec = geo_check.resolve_flags(raw, tbl, fields, geo, ask_group, log, regional=_regional(data, fields),
+                                  ask_regional=ask_regional(market, data, llm, log), global_value=gg["G"][2025],
+                                  regional_first=(data.get("fields_raw") or {}).get("regional")
+                                  or data["fields"].get("regional"))
     log.append(f"[geo_review] sanity review: {len(rec['flags'])} flag(s), "
                f"{sum(1 for f in rec['flags'] if f.get('open'))} still open")
     return rec
@@ -318,6 +323,10 @@ def run(slug: str, only: set[str] | None = None) -> Path:
         review["splits"] = geo_check.review_splits(fields, geo, ask_group, log, regional=_regional(data, fields))
         fields["geo_review"] = review
         review["sanity"] = sanity_review(market, data, fields, geo, definition, llm, log, ask_group)
+        if review["sanity"].get("regional_answer"):       # a flagged region, re-asked and coherent
+            review["regional"] = {**(review.get("regional") or {}), "reasked": True,
+                                  "answer": review["sanity"].pop("regional_answer"),
+                                  "sanity_changes": review["sanity"].pop("regional_changes", [])}
         fields["geo_review"] = review
         print("  done: geo_review")
     if any(g["key"] == "segments_mea" for g in wanted):

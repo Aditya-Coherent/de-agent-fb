@@ -279,3 +279,90 @@ def test_region_convention_is_enforced():
     geo, _, notes = validate_geography(raw)
     assert "Turkey" not in geo["Europe"] and "Egypt" not in geo["Middle East"]
     assert any("Turkey is Middle East, not Europe" in n for n in notes)
+
+
+# --------------------------------------------------------------------------- #
+# follow-up: single-region balancing, region sanity rows, region convention
+# --------------------------------------------------------------------------- #
+FIRST = {"North America": 4200, "Europe": 3500, "Asia Pacific": 6800, "Latin America": 1500,
+         "Middle East & Africa": 500}                                          # 0.81x a 20,281 global
+DUMPED = {**FIRST, "Middle East & Africa": 4281}                               # gap put into MEA alone
+SPREAD = {"North America": 5000, "Europe": 4300, "Asia Pacific": 8400, "Latin America": 1700,
+          "Middle East & Africa": 881}
+
+
+def regional(values):
+    return fleet(values)["fields"]["regional"]
+
+
+def test_balancing_flags_a_gap_dumped_into_one_region_only():
+    p = geo_check.balancing(regional(FIRST), regional(DUMPED))
+    assert [(x["region"], x["kind"]) for x in p] == [("Middle East & Africa", "balancing")]
+    assert geo_check.balancing(regional(FIRST), regional(SPREAD)) == []
+    # every region rescaled together (GenAI's 4.3x answer) is not single-region balancing
+    assert geo_check.balancing(regional(FIRST), regional({r: v * 0.23 for r, v in FIRST.items()})) == []
+
+
+def test_a_reask_that_dumps_the_gap_into_one_region_is_reasked_again():
+    answers = [regional(DUMPED), regional(SPREAD)]
+    notes = []
+    rec = geo_check.reask_regions(regional(FIRST), 20281, lambda n: notes.append(n) or answers.pop(0), [])
+    assert len(notes) == 2 and rec["reasked_balancing"]
+    assert "inflating Middle East & Africa alone" in notes[1] and "spread across the regions" in notes[1]
+    assert rec["balancing"][0]["region"] == "Middle East & Africa"
+    assert rec["after"] == [] and geo_check._values(rec["answer"]) == SPREAD
+
+
+def test_balancing_still_present_after_the_second_reask_is_a_blocker():
+    f = fleet(FIRST)
+    f["fields"]["market_size"]["forecast_series_usd_mn"] = {str(y): 20281 * 1.05 ** (y - 2025)
+                                                              for y in range(2025, 2034)}
+    rec = geo_check.reask_regions(regional(FIRST), 20281, lambda n: regional(DUMPED), [])
+    assert [p["kind"] for p in rec["after"]] == ["balancing"]
+    rv = model.geography(f, cmi(review={"regional": rec, "splits": {
+        "countries_main": {"problems": [], "reasked": False}, "countries_mea": {"problems": [], "reasked": False}}}))
+    assert rv["review"]["regional"]["status"] == "blocker"
+    assert any("single-region balancing" in b for b in rv["review"]["blockers"])
+
+
+def test_region_level_sanity_flag_triggers_a_regional_reask():
+    f = fleet(DUMPED)
+    gg = model.geography(f, cmi())
+    tbl = geo_check.table(gg["countries"], rest_members(GEO), gg["reg"])
+    assert tbl["Global regions"]["Middle East & Africa"]["share_of_global_pct"] == 21.1
+    flags = {"flags": [{"country": "Middle East & Africa", "region": "Global regions", "problem": "too large",
+                        "reason": "MEA is about a tenth of world poultry feed"}]}
+    notes = []
+    rec = geo_check.resolve_flags(flags, tbl, {"countries_main": good_main(), "countries_mea": good_mea()}, GEO,
+                                  lambda k, n: None, [], regional=regional(DUMPED),
+                                  ask_regional=lambda n: notes.append(n) or regional(SPREAD), global_value=20281,
+                                  regional_first=regional(FIRST))
+    assert len(notes) == 1 and "Middle East & Africa: too large" in notes[0]
+    fl = rec["flags"][0]
+    assert fl["outcome"] == "re-asked regions kept" and fl["open"] is False and fl["share_after"] == 4.3
+    assert geo_check._values(rec["regional_answer"]) == SPREAD
+    # an answer that is still single-region balancing against the first answer is rejected
+    rec = geo_check.resolve_flags(flags, tbl, {"countries_main": good_main(), "countries_mea": good_mea()}, GEO,
+                                  lambda k, n: None, [], regional=regional(DUMPED),
+                                  ask_regional=lambda n: regional({**FIRST, "Middle East & Africa": 4000}),
+                                  global_value=20281, regional_first=regional(FIRST))
+    assert "regional_answer" not in rec and rec["flags"][0]["open"] is True
+    assert "single-region balancing" in rec["flags"][0]["outcome"]
+
+
+def test_mexico_in_north_america_after_the_reask_is_a_blocker():
+    with_mexico = fleet()["fields"]["regional"]
+    with_mexico["regions"]["North America"]["countries"] = [{"name": "Mexico", "value_usd_mn": 40}]
+    rec = geo_check.reask_regions(with_mexico, 1000, lambda n: copy.deepcopy(with_mexico), [])
+    assert rec["reasked"] and [p["kind"] for p in rec["after"]] == ["convention"]
+    rv = model.geography(fleet(), cmi(review={"regional": rec, "splits": {
+        "countries_main": {"problems": [], "reasked": False}, "countries_mea": {"problems": [], "reasked": False}}}))
+    assert rv["review"]["regional"]["status"] == "blocker"
+    assert any("Mexico" in b and "after one re-ask" in b for b in rv["review"]["blockers"])
+    assert not any("Mexico" in w for w in rv["review"]["warnings"])
+
+
+def test_fleet_regional_prompt_states_the_region_convention():
+    from AiAgentsFleet.field_groups import FIELD_GROUPS
+    sysmsg = next(g for g in FIELD_GROUPS if g["key"] == "regional")["system"]
+    assert "United States and Canada ONLY" in sysmsg and "Mexico is Latin America" in sysmsg

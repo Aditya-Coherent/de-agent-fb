@@ -100,3 +100,33 @@ def test_run_fleet_keeps_raw_when_jitter_on(monkeypatch, randomizer_off):
     assert a["fields"]["market_size"]["base_year_value_usd_mn"] != 4300.0
     assert a["fields"]["market_size"]["_sources"] == a["fields_raw"]["market_size"]["_sources"]
     assert a["randomization"] != "none"
+
+
+def test_field_agent_drops_off_topic_and_retries_once(monkeypatch, randomizer_off):
+    from AiAgentsFleet import field_agent
+    off_topic = [{"text": "Regional: adjective, of a region", "url": "https://dictionary.cambridge.org/r",
+                  "domain": "dictionary.cambridge.org"},
+                 {"text": "Wordle answer today", "url": "https://globle.wordleday.org/", "domain": "globle.wordleday.org"}]
+    calls, sleeps = [], []
+    monkeypatch.setattr(field_agent, "gather_with_sources",
+                        lambda *a, **k: calls.append(1) or off_topic + SNIPPETS[2:3])
+    monkeypatch.setattr(field_agent.time, "sleep", sleeps.append)
+    llm, log = StubLLM(), []
+    group = next(g for g in FIELD_GROUPS if g["key"] == "drivers_restraints")   # not a numeric group
+    out = field_agent.run_field_group(MARKET, group, llm, log)
+    assert len(calls) == 2 and len(sleeps) == 1                # thin -> one retry, no more
+    assert "dictionary" not in llm.prompts[0] and "Wordle" not in llm.prompts[0]
+    assert out["_sources"]["num_sources"] == 1
+    assert out["_sources"]["off_topic_dropped"] == 2
+    assert out["_sources"]["low_evidence"] is True             # still thin after the retry
+
+
+def test_field_agent_no_retry_when_enough_on_topic(monkeypatch, randomizer_off):
+    from AiAgentsFleet import field_agent
+    calls = []
+    monkeypatch.setattr(field_agent, "gather_with_sources", lambda *a, **k: calls.append(1) or list(SNIPPETS))
+    monkeypatch.setattr(field_agent.time, "sleep", lambda s: None)
+    group = next(g for g in FIELD_GROUPS if g["key"] == "market_size")
+    out = field_agent.run_field_group(MARKET, group, StubLLM(), [])
+    assert len(calls) == 1
+    assert out["_sources"]["off_topic_dropped"] == 0

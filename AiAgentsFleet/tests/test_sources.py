@@ -53,3 +53,18 @@ def test_sources_block_and_low_evidence():
     good, _ = sources.filter_sources([snip(d) for d in GOOD[:3]])
     assert "low_evidence" not in sources.sources_block("countries_mea", good, [])
     assert sources.sources_block("segments_global", good[:2], [])["low_evidence"] is True  # < 3 snippets
+
+
+def test_on_topic_drops_dictionary_and_wordle_pages():
+    market = "Global Vitamin C Market"
+    junk = [{"text": "Regional: adjective. Relating to or characteristic of a region.",
+             "domain": "dictionary.cambridge.org"},
+            {"text": "REGIONAL definition and meaning", "domain": "merriam-webster.com"},
+            {"text": "Today's Wordle answer and hints for the daily puzzle", "domain": "globle.wordleday.org"}]
+    good = [{"text": "The vitamin C market in Europe was valued at USD 420 million", "domain": "fao.org"},
+            {"text": "Asia Pacific Vitamin C demand grew 6% in 2025", "domain": "reuters.com"}]
+    kept, off = sources.on_topic(junk + good, market)
+    assert kept == good
+    assert off == junk
+    assert sources.market_tokens("Agricultural Biostimulants Market") == {"agricul", "biostim"}
+    assert sources.on_topic(junk, "Global Market") == (junk, [])     # no usable stem: keep all

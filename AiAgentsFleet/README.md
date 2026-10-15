@@ -100,8 +100,10 @@ never jittered.
 Both search paths (`field_agent.run_field_group` and
 `cmi_report/run_data.search`) drop snippets from blocked sites before the
 LLM sees them: video, social, marketplace, Q&A, horoscope sites, and
-throwaway-TLD link farms (`.so`, `.tk`, `.xyz` …). Each group's `_sources`
-records `num_sources`, `domains`, `dropped_domains` and a `quality` block
+throwaway-TLD link farms (`.so`, `.tk`, `.xyz` …), then keep only snippets
+that mention the market (`on_topic`); the fleet path retries the search once
+if fewer than 3 remain. Each group's `_sources` records `num_sources`,
+`domains`, `dropped_domains`, `off_topic_dropped` and a `quality` block
 (`n`, `distinct_domains`, `trusted`, `score`). A numeric group
 (`market_size`, `regional`, `countries_*`, `segments_*`,
 `segmentation_grade_form`, `competitive_landscape`, `vendors`) with fewer

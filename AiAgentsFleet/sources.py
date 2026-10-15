@@ -8,6 +8,9 @@ koji.so, spa.so). `filter_sources` drops them before any LLM sees them, and
 `quality` scores what is left so thin evidence can be flagged
 (`_sources.low_evidence`, used by PLAN-02 and PLAN-08).
 
+`on_topic` then keeps only snippets that mention the market itself, so a
+degraded search (dictionary or word-game pages) never reaches the LLM.
+
 A snippet is a dict from `gather_with_sources`: {"text", "url", "domain", ...}.
 """
 from __future__ import annotations
@@ -157,16 +160,39 @@ def is_numeric_group(key: str) -> bool:
     return key in NUMERIC_GROUPS or key.startswith(_NUMERIC_PREFIXES)
 
 
-def sources_block(key: str, kept: list[dict], dropped: list[dict]) -> dict:
+_GENERIC = {"market", "global", "the", "and", "for", "industry", "worldwide"}
+
+
+def market_tokens(market: str) -> set[str]:
+    """Stems of the market name's own words ('agricultural biostimulants' ->
+    {'agricul', 'biostim'}) used to recognise on-topic snippets."""
+    return {w[:7] for w in re.findall(r"[a-z]+", market.lower()) if len(w) >= 4 and w not in _GENERIC}
+
+
+def on_topic(snippets: list[dict], market: str) -> tuple[list[dict], list[dict]]:
+    """Splits snippets into (on_topic, off_topic): a snippet is on topic when
+    its text mentions a stem of the market name. A market name with no usable
+    stem keeps everything (nothing to test against)."""
+    stems = market_tokens(market)
+    if not stems:
+        return list(snippets or []), []
+    kept, off = [], []
+    for s in snippets or []:
+        (kept if any(st in (s.get("text") or "").lower() for st in stems) else off).append(s)
+    return kept, off
+
+
+def sources_block(key: str, kept: list[dict], dropped: list[dict], off_topic_dropped: int = 0) -> dict:
     """The `_sources` block stored on every group:
-    {"num_sources", "domains", "dropped_domains", "quality"} plus
-    `low_evidence: true` for a numeric group with < 3 kept snippets or no
+    {"num_sources", "domains", "dropped_domains", "off_topic_dropped", "quality"}
+    plus `low_evidence: true` for a numeric group with < 3 kept snippets or no
     trusted domain."""
     q = quality(kept)
     block = {
         "num_sources": len(kept),
         "domains": sorted({s["domain"] for s in kept if s.get("domain")}),
         "dropped_domains": sorted({d["domain"] for d in dropped if d.get("domain")}),
+        "off_topic_dropped": off_topic_dropped,
         "quality": q,
     }
     if is_numeric_group(key) and (q["n"] < MIN_KEPT_SNIPPETS or q["trusted"] == 0):

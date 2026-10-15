@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +30,7 @@ from me_engine.generation.web_evidence import gather_with_sources  # noqa: E402
 from AiAgentsFleet.market_definition import as_prompt_block  # noqa: E402
 from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.randomizer import randomize_json  # noqa: E402
-from AiAgentsFleet.sources import filter_sources, sources_block  # noqa: E402
+from AiAgentsFleet.sources import MIN_KEPT_SNIPPETS, filter_sources, on_topic, sources_block  # noqa: E402
 
 
 def _evidence_block(snippets: list[str]) -> str:
@@ -51,24 +52,38 @@ def run_field_group(
     `market_definition` (see `market_definition.py`) is prepended to the
     prompt so every group answers against the SAME scope -- the fix for one
     group describing the named market while another describes its parent
-    category. Snippets from blocked domains (sources.py) are dropped before
-    the LLM sees them. Also tracks source domains and quality (`_sources`)
+    category. Snippets from blocked domains, and snippets that don't mention
+    the market, are dropped before the LLM sees them (sources.py); if fewer
+    than 3 on-topic snippets remain the search is retried once. Also tracks source domains and quality (`_sources`)
     for the confidence scoring computed later; added AFTER any jitter so
     it's never itself jittered. `randomize=False` returns the LLM's answer
     as is, so a caller can keep the raw answer and jitter it itself."""
     log = log if log is not None else []
     queries = [q.format(market=market) for q in group["queries"]]
-    try:
-        sourced = gather_with_sources(queries, per_query=5, cap=15)
-    except Exception as exc:  # noqa: BLE001
-        sourced = []
-        log.append(f"[{group['key']}] web search failed: {exc}")
-    sourced, dropped = filter_sources(sourced)
+    best: tuple[list[dict], list[dict], list[dict]] | None = None
+    for attempt in range(2):           # one retry when the search comes back thin, as run_data.search does
+        try:
+            sourced = gather_with_sources(queries, per_query=5, cap=15)
+        except Exception as exc:  # noqa: BLE001
+            sourced = []
+            log.append(f"[{group['key']}] web search failed: {exc}")
+        sourced, dropped = filter_sources(sourced)
+        sourced, off = on_topic(sourced, market)
+        if best is None or len(sourced) > len(best[0]):
+            best = (sourced, dropped, off)
+        if len(best[0]) >= MIN_KEPT_SNIPPETS or attempt == 1:
+            break
+        time.sleep(20)
+    sourced, dropped, off = best
     if dropped:
         log.append(f"[{group['key']}] dropped {len(dropped)} snippet(s) from blocked sources: "
                    + ", ".join(sorted({d['domain'] for d in dropped})))
+    if off:
+        log.append(f"[{group['key']}] dropped {len(off)} off-topic snippet(s) that don't mention the market")
     snippets = [s["text"] for s in sourced]
-    src = sources_block(group["key"], sourced, dropped)
+    src = sources_block(group["key"], sourced, dropped, len(off))
+    if len(sourced) < MIN_KEPT_SNIPPETS:
+        src["low_evidence"] = True
 
     system = group["system"]
     user = (

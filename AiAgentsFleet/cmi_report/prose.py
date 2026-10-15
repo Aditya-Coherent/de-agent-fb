@@ -19,7 +19,7 @@ from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text,
                                             vendor_clean)
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 9      # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 10     # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -258,13 +258,14 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                     "entry_implication": ("2 sentences: implication for market entry", 324)}},
         "ch7": {"facts": {"value_chain": m.get("value_chain"), **vendor_facts(m)},
                 "slots": {
-                    "vendor_intro": ("paragraph: the vendor tiers in this market, naming only FACTS.vendors", 326),
+                    "vendor_intro": ("paragraph: the vendor landscape -- what kinds of company make this product, naming only "
+                                     "FACTS.vendors; no tiers, rankings or leaders", 326),
                     "value_chain_para": ("2 sentences on where value sits in the chain", 331),
                     "global_share_para": (("2 sentences on the published global vendor shares in "
                                            "FACTS.vendor_share_global_pct, for FACTS.vendor_year")
                                           if m["sections"]["vendor_global"]["show"] else
-                                          ("2 sentences on how the leading vendors are positioned globally "
-                                           "(FACTS.vendor_positioning; tiers are CMI assessments; no shares or %)"), 336),
+                                          ("2 sentences on what the vendors in FACTS.vendor_positioning make (their role), "
+                                           "with no tiers, rankings, shares or %"), 336),
                     "mea_share_para": (("2 sentences on the published MEA vendor shares in FACTS.vendor_share_mea_pct, "
                                         "naming FACTS.mea_leader as the leader")
                                        if m["sections"]["vendor_mea"]["show"] else
@@ -325,7 +326,7 @@ def vendor_facts(m: dict) -> dict:
     if not (sec["vendor_global"]["show"] and sec["vendor_mea"]["show"]):
         out["vendor_positioning"] = [{"vendor": r["vendor"], "hq": r["hq"], "parent_group": r["parent"],
                                       "business_type": r["business_type"],
-                                      "tier_cmi_assessment": r["tier"], "role": r["role"],
+                                      "role": r["role"],
                                       "mea_presence_cmi_assessment": r["mea_presence"]}
                                      for r in m["vendor_positioning"]]
     return out

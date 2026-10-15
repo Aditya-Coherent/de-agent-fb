@@ -180,13 +180,16 @@ def definition_block(d: dict) -> str:
 
 
 def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM, log: list,
-              schema: str | None = None, note: str = "") -> dict:
+              schema: str | None = None, note: str = "", queries: list[str] | None = None) -> dict:
     """One agent call. `note` (a re-ask, geo_check.reask_note) is appended to the
-    prompt, and the agent then sees the same snippets as its first answer."""
-    queries = [q.format(market=market) for q in g["queries"]]
+    prompt, and the agent then sees the same snippets as its first answer --
+    unless `queries` are given (the thin vendor-list re-ask): then those are
+    searched and the agent sees what they find."""
+    fresh = queries is not None
+    queries = [q.format(market=market) for q in (queries or g["queries"])]
     dropped: list[dict] = []
     off_topic: list[dict] = []
-    if note and g["key"] in _SHOWN:
+    if note and g["key"] in _SHOWN and not fresh:
         sourced = _SHOWN[g["key"]]
     else:
         sourced = search(market, queries, g["key"], log, dropped_out=dropped, off_topic_out=off_topic)
@@ -272,7 +275,7 @@ def entity_search(queries: list[str]) -> list[dict]:
     no market-topic filter -- a page on a company's headquarters need not name
     the market."""
     try:
-        sourced = gather_with_sources(queries, per_query=4, cap=12)
+        sourced = gather_with_sources(queries, per_query=4, cap=16)
     except Exception:  # noqa: BLE001
         return []
     return filter_sources(sourced)[0]
@@ -282,14 +285,23 @@ def review_vendors(market: str, data: dict, fields: dict, definition: dict, llm:
                    ask_group, check_answer: bool = True) -> None:
     """PLAN-05: the vendors answer checked (MEA share quotes, companies outside
     the definition) and re-asked once; then one entity check per vendor (HQ,
-    parent, business type, entities.check_entities). Writes
-    fields["vendor_review"] and fields["entities"]."""
+    parent, business type, product, entities.check_entities); then, when fewer
+    than entities.MIN_VENDORS are confirmed, one re-ask of the vendor list on
+    extra searches (entities.reask_if_thin). Writes fields["vendor_review"] and
+    fields["entities"]."""
     if check_answer:
         fields["vendor_review"] = entities.review_vendor_answer(fields, _SHOWN.get("vendors") or [], market,
                                                                 ask_group, log)
+    products = entities.product_phrases(market, definition)
     names = entities.universe(data["fields"], fields.get("vendors"))
     fields["entities"] = entities.check_entities(names, market, definition_block(definition), fields.get("vendors"),
-                                                 llm, entity_search, log)
+                                                 llm, entity_search, log, products=products)
+
+    def check_new(new: list[str]) -> dict:
+        return entities.check_entities(new, market, definition_block(definition), fields.get("vendors"), llm,
+                                       entity_search, log, products=products)["records"]
+    thin = entities.reask_if_thin(fields, data["fields"], definition, market, ask_group, check_new, log)
+    fields["vendor_review"] = {**(fields.get("vendor_review") or {}), "thin_reask": thin}
 
 
 def run(slug: str, only: set[str] | None = None) -> Path:
@@ -344,9 +356,9 @@ def run(slug: str, only: set[str] | None = None) -> Path:
         context = fleet_context({**data, "fields": {**data["fields"], "regional": review["regional"]["answer"]}})
     context = {**context, "countries_named": geo}
 
-    def ask_group(key: str, note: str) -> dict:
+    def ask_group(key: str, note: str, queries: list[str] | None = None) -> dict:
         g = next(x for x in GROUPS if x["key"] == key)
-        return run_group(market, g, context, definition, llm, log, schema_for(g, geo), note=note)
+        return run_group(market, g, context, definition, llm, log, schema_for(g, geo), note=note, queries=queries)
 
     wanted = [g for g in GROUPS if not only or g["key"] in only]
     # segments_mea needs the demand segments segments_global defines.

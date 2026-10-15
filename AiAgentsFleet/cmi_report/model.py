@@ -255,8 +255,9 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
     comp = f.get("competitive_landscape") or {}
     notes: list[str] = []
 
-    # ---- one exclusion list for every vendor list, global and MEA
-    excluded = ent.exclusions(records, ven.get("company_classification"))
+    # ---- one exclusion list for every vendor list, global and MEA: only what the evidence shows
+    # does not make or sell this product (a company the evidence is silent on is unconfirmed, not excluded)
+    excluded = ent.exclusions(records)
 
     def excl(n: str) -> bool:
         return ent.lookup(n, excluded) is not None
@@ -272,7 +273,10 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
     members: dict[str, list[str]] = {}
     for d, _ in merged_u:
         base = d.split(" (incl. ")[0]
-        members[d] = [base] + (d.split(" (incl. ")[1].rstrip(")").split(", ") if " (incl. " in d else [])
+        subs = d.split(" (incl. ")[1].rstrip(")").split(", ") if " (incl. " in d else []
+        # a diversified company is named with the division that sells the product: 'Cargill (Cargill Animal Nutrition)'
+        div = (ent.lookup(base, records) or {}).get("division")
+        members[f"{base} ({div})" + (f" (incl. {', '.join(subs)})" if subs else "") if div else d] = [base] + subs
     alias = {mb.lower(): d for d, ms in members.items() for mb in ms}
     for n in uni:                                     # the full names too ('Valagro (Syngenta Group)')
         d = next((d for d, ms in members.items() if any(ent.same_vendor(n, mb) for mb in ms)), n)
@@ -328,16 +332,15 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
         return sh + ([("Others", rest)] if rest > 0.5 else [])
     share_g, share_m = (with_others(gsh) if show_g else []), (with_others(msh) if show_m else [])
 
-    # ---- positioning table: confirmed HQ, parent and business type only
+    # ---- positioning table: HQ, parent, business type and product confirmed by the evidence; no tiers
     pos_src = {p["vendor"]: p for p in ven.get("positioning") or [] if isinstance(p, dict) and p.get("vendor")}
-    notes_by = {x.get("name"): x.get("positioning_note") for x in comp.get("companies") or [] if isinstance(x, dict)}
     not_checked = set((ents or {}).get("not_checked") or [])
     dropped: list[str] = []
 
     def confirmed(n: str) -> dict | None:
-        lead = disp(n).split(" (incl. ")[0]
+        lead = next((ms[0] for d, ms in members.items() if d == disp(n)), n)
         rec = ent.lookup(lead, records)
-        if rec and rec.get("verified"):
+        if rec and rec.get("verified") and rec.get("product_verified"):
             return rec
         why = ("beyond the entity-check cap" if any(ent.same_vendor(lead, x) for x in not_checked) else
                "entity not checked" if not rec else "; ".join(rec.get("why") or []) or "not confirmed")
@@ -354,17 +357,14 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
         if not rec:
             continue
         seen.add(d)
-        lead = d.split(" (incl. ")[0]
-        p = ent.lookup(lead, pos_src) or {}
+        p = ent.lookup(rec["name"], pos_src) or {}
         rows.append({"vendor": d, "hq": rec["hq_country"],
                      "parent": "Independent" if rec.get("parent_is_self") else rec["parent_group"],
                      "business_type": rec["business_type"],
-                     "tier": p.get("tier") if p.get("tier") in ent.TIERS else "",
-                     "role": str(p.get("role") or ent.lookup(lead, notes_by) or "").strip(),
+                     "role": rec["role"],                     # as the product evidence line states it
                      "mea_presence": p.get("mea_presence") if p.get("mea_presence") in ent.MEA_PRESENCE else "",
                      "ownership_note": rec.get("ownership_note") or ""})
-    tier_rank = {t: i for i, t in enumerate(ent.TIERS)}
-    rows.sort(key=lambda r: tier_rank.get(r["tier"], len(ent.TIERS)))
+    rows.sort(key=lambda r: r["vendor"].lower())             # alphabetical: no ranking without shares
     pos_show = len(rows) >= 1 and not (show_g and show_m)
 
     # ---- the MEA leader: the largest sourced MEA share, else the positioning assessment
@@ -431,11 +431,11 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
                            f"only {len(msh)} sourced MEA vendor share(s): positioning table instead"},
             "positioning": {"show": pos_show, "why": "" if pos_show else
                             "shares shown instead" if show_g and show_m else
-                            "no vendor with confirmed HQ, parent and business type"},
+                            "no vendor with confirmed HQ, parent, business type and product"},
             "capabilities": {"show": len(caps) >= 3 and len(dims) >= 3,
                              "why": "" if len(caps) >= 3 else "fewer than 3 confirmed vendors scored"},
             "dashboard": {"show": len(dash) >= 2, "why": "" if len(dash) >= 2 else
-                          "fewer than 2 vendors with a confirmed HQ"},
+                          "fewer than 2 confirmed vendors"},
         },
         "notes": notes,
     }

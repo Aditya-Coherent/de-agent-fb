@@ -26,13 +26,19 @@ def row(name, share, quote=""):
     return {"name": name, "share_pct": share, "share_quote": quote, "positioning_note": f"{name} makes vitamin C"}
 
 
-def rec(name, hq="China", parent=None, ownership="independent", earns=True, verified=True, moves=(), domestic=False):
+def rec(name, hq="China", parent=None, ownership="independent", earns=True, verified=True, moves=(), domestic=False,
+        division=""):
     self_ = parent is None
+    prod = verified and earns is not False
     return {"name": name, "hq_country": hq if verified else "", "hq_verified": verified,
             "parent_group": name if self_ else parent, "parent_is_self": self_, "parent_verified": verified,
             "ownership": "independent" if self_ else ownership, "wholly_owned": not self_ and ownership == "wholly_owned",
             "business_type": "producer" if verified else "", "business_verified": verified,
-            "earns_defined_revenue": earns, "earns_reason": "", "mainly_domestic": domestic,
+            "division": division, "product_verified": prod, "product_phrase": "vitamin c" if prod else None,
+            "role": f"Makes ascorbic acid ({name})" if prod else "",
+            "earns_defined_revenue": True if prod else (False if earns is False else None),
+            "excluded_why": "it sells finished vitamin C tablets at retail" if earns is False else None,
+            "mainly_domestic": domestic,
             "subsidiaries_in_list": [], "ownership_note": "", "moves": [{"event": "x", "year": y, "quote": "q"}
                                                                             for y in moves],
             "verified": verified, "why": [] if verified else ["HQ not stated in the evidence"]}
@@ -50,12 +56,10 @@ def fleet(companies, check=None):
 GLOBAL = [row("DSM-Firmenich", 25), row("CSPC Pharmaceutical Group", 22, SNIPS[0]["text"]),
           row("Shandong Luwei Pharmaceutical", 14, SNIPS[1]["text"]),
           row("Northeast Pharmaceutical Group", 12, SNIPS[2]["text"]), row("BASF SE", 9, SNIPS[3]["text"])]
-POSITIONING = [{"vendor": n, "tier": t, "role": f"{n} sells ascorbic acid to supplement makers",
-                "mea_presence": p}
-               for n, t, p in (("CSPC Pharmaceutical Group", "Leader", "Strong"),
-                               ("Northeast Pharmaceutical Group", "Leader", "Leading"),
-                               ("Shandong Luwei Pharmaceutical", "Challenger", "Moderate"),
-                               ("DSM-Firmenich", "Challenger", "Moderate"), ("BASF SE", "Niche", "Limited"))]
+POSITIONING = [{"vendor": n, "role": f"{n} sells ascorbic acid to supplement makers", "mea_presence": p}
+               for n, p in (("CSPC Pharmaceutical Group", "Strong"), ("Northeast Pharmaceutical Group", "Leading"),
+                            ("Shandong Luwei Pharmaceutical", "Moderate"), ("DSM-Firmenich", "Moderate"),
+                            ("BASF SE", "Limited"))]
 RECORDS = {"CSPC Pharmaceutical Group": rec("CSPC Pharmaceutical Group"),
            "Shandong Luwei Pharmaceutical": rec("Shandong Luwei Pharmaceutical"),
            "Northeast Pharmaceutical Group": rec("Northeast Pharmaceutical Group", moves=(2024,)),
@@ -123,8 +127,9 @@ def test_fewer_than_3_sourced_shares_gives_a_positioning_table_not_a_donut():
     assert m["vendor_chart_global"] == [] and m["vendor_share_global"] == []
     assert m["sections"]["positioning"]["show"]
     rows = m["vendor_positioning"]
-    assert [r["vendor"] for r in rows][:2] == ["CSPC Pharmaceutical Group", "Northeast Pharmaceutical Group"]
-    assert all("%" not in json.dumps(r) for r in rows)                     # tiers, never percentages
+    assert [r["vendor"] for r in rows] == ["CSPC Pharmaceutical Group", "Northeast Pharmaceutical Group",
+                                           "Shandong Luwei Pharmaceutical"]           # alphabetical
+    assert all("%" not in json.dumps(r) for r in rows)                     # never percentages
     from AiAgentsFleet.cmi_report.register import build_register
     assert not [e for e in build_register(m, {}) if e["id"].startswith("V-")]   # no vendor rows in A.2
     # the report: the positioning table where the donut was, no vendor image
@@ -167,15 +172,11 @@ def test_no_exclusion_without_evidence_and_no_facts_from_a_namesake():
                 "business_type": "coal miner", "business_quote": shown[0]["text"], "earns_defined_revenue": False}
     r = entities.verify_entity(namesake, "New Hope Group", shown)
     assert not r["verified"] and r["hq_country"] == "" and r["earns_defined_revenue"] is None
-    # no evidence on the business: the entity verdict is unknown, so the vendors agent's classification decides
+    # no evidence on the business: unknown -- not excluded (and not printed until confirmed)
     blank = entities.verify_entity({"earns_defined_revenue": False, "earns_reason": "No web evidence was provided"},
                                    "Egyptian Shrimp Company", [])
-    assert blank["earns_defined_revenue"] is None
-    recs = {"Egyptian Shrimp Company": blank, "New Hope Group": r}
-    assert entities.exclusions(recs, []) == {}
-    ex = entities.exclusions(recs, [{"company": "New Hope Group", "earns_defined_revenue": False,
-                                     "business_type": "integrator"}])
-    assert list(ex) == ["New Hope Group"] and "classification" in ex["New Hope Group"]
+    assert blank["earns_defined_revenue"] is None and blank["excluded_why"] is None
+    assert entities.exclusions({"Egyptian Shrimp Company": blank, "New Hope Group": r}) == {}
 
 
 def test_entity_check_sees_only_snippets_that_name_the_company(monkeypatch):
@@ -197,6 +198,127 @@ def test_entity_check_sees_only_snippets_that_name_the_company(monkeypatch):
     r = entities.check_entity("Shandong Luwei Pharmaceutical", MARKET, "", {}, [], L(), search, [])
     assert len(calls) == 2 and "WhatsApp" not in prompts[0] and "Python" not in prompts[0]
     assert r["verified"] and r["hq_country"] == "China"                    # 'CN' normalised
+
+
+PRODUCTS_VC = entities.product_phrases(MARKET, {"measures": "Ex-factory sales of vitamin C (ascorbic acid and its "
+                                                                  "derivatives)", "included_items": ["sodium ascorbate"]})
+PRODUCTS_FEED = entities.product_phrases("Functional Poultry Feed Market", {"included_items": ["gut-health poultry feed"]})
+
+
+def test_product_phrases_come_from_the_market_and_its_definition():
+    assert PRODUCTS_VC == ["vitamin c", "sodium ascorbate", "ascorbic acid"]
+    assert "poultry feed" in PRODUCTS_FEED and "feed" not in PRODUCTS_FEED
+    assert entities.mentions_product("Zhejiang NHU is a leading vitamin producer (vitamins A and E).", PRODUCTS_VC) is None
+    assert entities.mentions_product("CSPC makes Vitamin C tablets and bulk ascorbic acid.", PRODUCTS_VC) == "vitamin c"
+    assert entities.mentions_product("NEPG is a major ascorbic acid exporter.", PRODUCTS_VC) == "ascorbic acid"
+    assert entities.mentions_product("A vitamin complex with zinc.", PRODUCTS_VC) is None         # 'c' must follow
+
+
+def _entity(name, quote, **over):
+    raw = {"hq_country": "China", "hq_quote": quote, "business_type": "producer", "business_quote": quote,
+           "product_quote": quote, "role": "Makes the product", "earns_defined_revenue": True}
+    raw.update(over)
+    return entities.verify_entity(raw, name, [snip(quote)], over.pop("_products", PRODUCTS_VC))
+
+
+def test_a_generic_vitamin_producer_is_not_a_vitamin_c_vendor():
+    generic = _entity("Zhejiang NHU Company", "Zhejiang NHU Company, headquartered in China, is a vitamin producer.")
+    assert generic["verified"] and not generic["product_verified"] and generic["role"] == ""
+    assert generic["excluded_why"] is None                          # not shown either way: unconfirmed, not excluded
+    real = _entity("Zhejiang NHU Company", "Zhejiang NHU Company, headquartered in China, produces vitamin C.")
+    assert real["product_verified"] and real["product_phrase"] == "vitamin c"
+    acid = _entity("CSPC Pharmaceutical Group", "CSPC Pharmaceutical Group of China is a top ascorbic acid maker.")
+    assert acid["product_verified"]
+    names = ["Zhejiang NHU Company", "CSPC Pharmaceutical Group"]
+    assert entities.included(names, {"Zhejiang NHU Company": generic, "CSPC Pharmaceutical Group": acid}) == \
+        ["CSPC Pharmaceutical Group"]
+
+
+def test_a_diversified_company_with_a_relevant_division_is_included():
+    hq = "Cargill, headquartered in the United States, is a broad agricultural and food company."
+    prod = "Cargill Animal Nutrition makes poultry feed and gut-health feed programmes for broilers."
+    shown = [snip(hq), snip(prod)]
+    raw = {"hq_country": "United States", "hq_quote": hq, "business_type": "agribusiness", "business_quote": hq,
+           "division": "Cargill Animal Nutrition", "product_quote": prod, "role": "Makes functional poultry feed",
+           "earns_defined_revenue": False, "earns_reason": "Cargill is a broad agricultural company, not specifically "
+           "a functional poultry feed maker", "exclusion_quote": hq}
+    r = entities.verify_entity(raw, "Cargill", shown, PRODUCTS_FEED)
+    assert r["product_verified"] and r["excluded_why"] is None and r["division"] == "Cargill Animal Nutrition"
+    # 'broad company' is never a reason to exclude, even without a product line
+    vague = entities.verify_entity({**raw, "product_quote": ""}, "Cargill", shown, PRODUCTS_FEED)
+    assert vague["excluded_why"] is None
+    # in the report the company carries the division's name
+    f = seg_fleet()
+    f["fields"]["competitive_landscape"] = {"companies": [{"name": "Cargill", "share_pct": 8}]}
+    c = seg_cmi()
+    c["fields"]["vendors"] = {"positioning": [{"vendor": "Cargill", "role": "x", "mea_presence": "Strong"}]}
+    c["fields"]["entities"] = {"records": {"Cargill": r}, "not_checked": []}
+    m = model.build(f, c)
+    assert [x["vendor"] for x in m["vendor_positioning"]] == ["Cargill (Cargill Animal Nutrition)"]
+    assert m["vendor_positioning"][0]["role"] == "Makes functional poultry feed"
+
+
+def test_a_parent_hq_is_not_printed_as_the_entitys_hq():
+    q = "Japfa Comfeed Indonesia is a subsidiary of Singapore-based Japfa Ltd, Asia's agri-food group."
+    raw = {"hq_country": "Singapore", "hq_quote": q, "parent_group": "Japfa Ltd", "parent_quote": q,
+           "ownership": "majority", "business_type": "feed producer", "business_quote": q}
+    r = entities.verify_entity(raw, "Japfa Comfeed", [snip(q)], PRODUCTS_FEED)
+    assert r["hq_country"] == "" and not r["hq_verified"] and not r["verified"]
+    assert r["parent_group"] == "Japfa Ltd"                          # the parent is recorded as the parent
+    assert any("parent Japfa Ltd" in w for w in r["why"])
+    own = "Japfa Comfeed is headquartered in Jakarta, Indonesia."
+    r2 = entities.verify_entity({**raw, "hq_country": "Indonesia", "hq_quote": own}, "Japfa Comfeed",
+                                [snip(q), snip(own)], PRODUCTS_FEED)
+    assert r2["hq_country"] == "Indonesia"                          # a snippet states the entity's own HQ
+
+
+def test_a_thin_vendor_list_is_reasked_once_with_the_exclusion_reasons():
+    recs = {"Thai Union Group": {**rec("Thai Union Group", hq="Thailand", earns=False),
+                                 "excluded_why": "a seafood processor, not a farm"},
+            "Minh Phu Seafood": rec("Minh Phu Seafood", hq="Vietnam"),
+            "CP Foods": rec("CP Foods", hq="Thailand", verified=False)}
+    fields = {"vendors": {"positioning": [{"vendor": n, "role": "x"} for n in recs]},
+              "entities": {"records": recs, "not_checked": []}}
+    asks, checked, log = [], [], []
+    again = {"positioning": [{"vendor": "National Aquaculture Group (NAQUA)", "role": "farms shrimp"}]}
+
+    def ask(key, note, queries):
+        asks.append((key, note, queries))
+        return again
+
+    def check_new(names):
+        checked.append(names)
+        return {n: rec(n, hq="Saudi Arabia") for n in names}
+    dfn = {"value_chain_level": "farm-gate output", "measures": "Farm-gate value of super-intensive shrimp"}
+    out = entities.reask_if_thin(fields, {}, dfn, "Super-Intensive Shrimp Farming Market", ask, check_new, log)
+    assert len(asks) == 1 and asks[0][0] == "vendors"
+    note, queries = asks[0][1], asks[0][2]
+    assert "farm-gate output" in note and "Farm-gate value of super-intensive shrimp" in note
+    assert "Thai Union Group: a seafood processor, not a farm" in note
+    assert "ALREADY CHECKED (do not list these again; name OTHER companies): Thai Union Group, Minh Phu Seafood" in note
+    assert queries[:3] == entities.THIN_QUERIES
+    assert checked == [["National Aquaculture Group (NAQUA)"]]
+    assert out["reasked"] and out["included_before"] == ["Minh Phu Seafood"]
+    assert set(out["included_after"]) == {"Minh Phu Seafood", "National Aquaculture Group (NAQUA)"}
+    assert len(fields["vendors"]["positioning"]) == 4                  # the first answer's companies are kept
+    # enough vendors: no re-ask
+    many = {f"Vendor {i} Shrimp Farms": rec(f"Vendor {i} Shrimp Farms") for i in range(5)}
+    f2 = {"vendors": {"positioning": [{"vendor": n} for n in many]}, "entities": {"records": many}}
+    assert entities.reask_if_thin(f2, {}, dfn, "x", lambda *a: 1 / 0, check_new, [])["reasked"] is False
+
+
+def test_there_is_no_tier_column():
+    from AiAgentsFleet.cmi_report import build
+    from AiAgentsFleet.cmi_report.groups import GROUPS
+    m = model.build(fleet(GLOBAL[:3], check_of(GLOBAL[:3])), cmi())
+    assert all("tier" not in r for r in m["vendor_positioning"])
+    out = _vendor_section(m)
+    assert out["header"] == build.POSITIONING_HEADER and not any("tier" in h.lower() for h in out["header"])
+    assert not any(w in " ".join(out["texts"]) for w in ("Leader", "Challenger", "Niche"))
+    g = next(x for x in GROUPS if x["key"] == "vendors")
+    assert '"tier"' not in g["schema"] and "Leader|Challenger" not in g["schema"]
+    from AiAgentsFleet.cmi_report import prose
+    assert "tier" not in json.dumps(prose.vendor_facts(m))
 
 
 def test_an_unverified_vendor_is_left_out_of_every_table():
@@ -240,11 +362,20 @@ def test_an_excluded_vendor_is_absent_from_both_charts():
     assert sum(1 for c in m["corrections"] if "Left out of every vendor list" in c) == 1    # logged once
 
 
-def test_exclusions_fall_back_to_the_agents_classification():
-    ex = entities.exclusions({"Acme Vitamins": rec("Acme Vitamins", earns=True)},
-                             [{"company": "Tyson Foods", "earns_defined_revenue": False, "business_type": "integrator"},
-                              {"company": "Acme Vitamins", "earns_defined_revenue": False}])
-    assert ex == {"Tyson Foods": "integrator (vendors agent's classification)"}   # the entity check wins for Acme
+def test_only_evidence_excludes():
+    # an exclusion needs a quote showing the company does not sell the product, and a real reason
+    shown = [snip("Tyson Foods is a meat company that processes chicken, beef and pork; it sells no feed.")]
+    base = {"hq_country": "", "business_type": "meat processor", "business_quote": shown[0]["text"],
+            "earns_defined_revenue": False}
+    meat = entities.verify_entity({**base, "earns_reason": "Tyson sells meat, not feed",
+                                   "exclusion_quote": shown[0]["text"]}, "Tyson Foods", shown, PRODUCTS_FEED)
+    assert meat["excluded_why"] == "Tyson sells meat, not feed"
+    assert entities.exclusions({"Tyson Foods": meat}) == {"Tyson Foods": "meat processor: Tyson sells meat, not feed"}
+    no_quote = entities.verify_entity({**base, "earns_reason": "Tyson sells meat, not feed"}, "Tyson Foods", shown,
+                                      PRODUCTS_FEED)
+    assert no_quote["excluded_why"] is None and no_quote["earns_defined_revenue"] is None
+    # the vendors agent's own classification never excludes on its own
+    assert entities.exclusions({}) == {}
 
 
 def test_plausibility_blocks_a_domestic_vendor_bigger_than_its_home_market():
@@ -387,8 +518,8 @@ class _LLM:
             name = user.split("COMPANY: ", 1)[1].split("\n", 1)[0]
             q = f"{name} is a vitamin C producer headquartered in Shijiazhuang, China."
             return {"name": name, "hq_country": "China", "hq_quote": q, "parent_group": name, "ownership": "independent",
-                    "business_type": "producer", "business_quote": q, "earns_defined_revenue": True,
-                    "mainly_domestic": False, "moves": []}
+                    "business_type": "producer", "business_quote": q, "product_quote": q,
+                    "role": "Makes vitamin C", "earns_defined_revenue": True, "mainly_domestic": False, "moves": []}
         return {"value_chain": [], "mea_shares": [], "positioning": POSITIONING[:3], "capabilities": {},
                 "capability_dimensions": [], "dashboard": [], "company_classification": []}
 
@@ -414,8 +545,13 @@ def test_run_data_vendors_runs_the_checks_and_the_entity_calls(monkeypatch, tmp_
     recs = out["entities"]["records"]
     assert set(recs) == {"DSM-Firmenich", "CSPC Pharmaceutical Group", "Shandong Luwei Pharmaceutical",
                          "Northeast Pharmaceutical Group"}
-    assert all(r["verified"] and r["hq_country"] == "China" for r in recs.values())
+    assert all(r["verified"] and r["product_verified"] and r["hq_country"] == "China" for r in recs.values())
     assert llm.calls.count(entities.ENTITY_SYSTEM) == 4
+    # 4 confirmed vendors < 5: the vendor list was asked for once more, on the extra searches
+    thin = out["vendor_review"]["thin_reask"]
+    assert thin["reasked"] and len(thin["included_before"]) == 4 and thin["country"] == "China"
+    assert "{market} key players list" in thin["queries"] and "{market} China manufacturers producers companies" in \
+        thin["queries"]
 
 
 # --------------------------------------------------------------------------- #

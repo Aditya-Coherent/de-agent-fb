@@ -345,9 +345,9 @@ GROUPS: list[dict] = [
             "A vendor's MEA share is given ONLY when a WEB EVIDENCE line states that company's share of the MEA "
             "market (or its MEA revenue in this market): copy that line exactly into quote. Otherwise share_pct "
             "is null and quote is \"\" -- never estimate a share and never invent a quote. "
-            "Positioning tiers (Leader / Challenger / Niche) and MEA presence are CMI assessments of each "
-            "company's role in THIS market; position every company in CONTEXT.top_companies and the largest MEA "
-            "players. Capability scores are integers 1 (limited) to 5 (leading) and are an assessment. Classify "
+            "List in positioning every company in CONTEXT.top_companies that earns the defined revenue and the "
+            "largest MEA players (no ranking or tier); MEA presence is a CMI assessment. Capability scores are "
+            "integers 1 (limited) to 5 (leading) and are an assessment. Classify "
             "every company in CONTEXT.top_companies: its parent group, business type, and whether it earns the "
             "revenue the DEFINITION measures. For each dashboard row set verified=true only if the EVIDENCE "
             "confirms the MEA moves described; give the year of every deal, acquisition or expansion, and leave "
@@ -357,8 +357,7 @@ GROUPS: list[dict] = [
                    'channel; the end-user stage is added automatically], '
                    '"mea_shares": [{"vendor": <string>, "share_pct": <number|null, ONLY if a WEB EVIDENCE line states '
                    'it>, "quote": <that evidence line copied exactly, or "">}, ... up to 7 companies], '
-                   '"positioning": [{"vendor": <string>, "tier": "Leader|Challenger|Niche", '
-                   '"role": <one line: what it sells in THIS market and to whom>, '
+                   '"positioning": [{"vendor": <string>, "role": <one line: what it sells in THIS market>, '
                    '"mea_presence": "Leading|Strong|Moderate|Limited|None"}, ... 8-12 companies, every company in '
                    'CONTEXT.top_companies that earns the defined revenue plus the largest MEA players], '
                    '"capability_dimensions": [<6 short names (1-3 words) of the capabilities that differentiate vendors '

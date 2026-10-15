@@ -232,7 +232,7 @@ def to_verify_items(b: "Builder", ag: dict, m: dict) -> list[str]:
     return list(dict.fromkeys(items))
 
 
-POSITIONING_HEADER = ["Vendor", "HQ", "Parent group", "Business type", "Role in this market (tier: CMI assessment)",
+POSITIONING_HEADER = ["Vendor", "HQ", "Parent group", "Business type", "Role in this market",
                       "MEA presence (CMI assessment)"]
 _POSITIONING_WIDTHS = [1700, 1100, 1500, 1400, 2306, 1500]      # the dashboard table's 9,506 twips
 
@@ -266,15 +266,14 @@ def short_note(note: str | None) -> str:
 
 
 def positioning_rows(m: dict, vsafe) -> list[list[str]]:
-    """vendor | HQ | parent group | business type | role (tier) | MEA presence -- confirmed vendors only;
-    tiers and MEA presence are CMI assessments, never percentages."""
+    """vendor | HQ | parent group | business type | role | MEA presence -- confirmed vendors only, in
+    alphabetical order; no tier or ranking (there are no sourced shares to rank by). The role is the one
+    the product evidence line states; MEA presence is a CMI assessment, never a percentage."""
     rows = []
     for r in m["vendor_positioning"]:
-        role = vsafe(r["role"]).rstrip(".")
-        tier = f"{r['tier']}: " if r["tier"] else ""
         own = short_note(r.get("ownership_note"))
         rows.append([r["vendor"] + (f" ({own})" if own and own.lower() not in r["vendor"].lower() else ""),
-                     r["hq"], r["parent"], r["business_type"], (tier + role) if role else r["tier"],
+                     r["hq"], r["parent"], r["business_type"], vsafe(r["role"]).rstrip("."),
                      r["mea_presence"] or "Not assessed"])
     return rows
 
@@ -306,14 +305,14 @@ def vendor_shares(b: "Builder", i: int, m: dict, s, root: str, charts: dict, vsa
     elif pos and (i - k) == pos_at:
         if k == 1:
             b.caption(i, "Table", f"Vendor positioning in the {root.lower()} market (published shares are not "
-                                  f"available for enough vendors; tiers and MEA presence are CMI assessments)")
+                                  f"available for enough vendors; vendors in alphabetical order; MEA presence is a CMI assessment)")
         elif k == 2:
             b.src.append(_widen(b.el(349), _POSITIONING_WIDTHS))     # the dashboard table, 6 columns
             b.table(len(b.src) - 1, complete_rows(positioning_rows(m, vsafe), b.log, "vendor positioning"),
                     header=POSITIONING_HEADER)
         else:
-            b.para(i, "Source: company websites, filings and news (HQ, parent group, business type, confirmed in "
-                      "the evidence); CMI assessment (tier, role, MEA presence)")
+            b.para(i, "Source: company websites, filings and news (HQ, parent group, business type and role, "
+                      "each confirmed in the evidence); CMI assessment (MEA presence)")
 
 
 def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: list[str],
@@ -1164,7 +1163,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         # ------------------------------------------------------------ chapter 7
         elif i == 326:
             b.para(i, open_chapter(s("vendor_intro"), r"(?i)vendor|compan|player|supplier|tier|producer",
-                                   f"The {root.lower()} vendor landscape is set out below by tier, value-chain position, "
+                                   f"The {root.lower()} vendor landscape is set out below by value-chain position, "
                                    + ("market share and capability." if sec["vendor_global"]["show"]
                                       else "market position and capability.")))
         elif i == 328:

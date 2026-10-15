@@ -29,7 +29,6 @@ from typing import Callable
 
 VENDOR_CAP = 12                     # entity checks per market (one LLM call each)
 UNSOURCED_MAX_PCT = 20.0            # an unsourced share above this is blocked
-TIERS = ("Leader", "Challenger", "Niche")
 MEA_PRESENCE = ("Leading", "Strong", "Moderate", "Limited", "None")
 
 # --------------------------------------------------------------------------- #
@@ -260,27 +259,100 @@ def review_vendor_answer(fields: dict, snippets: list[dict], market: str, ask: C
 
 
 # --------------------------------------------------------------------------- #
-# entity facts (HQ, parent, business type)
+# the market's product, as words a snippet must contain
+# --------------------------------------------------------------------------- #
+_PSTOP = {"and", "or", "of", "the", "for", "from", "in", "with", "global", "market", "other", "others", "its",
+          "their", "all", "based", "products", "product", "output", "sales", "value", "revenue", "derivatives",
+          "salts", "e", "g", "eg", "etc", "at", "level", "to", "by", "as", "a", "an", "under"}
+
+
+def _content(text: str) -> list[str]:
+    return [w for w in _simple(re.sub(r"\((?:e\.g\.?|i\.e\.?)[^)]*\)", " ", text or "")).split() if w not in _PSTOP]
+
+
+def product_phrases(market: str, definition: dict | None = None) -> list[str]:
+    """What a snippet must name for a company to count as selling THIS market's
+    product: the market name ('vitamin c'), its last two words when it is
+    longer ('shrimp farming', 'poultry feed'), and the 2-4 word product terms
+    of the definition (included items, the measures' brackets: 'ascorbic acid',
+    'sodium ascorbate'). Generic words ('vitamin', 'feed') alone never count."""
+    root = re.sub(r"^\s*global\s+|\s+market\s*$", "", market or "", flags=re.I).strip()
+    words = _content(root)
+    out = [" ".join(words)] if words else []
+    if len(words) >= 3:
+        out.append(" ".join(words[-2:]))
+    d = definition or {}
+    terms = list(d.get("included_items") or [])
+    for inner in re.findall(r"\(([^)]*)\)", str(d.get("measures") or "")):
+        terms += re.split(r",|;|\band\b|\bor\b", inner)
+    for t in terms:
+        ws = _content(str(t))
+        if 2 <= len(ws) <= 4:
+            out.append(" ".join(ws))
+    return list(dict.fromkeys(p for p in out if p))
+
+
+def _stem(w: str) -> str:
+    if len(w) > 5 and w.endswith("ing"):
+        w = w[:-3]
+    elif len(w) > 3 and w.endswith("s") and not w.endswith("ss"):
+        w = w[:-1]
+    return w[:6]
+
+
+def mentions_product(text: str, phrases: list[str]) -> str | None:
+    """The product phrase `text` names (every word of it, as a word start; a
+    1-2 letter word -- the 'c' of 'vitamin c' -- right after the word before
+    it), or None."""
+    low = " " + _simple(text) + " "
+    for ph in phrases:
+        ws = ph.split()
+        ok = bool(ws)
+        for i, w in enumerate(ws):
+            if len(w) <= 2:
+                ok = i > 0 and bool(re.search(rf"\b{re.escape(_stem(ws[i - 1]))}\w*\s+{re.escape(w)}\b", low))
+            else:
+                ok = bool(re.search(rf"\b{re.escape(_stem(w))}", low))
+            if not ok:
+                break
+        if ok:
+            return ph
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# entity facts (HQ, parent, business type, product)
 # --------------------------------------------------------------------------- #
 ENTITY_SYSTEM = (
     "You check basic facts about one company for a market report, using ONLY the WEB EVIDENCE given. Copy every "
     "quote EXACTLY, character for character, from one WEB EVIDENCE line; a fact no line states gets an empty "
-    "quote. Never guess a headquarters country, a parent company or an ownership type. A joint venture is "
-    "'joint_venture', never 'wholly_owned'. Judge earns_defined_revenue against the market DEFINITION and its "
-    "value-chain level: false for a supplier of inputs, a buyer, or a company whose business is another level of "
-    "the value chain. Return ONLY valid JSON.")
+    "quote. Never guess a headquarters country, a parent company or an ownership type. The headquarters is THIS "
+    "named company's own; when the evidence gives only its parent's headquarters, name the parent in parent_group "
+    "and leave hq_country empty. A joint venture is 'joint_venture', never 'wholly_owned'. A company sells this "
+    "market's product only if an evidence line names it (or its division) together with the PRODUCT itself -- a "
+    "broader category ('vitamins', 'animal feed') is not enough, and neither is a finished product that merely "
+    "contains it (a multivitamin capsule is not vitamin C). earns_defined_revenue is false ONLY when the "
+    "evidence shows the company does not make or sell this product at the definition's value-chain level (e.g. a "
+    "retailer, a meat-only company, a processor in a farm-output market); a diversified company with a division "
+    "that makes the product is true (name the division); if the evidence does not say, it is null. Return ONLY "
+    "valid JSON.")
 ENTITY_SCHEMA = (
     '{"name": <as given>, '
     '"same_company": <false if the evidence is about a different company with a similar name (e.g. a coal miner '
     'called New Hope when the vendor is a feed maker) or only about a foreign subsidiary of it>, '
-    '"hq_country": <country of the headquarters, or "">, '
-    '"hq_quote": <evidence line stating the COUNTRY where it is headquartered (a city alone is not enough), or "">, '
+    '"hq_country": <country of THIS company\'s own headquarters, or "">, '
+    '"hq_quote": <evidence line stating the COUNTRY where THIS company (not its parent) is headquartered, or "">, '
     '"parent_group": <its ultimate parent company, or the company itself if independent>, '
     '"parent_quote": <evidence line stating the parent (not needed if independent), or "">, '
     '"ownership": "independent|wholly_owned|majority|joint_venture|minority|unknown", '
     '"business_type": <e.g. "producer", "manufacturer", "technology provider", "input supplier", "distributor", '
     '"integrator">, "business_quote": <evidence line describing what it does, or "">, '
-    '"earns_defined_revenue": <true|false>, "earns_reason": <1 sentence>, '
+    '"division": <the division that makes or sells the PRODUCT if the company is diversified, e.g. "Cargill Animal '
+    'Nutrition"; "" otherwise>, '
+    '"product_quote": <evidence line naming the company (or that division) together with the PRODUCT, or "">, '
+    '"role": <one line: what it makes or sells in this market, only as product_quote states it, or "">, '
+    '"earns_defined_revenue": <true|false|null, see the rules>, "earns_reason": <1 sentence>, '
+    '"exclusion_quote": <when false: the evidence line showing it does not make or sell the product, else "">, '
     '"mainly_domestic": <true if it sells mainly in its home country>, '
     '"subsidiaries_in_list": [<companies from OTHER VENDORS it owns outright>], '
     '"ownership_note": <current ownership, merger or rebrand, e.g. "now part of X", or "">, '
@@ -296,13 +368,14 @@ _COUNTRY_ALIASES = {
     "Germany": ["germany", "german"], "Switzerland": ["switzerland", "swiss"], "France": ["france", "french"],
     "Thailand": ["thailand", "thai"], "Israel": ["israel", "israeli"], "Turkey": ["turkey", "turkiye", "turkish"],
 }
-
-
 _ISO2 = {"CN": "China", "US": "United States", "USA": "United States", "UK": "United Kingdom", "GB": "United Kingdom",
          "DE": "Germany", "CH": "Switzerland", "IN": "India", "JP": "Japan", "VN": "Vietnam", "TH": "Thailand",
          "SA": "Saudi Arabia", "AE": "UAE", "NL": "Netherlands", "FR": "France", "IL": "Israel", "TR": "Turkey",
          "BR": "Brazil", "KR": "South Korea", "NO": "Norway", "IT": "Italy", "ES": "Spain", "EG": "Egypt",
          "ZA": "South Africa"}
+# an exclusion reason that only says the company is broad, or that the evidence is silent, excludes nothing
+_VAGUE = re.compile(r"\b(broad|diversified|conglomerate|holding company|not specifically|not solely|not primarily|"
+                    r"no (?:web )?evidence|cannot be confirmed|does not (?:state|specify|mention|show)|unclear)\b", re.I)
 
 
 def _mentions_country(text: str, country: str) -> bool:
@@ -312,40 +385,76 @@ def _mentions_country(text: str, country: str) -> bool:
     return any(f" {_simple(a)} " in low for a in [c, country] + _COUNTRY_ALIASES.get(c, []))
 
 
-def verify_entity(raw: dict, name: str, snippets: list[dict]) -> dict:
-    """The entity record: HQ, parent and business type are kept only when an
-    evidence line backs them; `verified` needs all three."""
+def _names_other(text: str, name: str, other: str) -> bool:
+    """`text` names `other` apart from `name` ('Japfa Comfeed, part of Japfa Ltd' names Japfa Ltd)."""
+    low = " " + _simple(text) + " "
+    for k in sorted(name_keys(name), key=len, reverse=True):
+        low = low.replace(f" {k} ", " ")
+    return any(f" {k} " in low for k in name_keys(other))
+
+
+def verify_entity(raw: dict, name: str, snippets: list[dict], products: list[str] | None = None) -> dict:
+    """The entity record. HQ, parent, business type and product each count only
+    when an evidence line backs them:
+    - the HQ quote states the country and is about THIS company -- a quote that
+      names a (different) parent may give the parent's HQ, so it does not count;
+    - the product quote names the company (or its division) with one of the
+      market's product phrases (product_phrases) -- 'vitamin producer' is not
+      'vitamin C';
+    - an exclusion needs a quote too, and a reason that is more than 'broad
+      company' or 'no evidence'; a company the evidence ties to the product is
+      never excluded.
+    `verified` needs HQ, parent and business type; `product_verified` the product."""
+    from AiAgentsFleet.cmi_report.groups import canonical
     from AiAgentsFleet.cmi_report.verify_size import _find
     raw = raw if isinstance(raw, dict) else {}
     why = []
     if raw.get("same_company") is False:               # the evidence is about another company: nothing counts
         raw = {"name": name}
         why.append("the evidence describes a different company of a similar name")
+    division = str(raw.get("division") or "").strip()
 
-    def backed(quote_key: str, *must: str) -> dict | None:
+    def backed(quote_key: str, *must: str, who: tuple[str, ...] = (name,)) -> dict | None:
         q = str(raw.get(quote_key) or "")
         src = _find(q, snippets) if q else None
-        return src if src and named_in(q, name) and all(named_in(q, x) for x in must if x) else None
+        return src if src and any(named_in(q, w) for w in who if w) and all(named_in(q, x) for x in must if x) else None
 
-    from AiAgentsFleet.cmi_report.groups import canonical
-    hq = str(raw.get("hq_country") or "").strip()
-    hq = canonical(_ISO2.get(hq.upper(), hq)) if hq else ""          # 'CN' -> 'China'
-    hq_src = backed("hq_quote") if hq else None
-    hq_ok = bool(hq_src) and _mentions_country(raw.get("hq_quote", ""), hq)
-    if not hq_ok:
-        why.append("HQ not stated in the evidence" if hq else "no HQ given")
     parent = str(raw.get("parent_group") or "").strip()
     own = str(raw.get("ownership") or "unknown").strip().lower()
     self_owned = not parent or same_vendor(parent, name) or own == "independent"
     parent_ok = self_owned or bool(backed("parent_quote", parent))
     if not parent_ok:
         why.append(f"parent '{parent}' not stated in the evidence")
+    hq = str(raw.get("hq_country") or "").strip()
+    hq = canonical(_ISO2.get(hq.upper(), hq)) if hq else ""          # 'CN' -> 'China'
+    hq_src = backed("hq_quote") if hq else None
+    hq_ok = bool(hq_src) and _mentions_country(raw.get("hq_quote", ""), hq)
+    if hq_ok and not self_owned and _names_other(raw.get("hq_quote", ""), name, parent):
+        hq_ok = False
+        why.append(f"the HQ quote is about its parent {parent}, not {name} itself")
+    elif not hq_ok:
+        why.append("HQ not stated in the evidence" if hq else "no HQ given")
     jv = re.search(r"joint[- ]venture|\bJV\b", str(raw.get("parent_quote") or ""), re.I)
     wholly = (not self_owned and parent_ok and own == "wholly_owned" and not jv)
     btype = str(raw.get("business_type") or "").strip()
     biz_ok = bool(btype) and bool(backed("business_quote"))
     if not biz_ok:
         why.append("business type not described in the evidence")
+    pq = str(raw.get("product_quote") or "")
+    phrase = mentions_product(pq, products or []) if products else None
+    role = str(raw.get("role") or "").strip()
+    prod_ok = bool(phrase) and bool(role) and bool(backed("product_quote", who=(name, division)))
+    if not prod_ok:
+        why.append("no evidence line names it with this market's product" if products else "product not checked")
+    earns = raw.get("earns_defined_revenue")
+    reason = str(raw.get("earns_reason") or "").strip()
+    excluded = None
+    if prod_ok:
+        earns = True                                    # tied to the product by the evidence: never excluded
+    elif earns is False and backed("exclusion_quote") and reason and not _VAGUE.search(reason):
+        excluded = reason
+    else:
+        earns = None                                    # not shown either way: unknown, not excluded
     note = str(raw.get("ownership_note") or "").strip()
     note_ok = bool(note) and bool(backed("ownership_quote"))
     moves = []
@@ -361,10 +470,11 @@ def verify_entity(raw: dict, name: str, snippets: list[dict]) -> dict:
         "parent_group": (name if self_owned else parent) if parent_ok else "", "parent_is_self": self_owned,
         "parent_verified": parent_ok, "ownership": "independent" if self_owned else own, "wholly_owned": wholly,
         "business_type": btype if biz_ok else "", "business_verified": biz_ok,
-        # judged only on evidence that describes the business; otherwise unknown (the vendors agent's
-        # classification then decides, see exclusions) -- never excluded for lack of evidence
-        "earns_defined_revenue": raw.get("earns_defined_revenue") if biz_ok else None,
-        "earns_reason": (raw.get("earns_reason") or "") if biz_ok else "",
+        "division": division if prod_ok and division and _simple(division) != _simple(name) else "",
+        "product_verified": prod_ok, "product_phrase": phrase if prod_ok else None,
+        "product_quote": pq if prod_ok else "", "role": role if prod_ok else "",
+        "earns_defined_revenue": earns, "excluded_why": excluded,
+        "exclusion_quote": str(raw.get("exclusion_quote") or "") if excluded else "",
         "mainly_domestic": bool(raw.get("mainly_domestic")),
         "subsidiaries_in_list": [s for s in raw.get("subsidiaries_in_list") or [] if isinstance(s, str)],
         "ownership_note": note if note_ok else "", "ownership_note_claimed": note,
@@ -374,20 +484,24 @@ def verify_entity(raw: dict, name: str, snippets: list[dict]) -> dict:
     }
 
 
-def entity_queries(name: str, market: str) -> list[str]:
+def entity_queries(name: str, market: str, products: list[str] | None = None) -> list[str]:
+    """HQ, parent, the market name and -- for the product check -- the shortest
+    other product term ('CSPC ascorbic acid', 'Cargill poultry feed')."""
     root = re.sub(r"^\s*global\s+|\s+market\s*$", "", market or "", flags=re.I)
-    return [f"{name} company headquarters", f"{name} parent company subsidiary owned by", f"{name} {root}"]
+    qs = [f"{name} company headquarters", f"{name} parent company subsidiary owned by", f"{name} {root}"]
+    other = sorted((p for p in products or [] if _simple(p) != _simple(root)), key=len)
+    return qs + ([f"{name} {other[0]}"] if other else [])
 
 
 def check_entity(name: str, market: str, definition_text: str, claims: dict, others: list[str], llm,
-                 search: Callable[[list[str]], list[dict]], log: list[str]) -> dict:
+                 search: Callable[[list[str]], list[dict]], log: list[str], products: list[str] | None = None) -> dict:
     """One targeted search and one LLM call for one vendor. Only snippets that
     name the company are shown (a degraded search backend returns unrelated
     pages); the search is retried once when fewer than 2 do."""
     shown: list[dict] = []
     for attempt in range(2):
         try:
-            hits = [s for s in search(entity_queries(name, market)) if named_in(s.get("text", ""), name)]
+            hits = [s for s in search(entity_queries(name, market, products)) if named_in(s.get("text", ""), name)]
         except Exception as exc:  # noqa: BLE001
             log.append(f"[entities] search failed for {name}: {exc}")
             hits = []
@@ -398,7 +512,10 @@ def check_entity(name: str, market: str, definition_text: str, claims: dict, oth
         time.sleep(15)
     shown = shown[:12]
     claimed = {k: v for k, v in (claims or {}).items() if v}
-    user = (f"Market: {market}\n\n{definition_text}COMPANY: {name}\n"
+    user = (f"Market: {market}\n\n{definition_text}"
+            + (f"PRODUCT (an evidence line must name the company with one of these): {'; '.join(products)}\n"
+               if products else "")
+            + f"COMPANY: {name}\n"
             + (f"CLAIMED (check each against the evidence; correct or leave out): {json.dumps(claimed, ensure_ascii=False)}\n"
                if claimed else "")
             + f"OTHER VENDORS: {', '.join(o for o in others if o != name)}\n\n"
@@ -410,7 +527,7 @@ def check_entity(name: str, market: str, definition_text: str, claims: dict, oth
     except Exception as exc:  # noqa: BLE001
         log.append(f"[entities] LLM failed for {name}: {exc}")
         raw, failed = {}, str(exc)[:120]
-    rec = verify_entity(raw, name, shown)
+    rec = verify_entity(raw, name, shown, products)
     if failed:                                    # unverified because the check could not run, not for lack of evidence
         rec["why"] = [f"entity check failed ({failed})"]
     rec["snippets"] = len(shown)
@@ -441,35 +558,125 @@ def claims_for(name: str, vendors: dict | None) -> dict:
 
 
 def check_entities(names: list[str], market: str, definition_text: str, vendors: dict | None, llm,
-                   search: Callable[[list[str]], list[dict]], log: list[str], cap: int = VENDOR_CAP) -> dict:
+                   search: Callable[[list[str]], list[dict]], log: list[str], cap: int = VENDOR_CAP,
+                   products: list[str] | None = None) -> dict:
     """fields["entities"]: {"records": {name: record}, "not_checked": [names beyond the cap]}."""
     records = {}
     for n in names[:cap]:
-        records[n] = check_entity(n, market, definition_text, claims_for(n, vendors), names, llm, search, log)
-    ok = sum(1 for r in records.values() if r["verified"])
-    log.append(f"[entities] {len(records)} vendor(s) checked, {ok} with HQ, parent and business type confirmed"
+        records[n] = check_entity(n, market, definition_text, claims_for(n, vendors), names, llm, search, log,
+                                  products)
+    log.append(f"[entities] {len(records)} vendor(s) checked, {len(included(names, records))} confirmed with HQ, "
+               f"parent, business type and product"
                + (f"; {len(names) - cap} beyond the cap of {cap} not checked" if len(names) > cap else ""))
-    return {"records": records, "not_checked": names[cap:]}
+    return {"records": records, "not_checked": names[cap:], "products": products or []}
+
+
+def included(names: list[str], records: dict) -> list[str]:
+    """The vendors the report can print: HQ, parent, business type and product confirmed."""
+    return [n for n in names if (r := lookup(n, records)) and r.get("verified") and r.get("product_verified")]
+
+
+# --------------------------------------------------------------------------- #
+# a thin vendor list is asked for once more
+# --------------------------------------------------------------------------- #
+MIN_VENDORS = 5
+THIN_QUERIES = ["{market} leading manufacturers producers", "{market} key players list",
+                "{market} largest companies by capacity"]
+
+
+def concentrated_in(records: dict) -> str | None:
+    """The one country most confirmed HQs are in (at least 3 and a third of them),
+    for a country-specific search -- e.g. China for vitamin C."""
+    hqs = [r["hq_country"] for r in records.values() if r.get("hq_verified") and r.get("hq_country")
+           and not r.get("excluded_why")]
+    if len(hqs) < 3:
+        return None
+    top = max(set(hqs), key=hqs.count)
+    return top if hqs.count(top) >= 3 and hqs.count(top) * 3 >= len(hqs) else None
+
+
+def thin_note(definition: dict, records: dict, n_included: int) -> str:
+    excl = [f"- {n}: {r['excluded_why']}" for n, r in records.items() if r.get("excluded_why")]
+    unconf = [f"- {n}: {'; '.join(r.get('why') or [])}" for n, r in records.items()
+              if not r.get("excluded_why") and not (r.get("verified") and r.get("product_verified"))]
+    return ("\n\nYOUR VENDOR LIST IS TOO THIN: only " + str(n_included) + " company(ies) could be confirmed as earning "
+            "the revenue this market measures.\n"
+            f"ALREADY CHECKED (do not list these again; name OTHER companies): {', '.join(records)}\n"
+            f"- Value-chain level: {definition.get('value_chain_level') or '(not stated)'}\n"
+            f"- Measures: {definition.get('measures') or definition.get('definition') or '(not stated)'}\n"
+            + ("These were EXCLUDED, with the reason:\n" + "\n".join(excl) + "\n" if excl else "")
+            + ("These could not be confirmed from the evidence:\n" + "\n".join(unconf[:8]) + "\n" if unconf else "")
+            + "List (in positioning, mea_shares and dashboard) companies that earn EXACTLY that revenue at that "
+              "value-chain level -- e.g. for a farm-output market, companies that farm, not processors or "
+              "exporters -- named in the WEB EVIDENCE where possible, including the largest MEA players. Return "
+              "the full JSON again in the same shape.")
+
+
+def merge_answers(new: dict, old: dict) -> dict:
+    """The re-asked vendors answer, keeping the first answer's companies it does not repeat."""
+    out = dict(new)
+    for k in ("positioning", "mea_shares", "dashboard", "company_classification"):
+        key = "company" if k == "company_classification" else "vendor"
+        rows = [x for x in new.get(k) or [] if isinstance(x, dict)]
+        rows += [x for x in old.get(k) or [] if isinstance(x, dict) and x.get(key)
+                 and not any(same_vendor(x[key], y.get(key, "")) for y in rows)]
+        out[k] = rows
+    out["capabilities"] = {**(old.get("capabilities") or {}), **(new.get("capabilities") or {})}
+    return out
+
+
+def reask_if_thin(fields: dict, fleet_fields: dict, definition: dict, market: str, ask: Callable, check_new: Callable,
+                  log: list[str]) -> dict:
+    """Fewer than MIN_VENDORS confirmed vendors: the vendors agent is asked once
+    more -- with the value-chain level, the measures and why companies were
+    excluded -- on extra searches (THIN_QUERIES and one country query when the
+    confirmed HQs are concentrated in one country). The new companies get their
+    own entity checks (`check_new(names) -> {name: record}`). Returns the record
+    kept in fields["vendor_review"]["thin_reask"]."""
+    ents = fields.get("entities") or {}
+    records = dict(ents.get("records") or {})
+    names = universe(fleet_fields, fields.get("vendors"))
+    before = included(names, records)
+    rec: dict = {"included_before": before, "reasked": False}
+    if len(before) >= MIN_VENDORS:
+        return rec
+    country = concentrated_in(records)
+    queries = THIN_QUERIES + ([f"{{market}} {country} manufacturers producers companies"] if country else [])
+    note = thin_note(definition, records, len(before))
+    log.append(f"[vendors] only {len(before)} confirmed vendor(s) -- re-asking once"
+               + (f" (with a {country} search)" if country else ""))
+    rec.update({"reasked": True, "queries": queries, "country": country,
+                "excluded_reasons": {n: r["excluded_why"] for n, r in records.items() if r.get("excluded_why")}})
+    try:
+        again = ask("vendors", note, queries)
+    except Exception as exc:  # noqa: BLE001
+        log.append(f"[vendors] thin re-ask failed: {exc}")
+        again = None
+    if not (isinstance(again, dict) and "error" not in again and again.get("positioning")):
+        rec["reask_failed"] = True
+        return rec
+    fields["vendors"] = merge_answers(again, fields.get("vendors") or {})
+    names = universe(fleet_fields, fields["vendors"])
+    new = [n for n in names if lookup(n, records) is None]
+    records.update(check_new(new[:VENDOR_CAP]))
+    fields["entities"] = {**ents, "records": records,
+                          "not_checked": [n for n in names if lookup(n, records) is None]}
+    rec["new_vendors"] = new
+    rec["included_after"] = included(names, records)
+    log.append(f"[vendors] after the re-ask: {len(rec['included_after'])} confirmed vendor(s)")
+    return rec
 
 
 # --------------------------------------------------------------------------- #
 # one exclusion list, plausibility
 # --------------------------------------------------------------------------- #
-def exclusions(records: dict, classification: list[dict] | None) -> dict[str, str]:
-    """{company: why} for every company that does not earn the revenue the
-    definition measures -- the entity check's judgement where the evidence
-    describes the business, else the vendors agent's classification. Applied
-    to the global and MEA lists alike."""
-    out = {}
-    for n, r in (records or {}).items():
-        if r.get("earns_defined_revenue") is False:
-            out[n] = (r.get("business_type") or "other business") + (f": {r['earns_reason']}" if r.get("earns_reason") else "")
-    for c in classification or []:
-        n = str((c or {}).get("company") or "")
-        judged = (lookup(n, records) or {}).get("earns_defined_revenue")
-        if n and c.get("earns_defined_revenue") is False and judged is None and lookup(n, out) is None:
-            out[n] = (c.get("business_type") or "other business") + " (vendors agent's classification)"
-    return out
+def exclusions(records: dict) -> dict[str, str]:
+    """{company: why} for every company the evidence shows does not make or sell
+    this market's product (entity check, verify_entity). Applied to the global
+    and MEA lists alike. A company the evidence is silent on is not excluded --
+    it is simply not printed until confirmed."""
+    return {n: (r.get("business_type") or "other business") + f": {r['excluded_why']}"
+            for n, r in (records or {}).items() if r.get("excluded_why")}
 
 
 def plausibility(rows: list[dict], market_value: float, home_value: Callable[[str], float | None],
@@ -508,6 +715,9 @@ def review(*, fleet_check: dict | None, answer_record: dict | None, entities: di
     if has_vendors and not entities:
         blockers.append("vendor entities not checked (data predates PLAN-05): HQ, parent and business type are "
                         "unverified -- re-run run_data --groups vendors")
+    elif entities and any("product_verified" not in r for r in (entities.get("records") or {}).values()):
+        blockers.append("vendor entity checks predate the product check: no vendor is confirmed as selling this "
+                        "market's product -- re-run run_data --groups entities")
     if fleet_check is None:
         warnings.append("global vendor shares not checked (fleet run predates PLAN-05): no global share is printed")
     for b in blocked_sourced:
@@ -521,8 +731,10 @@ def review(*, fleet_check: dict | None, answer_record: dict | None, entities: di
         warnings.append(f"excluded from every vendor list: {n} ({why})")
     warnings += [f"left out of the vendor tables: {d}" for d in dropped]
     warnings += [f"not merged: {d}" for d in declined]
-    if not mode.get("shares_global") and not mode.get("shares_mea") and positioning_rows < 3:
-        warnings.append(f"only {positioning_rows} vendor(s) with confirmed HQ, parent and business type")
+    thin = rec.get("thin_reask") or {}
+    if not mode.get("shares_global") and not mode.get("shares_mea") and positioning_rows < MIN_VENDORS:
+        warnings.append(f"only {positioning_rows} vendor(s) with confirmed HQ, parent, business type and product"
+                        + (" after one re-ask of the vendor list" if thin.get("reasked") else ""))
     if not mea_leader:
         warnings.append("no MEA vendor leader identified")
     return {"mode": mode, "mea_leader": mea_leader, "excluded": excluded, "merges": merges,

@@ -39,7 +39,7 @@ from pathlib import Path
 
 from AiAgentsFleet.cmi_report.guard import sentences, unverified_fact
 
-VERSION = 1
+VERSION = 2          # 2: regulator quotes must name the product; unconfirmed regulator rows dropped
 MAX_CLAIMS = 40                      # cost cap per report; the rest are not checked (and so not printed)
 NOT_CONFIRMED = "Competent authority not confirmed"
 REQ_NOT_CONFIRMED = "Requirements not confirmed"
@@ -143,6 +143,7 @@ def claims(fields: dict) -> list[dict]:
         if str(r.get("regulator") or "").strip():
             out.append({"id": f"regulator:{country}", "kind": "regulator", "country": country,
                         "subject": r["regulator"].strip(),
+                        "tie_terms": [str(t) for t in reg.get("category_terms") or [] if str(t).strip()],
                         "text": f"{r['regulator'].strip()} is the competent authority in {country}."})
         for j, s in enumerate(sentences(str(r.get("requirements") or ""))[:3]):
             out.append({"id": f"requirement:{country}:{j}", "kind": "policy", "country": country, "text": s.strip(),
@@ -315,6 +316,9 @@ def check_claim(c: dict, product: str, llm, search_fn) -> dict:
     GenLLM cache (a failed search or LLM call is not cached)."""
     hit = _cache_get(llm, c)
     if hit:
+        if c["kind"] == "regulator" and hit.get("status") in ("supported", "corrected")                 and not product_tied(hit.get("quote") or "", product, c.get("tie_terms")):
+            hit = {**hit, "verdict": "not_found", "status": "omitted",
+                   "note": f"the quote does not tie this authority to {product}"}
         return {**c, **hit, "cached": True}
     try:
         snippets = search_fn(queries(c, product)) or []
@@ -327,8 +331,29 @@ def check_claim(c: dict, product: str, llm, search_fn) -> dict:
     except Exception as exc:  # noqa: BLE001
         return {**c, "verdict": "not_found", "status": "error", "note": f"judge failed: {exc}"}
     res = validate(c, raw, snippets)
+    if c["kind"] == "regulator" and res.get("status") in ("supported", "corrected")             and not product_tied(res.get("quote") or "", product, c.get("tie_terms")):
+        # a quote that only shows the body exists (NAFDAC 'regulates food and drugs') does not make it the
+        # authority for THIS product (user-approved fix, 2026-10-15 biostimulants run)
+        res = {**res, "verdict": "not_found", "status": "omitted",
+               "note": f"the quote does not tie this authority to {product}"}
     _cache_put(llm, c, res)
     return {**c, **res}
+
+
+# broad sector words: a regulator quote must name the product itself, not just the sector
+_BROAD = {"agricul", "farming", "industr", "commerc", "intensi", "super", "functio", "global", "market"}
+
+
+def product_tied(quote: str, product: str, category_terms: list[str] | None = None) -> bool:
+    """The quote names this product or its regulatory category ('fertiliser' for biostimulants, 'food
+    supplement' for vitamin C, as the regulation agent named it), so the authority is tied to it -- not
+    merely shown to exist."""
+    from AiAgentsFleet.sources import market_tokens
+    stems = (market_tokens(product) - _BROAD or market_tokens(product))
+    for t in category_terms or []:
+        stems |= {w[:7] for w in t.lower().replace("fertilizer", "fertiliser").split() if len(w) >= 4}
+    q = quote.lower().replace("fertilizer", "fertiliser")
+    return not stems or any(s in q for s in stems)
 
 
 def verify(claim_list: list[dict], market: str, llm, search_fn=None, cap: int = MAX_CLAIMS,
@@ -421,7 +446,12 @@ def apply(fields: dict) -> dict:
                     kept.append(ok_r["corrected"] if ok_r["status"] == "corrected" and ok_r.get("corrected")
                                 else s.strip())
             row["requirements"] = " ".join(kept) or REQ_NOT_CONFIRMED
-            rows.append(row)
+            if row["verified"]:          # user decision 2026-10-15: unconfirmed authorities are left out
+                rows.append(row)
+        reg["snapshot_unconfirmed"] = [_canonical(str(r.get("country") or "").strip())
+                                       for r in reg.get("snapshot") or []
+                                       if _canonical(str(r.get("country") or "").strip())
+                                       not in {x["country"] for x in rows}]
         reg["snapshot"] = rows
         ms_out = []
         for i, ms in enumerate(reg.get("milestones") or []):
@@ -503,9 +533,10 @@ def review(fields: dict) -> dict:
     if count["not_checked"]:
         warnings.append(f"{count['not_checked']} claim(s) beyond the {MAX_CLAIMS}-claim cap were not checked")
     reg = applied.get("regulation") or {}
-    no_auth = [r.get("country") for r in reg.get("snapshot") or [] if r.get("regulator") == NOT_CONFIRMED]
+    no_auth = list(reg.get("snapshot_unconfirmed") or [])
     if no_auth:
-        warnings.append("competent authority not confirmed for: " + ", ".join(no_auth))
+        warnings.append("competent authority not confirmed (country left out of the regulatory table): "
+                        + ", ".join(no_auth))
     raw_ms = len((fields.get("regulation") or {}).get("milestones") or [])
     if raw_ms >= 3 > len(reg.get("milestones") or []):
         warnings.append(f"only {len(reg.get('milestones') or [])} milestone(s) confirmed: the timeline is left out")

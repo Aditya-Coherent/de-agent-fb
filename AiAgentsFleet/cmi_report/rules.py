@@ -11,6 +11,8 @@ MEA growth factors are tied to the CAGRs they claim to explain.
 """
 from __future__ import annotations
 
+import re
+
 TIE_PP = 0.3          # CAGRs within 0.3 percentage points are a tie
 TIE_REL = 0.03        # values (sizes, increments) within 3% are a tie
 
@@ -96,3 +98,26 @@ def reconcile_drivers(dyn: dict, global_cagr: float, mea_cagr: float) -> dict:
         x.pop("impact_pp", None)
     dyn["impact_basis"] = "score"
     return dyn
+
+
+def impact_label(factor: str, dyn: dict) -> str | None:
+    """Table 2's High/Medium/Low for a factor, derived from the same impacts the report prints
+    (a 'Low' restraint can no longer carry the largest pp): the factor's matching driver or
+    restraint, relative to the largest absolute impact -- >= 60% High, >= 30% Medium, else Low.
+    None when the factor matches no driver or restraint (the agent's label is kept)."""
+    items = [x for x in (dyn.get("mea_drivers") or []) + (dyn.get("mea_restraints") or [])]
+    val = (lambda x: abs(float(x.get("impact_pp", x.get("impact_score", 0)) or 0)))
+    top = max((val(x) for x in items), default=0)
+    if not top:
+        return None
+    fw = {w for w in re.findall(r"[a-z]+", factor.lower()) if len(w) > 3}
+    best, score = None, 0.0
+    for x in items:
+        xw = {w for w in re.findall(r"[a-z]+", str(x.get("name", "")).lower()) if len(w) > 3}
+        ov = len(fw & xw) / max(1, min(len(fw), len(xw)))
+        if ov > score:
+            best, score = x, ov
+    if not best or score < 0.5:
+        return None
+    r = val(best) / top
+    return "High" if r >= 0.6 else "Medium" if r >= 0.3 else "Low"

@@ -318,9 +318,10 @@ _PLAUS_SEVERITY = (
     "- medium: questionable or unsupported, should be checked before shipping.\n"
     "- low: wording or presentation.\n"
 )
-_PLAUS_SCHEMA = ('{"items": [{"quote": <exact short quote from the report>, "issue": <1-2 sentences>, '
+_PLAUS_SCHEMA = ('{"items": [{"quote": <exact quote from the report, at most 20 words>, "issue": <1 sentence>, '
                  '"category": <"number"|"fact"|"logic"|"scope"|"vendor"|"regulation">, '
-                 '"severity": <"high"|"medium"|"low">, "fix": <1 sentence>}]}')
+                 '"severity": <"high"|"medium"|"low">, "fix": <1 short sentence>}]}  -- at most 25 items, '
+                 'all "high" items first, then "medium"; leave out "low" items if the list would be longer')
 
 
 def _few_shot() -> str:

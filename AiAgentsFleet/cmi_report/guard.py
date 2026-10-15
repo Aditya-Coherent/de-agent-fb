@@ -483,6 +483,15 @@ _PUBLISHED_WORDING = re.compile(r"\bpublish\w*|\btriangulat\w*|\bthird[- ]party 
                                 re.I)
 
 
+_PUBLISHER_NAME = re.compile(
+    r"\b(Precedence Research|Grand View Research|MarketsandMarkets|Markets and Markets|Mordor Intelligence|"
+    r"Fortune Business Insights|IMARC|Allied Market Research|Verified Market (?:Reports|Research)|Market\.us|"
+    r"Statista|Emergen Research|Market Research Future|Research and Markets|Technavio|Spherical Insights|"
+    r"Data Bridge|Straits Research|Future Market Insights|Persistence Market|Transparency Market|"
+    r"Polaris Market|Reanin|Global Market Insights|Expert Market Research|Cognitive Market Research|"
+    r"(?!coherentmarket)\w+(?:research|marketreports|insights)\.com)\b", re.I)   # CMI's own site is allowed
+
+
 def drop_size_comparison(text: str, dropped: list[str], unsourced: bool = False) -> str:
     """Drops sentences that explain a gap between the CMI figure and published
     figures ('The gap reflects scope ...'): the pipeline has no basis for such
@@ -491,7 +500,8 @@ def drop_size_comparison(text: str, dropped: list[str], unsourced: bool = False)
     wording goes too."""
     keep = []
     for s in sentences(text or ""):
-        why = ("explains a CMI-vs-published gap" if (_SIZE_GAP.search(s) and _SIZE_CAUSE.search(s)
+        why = ("names another research publisher" if _PUBLISHER_NAME.search(s) else
+               "explains a CMI-vs-published gap" if (_SIZE_GAP.search(s) and _SIZE_CAUSE.search(s)
                                                      and _SIZE_COMPARE.search(s)) or _SIZE_BASE_WHY.search(s) else
                "published/triangulation wording on an unsourced headline" if unsourced
                and _PUBLISHED_WORDING.search(s) else None)

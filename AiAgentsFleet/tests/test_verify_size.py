@@ -180,10 +180,9 @@ def test_size_basis_text_wording():
                        "source": {"publisher": "Precedence Research", "domain": "precedenceresearch.com",
                                   "derivation": "as quoted", "year": 2025}}
     txt = size_basis_text(m, "Agricultural Biostimulants")
-    assert "Precedence Research (precedenceresearch.com)" in txt
+    # user decision: a non-CMI source is never named in the client report; it is worded as a CMI estimate
+    assert "CMI estimate" in txt and "Precedence" not in txt and "precedenceresearch" not in txt
     assert "because" not in txt and "reflect" not in txt
-    m["size_check"]["source"].update(publisher="emergenresearch.com", domain="emergenresearch.com")
-    assert "emergenresearch.com (emergenresearch.com)" not in size_basis_text(m, "Agricultural Biostimulants")
 
 
 # --- CMI's own published figure wins (user decision, PLAN-02 "CMI's own figure") ---

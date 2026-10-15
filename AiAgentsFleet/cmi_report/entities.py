@@ -595,15 +595,17 @@ def check_entities(names: list[str], market: str, definition_text: str, vendors:
     for n in names[:cap]:
         records[n] = check_entity(n, market, definition_text, claims_for(n, vendors), names, llm, search, log,
                                   products)
-    log.append(f"[entities] {len(records)} vendor(s) checked, {len(included(names, records))} confirmed with HQ, "
-               f"parent, business type and product"
+    log.append(f"[entities] {len(records)} vendor(s) checked, {len(included(names, records))} confirmed as making or selling the product"
                + (f"; {len(names) - cap} beyond the cap of {cap} not checked" if len(names) > cap else ""))
     return {"records": records, "not_checked": names[cap:], "products": products or []}
 
 
 def included(names: list[str], records: dict) -> list[str]:
-    """The vendors the report can print: HQ, parent, business type and product confirmed."""
-    return [n for n in names if (r := lookup(n, records)) and r.get("verified") and r.get("product_verified")]
+    """The vendors the report can print (user decision 2026-10-15): the evidence says the company makes or
+    sells this product, and it is not excluded. HQ, parent and business type are printed only when confirmed
+    ("Not confirmed" otherwise) -- they no longer decide whether the vendor is listed."""
+    return [n for n in names if (r := lookup(n, records)) and r.get("product_verified")
+            and not r.get("excluded_why")]
 
 
 # --------------------------------------------------------------------------- #
@@ -775,7 +777,7 @@ def review(*, fleet_check: dict | None, answer_record: dict | None, entities: di
     warnings += [f"not merged: {d}" for d in declined]
     thin = rec.get("thin_reask") or {}
     if not mode.get("shares_global") and not mode.get("shares_mea") and positioning_rows < MIN_VENDORS:
-        warnings.append(f"only {positioning_rows} vendor(s) with confirmed HQ, parent, business type and product"
+        warnings.append(f"only {positioning_rows} vendor(s) confirmed as making or selling the product"
                         + (" after one re-ask of the vendor list" if thin.get("reasked") else ""))
     if not mea_leader:
         warnings.append("no MEA vendor leader identified")

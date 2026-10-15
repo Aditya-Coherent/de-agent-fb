@@ -490,14 +490,12 @@ def size_basis_text(m: dict, root: str) -> str:
         text = (f"{base} is CMI's published estimate." if quoted else
                 f"{base} is carried forward from CMI's published {src['year']} estimate, at the growth rate it states.")
     else:
-        how = "is the figure reported by" if quoted else f"is carried forward from the {src['year']} figure reported by"
-        tail = "" if quoted else ", at the growth rate that source states"
-        who = src["domain"] if src["publisher"] == src["domain"] else f"{src['publisher']} ({src['domain']})"
-        text = f"{base} {how} {who}{tail}."
+        # user decision (2026-10-15): the client report never names another research publisher; the
+        # source and its quote are kept in the internal QA report (market_size_check.json)
+        text = (f"{base} is a CMI estimate, based on a market-size figure quoted in public evidence for this "
+                f"market" + ("" if quoted else f" ({src['year']}, carried forward at the growth rate it states)") + ".")
     if not chk.get("cagr_sourced"):
         text += " The forecast growth rate is a CMI estimate."
-    if m.get("published_2025"):
-        text += " Other published figures are shown below for reference only."
     return text
 
 
@@ -1004,8 +1002,12 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 61:
             b.caption(i, "Table", "Impact assessment of market factors")
         elif i == 62:
-            rows = [[safe(r.get("factor")), r.get("type", ""), r.get("impact", ""), r.get("timeframe", ""),
-                     safe(r.get("most_exposed"))] for r in (ag.get("dynamics") or {}).get("impact_matrix") or []]
+            from AiAgentsFleet.cmi_report import rules
+            dyn = ag.get("dynamics") or {}
+            # the impact label follows the reconciled impacts the report prints (no 'Low' factor with a top pp)
+            rows = [[safe(r.get("factor")), r.get("type", ""),
+                     rules.impact_label(str(r.get("factor") or ""), dyn) or r.get("impact", ""), r.get("timeframe", ""),
+                     safe(r.get("most_exposed"))] for r in dyn.get("impact_matrix") or []]
             b.table(i, rows)
         # ------------------------------------------------------------ chapter 3
         elif i == 64:
@@ -1236,7 +1238,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 309:
             b.image(i, charts["reg_scorecard"])
         elif i == 312:
-            b.caption(i, "Table", "Regulatory snapshot")
+            b.caption(i, "Table", "Regulatory snapshot (competent authorities confirmed from public sources only)")
         elif i == 313:
             # regulators and requirements as fact-checked (verify_facts.apply): confirmed, corrected
             # from the evidence, or "Competent authority not confirmed" -- never a marker
@@ -1327,7 +1329,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 368:
             b.para(i, size_basis_text(m, root))
         elif i in (369, 370, 371):
-            pub = m["published_2025"]
+            pub = []                 # third-party publishers are never named in the client report (user decision)
             if not pub:
                 continue
             if i == 369:
@@ -1338,7 +1340,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                 b.para(i, "Source: " + ", ".join(dict.fromkeys(p["publisher"] for p in pub)) + "; CMI analysis")
         elif i in (372, 373, 374, 375):
             # reference figures only beside a sourced headline; they never set the CMI numbers
-            refs = (ag.get("published") or {}).get("references") or [] if not size_unsourced else []
+            refs = []                # third-party publishers are never named in the client report (user decision)
             if not refs:
                 continue
             if i == 373:

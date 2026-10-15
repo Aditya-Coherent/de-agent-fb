@@ -55,7 +55,8 @@ def search_with(snippets):
 
 
 def fields(snapshot=None, milestones=None, dashboard=None, watchlist=None):
-    return copy.deepcopy({"regulation": {"applicable": True, "snapshot": snapshot or [], "milestones": milestones or [],
+    return copy.deepcopy({"regulation": {"applicable": True, "category_terms": ["food supplement"],
+                                         "snapshot": snapshot or [], "milestones": milestones or [],
                                          "scorecard": {}, "watchlist": watchlist or []},
                           "vendors": {"dashboard": dashboard or []}})
 
@@ -88,21 +89,21 @@ def test_supported_is_printed_without_marker():
     assert r["status"] == "supported" and r["url"] == "https://sfda.gov.sa/x"   # the URL comes from the snippet
 
 
-def test_not_found_regulator_keeps_row_with_not_confirmed():
+def test_not_found_regulator_row_is_left_out():
+    # user decision 2026-10-15: a country whose authority is not confirmed is left out of the table
     _, a, _ = run(fields([SAUDI]), {}, [SFDA_SNIP])
-    row = a["regulation"]["snapshot"][0]
-    assert row["country"] == "Saudi Arabia"
-    assert row["regulator"] == vf.NOT_CONFIRMED == "Competent authority not confirmed"
-    assert row["requirements"] == vf.REQ_NOT_CONFIRMED            # the row stays complete (not dropped)
-    assert "SFDA" not in json.dumps(a["regulation"])
+    assert a["regulation"]["snapshot"] == [] and "Saudi Arabia" in a["regulation"]["snapshot_unconfirmed"]
+    assert "SFDA" not in json.dumps(a["regulation"]["snapshot"])
 
 
 def test_only_supported_requirement_sentences_are_kept():
     s = dict(SAUDI, requirements="Vitamin supplements need pre-market registration with GMP compliance and Arabic "
                                  "labelling. Approval takes under 30 days.")
     _, a, _ = run(fields([s]), {"pre-market": {"verdict": "supported", "evidence": 1, "quote":
-                  "vitamin supplements need pre-market registration with GMP compliance and Arabic labelling"}},
-                  [REQ_SNIP])
+                  "vitamin supplements need pre-market registration with GMP compliance and Arabic labelling"},
+                  "Saudi Food and Drug": {"verdict": "supported", "evidence": 1,
+                                          "quote": "The Saudi Food and Drug Authority (SFDA) registers food supplements"}},
+                  [REQ_SNIP, SFDA_SNIP])
     assert a["regulation"]["snapshot"][0]["requirements"] == SAUDI["requirements"]
 
 
@@ -127,21 +128,24 @@ def test_a_quote_not_in_the_evidence_is_not_found():
     _, a, _ = run(fields([SAUDI]), {"Saudi Food and Drug": {
         "verdict": "supported", "evidence": 1, "quote": "SFDA is the competent authority for all supplements"}},
         [SFDA_SNIP])
-    assert a["regulation"]["snapshot"][0]["regulator"] == vf.NOT_CONFIRMED
+    assert a["regulation"]["snapshot"] == [] and "Saudi Arabia" in a["regulation"]["snapshot_unconfirmed"]
 
 
 def test_a_correction_not_stated_in_the_quote_is_not_printed():
     t = next(x for x in TRAPS if x["name"] == "Turkey TITCK")
     _, a, _ = run(fields([t["snapshot"]]), {"TITCK": {**t["honest_judge"], "corrected": "Ministry of Health"}},
                   t["evidence"], t["market"])
-    assert a["regulation"]["snapshot"][0]["regulator"] == vf.NOT_CONFIRMED
+    assert a["regulation"]["snapshot"] == [] and "TITCK" not in _printed(a)
 
 
 # --------------------------------------------------------------------------- #
 # the known traps (FINDINGS B1, B8, C10, E4, F4)
 # --------------------------------------------------------------------------- #
 def _trap_fields(t):
-    return fields([t["snapshot"]]) if "snapshot" in t else fields(milestones=[t["milestone"]])
+    f = fields([t["snapshot"]]) if "snapshot" in t else fields(milestones=[t["milestone"]])
+    if "Shrimp" in t["market"]:          # the category the regulation agent would name for this market
+        f["regulation"]["category_terms"] = ["aquaculture", "fish farming"]
+    return f
 
 
 def _printed(a):
@@ -253,14 +257,14 @@ def test_results_are_cached_by_claim_text():
 
 def test_judge_failure_is_omitted_and_a_blocker():
     f, a, _ = run(fields([SAUDI]), {}, [SFDA_SNIP], fail=True)
-    assert a["regulation"]["snapshot"][0]["regulator"] == vf.NOT_CONFIRMED
+    assert a["regulation"]["snapshot"] == [] and "Saudi Arabia" in a["regulation"]["snapshot_unconfirmed"]
     assert any("could not be checked" in b for b in vf.review(f)["blockers"])
 
 
 def test_no_checks_at_all_prints_nothing_unconfirmed_and_blocks():
     f = fields([SAUDI], MS)
     a = vf.apply(f)
-    assert a["regulation"]["snapshot"][0]["regulator"] == vf.NOT_CONFIRMED and a["regulation"]["milestones"] == []
+    assert a["regulation"]["snapshot"] == [] and "Saudi Arabia" in a["regulation"]["snapshot_unconfirmed"] and a["regulation"]["milestones"] == []
     assert vf.review(f)["blockers"]
 
 
@@ -269,7 +273,7 @@ def test_changed_claim_after_the_check_is_left_out():
         "verdict": "supported", "evidence": 1, "quote": "The Saudi Food and Drug Authority (SFDA) registers food supplements"}},
         [SFDA_SNIP])
     f["regulation"]["snapshot"][0]["regulator"] = "Ministry of Health"
-    assert vf.apply(f)["regulation"]["snapshot"][0]["regulator"] == vf.NOT_CONFIRMED
+    assert vf.apply(f)["regulation"]["snapshot"] == []
     assert not vf.current(f)
 
 
@@ -281,7 +285,7 @@ def test_ensure_writes_fact_checks_json_listing_everything_printed(tmp_path):
     assert vf.ensure(tmp_path, "Global Vitamin C Market", f, llm, search_with([SFDA_SNIP] + _ms_snips()), log=None)
     out = json.loads((tmp_path / "fact_checks.json").read_text(encoding="utf-8"))
     printed = out["printed"]
-    assert [r["regulator"] for r in printed["regulators"]] == [SAUDI["regulator"], vf.NOT_CONFIRMED]
+    assert [r["regulator"] for r in printed["regulators"]] == [SAUDI["regulator"]]
     assert len(printed["milestones"]) == 3
     assert {r["id"] for r in out["results"]} == {c["id"] for c in vf.claims(f)}
     assert set(out["review"]) >= {"blockers", "warnings", "verified_facts", "corrections"}

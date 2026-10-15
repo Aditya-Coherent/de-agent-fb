@@ -358,9 +358,9 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
             continue
         seen.add(d)
         p = ent.lookup(rec["name"], pos_src) or {}
-        rows.append({"vendor": d, "hq": rec["hq_country"],
-                     "parent": "Independent" if rec.get("parent_is_self") else rec["parent_group"],
-                     "business_type": rec["business_type"],
+        rows.append({"vendor": d, "hq": rec["hq_country"] or "Not confirmed",
+                     "parent": ("Independent" if rec.get("parent_is_self") else rec["parent_group"]) or "Not confirmed",
+                     "business_type": rec["business_type"] or "Not confirmed",
                      "role": rec["role"],                     # as the product evidence line states it
                      "mea_presence": p.get("mea_presence") if p.get("mea_presence") in ent.MEA_PRESENCE else "",
                      "ownership_note": rec.get("ownership_note") or ""})
@@ -405,7 +405,7 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
         dseen.add(d)
         if r.get("ownership_note") and not rec.get("ownership_note"):
             notes.append(f"Ownership note for {d} ('{r['ownership_note']}') not confirmed by the evidence: not printed")
-        dash.append({"vendor": d, "hq": rec["hq_country"], "core_strength": r.get("core_strength") or "",
+        dash.append({"vendor": d, "hq": rec["hq_country"] or "Not confirmed", "core_strength": r.get("core_strength") or "",
                      "mea_footprint": r.get("mea_footprint") or "", "verified": bool(r.get("verified")),
                      "ownership_note": rec.get("ownership_note") or ""})
 
@@ -457,7 +457,7 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
                            f"only {len(msh)} sourced MEA vendor share(s): positioning table instead"},
             "positioning": {"show": pos_show, "why": "" if pos_show else
                             "shares shown instead" if show_g and show_m else
-                            f"fewer than {min_n} vendors with confirmed HQ, parent, business type and product"},
+                            f"fewer than {min_n} vendors confirmed as making or selling the product"},
             "capabilities": {"show": len(caps) >= 3 and len(dims) >= 3,
                              "why": "" if len(caps) >= 3 else "fewer than 3 confirmed vendors scored"},
             "dashboard": {"show": len(dash) >= min_n, "why": "" if len(dash) >= min_n else

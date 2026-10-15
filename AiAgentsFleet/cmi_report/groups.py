@@ -323,7 +323,9 @@ GROUPS: list[dict] = [
             "prefer fewer, certain items. Scores are 1 (restrictive) to 5 (enabling), integers, and are an "
             "assessment. If the market has no product- or sector-specific regulation worth a chapter, set "
             "applicable to false."),
-        "schema": ('{"applicable": <true|false>, "milestones": [{"date": <year it entered into force, e.g. "2022">, '
+        "schema": ('{"applicable": <true|false>, "category_terms": [<1-3 words or short phrases naming the regulatory '
+                   'category this product is registered under, e.g. "fertiliser", "food supplement", "animal feed">], '
+                   '"milestones": [{"date": <year it entered into force, e.g. "2022">, '
                    '"jurisdiction": <string>, "event": <8-14 words>, "instrument": <legal instrument name and '
                    'number>}, x5, chronological, 5 different jurisdictions], '
                    '"scorecard_dimensions": [<5 short names of the regulatory dimensions that matter for THIS '

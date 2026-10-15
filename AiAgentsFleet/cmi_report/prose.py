@@ -26,7 +26,7 @@ from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text,
                                             unverified_fact, vendor_clean)
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 23     # bump when prompts or guards change, so saved text is rewritten (merge of PLAN-05..08)
+PROSE_VERSION = 24     # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -150,13 +150,10 @@ def base_facts(m: dict) -> dict:
 def _size_facts(m: dict) -> dict:
     """Where the headline comes from (verify_size.py): a named source, or a CMI estimate."""
     chk = m.get("size_check") or {}
-    if chk.get("status") == "sourced" and chk.get("source"):
-        s = chk["source"]
-        who = ("CMI's published estimate" if chk.get("source_is_cmi") else
-               s["domain"] if s["publisher"] == s["domain"] else f"{s['publisher']} ({s['domain']})")
-        return {"status": "sourced", "headline_source": who,
-                "rule": "the global base is this source's figure: name the source; never explain why other "
-                        "figures differ"}
+    if chk.get("status") == "sourced" and chk.get("source") and chk.get("source_is_cmi"):
+        return {"status": "sourced", "headline_source": "CMI's published estimate",
+                "rule": "the global base is CMI's published estimate; never name another research publisher; "
+                        "never explain why other figures differ"}
     return {"status": "unsourced", "headline_label": "CMI estimate",
             "rule": "the headline is a CMI estimate: call it that; never mention published or third-party "
                     "estimates, ranges or triangulation"}
@@ -218,8 +215,7 @@ def method_text(m: dict, root: str) -> str:
     if chk.get("status") == "sourced" and chk.get("source_is_cmi"):
         head = "the global headline is CMI's own published estimate, taken from a quote found in that evidence"
     elif chk.get("status") == "sourced":
-        head = ("the global headline is taken from a figure quoted in that evidence (CMI's own published figure "
-                "is preferred whenever one is found; none was found for this market)")
+        head = "the global headline is a CMI estimate based on a market-size figure quoted in that evidence"
     else:
         head = ("no published figure could be confirmed from a cited quote, so the global headline is a CMI "
                 "estimate built from the agents' evidence (CMI's own published figure is preferred whenever one "
@@ -515,7 +511,9 @@ def make_guard(m: dict, geo: str | None, ag: dict | None = None) -> ClaimGuard:
                       if c not in with_breakdown and not c.startswith("Rest of")]
     g.segment_names = [n for dims in m["segments"].get("Global", {}).values() for n in dims
                        if not n.lower().startswith("other")]
-    g.headline_unsourced = (m.get("size_check") or {}).get("status") != "sourced"
+    # only CMI's own published figure is presented as published; anything else is worded as a CMI estimate
+    g.headline_unsourced = not ((m.get("size_check") or {}).get("status") == "sourced"
+                                and (m.get("size_check") or {}).get("source_is_cmi"))
     g.definition = m.get("definition")       # no sentence may describe another value-chain level (PLAN-04)
     g.vendor_text = m.get("vendor_text")     # vendors named only from the final vendor data (PLAN-05)
     # regulators, laws and dated policies only from the verified fact list (PLAN-06); None = no check ran

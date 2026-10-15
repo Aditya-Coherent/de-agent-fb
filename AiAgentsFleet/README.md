@@ -4,8 +4,9 @@ A standalone agent fleet: give it a market name, it fills in every numeric
 field the whitepaper template (`vitamin_c_market_whitepaper_v2.docx`, see
 [../DEMAND_SIDE_EVIDENCE_PLAN.md](../DEMAND_SIDE_EVIDENCE_PLAN.md) for the
 broader project context) needs, by querying live web search and having an
-LLM synthesize a concise structured answer per field group — then
-randomizing every numeric value by **+/-5-10%**, per request.
+LLM synthesize a concise structured answer per field group. Numbers are
+kept exactly as the agent returned them: the old +/-5-10% jitter is **off**
+(see "Randomization rule" below).
 
 ## Important caveat — what "Google AI Overview" means here
 
@@ -66,28 +67,66 @@ truth — read it for the exact query templates and JSON schema each returns):
 Asia Pacific, Latin America, Middle East & Africa) — same convention as the
 Desk Research Segment Definition gate elsewhere in this repo.
 
-## Randomization rule (exact behavior — see `randomizer.py`)
+## Randomization rule (off for reports — see `randomizer.py`)
 
-Every numeric leaf value in a field group's output is jittered
-independently: magnitude is drawn uniformly from **5% to 10%**, sign
-(+/-) is a coin flip, applied as `value * (1 + sign * magnitude)`. This
-means running the fleet twice for the same market **never** produces
-identical numbers.
+**Randomization is off by default, and CMI reports never use it.**
+`randomizer.randomize_json` returns an unchanged copy unless the switch
+`randomizer.ENABLED` is on (env `AIFLEET_RANDOMIZE=1`).
 
-**Not jittered**: any field whose key ends in `_year` (or is exactly
-`year`) — e.g. `base_year: 2025`, `forecast_year: 2035` — since jittering a
-year would corrupt the field, not the data. A dict entry keyed *by* a year
-string (e.g. `"historical_usd_mn": {"2020": 1720.0}`) still has its VALUE
-jittered — only the year key itself is left alone.
+Why: the jitter multiplied every numeric leaf, including both the base
+value **and** the CAGR, by 1 ± U(5%, 10%). The errors compounded (2033
+values off by up to ~12%), and rankings and ties came from noise, e.g. a
+0.1 pp gap reported as "the faster-growing subregion", and history that
+went down from one year to the next (FINDINGS-2026-10-15 X1, X2). With it
+off, the same evidence gives the same numbers, and every number can be
+traced back to the desk research that produced it.
+
+- `run_fleet.py` writes each agent's answer to `fields_raw` and the
+  (identical, when jitter is off) values to `fields`; the metadata key
+  `"randomization"` reads `"none"`.
+- `cmi_report/run_cmi_report.py` and `cmi_report/run_batch.py` stop with an
+  error if `AIFLEET_RANDOMIZE` is set, unless `--allow-randomize` is passed.
+  Never pass it for a report that goes to a client.
+- The `randomize` keys in `cmi_report/groups.py` are kept, but they only
+  take effect when the switch is on.
+
+When the switch is on, the old behaviour applies: each numeric leaf is
+multiplied by `1 + sign * magnitude` (magnitude uniform in 5-10%, sign a
+coin flip). Fields whose key ends in `_year` (or is exactly `year`) are
+never jittered.
+
+## Source quality (`sources.py`)
+
+Both search paths (`field_agent.run_field_group` and
+`cmi_report/run_data.search`) drop snippets from blocked sites before the
+LLM sees them: video, social, marketplace, Q&A, horoscope sites, and
+throwaway-TLD link farms (`.so`, `.tk`, `.xyz` …). Each group's `_sources`
+records `num_sources`, `domains`, `dropped_domains` and a `quality` block
+(`n`, `distinct_domains`, `trusted`, `score`). A numeric group
+(`market_size`, `regional`, `countries_*`, `segments_*`,
+`segmentation_grade_form`, `competitive_landscape`, `vendors`) with fewer
+than 3 kept snippets or no trusted domain (government, company IR/press
+release, trade association, recognised research publisher, news/trade
+press) gets `_sources.low_evidence = true`.
+
+## Historical series
+
+`consistency._reconcile_market_size` rescales `historical_usd_mn` so it
+leads into the base year, then checks it: it must not fall year on year
+(for a growing market), and no year-on-year move may exceed 2× the CAGR.
+The result is stored in `market_size.history_check`. If the check fails,
+the raw history is kept, a warning is logged in `consistency_changes`, and
+no chart, table or prose prints the history.
 
 ## Architecture
 
 - `field_groups.py` — pure data: the 13 groups, their search-query
   templates, system prompts, and expected JSON shape. No numbers live here.
-- `field_agent.py` — one function, `run_field_group()`: web search → LLM
-  synthesis → randomize. Never raises — a failed group degrades to
+- `field_agent.py` — one function, `run_field_group()`: web search → source
+  filter → LLM synthesis (→ jitter only if switched on). Never raises — a failed group degrades to
   `{"error": ...}` so one bad group never aborts the whole run.
-- `randomizer.py` — the jitter logic, isolated and independently testable.
+- `randomizer.py` — the (off-by-default) jitter logic, isolated and independently testable.
+- `sources.py` — blocked/trusted source lists, `filter_sources()`, `quality()`.
 - `run_fleet.py` — CLI orchestrator: runs the requested groups in parallel
   (`ThreadPoolExecutor`), merges results, writes the combined JSON.
 
@@ -230,6 +269,5 @@ regulators, recommendation support) -- the AI review is an assessment, not proof
   each group agent runs independently. No reconciliation pass exists yet.
 - Does not persist/cache field results across markets the way the main
   Desk Research pipeline's `.gen_cache.db` does for LLM calls (LLM calls
-  themselves ARE cached via the shared `GenLLM` cache — only the final
-  randomized JSON is not cached, by design, since randomization should
-  differ per run).
+  themselves ARE cached via the shared `GenLLM` cache, so with a warm
+  cache and the same evidence a re-run gives the same `fields`).

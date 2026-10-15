@@ -26,12 +26,16 @@ from me_engine.generation.llm import GenLLM  # noqa: E402
 from me_engine.generation.web_evidence import gather_with_sources  # noqa: E402
 
 from AiAgentsFleet.market_definition import as_prompt_block  # noqa: E402
+from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.randomizer import randomize_json  # noqa: E402
+from AiAgentsFleet.sources import filter_sources, sources_block  # noqa: E402
 from AiAgentsFleet.cmi_report.groups import (GEOGRAPHY_GROUP, GROUPS, schema_for,  # noqa: E402
                                              validate_geography)
 
 CACHE_PATH = ROOT / "output" / ".gen_cache.db"
-# Keys jittered +/-5-10% in groups that also carry scores or text.
+# Keys jittered +/-5-10% in groups that also carry scores or text. Like every
+# `randomize` key in groups.py, this only takes effect when the randomizer
+# switch is on (off by default; see randomizer.py).
 _PARTIAL_RANDOMIZE = {"vendors": ("value_chain", "mea_shares")}
 
 
@@ -132,24 +136,34 @@ def _market_tokens(market: str) -> set[str]:
     return {w[:7] for w in re.findall(r"[a-z]+", market.lower()) if len(w) >= 4 and w not in _GENERIC}
 
 
-def search(market: str, queries: list[str], key: str, log: list, min_hits: int = 4) -> list[dict]:
-    """Web search that keeps only snippets mentioning the market, retrying
-    when the search backend is degraded (it sometimes returns unrelated
-    pages for every query)."""
+def search(market: str, queries: list[str], key: str, log: list, min_hits: int = 4,
+           dropped_out: list[dict] | None = None) -> list[dict]:
+    """Web search that drops blocked sources (sources.py), keeps only
+    snippets mentioning the market, and retries when the search backend is
+    degraded (it sometimes returns unrelated pages for every query). The
+    snippets dropped for the attempt that was kept are appended to
+    `dropped_out` when given."""
     stems = _market_tokens(market)
     best: list[dict] = []
+    best_dropped: list[dict] = []
     for attempt in range(3):
         try:
             sourced = gather_with_sources(queries, per_query=6, cap=24)
         except Exception as exc:  # noqa: BLE001
             log.append(f"[{key}] web search failed: {exc}")
             sourced = []
+        sourced, dropped = filter_sources(sourced)
         hits = [s for s in sourced if any(st in s["text"].lower() for st in stems)][:15]
-        if len(hits) > len(best):
-            best = hits
+        if len(hits) > len(best) or attempt == 0:
+            best, best_dropped = hits, dropped
         if len(best) >= min_hits:
             break
         time.sleep(20 * (attempt + 1))
+    if best_dropped:
+        log.append(f"[{key}] dropped {len(best_dropped)} snippet(s) from blocked sources: "
+                   + ", ".join(sorted({d['domain'] for d in best_dropped})))
+    if dropped_out is not None:
+        dropped_out.extend(best_dropped)
     if len(best) < min_hits:
         log.append(f"[{key}] WARNING: only {len(best)} on-topic snippets after retries (search backend degraded?)")
     return best
@@ -165,7 +179,8 @@ def definition_block(d: dict) -> str:
 def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM, log: list,
               schema: str | None = None) -> dict:
     queries = [q.format(market=market) for q in g["queries"]]
-    sourced = search(market, queries, g["key"], log)
+    dropped: list[dict] = []
+    sourced = search(market, queries, g["key"], log, dropped_out=dropped)
     evidence = [s["text"] for s in sourced]
     user = (f"Market: {market}\n\n{definition_block(definition)}"
             f"CONTEXT (already published for this market):\n{json.dumps(context, ensure_ascii=False)}\n\n"
@@ -180,6 +195,8 @@ def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM
         out = _verified_published(raw, sourced)
         log.append(f"[published] kept {len(out['global_2025'])} global and {len(out['references'])} reference "
                    f"figures found verbatim in the evidence")
+    elif not randomizer.ENABLED:
+        out = raw                      # jitter off (the default): numbers stay as the agent returned them
     elif isinstance(g["randomize"], tuple) or g["key"] in _PARTIAL_RANDOMIZE:
         keys = g["randomize"] if isinstance(g["randomize"], tuple) else _PARTIAL_RANDOMIZE[g["key"]]
         out = {k: (randomize_json(v) if k in keys else v) for k, v in raw.items()}
@@ -187,8 +204,8 @@ def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM
         out = randomize_json(raw)
     else:
         out = raw
-    out["_sources"] = {"num_sources": len(sourced), "domains": sorted({s["domain"] for s in sourced if s.get("domain")})}
-    log.append(f"[{g['key']}] {len(evidence)} snippets")
+    out["_sources"] = sources_block(g["key"], sourced, dropped)
+    log.append(f"[{g['key']}] {len(evidence)} snippets" + (" LOW EVIDENCE" if out["_sources"].get("low_evidence") else ""))
     return out
 
 

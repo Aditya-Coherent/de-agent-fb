@@ -408,6 +408,9 @@ def write(slug: str, force: bool = False) -> Path:
     used_heads: list[str] = []
     for num, (keys, queries, schema) in SECTIONS.items():
         facts = {"headline": _headline(n, labels), **{k: _round(f.get(k, {})) for k in keys}}
+        if "market_size" in facts and not (facts["market_size"].get("history_check") or {}).get("ok"):
+            # history that failed consistency's history_check is never shown to the writer
+            facts["market_size"] = {k: v for k, v in facts["market_size"].items() if k != "historical_usd_mn"}
         if num == 9:
             facts["regions_in_report"] = [r for r in REGIONS if r in (f.get("regional", {}).get("regions") or {})]
         if num == 10:

@@ -1,7 +1,9 @@
 """AiAgentsFleet CLI -- give it a market name, it runs one agent per
 whitepaper field group (see field_groups.py), each doing live web search +
-LLM synthesis + +/-5-10% randomization, and writes the combined result to
-output/<market-slug>/whitepaper_fields.json.
+source filtering (sources.py) + LLM synthesis, and writes the combined result
+to output/<market-slug>/whitepaper_fields.json. `fields_raw` holds each
+agent's answer as returned; `fields` is the same unless the optional jitter
+(randomizer.py, off by default, env AIFLEET_RANDOMIZE=1) is switched on.
 
 Usage:
     python AiAgentsFleet/run_fleet.py --market "Global Vitamin C Market"
@@ -15,6 +17,7 @@ Overview widget -- see field_agent.py's module docstring).
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import re
 import sys
@@ -29,6 +32,7 @@ sys.path.insert(0, str(ROOT))  # so `AiAgentsFleet` itself is importable as a pa
 from me_engine.generation.config import GenConfig  # noqa: E402
 from me_engine.generation.llm import GenLLM  # noqa: E402
 
+from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.field_agent import run_field_group  # noqa: E402
 from AiAgentsFleet.field_groups import FIELD_GROUPS, FIELD_GROUP_KEYS  # noqa: E402
 from AiAgentsFleet.market_definition import generate_market_definition  # noqa: E402
@@ -51,6 +55,18 @@ def _parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def _maybe_jitter(raw: dict) -> dict:
+    """The group's answer with the optional jitter applied (an unchanged copy
+    when the switch is off). `_sources` and errors are never jittered."""
+    if "error" in raw:
+        return copy.deepcopy(raw)
+    body = {k: v for k, v in raw.items() if k != "_sources"}
+    out = randomizer.randomize_json(body)
+    if "_sources" in raw:
+        out["_sources"] = copy.deepcopy(raw["_sources"])
+    return out
+
+
 def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
     cfg = GenConfig.load(ROOT)
     if not cfg.is_online:
@@ -65,25 +81,34 @@ def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
         print("  " + line)
 
     results: dict[str, dict] = {}
+    raw_results: dict[str, dict] = {}
     print(f"Running {len(groups)} field-group agent(s) for '{market}' (up to {workers} in parallel)...")
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futures = {
-            ex.submit(run_field_group, market, g, llm, log, market_definition): g["key"] for g in groups
+            ex.submit(run_field_group, market, g, llm, log, market_definition, randomize=False): g["key"]
+            for g in groups
         }
         for fut in as_completed(futures):
             key = futures[fut]
             try:
-                results[key] = fut.result()
+                raw = fut.result()
+                raw_results[key] = raw
+                results[key] = _maybe_jitter(raw)
                 print(f"  done: {key}")
             except Exception as exc:  # noqa: BLE001
                 results[key] = {"error": str(exc)}
                 print(f"  FAILED: {key}: {exc}")
 
+    # as_completed finishes in thread order; sort so the same evidence always writes the same file
+    order = {g["key"]: i for i, g in enumerate(groups)}
+    results = dict(sorted(results.items(), key=lambda kv: order.get(kv[0], 0)))
+    raw_results = dict(sorted(raw_results.items(), key=lambda kv: order.get(kv[0], 0)))
     return {
         "market_name": market,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "market_definition": market_definition,
-        "randomization": "+/-5-10% applied independently to every numeric field (see randomizer.py)",
+        "randomization": ("+/-5-10% applied independently to every numeric field (see randomizer.py)"
+                          if randomizer.ENABLED else "none"),
         "source_note": (
             "Field values are synthesized by an LLM from live multi-backend web search results "
             "(ddgs: Google/Bing/DuckDuckGo/Mojeek), in the style of a concise AI-Overview-style "
@@ -94,6 +119,7 @@ def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
             "report is built -- see output/<slug>/validation_report.json."
         ),
         "fields": results,
+        "fields_raw": raw_results,
         "log": log,
     }
 

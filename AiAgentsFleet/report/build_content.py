@@ -237,7 +237,9 @@ def build(slug: str, allow_warnings: bool = False) -> dict:
         f"We estimate the global {root} market at {n['base_val_fmt']} in {n['base_year']}. The market is "
         f"projected to reach {n['fc_val_fmt']} by {n['forecast_year']}, growing at a CAGR of {fmt_pct(n['cagr'])}.",
     ] + ([growth_mix] if growth_mix else []), figures=[{"path": str(charts / "fig1_1_market_size.png"),
-                  "caption": f"Figure 1.1 - Global {root} market: historical and base-case forecast "
+                  "caption": f"Figure 1.1 - Global {root} market: "
+                              + ("historical and " if (n["fields"].get("market_size", {}).get("history_check") or {}).get("ok") else "")
+                              + "base-case forecast "
                               f"{n['base_year']} to {n['forecast_year']}, in USD million."}],
        subheads=([{"heading": "Market Definition & Scope", "text": "", "bullets_inline": scope_bullets}] if scope_bullets else [])))
 

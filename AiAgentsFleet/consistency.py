@@ -171,7 +171,8 @@ def _reconcile_market_size(ms: dict, changes: list[str]) -> tuple[dict, float, f
     rate = cagr_pct / 100.0
 
     new_forecast_val = round(base_val * (1 + rate) ** years, 2)
-    if abs(new_forecast_val - float(ms.get("forecast_value_usd_mn", 0) or 0)) > 0.01 * max(new_forecast_val, 1):
+    # any change is listed, so fields.market_size differs from fields_raw only where consistency_changes says
+    if abs(new_forecast_val - float(ms.get("forecast_value_usd_mn", 0) or 0)) > 0.005:
         changes.append(
             f"forecast_value_usd_mn recomputed from base*({1+rate:.4f})^{years} "
             f"({ms.get('forecast_value_usd_mn')} -> {new_forecast_val})"
@@ -190,10 +191,31 @@ def _reconcile_market_size(ms: dict, changes: list[str]) -> tuple[dict, float, f
         gap = base_year - hyears[-1]
         target_last = base_val / ((1 + rate) ** max(gap, 0)) if gap > 0 else base_val
         factor = target_last / last_val if last_val else 1
-        if abs(factor - 1) > 0.02:
-            changes.append(f"historical_usd_mn rescaled by {factor:.3f}x so the series leads smoothly into base_year_value_usd_mn")
+        if abs(factor - 1) <= 0.02:
+            factor = 1.0                # already leads into the base: keep the raw values
         new_hist = {str(y): round(hist[str(y)] * factor, 2) for y in hyears}
-        ms["historical_usd_mn"] = new_hist
+        # History is printed only if it passes: (1) for a growing market it never
+        # falls year on year, into the base year included; (2) no year-on-year move
+        # is more than 2x the CAGR (a jump like +30% vs a 12% CAGR is noise).
+        series = [(y, new_hist[str(y)]) for y in hyears] + ([(base_year, base_val)] if gap > 0 else [])
+        warnings: list[str] = []
+        if rate >= 0:
+            dips = [f"{y1}->{y2}" for (y1, v1), (y2, v2) in zip(series, series[1:]) if v2 < v1]
+            if dips:
+                warnings.append(f"historical_usd_mn is not non-decreasing ({', '.join(dips)})")
+        if rate:
+            for (y1, v1), (y2, v2) in zip(series, series[1:]):
+                yoy = (v2 / v1) ** (1 / max(1, y2 - y1)) - 1 if v1 > 0 else 0.0
+                if abs(yoy) > 2 * abs(rate):
+                    warnings.append(f"historical_usd_mn {y1}->{y2} moves {yoy * 100:+.1f}%/yr, "
+                                    f"more than 2x the {cagr_pct:.1f}% CAGR")
+        if warnings:
+            changes += [f"WARNING: {w}; history kept as raw values and not printed" for w in warnings]
+        else:
+            if factor != 1:
+                changes.append(f"historical_usd_mn rescaled by {factor:.3f}x so the series leads smoothly into base_year_value_usd_mn")
+            ms["historical_usd_mn"] = new_hist
+        ms["history_check"] = {"ok": not warnings, "warnings": warnings}
 
     return ms, base_val, rate, base_year, forecast_year
 

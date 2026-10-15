@@ -1,6 +1,12 @@
-"""Applies the user-requested +/-5-10% randomization to every numeric value
-an agent produces, so re-running the same market never returns identical
-numbers twice.
+"""Optional +/-5-10% jitter of every numeric value an agent produces.
+
+OFF BY DEFAULT. Jittering both the base value and the CAGR compounded into
+errors of up to ~12% by 2033 and created fake rankings and ties from noise
+(FINDINGS-2026-10-15 X1/X2), so `randomize_json` returns an unchanged deep
+copy unless the switch is on. Turn it on only explicitly, with env
+`AIFLEET_RANDOMIZE=1` (or by setting `ENABLED = True`). The CMI report path
+(`cmi_report/run_cmi_report.py`, `run_batch.py`) refuses to run with it on
+unless `--allow-randomize` is passed.
 
 Design choice (explicit, since "randomize every data point" is ambiguous at
 the edges): the jitter MAGNITUDE is drawn uniformly from [10%, 15%] -- not
@@ -13,9 +19,37 @@ the field, not the data.
 """
 from __future__ import annotations
 
+import copy
+import os
 import random
 import re
 from typing import Any
+
+
+def env_requested() -> bool:
+    """True when the environment asks for jitter (`AIFLEET_RANDOMIZE` set to a
+    truthy value)."""
+    return os.environ.get("AIFLEET_RANDOMIZE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
+# The module-level switch. Read once from the environment at import time;
+# callers that must guarantee "off" set `randomizer.ENABLED = False`.
+ENABLED: bool = env_requested()
+
+
+def require_off(allow: bool) -> None:
+    """Guard for the CMI report path, whose numbers must be reproducible.
+    Without `allow`, raise SystemExit if the environment asks for jitter;
+    otherwise force the switch off here and for any child process. With
+    `allow`, the environment decides."""
+    global ENABLED
+    if allow:
+        return
+    if env_requested():
+        raise SystemExit("AIFLEET_RANDOMIZE is set, but CMI reports must not jitter numbers. "
+                         "Unset it, or pass --allow-randomize to run with jitter on purpose.")
+    ENABLED = False
+    os.environ.pop("AIFLEET_RANDOMIZE", None)
 
 _JITTER_MIN = 0.05
 _JITTER_MAX = 0.10
@@ -53,9 +87,15 @@ def _round_like(original: float, jittered: float) -> float:
 
 
 def randomize_json(obj: Any, _parent_key: str | None = None) -> Any:
-    """Recursively walks a JSON-like structure (dict/list/scalar) and
-    returns a NEW structure with every numeric leaf jittered by +/-5-10%,
+    """Returns a NEW structure. When the switch is off (the default) it is an
+    unchanged deep copy. When on, every numeric leaf is jittered by +/-5-10%,
     except year-like fields (see module docstring)."""
+    if not ENABLED:
+        return copy.deepcopy(obj)
+    return _jitter_json(obj, _parent_key)
+
+
+def _jitter_json(obj: Any, _parent_key: str | None = None) -> Any:
     if isinstance(obj, dict):
         out: dict[str, Any] = {}
         for k, v in obj.items():
@@ -66,10 +106,10 @@ def randomize_json(obj: Any, _parent_key: str | None = None) -> Any:
                 else:
                     out[k] = _round_like(v, _jitter(float(v)))
             else:
-                out[k] = randomize_json(v, _parent_key=k)
+                out[k] = _jitter_json(v, _parent_key=k)
         return out
     if isinstance(obj, list):
-        return [randomize_json(item, _parent_key=_parent_key) for item in obj]
+        return [_jitter_json(item, _parent_key=_parent_key) for item in obj]
     if isinstance(obj, (int, float)) and not isinstance(obj, bool):
         # A bare numeric leaf inside a list (e.g. a forecast_series list of
         # numbers) -- jitter unless its own dict key (from the caller) says "year".

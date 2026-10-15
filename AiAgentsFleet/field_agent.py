@@ -27,7 +27,9 @@ from me_engine.generation.llm import GenLLM  # noqa: E402
 from me_engine.generation.web_evidence import gather_with_sources  # noqa: E402
 
 from AiAgentsFleet.market_definition import as_prompt_block  # noqa: E402
+from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.randomizer import randomize_json  # noqa: E402
+from AiAgentsFleet.sources import filter_sources, sources_block  # noqa: E402
 
 
 def _evidence_block(snippets: list[str]) -> str:
@@ -38,19 +40,22 @@ def _evidence_block(snippets: list[str]) -> str:
 
 def run_field_group(
     market: str, group: dict, llm: GenLLM, log: list[str] | None = None,
-    market_definition: dict | None = None,
+    market_definition: dict | None = None, randomize: bool = True,
 ) -> dict[str, Any]:
-    """Runs ONE field-group agent: search -> LLM synthesis -> randomize.
-    Returns the randomized JSON for this group (never raises -- degrades to
+    """Runs ONE field-group agent: search -> source filter -> LLM synthesis
+    (-> optional jitter, off by default; see randomizer.py). Returns the JSON
+    for this group (never raises -- degrades to
     an empty dict with an "error" key on failure, so one bad group never
     aborts the whole fleet run).
 
     `market_definition` (see `market_definition.py`) is prepended to the
     prompt so every group answers against the SAME scope -- the fix for one
     group describing the named market while another describes its parent
-    category. Also tracks source domains (`_sources`) for the confidence
-    scoring `report/consistency.py` computes later; added AFTER
-    randomization so it's never itself jittered."""
+    category. Snippets from blocked domains (sources.py) are dropped before
+    the LLM sees them. Also tracks source domains and quality (`_sources`)
+    for the confidence scoring computed later; added AFTER any jitter so
+    it's never itself jittered. `randomize=False` returns the LLM's answer
+    as is, so a caller can keep the raw answer and jitter it itself."""
     log = log if log is not None else []
     queries = [q.format(market=market) for q in group["queries"]]
     try:
@@ -58,8 +63,12 @@ def run_field_group(
     except Exception as exc:  # noqa: BLE001
         sourced = []
         log.append(f"[{group['key']}] web search failed: {exc}")
+    sourced, dropped = filter_sources(sourced)
+    if dropped:
+        log.append(f"[{group['key']}] dropped {len(dropped)} snippet(s) from blocked sources: "
+                   + ", ".join(sorted({d['domain'] for d in dropped})))
     snippets = [s["text"] for s in sourced]
-    domains = sorted({s["domain"] for s in sourced if s.get("domain")})
+    src = sources_block(group["key"], sourced, dropped)
 
     system = group["system"]
     user = (
@@ -73,10 +82,13 @@ def run_field_group(
         log.append(f"[{group['key']}] LLM synthesis failed: {exc}")
         return {"error": str(exc)}
 
-    randomized = randomize_json(data)
-    randomized["_sources"] = {"num_sources": len(sourced), "domains": domains}
+    jittered = randomize and randomizer.ENABLED
+    out = randomize_json(data) if randomize else data
+    out["_sources"] = src
     log.append(
         f"[{group['key']}] {group['section']}: synthesized from {len(snippets)} web snippets "
-        f"({len(domains)} distinct domains), then randomized every value by +/-5-10%."
+        f"({len(src['domains'])} distinct domains, {src['quality']['trusted']} trusted)"
+        + (", then randomized every value by +/-5-10%." if jittered else "; values kept as returned (no jitter).")
+        + (" LOW EVIDENCE." if src.get("low_evidence") else "")
     )
-    return randomized
+    return out

@@ -8,6 +8,9 @@ cmi_fields.json exists unless --refresh-data) -> numeric model -> prose ->
 charts -> .docx -> Word pass (real TOC page numbers + PDF) -> QA audit.
 
 Output: AiAgentsFleet/output/<slug>/<slug>-cmi-whitepaper.docx (+ .pdf, charts/, qa_report.json)
+
+Numbers are never jittered on this path: the run stops if AIFLEET_RANDOMIZE is
+set, unless --allow-randomize is passed (see randomizer.py).
 """
 from __future__ import annotations
 
@@ -27,6 +30,7 @@ sys.path.insert(0, str(ROOT))
 from me_engine.generation.config import GenConfig  # noqa: E402
 from me_engine.generation.llm import GenLLM  # noqa: E402
 
+from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.cmi_report import build as builder, charts as ch, fmt, model, prose, run_data  # noqa: E402
 from AiAgentsFleet.cmi_report.guard import NumberGuard  # noqa: E402
 
@@ -302,7 +306,10 @@ def main() -> int:
     p.add_argument("--refresh-data", action="store_true", help="re-run the CMI agents even if cached")
     p.add_argument("--no-word", action="store_true", help="skip the MS Word pass (TOC page numbers, PDF)")
     p.add_argument("--refresh-prose", action="store_true", help="rewrite the text even if the numbers are unchanged")
+    p.add_argument("--allow-randomize", action="store_true",
+                   help="permit AIFLEET_RANDOMIZE=1 (jittered numbers; never for client reports)")
     a = p.parse_args()
+    randomizer.require_off(a.allow_randomize)
     slug = a.market_slug or _slug(a.market)
 
     mdir = ensure_fleet(a.market, slug)

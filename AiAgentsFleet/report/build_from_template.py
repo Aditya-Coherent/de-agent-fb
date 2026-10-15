@@ -625,7 +625,8 @@ def build(slug: str) -> Path:
     # 2. Market size outlook
     # ===================================================================== #
     ms = f.get("market_size", {}) or {}
-    hist = ms.get("historical_usd_mn") or {}
+    # history is printed only when consistency's history_check passed
+    hist = (ms.get("historical_usd_mn") or {}) if (ms.get("history_check") or {}).get("ok") else {}
     b.section_start(2, f"Global {root} Market Size Outlook ({by}–{fy})", conf("market_size", size=True))
     hist_txt = ""
     if hist:
@@ -637,8 +638,8 @@ def build(slug: str) -> Path:
                        f", a compound annual growth rate of {_pct(((h1 / h0) ** (1 / max(1, len(hy) - 1)) - 1) * 100)}."))
     b.para(P(2, "p1") or f"We estimate the global {root} market at {n['base_val_fmt']} in {by}.{hist_txt}")
     b.figure(charts / "fig1_1_market_size.png",
-             f"Global {root} market: historical {sorted(hist)[0] if hist else by} to "
-             f"{sorted(hist)[-1] if hist else by} and base-case forecast {by} to {fy}, in USD {unit_word}.")
+             f"Global {root} market: " + (f"historical {sorted(hist)[0]} to {sorted(hist)[-1]} and " if hist else "")
+             + f"base-case forecast {by} to {fy}, in USD {unit_word}.")
     b.h2("Long-Term Growth Outlook")
     leader_incr = (leader_d.get("forecast_value_usd_mn", 0) or 0) - (leader_d.get("value_usd_mn", 0) or 0)
     b.para(P(2, "p2") or f"The global {root} market is projected to reach {n['fc_val_fmt']} by {fy}, growing at a CAGR of "

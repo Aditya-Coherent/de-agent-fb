@@ -2,6 +2,9 @@
 
     python AiAgentsFleet/cmi_report/run_batch.py --markets markets.txt [--redo]
 
+Numbers are never jittered: the batch stops if AIFLEET_RANDOMIZE is set,
+unless --allow-randomize is passed (it is then passed on to each market).
+
 Markets are run one at a time (the web search throttles parallel use). A
 market whose .docx already exists is skipped unless --redo. A failure is
 logged and the batch moves on; batch_log.jsonl records every outcome and
@@ -21,6 +24,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 FLEET = HERE.parent
 ROOT = FLEET.parent
+sys.path.insert(0, str(ROOT))
+
+from AiAgentsFleet import randomizer  # noqa: E402
 
 
 def slug(name: str) -> str:
@@ -31,7 +37,10 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--markets", required=True, help="text file, one market name per line")
     p.add_argument("--redo", action="store_true")
+    p.add_argument("--allow-randomize", action="store_true",
+                   help="permit AIFLEET_RANDOMIZE=1 (jittered numbers; never for client reports)")
     a = p.parse_args()
+    randomizer.require_off(a.allow_randomize)
     names = [x.strip() for x in Path(a.markets).read_text(encoding="utf-8").splitlines()
              if x.strip() and not x.startswith("#")]
     log_path = FLEET / "output" / "batch_log.jsonl"
@@ -43,7 +52,8 @@ def main() -> int:
             continue
         print(f"[{k}/{len(names)}] {name}")
         t0 = time.time()
-        res = subprocess.run([sys.executable, str(HERE / "run_cmi_report.py"), "--market", name], cwd=ROOT)
+        cmd = [sys.executable, str(HERE / "run_cmi_report.py"), "--market", name]
+        res = subprocess.run(cmd + (["--allow-randomize"] if a.allow_randomize else []), cwd=ROOT)
         qa_path = docx.parent / "qa_report.json"
         qa = json.loads(qa_path.read_text(encoding="utf-8")) if qa_path.exists() and res.returncode == 0 else {}
         entry = {"market": name, "slug": s, "ok": res.returncode == 0, "minutes": round((time.time() - t0) / 60, 1),

@@ -100,7 +100,8 @@ def _in_billions(values: list[float]) -> bool:
 
 
 def chart_market_size(field: dict, out: Path) -> None:
-    hist = field.get("historical_usd_mn", {}) or {}
+    # history is plotted only when consistency's history_check passed
+    hist = (field.get("historical_usd_mn", {}) or {}) if (field.get("history_check") or {}).get("ok") else {}
     fc = field.get("forecast_series_usd_mn", {}) or {}
     hyears = sorted(int(y) for y in hist)
     fyears = sorted(int(y) for y in fc)

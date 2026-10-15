@@ -18,7 +18,7 @@ from AiAgentsFleet.cmi_report import fmt
 from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, drop_size_comparison
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 7      # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 8      # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -332,6 +332,7 @@ def make_guard(m: dict, geo: str | None) -> ClaimGuard:
     g.segment_names = [n for dims in m["segments"].get("Global", {}).values() for n in dims
                        if not n.lower().startswith("other")]
     g.headline_unsourced = (m.get("size_check") or {}).get("status") != "sourced"
+    g.definition = m.get("definition")       # no sentence may describe another value-chain level (PLAN-04)
     return g
 
 

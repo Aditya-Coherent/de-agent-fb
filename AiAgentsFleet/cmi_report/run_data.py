@@ -25,13 +25,13 @@ from me_engine.generation.config import GenConfig  # noqa: E402
 from me_engine.generation.llm import GenLLM  # noqa: E402
 from me_engine.generation.web_evidence import gather_with_sources  # noqa: E402
 
-from AiAgentsFleet.market_definition import as_prompt_block  # noqa: E402
+from AiAgentsFleet.market_definition import as_prompt_block, generate_market_definition, is_current  # noqa: E402
 from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.randomizer import randomize_json  # noqa: E402
 from AiAgentsFleet.sources import filter_sources, on_topic, sources_block  # noqa: E402
 from AiAgentsFleet.cmi_report.groups import (GEOGRAPHY_GROUP, GROUPS, misplaced, rest_members,  # noqa: E402
                                              schema_for, validate_geography)
-from AiAgentsFleet.cmi_report import geo_check  # noqa: E402
+from AiAgentsFleet.cmi_report import geo_check, segments_check  # noqa: E402
 from AiAgentsFleet.field_groups import FIELD_GROUPS  # noqa: E402
 
 CACHE_PATH = ROOT / "output" / ".gen_cache.db"
@@ -170,7 +170,11 @@ def search(market: str, queries: list[str], key: str, log: list, min_hits: int =
 def definition_block(d: dict) -> str:
     """The market definition every agent must obey (A1), from model.definition()."""
     return ("DEFINITION (what this market measures -- every estimate, segment and company must fit it):\n"
-            f"- Measures: {d.get('definition') or '(not stated)'}\n- Includes: {d.get('included') or '(not stated)'}\n"
+            + (f"- Definition: {d['definition']}\n" if d.get("definition") and d.get("measures")
+               and d["definition"] != d["measures"] else "")
+            + f"- Measures: {d.get('measures') or d.get('definition') or '(not stated)'}\n"
+            + (f"- Value-chain level: {d['value_chain_level']}\n" if d.get("value_chain_level") else "")
+            + f"- Includes: {d.get('included') or '(not stated)'}\n"
             f"- Excludes: {d.get('excluded') or '(not stated)'}\n- Unit: {d.get('unit')}\n\n")
 
 
@@ -267,16 +271,25 @@ def run(slug: str, only: set[str] | None = None) -> Path:
     data = json.loads((market_dir / "whitepaper_fields.json").read_text(encoding="utf-8"))
     market = data["market_name"]
     from AiAgentsFleet.cmi_report.model import definition as norm_definition
-    definition = norm_definition(data)
     out_path = market_dir / "cmi_fields.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     prev = json.loads(out_path.read_text(encoding="utf-8")) if out_path.exists() else {}
     fields = dict(prev.get("fields") or {})
 
-    llm = GenLLM(GenConfig.load(ROOT), cache_path=CACHE_PATH)
-    context = fleet_context(data)
+    cfg = GenConfig.load(ROOT)
+    llm = GenLLM(cfg, cache_path=CACHE_PATH)
     log: list[str] = []
+    # 0. the market definition (PLAN-04): measures, value-chain level, included/excluded lists.
+    # One from before PLAN-04 is regenerated, with the client's verbatim definition as its anchor.
+    if (only and "market_definition" in only) or not any(is_current(d) for d in (fields.get("market_definition"),
+                                                                              data.get("market_definition"))):
+        fields["market_definition"] = generate_market_definition(
+            market, llm, cfg, log, client=data.get("definition_inclusion_exclusion"))
+        print(f"  done: market_definition ({fields['market_definition'].get('value_chain_level')})")
+    definition = norm_definition(data, fields)
+    context = fleet_context(data)
     review = dict(fields.get("geo_review") or {})      # PLAN-03 checks and re-asks (geo_check.py)
+    seg_review = dict(fields.get("segment_review") or {})   # PLAN-04 checks and re-asks (segments_check.py)
 
     # 1. which countries this market names in each region (everything else depends on it)
     if not only or "geography" in only or "geography" not in fields:
@@ -318,6 +331,15 @@ def run(slug: str, only: set[str] | None = None) -> Path:
                                                             schema_for(g, geo)), first)):
             fields[g["key"]] = res
             print(f"  done: {g['key']}")
+    # segments and heat-map rows kept to the definition: checked and re-asked once (PLAN-04)
+    types = (data["fields"].get("segmentation_grade_form") or {}).get("by_grade_or_type") or []
+    if any(g["key"] == "segments_global" for g in wanted):
+        seg_review["segments_global"] = segments_check.review_global(fields, [t["name"] for t in types], definition,
+                                                                     ask_group, log)
+        fields["segment_review"] = seg_review
+    if any(g["key"] == "use_cases" for g in wanted):
+        seg_review["use_cases"] = segments_check.review_use_cases(fields, definition, ask_group, log)
+        fields["segment_review"] = seg_review
     # 2. country splits: checked and re-asked once, then one sceptical review of the final table
     if any(g["key"] in geo_check.GROUP_REGIONS for g in wanted) and all(k in fields for k in geo_check.GROUP_REGIONS):
         review["splits"] = geo_check.review_splits(fields, geo, ask_group, log, regional=_regional(data, fields))
@@ -330,10 +352,28 @@ def run(slug: str, only: set[str] | None = None) -> Path:
         fields["geo_review"] = review
         print("  done: geo_review")
     if any(g["key"] == "segments_mea" for g in wanted):
+        # the segments the model keeps (excluded ones dropped, merges applied) and their global mix
         sg = fields.get("segments_global") or {}
-        ctx = {**context, "demand_segments": [c["name"] for c in sg.get("demand_segments") or []]}
+        resolved = segments_check.resolve(sg, [t["name"] for t in types], definition)
+        mix = segments_check.global_mix(types, sg, resolved)
+        ctx = {**context, "types": resolved["names"]["type"], "demand_segments": resolved["names"]["demand"],
+               "global_mix": {d: {n: round(v, 1) for n, v in m.items()} for d, m in mix.items()}}
         g = next(g for g in GROUPS if g["key"] == "segments_mea")
-        fields["segments_mea"] = run_group(market, g, ctx, definition, llm, log, schema_for(g, geo))
+
+        def ask_mea(key: str, note: str) -> dict:
+            return run_group(market, g, ctx, definition, llm, log, schema_for(g, geo), note=note)
+        fields["segments_mea"] = ask_mea("segments_mea", "")
+        # the MEA aggregate against the global mix: re-asked once when beyond x2, never blended
+        try:
+            from AiAgentsFleet.cmi_report.model import geography
+            gg = geography(data, fields)
+            units = {u: v["v26"] for r in ("Middle East", "Africa") for u, v in gg["countries"][r].items()}
+            seg_review["segments_mea"] = segments_check.review_mea(fields, units, mix, ask_mea, log,
+                                                                   merge=resolved["merge"])
+        except (KeyError, TypeError, ValueError) as exc:
+            log.append(f"[segments_mea] mix check skipped: {exc}")
+            seg_review["segments_mea"] = {"problems": [], "reasked": False, "skipped": str(exc)}
+        fields["segment_review"] = seg_review
         print("  done: segments_mea")
 
     out_path.write_text(json.dumps({"market_name": market, "generated_at": datetime.now(timezone.utc).isoformat(),

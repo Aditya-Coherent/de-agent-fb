@@ -692,13 +692,18 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             # exclusions are itemised once, in the Methodology scope table
             dfn = m["definition"]
             what = _sentence(dfn["definition"]) if dfn.get("definition") else ""
-            units = (f"Market values are CMI estimates in USD (current prices): {Y0 - 1} is the base year, {Y0}E the "
+            # what is counted and at which value-chain level, verbatim from the definition (PLAN-04)
+            measures = _sentence(dfn["measures"]) if dfn.get("measures") and dfn["measures"] != dfn.get("definition") \
+                else ""
+            level = f"Value-chain level: {dfn['value_chain_level']}." if dfn.get("value_chain_level") else ""
+            units =(f"Market values are CMI estimates in USD (current prices): {Y0 - 1} is the base year, {Y0}E the "
                      f"estimate year and {Y0 + 1}F-{Y1}F are forecasts. Scores, ratings and shares of value are CMI "
                      f"assessments unless attributed to a named source; items marked [to verify] could not be "
                      f"confirmed from public sources.")
             scope = " ".join(x for x in sentences(s("about_scope", "") or "")
                              if not re.search(r"market values|base year|forecasts?\b|excludes|scope covers", x, re.I))
             b.box(i, None, [x for x in (f"Market definition: {what}" if what else "",
+                                        f"What is measured: {measures}" if measures else "", level,
                                         scope or f"This whitepaper sizes the global {root.lower()} market and goes "
                                                  f"deep on the Middle East and Africa.", units) if x])
         # ------------------------------------------------------------ chapter 1
@@ -1172,7 +1177,10 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             b.caption(i, "Table", "Scope of the study")
         elif i == 378:
             dfn = m["definition"]
-            rows = [["Market measured", f"{dfn['definition']} ({dfn['unit']})"]] if dfn.get("definition") else []
+            rows = [["Market measured", f"{dfn.get('measures') or dfn['definition']} ({dfn['unit']})"]] \
+                if dfn.get("measures") or dfn.get("definition") else []
+            if dfn.get("value_chain_level"):
+                rows.append(["Value-chain level", dfn["value_chain_level"]])
             rows += [[(tdim if d == "type" else ddim)["singular"], "; ".join(seg["Global"][d])]
                      for d in ("type", "demand") if sec[d]["show"]]
             if dfn.get("included"):

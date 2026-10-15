@@ -12,9 +12,10 @@ Writes output/<slug>/cmi_model.json.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
-from AiAgentsFleet.cmi_report import geo_check
+from AiAgentsFleet.cmi_report import geo_check, segments_check
 from AiAgentsFleet.cmi_report.groups import DEFAULT_COUNTRIES, REST, rest_members
 
 Y0, Y1 = 2026, 2033
@@ -97,18 +98,45 @@ def _segments(raw: dict, names: list[str], fallback: dict[str, tuple[float, floa
 # --------------------------------------------------------------------------- #
 # market definition (A1) -- every report states it, every segment obeys it
 # --------------------------------------------------------------------------- #
-def definition(fleet: dict) -> dict:
-    """{"definition", "included", "excluded", "unit"} from either stored
-    format: the client's verbatim definition/inclusions/exclusions first,
-    else the generated included/excluded."""
+def definition(fleet: dict, c: dict | None = None) -> dict:
+    """{"definition", "measures", "value_chain_level", "included", "excluded",
+    "included_items", "excluded_items", "unit", "source", "current", "check"}.
+
+    A PLAN-04 definition (market_definition.py: measures, value-chain level,
+    included/excluded lists, with its own check) is used when there is one --
+    the one run_data regenerated into cmi_fields first, else the fleet's. The
+    client's verbatim definition sentence stays the "definition", and every
+    client exclusion stays excluded. An older definition is read as before
+    (the client's verbatim text first) and marked current=False."""
+    from AiAgentsFleet.market_definition import is_current, items, listed
+    from AiAgentsFleet.cmi_report.guard import scope_stems
     client = fleet.get("definition_inclusion_exclusion") or {}
-    gen = fleet.get("market_definition") or {}
+    gen = next((d for d in ((c or {}).get("market_definition"), fleet.get("market_definition")) if is_current(d)),
+               None)
+    source = "client definition" if client.get("definition") or client.get("inclusions") else "generated"
+    if gen:
+        inc, exc = items(gen.get("included")), items(gen.get("excluded"))
+        # every client exclusion stays excluded, in the client's words when the generated list lacks it
+        have = scope_stems(" ".join(exc))
+        for x in re.split(r"[,;]", str(client.get("exclusions") or client.get("excluded") or "")):
+            x = x.strip(" .")
+            if x and not scope_stems(x) <= have:
+                exc.append(x)
+        return {"market_name": fleet.get("market_name") or gen.get("market_name") or "",
+                "definition": client.get("definition") or gen.get("measures") or "",
+                "measures": gen.get("measures") or "", "value_chain_level": gen.get("value_chain_level") or "",
+                "included": listed(inc), "excluded": listed(exc), "included_items": inc, "excluded_items": exc,
+                "unit": gen.get("unit") or gen.get("unit_of_measure") or "USD million, market value",
+                "source": source, "current": True, "check": gen.get("check")}
+    old = fleet.get("market_definition") or {}
     out = {
+        "market_name": fleet.get("market_name") or "",
         "definition": client.get("definition") or "",
-        "included": client.get("inclusions") or client.get("included") or gen.get("included") or "",
-        "excluded": client.get("exclusions") or client.get("excluded") or gen.get("excluded") or "",
-        "unit": gen.get("unit_of_measure") or "USD million, market value",
-        "source": "client definition" if client.get("definition") or client.get("inclusions") else "generated",
+        "measures": "", "value_chain_level": "",
+        "included": client.get("inclusions") or client.get("included") or listed(old.get("included")),
+        "excluded": client.get("exclusions") or client.get("excluded") or listed(old.get("excluded")),
+        "unit": old.get("unit_of_measure") or "USD million, market value",
+        "source": source, "current": False, "check": None,
     }
     if not out["definition"] and out["included"]:
         out["definition"] = out["included"]
@@ -316,16 +344,26 @@ def build(fleet: dict, cmi: dict) -> dict:
     G, reg, reg_series, sub, sub_series = gg["G"], gg["reg"], gg["reg_series"], gg["sub"], gg["sub_series"]
     countries, country_series, geo = gg["countries"], gg["country_series"], gg["geo"]
 
-    # ---- segments
+    # ---- segments: the agents' mixes, kept to the market definition (segments_check, PLAN-04):
+    # excluded segments dropped, still-overlapping pairs merged, a false type split switched off
+    dfn = definition(fleet, c)
     sg = c["segments_global"]
     types = f["segmentation_grade_form"]["by_grade_or_type"]
-    type_names = [t["name"] for t in types]
+    all_types = [t["name"] for t in types]
+    global_problems = segments_check.check_global(sg, all_types, dfn)
+    resolved = segments_check.resolve(sg, all_types, dfn)
+    type_names, dem_names = resolved["names"]["type"], resolved["names"]["demand"]
+    mtype, mdem = resolved["merge"]["type"], resolved["merge"]["demand"]
     tc = {k.lower(): v for k, v in (sg.get("type_cagr_2026_2033_pct") or {}).items()}
     g_cagr = cagr(G[Y0], G[Y1])
-    type_global = {t["name"]: (t["share_pct_of_market"], float(tc.get(t["name"].lower(), g_cagr))) for t in types}
+    type_global = segments_check.combine(
+        {t["name"]: (t["share_pct_of_market"], float(tc.get(t["name"].lower(), g_cagr))) for t in types},
+        mtype, type_names)
     dem = sg.get("demand_segments") or []
-    dem_names = [d["name"] for d in dem]
-    dem_global = {d["name"]: (d["share_pct_2026"], d["cagr_2026_2033_pct"]) for d in dem}
+    dem_global = segments_check.combine({d["name"]: (d["share_pct_2026"], d["cagr_2026_2033_pct"]) for d in dem},
+                                        mdem, dem_names)
+    if resolved["type_off"]:
+        c = {**c, "segments_global": {**sg, "type_applicable": False, "applicability_reason": resolved["type_off"]}}
 
     seg = {"Global": {"type": allocate(G[Y0], G[Y1], type_global), "demand": allocate(G[Y0], G[Y1], dem_global)}}
     smea = geo_check.keyed(c.get("segments_mea"))
@@ -333,13 +371,29 @@ def build(fleet: dict, cmi: dict) -> dict:
         for unit, v in countries[r].items():
             raw = smea.get(unit) or {}
             seg[unit] = {
-                "type": allocate(v["v26"], v["v33"], _segments(raw.get("type"), type_names, type_global)),
-                "demand": allocate(v["v26"], v["v33"], _segments(raw.get("demand"), dem_names, dem_global)),
+                "type": allocate(v["v26"], v["v33"], _segments(segments_check.merge_raw(raw.get("type"), mtype),
+                                                               type_names, type_global)),
+                "demand": allocate(v["v26"], v["v33"], _segments(segments_check.merge_raw(raw.get("demand"), mdem),
+                                                                 dem_names, dem_global)),
             }
         # the sub-region's segments are the sum of its countries' -- one set of numbers
         seg[r] = {dim: {n: {"v26": sum(seg[u][dim][n]["v26"] for u in countries[r]),
                             "v33": sum(seg[u][dim][n]["v33"] for u in countries[r])} for n in names}
                   for dim, names in (("type", type_names), ("demand", dem_names))}
+
+    # the MEA aggregate of the country mixes against the global mix (x2 either way): re-asked once
+    # in run_data; still beyond it is a warning -- never blended toward the global mix
+    mea26 = (sub["Middle East"]["v26"] + sub["Africa"]["v26"]) or 1
+    mix_problems = []
+    for dim, names in (("type", type_names), ("demand", dem_names)):
+        gl = {n: seg["Global"][dim][n]["v26"] * 100 / G[Y0] for n in names}
+        me = {n: (seg["Middle East"][dim][n]["v26"] + seg["Africa"][dim][n]["v26"]) * 100 / mea26 for n in names}
+        mix_problems += segments_check.check_mix(gl, me, dim, (c.get("segments_mea") or {}).get("mea_reason"))
+    segment_review = segments_check.review(
+        dfn, c.get("segment_review"), global_problems=global_problems, resolved=resolved,
+        mix_problems=mix_problems, uc_problems=segments_check.check_use_cases(c.get("use_cases"), dfn))
+    seg_defs = {dim: {n: d for n in names if (d := segments_check.defs(sg, dim).get(n.lower()))}
+                for dim, names in (("type", type_names), ("demand", dem_names))}
 
     # ---- scenarios (2026 base, each case compounding at its own CAGR)
     sc = f.get("scenarios") or {}
@@ -483,12 +537,13 @@ def build(fleet: dict, cmi: dict) -> dict:
         "vendor_chart_global": fold(gshares + ([("Others", others)] if others > 0.5 else [])),
         "vendor_chart_mea": fold(mea_sh),
         "sections": sections(fleet["market_name"], type_names, dem_names, c),
-        "definition": definition(fleet),
+        "definition": dfn,
+        "segment_review": segment_review,
         "published_2025": published,
         "size_check": check,
         "value_chain": vchain,
         "vendor_alias": alias,
-        "segment_definitions": sg.get("segment_definitions") or {},
+        "segment_definitions": seg_defs,
         "allocation_rules": [r for r in sg.get("allocation_rules") or [] if isinstance(r, str) and r.strip()],
         "fleet_drivers": {k: v for k, v in (f.get("drivers_restraints") or {}).items() if k != "_sources"},
         "corrections": merge_notes,

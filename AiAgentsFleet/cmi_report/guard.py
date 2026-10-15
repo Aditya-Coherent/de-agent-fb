@@ -311,20 +311,141 @@ def drop_size_comparison(text: str, dropped: list[str], unsourced: bool = False)
     return " ".join(keep)
 
 
+# --------------------------------------------------------------------------- #
+# scope (PLAN-04): text may not describe the market at another value-chain level,
+# or count something the definition excludes
+# --------------------------------------------------------------------------- #
+_SCOPE_STOP = {"and", "or", "the", "of", "for", "with", "without", "that", "only", "a", "an", "other", "others",
+               "products", "product", "systems", "system", "market", "markets", "all", "any", "its", "their",
+               "from", "into", "such", "as", "e.g", "eg", "etc", "not", "non", "are", "is", "be", "by", "in",
+               "on", "to", "at", "where", "which", "used", "use", "uses", "type", "types", "based", "global",
+               "application", "applications", "grade", "grades", "segment", "segments", "sales", "revenue",
+               "revenues", "industry", "industries", "sector", "sectors", "related"}
+_EQUIP = (r"equipment|aerat\w*|machinery|hardware|sensors?|monitoring (?:systems?|equipment|devices?|solutions?)|"
+          r"automation (?:systems?|equipment|solutions?)|technolog\w*|software|platforms?")
+_REVENUE = r"sales|revenues?|spending|spend|purchases|market|vendors?|suppliers?|makers?|manufacturers?"
+_EQUIP_REVENUE = re.compile(rf"\b(?:{_EQUIP})\s+(?:{_REVENUE})\b|"
+                            rf"\b(?:sales|revenues?|spending|spend|purchases)\s+(?:of|on|from|for)\s+"
+                            rf"(?:[\w-]+\s+){{0,3}}?(?:{_EQUIP})\b", re.I)
+_OUTPUT_VALUE = re.compile(r"\b(?:farm[- ]gate|ex[- ]farm|harvest|crop|output|produce)\s+(?:value|revenues?)\b|"
+                           r"\bvalue of (?:the )?(?:crops?|harvests?|output|produce|shrimp|livestock)\b", re.I)
+_RETAIL_VALUE = re.compile(r"\bretail (?:sales|value|revenues?|prices?)\b|\bshelf prices?\b", re.I)
+_UPSTREAM_VALUE = re.compile(r"\b(?:ex[- ]factory|farm[- ]gate|wholesale) (?:value|sales|prices?)\b", re.I)
+# a sentence that sizes / counts something (vs one that only mentions it)
+_SIZING = {
+    "farm-gate output": [(_EQUIP_REVENUE, "equipment/technology sales"), (_RETAIL_VALUE, "retail value")],
+    "producer": [(_EQUIP_REVENUE, "equipment/technology sales"), (_RETAIL_VALUE, "retail value")],
+    "manufacturer": [(_EQUIP_REVENUE, "equipment/technology sales"), (_RETAIL_VALUE, "retail value")],
+    "service": [(_EQUIP_REVENUE, "equipment/technology sales")],
+    "vendor/software": [(_OUTPUT_VALUE, "the value of what buyers produce")],
+    "retail": [(_UPSTREAM_VALUE, "ex-factory/farm-gate value")],
+}
+# a heat-map / segment row that IS equipment or technology (an output market has none)
+_EQUIP_ROW = re.compile(r"\b(?:equipment|aerat\w*|machinery|hardware|sensors?|monitoring|automation|technolog\w*|"
+                        r"software|platforms?|devices?)\b", re.I)
+_ROW_RULES = {"farm-gate output": (_EQUIP_ROW, "an equipment/technology row"),
+              "producer": (_EQUIP_ROW, "an equipment/technology row")}
+# wording that puts something inside the market ('X accounts for 12% of the market'), not just near it
+_COUNTS = re.compile(r"\b(?:part of (?:the |this )?market|of (?:the |this )?market(?:'s)? (?:value|revenue|size)|"
+                     r"market share|(?:largest|smallest|fastest|key|main) segment|segment of|accounts? for|counted|"
+                     r"included in|share of (?:the |this )?(?:market|revenue|value)|revenues? from|sales of)\b", re.I)
+NEGATED = re.compile(r"\b(exclud\w*|outside|without|not(?:counted|included|part|covered)|out of scope|beyond|rather than|"
+                      r"other than|instead of|unlike|apart from|except)\b", re.I)
+
+
+def _stem(w: str) -> str:
+    w = w.lower()
+    return (w[:-1] if len(w) > 3 and w.endswith("s") else w)[:6]
+
+
+def _word(w: str) -> str:
+    """A whole word in its singular form ('hatcheries' -> 'hatchery'; 'processors' stays apart from 'processing')."""
+    w = w.lower()
+    if len(w) > 4 and w.endswith("ies"):
+        return w[:-3] + "y"
+    return w[:-1] if len(w) > 3 and w.endswith("s") and not w.endswith("ss") else w
+
+
+def scope_stems(text: str, ignore: set[str] = frozenset(), whole: bool = False) -> set[str]:
+    """Content-word stems of a phrase ('Animal Feed & Pet Food' -> {'animal', 'feed', 'pet', 'food'});
+    `whole` keeps whole (singular) words instead of 6-letter stems."""
+    text = re.sub(r"\((?:e\.g\.?|i\.e\.?|such as|incl\w*)[^)]*\)", " ", text or "", flags=re.I)
+    f = _word if whole else _stem
+    return {f(w) for w in re.findall(r"[a-z]+", text.lower()) if len(w) >= 3 and w not in _SCOPE_STOP} - ignore
+
+
+def market_stems(definition: dict | None, whole: bool = False) -> set[str]:
+    """The market's own words (every sentence shares them, so they never mark scope)."""
+    return scope_stems(re.sub(r"^\s*global\s+|\s+market\s*$", "", str((definition or {}).get("market_name") or ""),
+                              flags=re.I), whole=whole)
+
+
+def excluded_items(definition: dict | None) -> list[str]:
+    """The excluded items as short phrases: the list, or an older text split at , ; /."""
+    v = (definition or {}).get("excluded_items") or (definition or {}).get("excluded") or []
+    if isinstance(v, str):
+        v = re.split(r"[,;/]|\band\b", re.sub(r"\((?:e\.g\.?|i\.e\.?)[^)]*\)", " ", v))
+    return [x.strip(" .") for x in v if isinstance(x, str) and x.strip(" .")]
+
+
+def excluded_hit(text: str, definition: dict | None, min_words: int = 1) -> str | None:
+    """The excluded item `text` names (all of the item's own words present as
+    whole words, and the item at least `min_words` words long), or None.
+    Whole words, because 'processors' (a buyer) is not 'processing' (an activity)."""
+    own = market_stems(definition, whole=True)
+    words = scope_stems(text, own, whole=True)
+    for item in excluded_items(definition):
+        need = scope_stems(item, own, whole=True)
+        if need and min_words <= len(need) <= 4 and need <= words:
+            return item
+    return None
+
+
+def scope_violation(sentence: str, definition: dict | None, *, row: bool = False) -> str | None:
+    """Why `sentence` describes the market outside its definition, or None.
+    Prose fails when it sizes the market at another value-chain level
+    ('equipment sales' in a farm-gate output market) or counts an excluded
+    item as part of it. `row=True` is for heat-map / use-case / segment rows,
+    which are part of the market by construction: naming an excluded item, or
+    (for an output market) being an equipment/technology row, is enough."""
+    if not definition or not sentence:
+        return None
+    level = str(definition.get("value_chain_level") or "").lower()
+    if row:
+        rule = _ROW_RULES.get(level)
+        if rule and rule[0].search(sentence):
+            return f"{rule[1]} in a {level} market"
+        hit = excluded_hit(sentence, definition)
+        return f"names '{hit}', which the definition excludes" if hit else None
+    for pat, what in _SIZING.get(level, []):
+        m = pat.search(sentence)
+        if m and not NEGATED.search(sentence):
+            return f"describes {what} ('{m.group(0)}') in a {level} market"
+    hit = excluded_hit(sentence, definition)
+    if hit and _COUNTS.search(sentence) and not NEGATED.search(sentence):
+        return f"counts '{hit}', which the definition excludes"
+    return None
+
+
 def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, dropped: list[str],
                absent: list[str] | None = None) -> str:
     """The text with every failing sentence removed. `absent`: entity names
     that do not exist in this report's data (e.g. 'Rest of North America'
     when the table has no such row) -- a sentence naming one is dropped.
     A sentence that leans on a removed one ('This ...', 'Together they ...')
-    is removed with it, and a text may not open with such a pronoun."""
+    is removed with it, and a text may not open with such a pronoun. A
+    sentence outside the market definition (`cguard.definition`, see
+    scope_violation) is dropped too."""
     keep = []
     prev_dropped = True                     # nothing precedes the first sentence
+    definition = getattr(cguard, "definition", None)
     for s in sentences(text):
         bad = nguard.bad(s)
         gone = [a for a in absent or [] if a.lower() in s.lower()]
+        scope = scope_violation(s, definition) if definition else None
         why = (f"numbers not in model: {bad}" if bad else
                f"names {gone}, which is not in the data" if gone else
+               f"out of scope: {scope}" if scope else
                "template/draft caveat" if _BANNED.search(s) else
                "drone-template phrasing" if _TEMPLATE_PHRASES.search(s) else
                "pronoun refers to removed or missing text" if prev_dropped and _ORPHAN.match(s) else

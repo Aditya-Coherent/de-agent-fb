@@ -332,11 +332,15 @@ def run(slug: str, only: set[str] | None = None) -> Path:
             fields[g["key"]] = res
             print(f"  done: {g['key']}")
     # segments and heat-map rows kept to the definition: checked and re-asked once (PLAN-04)
-    types = (data["fields"].get("segmentation_grade_form") or {}).get("by_grade_or_type") or []
+    fleet_types = (data["fields"].get("segmentation_grade_form") or {}).get("by_grade_or_type") or []
+    replaced = False
     if any(g["key"] == "segments_global" for g in wanted):
-        seg_review["segments_global"] = segments_check.review_global(fields, [t["name"] for t in types], definition,
-                                                                     ask_group, log)
+        seg_review["segments_global"] = segments_check.review_global(fields, [t["name"] for t in fleet_types],
+                                                                     definition, ask_group, log)
         fields["segment_review"] = seg_review
+        replaced = seg_review["segments_global"].get("replacement") == "accepted"
+    # the type list in use: an accepted replacement taxonomy, else the fleet's types
+    types = segments_check.types_of(fleet_types, fields.get("segments_global"))
     if any(g["key"] == "use_cases" for g in wanted):
         seg_review["use_cases"] = segments_check.review_use_cases(fields, definition, ask_group, log)
         fields["segment_review"] = seg_review
@@ -351,7 +355,10 @@ def run(slug: str, only: set[str] | None = None) -> Path:
                                   "sanity_changes": review["sanity"].pop("regional_changes", [])}
         fields["geo_review"] = review
         print("  done: geo_review")
-    if any(g["key"] == "segments_mea" for g in wanted):
+    # a replacement taxonomy renames the types: the MEA mix must be asked again with the new names
+    if replaced and not any(g["key"] == "segments_mea" for g in wanted):
+        log.append("[segments_mea] type taxonomy replaced -- re-running segments_mea with the new type names")
+    if replaced or any(g["key"] == "segments_mea" for g in wanted):
         # the segments the model keeps (excluded ones dropped, merges applied). The global mix is NOT
         # shown on the first call -- the agent answers from the evidence; only a re-ask shows it.
         sg = fields.get("segments_global") or {}

@@ -31,6 +31,8 @@ from AiAgentsFleet.cmi_report.guard import NEGATED, excluded_hit, market_stems, 
 OVERLAP_MAX = 0.60          # two segment definitions sharing more content words than this overlap
 MIX_FACTOR = 2.0            # MEA share vs global share, either way
 MIX_MIN_GAP_PP = 2.0        # ...and at least this many points apart (tiny segments swing by ratio alone)
+REPLACE_MIN, REPLACE_MAX = 4, 7   # a replacement type taxonomy: 4-7 types...
+REPLACE_SUM = (98.0, 102.0)        # ...whose shares sum to 100 (+/-2)
 COPY_TOL = 0.10             # every country within +/-10% (relative) of the global mix on every segment = a copy
 # the "false split" test (do buyers price/specify the types differently) applies to these levels only; a
 # farm-gate output, producer or service market may split by production system, technology or species
@@ -86,15 +88,86 @@ def merges(sg: dict | None) -> list[dict]:
     return out
 
 
+def bad_merges(sg: dict | None, type_names: list[str]) -> list[str]:
+    """Source types the agent put into two different merged segments at once
+    (e.g. 'Seaweed Extracts' in both 'Extract-Based (incl. Seaweed)' and
+    'Other (incl. Seaweed)') -- such merges are rejected as a whole."""
+    low = {n.lower(): n for n in type_names}
+    seen: dict[str, str] = {}
+    out = []
+    for m in merges(sg):
+        for x in m["merge"]:
+            src = low.get(x.lower())
+            if src and src in seen and seen[src] != m["name"] and src not in out:
+                out.append(src)
+            elif src:
+                seen[src] = m["name"]
+    return out
+
+
 def merge_map(sg: dict | None, type_names: list[str]) -> dict[str, str]:
-    """{original type name: merged name} for the agent's own merges of real types."""
+    """{original type name: merged name} for the agent's own merges of real
+    types; {} when they put one type into two merges (bad_merges)."""
     low = {n.lower(): n for n in type_names}
     out = {}
+    if bad_merges(sg, type_names):
+        return out
     for m in merges(sg):
         members = [low[x.lower()] for x in m["merge"] if x.lower() in low]
         if len(members) >= 2:
             out.update({x: m["name"] for x in members})
     return out
+
+
+def replacement(sg: dict | None) -> list[dict] | None:
+    """The agent's replacement type taxonomy ([{"name", "share_pct_2026",
+    "cagr_2026_2033_pct", "definition"}]), or None unless it is well formed:
+    REPLACE_MIN-REPLACE_MAX distinct named types, each with a share and a
+    definition, shares summing to 100 (+/-2)."""
+    rows = (sg or {}).get("type_replacement")
+    if not isinstance(rows, list) or not REPLACE_MIN <= len(rows) <= REPLACE_MAX:
+        return None
+    out = []
+    for r in rows:
+        if not isinstance(r, dict):
+            return None
+        name, share = str(r.get("name") or "").strip(), _num(r.get("share_pct_2026"))
+        if not name or share is None or share < 0 or not str(r.get("definition") or "").strip():
+            return None
+        out.append({"name": name, "share_pct_2026": share, "cagr_2026_2033_pct": _num(r.get("cagr_2026_2033_pct")),
+                    "definition": str(r["definition"]).strip()})
+    if len({r["name"].lower() for r in out}) != len(out) or \
+            not REPLACE_SUM[0] <= sum(r["share_pct_2026"] for r in out) <= REPLACE_SUM[1]:
+        return None
+    return out
+
+
+def with_replacement(sg: dict) -> dict:
+    """segments_global with its replacement taxonomy adopted as THE type list:
+    names, CAGRs and definitions from the replacement, no type merges."""
+    rep_ = replacement(sg) or []
+    defs_ = dict((sg.get("segment_definitions") or {}))
+    defs_["type"] = {r["name"]: r["definition"] for r in rep_}
+    names = {r["name"].lower() for r in rep_}
+    return {**sg, "type_taxonomy": "replacement", "type_merges": [],
+            "type_cagr_2026_2033_pct": {r["name"]: r["cagr_2026_2033_pct"] for r in rep_
+                                        if r["cagr_2026_2033_pct"] is not None},
+            "segment_definitions": defs_,
+            "type_split_check": [x for x in sg.get("type_split_check") or [] if isinstance(x, dict)
+                                 and str(x.get("a", "")).lower() in names and str(x.get("b", "")).lower() in names]}
+
+
+def types_of(fleet_types: list[dict], sg: dict | None) -> list[dict]:
+    """The type list the report uses: the accepted replacement taxonomy, or
+    the fleet's own types ([{"name", "share_pct_of_market"}])."""
+    rep_ = replacement(sg) if (sg or {}).get("type_taxonomy") == "replacement" else None
+    if rep_:
+        return [{"name": r["name"], "share_pct_of_market": r["share_pct_2026"]} for r in rep_]
+    return fleet_types
+
+
+def type_names_of(sg: dict | None, fleet_names: list[str]) -> list[str]:
+    return [t["name"] for t in types_of([{"name": n} for n in fleet_names], sg)]
 
 
 def names_of(sg: dict | None, type_names: list[str]) -> dict[str, list[str]]:
@@ -201,8 +274,13 @@ def check_global(sg: dict | None, type_names: list[str], definition: dict | None
     """Problems with segments_global's answer ([] = coherent)."""
     if not isinstance(sg, dict) or "error" in sg:
         return []
+    type_names = type_names_of(sg, type_names)
     names = names_of(sg, type_names)
     out: list[dict] = []
+    bad = bad_merges(sg, type_names)
+    if bad:
+        out.append(_problem("type", "bad_merge", bad, f"{', '.join(repr(b) for b in bad)} put into two merged "
+                                                      f"segments at once -- the merges are rejected"))
     for dim in DIMS:
         defs = _defs(sg, dim)
         for n, why in out_of_scope(names[dim], defs, definition):
@@ -222,11 +300,34 @@ def check_global(sg: dict | None, type_names: list[str], definition: dict | None
     return out
 
 
+# type problems answered with a replacement taxonomy: overlapping types, a false split (two types that are
+# really one product) and rejected merges -- asking for merges on these put one type into two merges
+REPLACE_KINDS = {"overlap", "bad_merge", "false_split"}
+
+
+def wants_replacement(problems: list[dict]) -> bool:
+    return any(p["dim"] == "type" and p["kind"] in REPLACE_KINDS for p in problems)
+
+
 def reask_note_global(problems: list[dict], previous: dict, definition: dict | None = None) -> str:
-    """Appended to segments_global's original prompt for its one re-ask."""
+    """Appended to segments_global's original prompt for its one re-ask.
+    Overlapping types are answered with a REPLACEMENT taxonomy, not merges
+    (merging an overlapping starting list tends to put one type in two merges)."""
     prev = {k: v for k, v in (previous or {}).items() if k != "_sources"}
     why = ("they overlap, or differ only by production history" if false_split_applies(definition)
            else "they genuinely overlap; distinct production systems, technologies or species stay separate")
+    if wants_replacement(problems):
+        types_rule = (
+            f"- the type segments overlap or are falsely split, so do NOT merge them: return a REPLACEMENT taxonomy in "
+            f"\"type_replacement\": a mutually exclusive, collectively exhaustive list of {REPLACE_MIN}-{REPLACE_MAX} "
+            "types, using the standard segmentation that published reports on this market use, with a one-line "
+            "definition each and shares summing to 100: [{\"name\": <string>, \"share_pct_2026\": <number>, "
+            "\"cagr_2026_2033_pct\": <number>, \"definition\": <one line>}, ...]. No name may contain another "
+            "type's name. Keep the same total market; set \"type_merges\": [].\n")
+    else:
+        types_rule = (f"- the type names are fixed by CONTEXT.types: if two types are really one ({why}), list them "
+                      "in \"type_merges\": [{\"merge\": [<type>, <type>], \"name\": <merged name>, "
+                      "\"definition\": <one line>}]; a type may appear in ONE merge only.\n")
     return ("\n\nYOUR PREVIOUS ANSWER (below) failed these checks against the DEFINITION:\n"
             + "\n".join(f"- {p['dim']}: {p['detail']}" for p in problems)
             + "\nFix them and return a corrected answer in exactly the same shape:\n"
@@ -235,10 +336,11 @@ def reask_note_global(problems: list[dict], previous: dict, definition: dict | N
               "replace it with an in-scope one where the dimension needs it;\n"
               "- give every segment a one-line definition, and make the segments of each dimension mutually "
               "exclusive (rewrite overlapping definitions, or use an allocation rule);\n"
-              f"- the type names are fixed by CONTEXT.types: if two types are really one ({why}), list them in "
-              "\"type_merges\": [{\"merge\": [<type>, <type>], \"name\": <merged name>, \"definition\": "
-              "<one line>}].\n"
+            + types_rule
             + f"PREVIOUS ANSWER:\n{json.dumps(prev, ensure_ascii=False)}")
+
+
+_TYPE_BLOCKING = {"overlap", "bad_merge", "false_split", "excluded"}
 
 
 def _valid_global(ans) -> bool:
@@ -247,7 +349,8 @@ def _valid_global(ans) -> bool:
 
 
 def _seg_changes(before: dict, after: dict, type_names: list[str]) -> list[str]:
-    b, a = names_of(before, type_names), names_of(after, type_names)
+    b = names_of(before, type_names_of(before, type_names))
+    a = names_of(after, type_names_of(after, type_names))
     out = []
     for dim in DIMS:
         if b[dim] != a[dim]:
@@ -277,6 +380,23 @@ def review_global(fields: dict, type_names: list[str], definition: dict | None,
         log.append(f"[segments_global] re-ask failed: {exc}")
         again = None
     if _valid_global(again):
+        if wants_replacement(probs):
+            rows = replacement(again)
+            if rows is None:
+                rec["replacement"] = "missing or malformed -- merges fall back"
+            else:
+                cand = with_replacement(again)
+                bad = [p for p in check_global(cand, type_names, definition)
+                       if p["dim"] == "type" and p["kind"] in _TYPE_BLOCKING]
+                if bad:
+                    rec["replacement"] = "rejected (still overlapping) -- merges fall back"
+                    rec["replacement_problems"] = bad
+                    again = {k: v for k, v in again.items() if k != "type_replacement"}
+                else:
+                    rec["replacement"] = "accepted"
+                    rec["types"] = [{"name": r["name"], "share_pct_2026": r["share_pct_2026"]} for r in rows]
+                    again = cand
+            log.append(f"[segments_global] replacement type taxonomy: {rec['replacement']}")
         rec["changes"] = _seg_changes(sg, again, type_names)
         fields["segments_global"] = again
     else:
@@ -293,6 +413,7 @@ def resolve(sg: dict | None, type_names: list[str], definition: dict | None) -> 
     Excluded segments are dropped (never every one of a dimension); pairs still
     overlapping are merged; a remaining false type split switches the type
     dimension off."""
+    type_names = type_names_of(sg, type_names)
     names = names_of(sg, type_names)
     merge = {"type": merge_map(sg, type_names), "demand": {}}
     notes = [f"type: '{a}' merged into '{b}' (agent's merge)" for a, b in merge["type"].items() if a != b]
@@ -368,7 +489,7 @@ def merge_raw(raw: dict | None, merge: dict[str, str]) -> dict:
 
 def global_mix(types: list[dict], sg: dict | None, resolved: dict) -> dict[str, dict[str, float]]:
     """{dim: {segment: % of the 2026 global market}} for the segments the model keeps."""
-    parts = {"type": {t["name"]: (float(t.get("share_pct_of_market") or 0), 0.0) for t in types},
+    parts = {"type": {t["name"]: (float(t.get("share_pct_of_market") or 0), 0.0) for t in types_of(types, sg)},
              "demand": {str(d["name"]): (float(d.get("share_pct_2026") or 0), 0.0)
                         for d in (sg or {}).get("demand_segments") or [] if isinstance(d, dict) and d.get("name")}}
     out = {}
@@ -399,6 +520,19 @@ def mea_shares(unit_values: dict[str, float], smea: dict, dim: str, names: list[
             acc[n] += v * shares[n] / tot
     total = sum(acc.values())
     return {n: acc[n] * 100 / total for n in names} if total else {}
+
+
+def mea_names_differ(smea: dict | None, type_names: list[str], merge: dict[str, str] | None = None) -> bool:
+    """True when segments_mea has country mixes but not one of them names
+    every global type (e.g. it was answered before a replacement taxonomy):
+    the missing types would silently take their global share everywhere."""
+    from AiAgentsFleet.cmi_report.geo_check import keyed
+    if not isinstance(smea, dict) or "error" in smea or not type_names:
+        return False
+    want = {n.lower() for n in type_names}
+    mixes = [merge_raw(v.get("type"), merge or {}) for k, v in keyed(smea).items()
+             if isinstance(v, dict) and isinstance(v.get("type"), dict)]
+    return bool(mixes) and not any(want <= {str(k).lower() for k in m} for m in mixes)
 
 
 def check_mix(global_shares: dict[str, float], mea: dict[str, float], dim: str,
@@ -608,7 +742,8 @@ def review_use_cases(fields: dict, definition: dict | None, ask: Callable[[str, 
 # final verdict (computed by model.build from the final answers)
 # --------------------------------------------------------------------------- #
 def review(definition: dict, record: dict | None, *, global_problems: list[dict], resolved: dict,
-           mix_problems: list[dict], uc_problems: list[dict], copied: bool = False) -> dict:
+           mix_problems: list[dict], uc_problems: list[dict], copied: bool = False,
+           mea_names_mismatch: bool = False) -> dict:
     """m["segment_review"]: every check on the answers the model was built
     from, and what happened to each failure. A check that failed with no
     re-ask on record (data from before PLAN-04) is a blocker; a mix still
@@ -640,6 +775,8 @@ def review(definition: dict, record: dict | None, *, global_problems: list[dict]
         else:
             blockers.append(line + " (not re-asked)")
 
+    if mea_names_mismatch:
+        blockers.append("MEA type mix: segments_mea does not use the global type names (re-run segments_mea)")
     if copied or mrec.get("copied_first"):
         outcome = ("still copied after one re-ask" if copied and mrec.get("reasked") else
                    "not re-asked" if copied else "first answer; the re-ask gave country-specific mixes")
@@ -652,6 +789,7 @@ def review(definition: dict, record: dict | None, *, global_problems: list[dict]
     return {"definition": {"measures": definition.get("measures"), "value_chain_level": definition.get("value_chain_level"),
                            "check": chk},
             "segments_global": {"first_problems": grec.get("problems") or [], "reasked": bool(grec.get("reasked")),
+                                "replacement": grec.get("replacement"),
                                 "changes": grec.get("changes") or [], "problems": global_problems},
             "resolved": {"dropped": {d: [f"{n} ({why})" for n, why in v] for d, v in resolved["dropped"].items()},
                          "merged": {d: {a: b for a, b in v.items() if a != b} for d, v in resolved["merge"].items() if v},

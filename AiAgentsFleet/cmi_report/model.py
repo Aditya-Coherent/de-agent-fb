@@ -348,7 +348,8 @@ def build(fleet: dict, cmi: dict) -> dict:
     # excluded segments dropped, still-overlapping pairs merged, a false type split switched off
     dfn = definition(fleet, c)
     sg = c["segments_global"]
-    types = f["segmentation_grade_form"]["by_grade_or_type"]
+    # the type list: the agent's accepted replacement taxonomy, or the fleet's own types
+    types = segments_check.types_of(f["segmentation_grade_form"]["by_grade_or_type"], sg)
     all_types = [t["name"] for t in types]
     global_problems = segments_check.check_global(sg, all_types, dfn)
     resolved = segments_check.resolve(sg, all_types, dfn)
@@ -399,7 +400,8 @@ def build(fleet: dict, cmi: dict) -> dict:
     segment_review = segments_check.review(
         dfn, c.get("segment_review"), global_problems=global_problems, resolved=resolved,
         mix_problems=mix_problems, uc_problems=segments_check.check_use_cases(c.get("use_cases"), dfn),
-        copied=copied)
+        copied=copied, mea_names_mismatch=segments_check.mea_names_differ(
+            c.get("segments_mea"), [n for n in type_names if not n.lower().startswith("other")], mtype))
     seg_defs = {dim: {n: d for n in names if (d := segments_check.defs(sg, dim).get(n.lower()))}
                 for dim, names in (("type", type_names), ("demand", dem_names))}
 

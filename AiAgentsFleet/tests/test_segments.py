@@ -374,7 +374,7 @@ class MeaLLM:
         return self.answers.pop(0)
 
 
-def _run_mea(monkeypatch, tmp_path, answers):
+def _run_mea(monkeypatch, tmp_path, answers, only=("segments_mea",)):
     """run_data.run(only=segments_mea) on a fixture market with the LLM and search mocked."""
     from AiAgentsFleet.cmi_report import run_data
     d = tmp_path / "output" / "vc"
@@ -390,7 +390,7 @@ def _run_mea(monkeypatch, tmp_path, answers):
     monkeypatch.setattr(run_data, "search", lambda *a, **k: [{"text": "Vitamin C demand in Egypt", "url": "u",
                                                               "domain": "fao.org"}])
     run_data._SHOWN.clear()
-    run_data.run("vc", {"segments_mea"})
+    run_data.run("vc", set(only))
     out = json.loads((d / "cmi_fields.json").read_text(encoding="utf-8"))["fields"]
     return llm.prompts, out
 
@@ -533,3 +533,103 @@ def test_prompts_carry_the_value_chain_rules():
     assert "type_split_check" in sg["schema"] and "type_merges" in sg["schema"]
     assert "farm-gate output" in uc["system"]
     assert json.dumps(segments_check.check_use_cases({"middle_east": [{"use_case": "Aerators"}]}, SHRIMP))
+
+
+# --------------------------------------------------------------------------- #
+# 5. overlapping types: a replacement taxonomy, merges only as the fallback
+# --------------------------------------------------------------------------- #
+BIO = ["Acid-Based Biostimulants", "Extract-Based Biostimulants", "Seaweed Extracts", "Microbial Biostimulants",
+       "Other Biostimulants"]
+BIO_DFN = {"market_name": "Agricultural Biostimulants Market", "value_chain_level": "manufacturer"}
+
+
+def test_one_type_in_two_merges_is_rejected():
+    sg = {"demand_segments": [{"name": "Cereals"}, {"name": "Fruits"}],
+          "type_merges": [{"merge": ["Extract-Based Biostimulants", "Seaweed Extracts"],
+                           "name": "Extract-Based Biostimulants (incl. Seaweed Extracts)"},
+                          {"merge": ["Seaweed Extracts", "Other Biostimulants"],
+                           "name": "Other Biostimulants (incl. Seaweed Extracts)"}]}
+    assert segments_check.bad_merges(sg, BIO) == ["Seaweed Extracts"]
+    assert segments_check.merge_map(sg, BIO) == {}               # every agent merge rejected
+    probs = segments_check.check_global(sg, BIO, BIO_DFN)
+    assert any(p["kind"] == "bad_merge" for p in probs)
+    assert segments_check.wants_replacement(probs)                 # treated as still overlapping
+    # fallback: the still-overlapping pair is merged by the model, nothing is double counted
+    res = segments_check.resolve(sg, BIO, BIO_DFN)
+    assert res["names"]["type"].count("Extract-Based Biostimulants / Seaweed Extracts") == 1
+    assert "Seaweed Extracts" not in res["names"]["type"]
+
+
+REPLACEMENT = [
+    {"name": "Ascorbic Acid", "share_pct_2026": 55, "cagr_2026_2033_pct": 5.5,
+     "definition": "Pure L-ascorbic acid powder or granules, whatever the production process."},
+    {"name": "Sodium Ascorbate", "share_pct_2026": 25, "cagr_2026_2033_pct": 5.0,
+     "definition": "The sodium salt, a buffered non-acidic form for tablets and meat curing."},
+    {"name": "Calcium Ascorbate", "share_pct_2026": 12, "cagr_2026_2033_pct": 4.8,
+     "definition": "The calcium salt, sold for sensitive stomachs and mineral fortification."},
+    {"name": "Ascorbyl Esters", "share_pct_2026": 8, "cagr_2026_2033_pct": 6.5,
+     "definition": "Fat-soluble palmitate and phosphate esters used in cosmetics and oils."}]
+NEW = [r["name"] for r in REPLACEMENT]
+
+
+def _replaced_answer(rows=REPLACEMENT):
+    sg = seg_global(type_split_check=[], type_merges=[], type_replacement=copy.deepcopy(rows))
+    sg["demand_segments"] = [d for d in sg["demand_segments"] if d["name"] != "Animal Feed & Pet Food"]
+    return sg
+
+
+def test_overlapping_types_reask_for_a_replacement_taxonomy_not_merges():
+    note = segments_check.reask_note_global(segments_check.check_global(seg_global(), TYPE_NAMES,
+                                                                        model.definition(fleet())),
+                                            seg_global(), model.definition(fleet()))
+    assert "REPLACEMENT taxonomy" in note and "mutually exclusive, collectively exhaustive list of 4-7 types" in note
+    assert "standard segmentation that published reports on this market use" in note
+    assert '"type_merges": [{"merge"' not in note
+
+
+def test_a_replacement_taxonomy_is_accepted_and_the_mea_call_uses_its_names(monkeypatch, tmp_path):
+    mea = {u: mix({"Ascorbic Acid": 50 if i % 2 else 60, "Sodium Ascorbate": 30 if i % 2 else 20,
+                   "Calcium Ascorbate": 12, "Ascorbyl Esters": 8},
+                  {"Dietary Supplements": 30 if i % 2 else 55, "Pharmaceuticals": 40 if i % 2 else 25,
+                   "Food & Beverage Fortification": 30 if i % 2 else 20}) for i, u in enumerate(UNITS)}
+    prompts, out = _run_mea(monkeypatch, tmp_path, [seg_global(), _replaced_answer(), mea],
+                            only=("segments_global",))     # segments_mea is NOT asked for: it must still run
+    assert len(prompts) == 3
+    assert "REPLACEMENT taxonomy" in prompts[1]
+    rec = out["segment_review"]["segments_global"]
+    assert rec["replacement"] == "accepted" and [t["name"] for t in rec["types"]] == NEW
+    assert out["segments_global"]["type_taxonomy"] == "replacement"
+    assert all(n in prompts[2] for n in NEW) and "(Synthetic)" not in prompts[2]   # the MEA call: new names
+    m = model.build(fleet(), {"fields": out})
+    assert list(m["segments"]["Global"]["type"]) == NEW and m["sections"]["type"]["show"]
+    assert abs(m["segments"]["Global"]["type"]["Ascorbic Acid"]["v26"] / m["global"]["v26"] - 0.55) < 1e-9
+    assert m["segment_definitions"]["type"]["Ascorbyl Esters"].startswith("Fat-soluble")
+    assert not any("type" in b for b in m["segment_review"]["blockers"])
+
+
+def test_a_replacement_that_still_overlaps_falls_back_to_merges():
+    still = copy.deepcopy(REPLACEMENT)
+    still[3] = {"name": "Ascorbic Acid Derivatives", "share_pct_2026": 8, "cagr_2026_2033_pct": 6,
+                "definition": "Esters and other derivatives."}           # contains 'Ascorbic Acid', no rule
+    fields = {"segments_global": seg_global()}
+    rec = segments_check.review_global(fields, TYPE_NAMES, model.definition(fleet()),
+                                       lambda k, n: _replaced_answer(still), [])
+    assert rec["replacement"].startswith("rejected")
+    assert "type_taxonomy" not in fields["segments_global"] and "type_replacement" not in fields["segments_global"]
+    assert segments_check.type_names_of(fields["segments_global"], TYPE_NAMES) == TYPE_NAMES   # fleet types kept
+
+
+def test_mea_mix_with_other_type_names_is_a_blocker():
+    sg = segments_check.with_replacement(_replaced_answer())
+    m = model.build(fleet(), cmi(sg=sg, smea=seg_mea()))       # seg_mea uses the OLD type names
+    assert any("does not use the global type names" in b for b in m["segment_review"]["blockers"])
+
+
+def test_a_false_split_alone_also_asks_for_a_replacement():
+    sg = seg_global(allocation_rules=["Synthetic ascorbic acid is counted under Ascorbic Acid (Synthetic), "
+                                      "fermentation-derived under Ascorbic Acid (Fermentation-Derived)."])
+    probs = [p for p in segments_check.check_global(sg, TYPE_NAMES, model.definition(fleet())) if p["dim"] == "type"]
+    assert {p["kind"] for p in probs} == {"false_split"}
+    assert "REPLACEMENT taxonomy" in segments_check.reask_note_global(probs, sg, model.definition(fleet()))
+    # a farm-gate market has no false-split test, so nothing to replace
+    assert not segments_check.wants_replacement(segments_check.check_global(SYSTEM_SG, SYSTEMS, SHRIMP))

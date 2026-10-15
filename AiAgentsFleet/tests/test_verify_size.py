@@ -184,3 +184,67 @@ def test_size_basis_text_wording():
     assert "because" not in txt and "reflect" not in txt
     m["size_check"]["source"].update(publisher="emergenresearch.com", domain="emergenresearch.com")
     assert "emergenresearch.com (emergenresearch.com)" not in size_basis_text(m, "Agricultural Biostimulants")
+
+
+# --- CMI's own published figure wins (user decision, PLAN-02 "CMI's own figure") ---
+MARKET = "Agricultural Biostimulants Market"
+QCMI25 = "The agricultural biostimulants market is estimated to be valued at USD 4.10 Bn in 2025"
+QCMI24 = "The agricultural biostimulants market is estimated to be valued at USD 4.0 billion in 2024, growing at a CAGR of 7.5%"
+QCMI_PARENT = "The global biostimulants market is estimated to be valued at USD 4.10 Bn in 2025"
+CMI_SNIPPETS = SNIPPETS + [
+    {"text": f"{QCMI25} and is expected to reach USD 8.9 Bn by 2032.", "domain": "www.coherentmarketinsights.com",
+     "url": "https://www.coherentmarketinsights.com/industry-reports/agricultural-biostimulants-market"},
+    {"text": f"Press release. {QCMI24}.", "domain": "press.coherentmarketinsights.com",
+     "url": "https://press.coherentmarketinsights.com/a"},
+    {"text": f"{QCMI_PARENT}.", "domain": "coherentmarketinsights.com",
+     "url": "https://www.coherentmarketinsights.com/industry-reports/biostimulants-market"},
+]
+B_P25 = {"quote": Q25, "publisher": "Precedence Research", "value_usd_mn": 4300, "year": 2025}
+
+
+def test_cmi_quote_beats_other_verified_quote():
+    # the agent names the wrong publisher: CMI is recognised by the snippet's website
+    b_cmi = {"quote": QCMI25, "publisher": "Some Firm", "value_usd_mn": 4100, "year": 2025}
+    chk = verify_market_size(_ms(4100.0, [B_P25, b_cmi]), CMI_SNIPPETS, MARKET)
+    assert chk["status"] == "sourced" and chk["source_is_cmi"] is True
+    assert chk["source"]["publisher"] == "Coherent Market Insights"
+    # a headline taken from the other (verified) quote fails, and says to use the CMI figure
+    chk = verify_market_size(_ms(4300.0, [B_P25, b_cmi]), CMI_SNIPPETS, MARKET)
+    assert chk["status"] == "unsourced"
+    assert any("Coherent Market Insights' own figure" in n for n in chk["notes"])
+
+
+def test_cmi_2024_value_carried_to_2025():
+    b = {"quote": QCMI24, "value_usd_mn": 4000, "year": 2024, "cagr_pct": 7.5}
+    chk = verify_market_size(_ms(4300.0, [B_P25, b], cagr=7.5), CMI_SNIPPETS, MARKET)
+    assert chk["status"] == "sourced" and chk["source_is_cmi"] is True
+    assert chk["source"]["derivation"] == "2024 value carried to 2025 at the quoted 7.5% CAGR"
+
+
+def test_cmi_quote_for_parent_market_not_used():
+    b = {"quote": QCMI_PARENT, "value_usd_mn": 4100, "year": 2025}
+    chk = verify_market_size(_ms(4300.0, [B_P25, b]), CMI_SNIPPETS, MARKET)
+    assert chk["status"] == "sourced" and chk["source_is_cmi"] is False     # the other quote is used
+    assert chk["source"]["domain"] == "precedenceresearch.com"
+    assert any("not for this market" in n for n in chk["notes"])
+    # nor can the parent-market CMI figure be the headline itself
+    assert verify_market_size(_ms(4100.0, [b]), CMI_SNIPPETS, MARKET)["status"] == "unsourced"
+
+
+def test_without_cmi_quote_behaviour_unchanged():
+    ms = _ms(4300.0, [B_P25])
+    with_market = verify_market_size(ms, CMI_SNIPPETS, MARKET)
+    assert with_market == verify_market_size(ms, SNIPPETS)
+    assert with_market["status"] == "sourced" and with_market["source_is_cmi"] is False
+
+
+def test_size_basis_text_cmi_source():
+    from AiAgentsFleet.cmi_report.build import size_basis_text
+    src = {"publisher": "Coherent Market Insights", "domain": "coherentmarketinsights.com", "derivation": "as quoted",
+           "year": 2025}
+    m = {"global": {"v25": 4100.0}, "published_2025": [],
+         "size_check": {"status": "sourced", "source_is_cmi": True, "cagr_sourced": True, "source": src}}
+    txt = size_basis_text(m, "Agricultural Biostimulants")
+    assert "CMI's published estimate" in txt and "reported by" not in txt
+    src.update(derivation="2024 value carried to 2025 at the quoted 7.5% CAGR", year=2024)
+    assert "carried forward from CMI's published 2024 estimate" in size_basis_text(m, "Agricultural Biostimulants")

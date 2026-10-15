@@ -352,11 +352,15 @@ def size_basis_text(m: dict, root: str) -> str:
     if not src:
         return (f"{base} is a CMI estimate built from the desk research for this report; no third-party "
                 f"figure for this market could be confirmed in the evidence gathered, so none is cited.")
-    how = ("is the figure reported by" if src.get("derivation") == "as quoted" else
-           f"is carried forward from the {src['year']} figure reported by")
-    tail = ("" if src.get("derivation") == "as quoted" else ", at the growth rate that source states")
-    who = src["domain"] if src["publisher"] == src["domain"] else f"{src['publisher']} ({src['domain']})"
-    text = f"{base} {how} {who}{tail}."
+    quoted = src.get("derivation") == "as quoted"
+    if chk.get("source_is_cmi"):
+        text = (f"{base} is CMI's published estimate." if quoted else
+                f"{base} is carried forward from CMI's published {src['year']} estimate, at the growth rate it states.")
+    else:
+        how = "is the figure reported by" if quoted else f"is carried forward from the {src['year']} figure reported by"
+        tail = "" if quoted else ", at the growth rate that source states"
+        who = src["domain"] if src["publisher"] == src["domain"] else f"{src['publisher']} ({src['domain']})"
+        text = f"{base} {how} {who}{tail}."
     if not chk.get("cagr_sourced"):
         text += " The forecast growth rate is a CMI estimate."
     if m.get("published_2025"):

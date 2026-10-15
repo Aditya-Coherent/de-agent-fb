@@ -26,6 +26,7 @@ FIELD_GROUPS: list[dict] = [
             "{market} market size 2025",
             "{market} market worth billion",
             "{market} market valued at",
+            "{market} Coherent Market Insights",
         ],
         "system": (
             "You summarize web search results the way Google's AI Overview does: a concise, "
@@ -36,7 +37,9 @@ FIELD_GROUPS: list[dict] = [
             "WEB EVIDENCE line and states the value and its year. Derived means only: a 2024 or 2026 "
             "value carried to the base year with a CAGR a quote states, or a conversion to USD million. "
             "If several quotes disagree, use the one whose scope best matches the market definition and "
-            "say why in `how_derived`. If no evidence line states a size for this market, return "
+            "say why in `how_derived`. If a WEB EVIDENCE line from Coherent Market Insights "
+            "(coherentmarketinsights.com) states a size for this market, use it as the headline basis. "
+            "If no evidence line states a size for this market, return "
             "\"basis\": [] and give your own best estimate.\n"
             "For the other fields, if the evidence doesn't cover them, give your own best estimate using "
             "domain knowledge and reasonable extrapolation -- never leave a field null."

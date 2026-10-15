@@ -131,7 +131,8 @@ def _size_facts(m: dict) -> dict:
     chk = m.get("size_check") or {}
     if chk.get("status") == "sourced" and chk.get("source"):
         s = chk["source"]
-        who = s["domain"] if s["publisher"] == s["domain"] else f"{s['publisher']} ({s['domain']})"
+        who = ("CMI's published estimate" if chk.get("source_is_cmi") else
+               s["domain"] if s["publisher"] == s["domain"] else f"{s['publisher']} ({s['domain']})")
         return {"status": "sourced", "headline_source": who,
                 "rule": "the global base is this source's figure: name the source; never explain why other "
                         "figures differ"}

@@ -103,7 +103,8 @@ def run_field_group(
         # the headline must cite a quote from these snippets; re-asked once if it doesn't (PLAN-02)
         from AiAgentsFleet.cmi_report.verify_size import check_with_reask
         shown = [{k: s.get(k) for k in ("text", "url", "domain")} for s in sourced[:15]]
-        data, src["size_check"] = check_with_reask(data, shown, lambda note: llm.complete_json(system, user + note), log)
+        data, src["size_check"] = check_with_reask(data, shown, lambda note: llm.complete_json(system, user + note), log,
+                                                   market)
         src["snippets"] = shown
 
     jittered = randomize and randomizer.ENABLED

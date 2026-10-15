@@ -18,6 +18,10 @@ import re
 from typing import Callable
 
 from AiAgentsFleet.cmi_report.run_data import _norm, _publisher
+from AiAgentsFleet.sources import _matches, _norm_domain, market_tokens
+
+CMI_DOMAIN = "coherentmarketinsights.com"
+CMI_NAME = "Coherent Market Insights"
 
 _DERIVE_TOLERANCE = 0.02           # headline vs basis value (or its normalised value)
 _MAX_YEAR_GAP = 2                  # 2023-2027 values may be carried to a 2025 base
@@ -62,10 +66,42 @@ def _find(quote: str, sourced: list[dict]) -> dict | None:
     return next((s for s in sourced if q in _norm(s.get("text", ""))), None)
 
 
-def verify_market_size(ms: dict, sourced_snippets: list[dict]) -> dict:
+def is_cmi_domain(domain_or_url: str) -> bool:
+    """coherentmarketinsights.com or any subdomain of it."""
+    return _matches(_norm_domain(domain_or_url), CMI_DOMAIN)
+
+
+def _names_market(quote: str, market: str | None) -> bool:
+    """The quote names this market: every key word of the market name is in it
+    (so a CMI figure for a parent or adjacent market is not taken)."""
+    stems = market_tokens(market or "")
+    low = (quote or "").lower()
+    return bool(stems) and all(st in low for st in stems)
+
+
+def _expected(v: dict, base_year: int, quoted_cagrs: list[float], notes: list[str]) -> tuple[float | None, str]:
+    """A verified basis value at the base year: as quoted, or a value up to 2 years off
+    carried at a quoted CAGR. (None, "") when it can't be carried."""
+    gap = base_year - v["year"]
+    if gap == 0:
+        return v["value_usd_mn"], "as quoted"
+    if abs(gap) > _MAX_YEAR_GAP:
+        notes.append(f"basis[{v['i']}]: year {v['year']} is too far from base year {base_year}")
+        return None, ""
+    rate = v["cagr_pct"] if v["cagr_pct"] is not None else (quoted_cagrs[0] if quoted_cagrs else None)
+    if rate is None:
+        notes.append(f"basis[{v['i']}]: {v['year']} value but no quoted CAGR to carry it to {base_year}")
+        return None, ""
+    return (v["value_usd_mn"] * (1 + rate / 100) ** gap,
+            f"{v['year']} value carried to {base_year} at the quoted {rate:g}% CAGR")
+
+
+def verify_market_size(ms: dict, sourced_snippets: list[dict], market: str | None = None) -> dict:
     """{"status": "sourced" | "unsourced", "notes": [...], "headline", "source",
-    "cagr_sourced", "how_derived"}. `sourced_snippets` are the snippets the
-    agent was shown ({"text", "url", "domain"})."""
+    "source_is_cmi", "cagr_sourced", "how_derived"}. `sourced_snippets` are the
+    snippets the agent was shown ({"text", "url", "domain"}). With `market`
+    given, a verified Coherent Market Insights quote for this market must be the
+    headline source; a CMI quote that doesn't name the market is not used."""
     notes: list[str] = []
     try:
         head = float(ms.get("base_year_value_usd_mn") or 0)
@@ -76,7 +112,7 @@ def verify_market_size(ms: dict, sourced_snippets: list[dict]) -> dict:
         head, base_year, head_cagr = 0.0, 2025, None
     out = {"status": "unsourced", "notes": notes,
            "headline": {"base_year": base_year, "value_usd_mn": head, "cagr_pct": head_cagr},
-           "source": None, "cagr_sourced": False, "how_derived": ms.get("how_derived")}
+           "source": None, "source_is_cmi": False, "cagr_sourced": False, "how_derived": ms.get("how_derived")}
     basis = [b for b in ms.get("basis") or [] if isinstance(b, dict)]
     if not head:
         notes.append("no headline value")
@@ -114,20 +150,25 @@ def verify_market_size(ms: dict, sourced_snippets: list[dict]) -> dict:
                          "publisher": b.get("publisher")})
     quoted_cagrs = [v["cagr_pct"] for v in verified if v["cagr_pct"] is not None]
 
-    # 2. the headline must be one of them, or one carried to the base year at a quoted CAGR
+    # 2. CMI's own published figure for this market wins over any other verified quote
+    #    (identified by the snippet's website, and only if the quote names this market)
+    cmi = []
     for v in verified:
-        gap = base_year - v["year"]
-        if gap == 0:
-            expected, how = v["value_usd_mn"], "as quoted"
-        elif abs(gap) <= _MAX_YEAR_GAP:
-            rate = v["cagr_pct"] if v["cagr_pct"] is not None else (quoted_cagrs[0] if quoted_cagrs else None)
-            if rate is None:
-                notes.append(f"basis[{v['i']}]: {v['year']} value but no quoted CAGR to carry it to {base_year}")
-                continue
-            expected = v["value_usd_mn"] * (1 + rate / 100) ** gap
-            how = f"{v['year']} value carried to {base_year} at the quoted {rate:g}% CAGR"
-        else:
-            notes.append(f"basis[{v['i']}]: year {v['year']} is too far from base year {base_year}")
+        if is_cmi_domain(v["src"].get("domain") or v["src"].get("url") or ""):
+            if _names_market(v["quote"], market):
+                cmi.append(v)
+            else:
+                notes.append(f"basis[{v['i']}]: Coherent Market Insights quote is not for this market "
+                             f"(missing its key words) -- not used")
+    if cmi:
+        candidates = cmi
+    else:
+        candidates = [v for v in verified if not is_cmi_domain(v["src"].get("domain") or v["src"].get("url") or "")]
+
+    # 3. the headline must be one of them, or one carried to the base year at a quoted CAGR
+    for v in candidates:
+        expected, how = _expected(v, base_year, quoted_cagrs, notes)
+        if expected is None:
             continue
         if not _close(head, expected, _DERIVE_TOLERANCE):
             notes.append(f"basis[{v['i']}]: headline {head:g} is not {expected:,.1f} ({how}) within "
@@ -135,12 +176,17 @@ def verify_market_size(ms: dict, sourced_snippets: list[dict]) -> dict:
             continue
         dom = v["src"].get("domain", "")
         out["status"] = "sourced"
+        out["source_is_cmi"] = v in cmi
         out["source"] = {"quote": v["quote"], "value_usd_mn": v["value_usd_mn"], "year": v["year"],
                          "cagr_pct": v["cagr_pct"], "derivation": how, "url": v["src"].get("url"),
-                         "domain": dom, "publisher": _publisher(v["publisher"] or "", dom)}
+                         "domain": dom,
+                         "publisher": CMI_NAME if v in cmi else _publisher(v["publisher"] or "", dom)}
         break
     else:
-        if verified and not notes:
+        if cmi:
+            notes.append("the evidence has Coherent Market Insights' own figure for this market "
+                         f"({cmi[0]['value_usd_mn']:g} USD mn in {cmi[0]['year']}): the headline must use it")
+        elif verified and not notes:
             notes.append("no verified quote supports the headline")
     out["cagr_sourced"] = head_cagr is not None and any(abs(c - head_cagr) <= 0.1 for c in quoted_cagrs)
     if out["status"] == "sourced" and not out["cagr_sourced"]:
@@ -154,16 +200,18 @@ def reask_note(check: dict) -> str:
             + "\n".join(f"- {n}" for n in check["notes"])
             + "\nEvery basis.quote must be copied EXACTLY, character for character, from one WEB EVIDENCE line "
               "above and must itself state the value and its year. base_year_value_usd_mn must be that value, or "
-              "a 2024/2026 value carried to the base year with a CAGR that a quote states. If no evidence line "
+              "a 2024/2026 value carried to the base year with a CAGR that a quote states. If a Coherent Market "
+              "Insights (coherentmarketinsights.com) line states a size for this market, that is the basis to use. "
+              "If no evidence line "
               "states a size for this market, return \"basis\": [] and your best estimate. Return the full JSON again.")
 
 
 def check_with_reask(ms: dict, sourced: list[dict], ask: Callable[[str], dict],
-                     log: list[str]) -> tuple[dict, dict]:
+                     log: list[str], market: str | None = None) -> tuple[dict, dict]:
     """Verifies the answer; when unsourced, asks once more (`ask(note)` returns
     the agent's new JSON) and keeps the new answer if it has a headline.
     Returns (answer, check)."""
-    check = verify_market_size(ms, sourced)
+    check = verify_market_size(ms, sourced, market)
     if check["status"] == "sourced":
         check["reasked"] = False
     else:
@@ -177,7 +225,7 @@ def check_with_reask(ms: dict, sourced: list[dict], ask: Callable[[str], dict],
             again = None
         if isinstance(again, dict) and isinstance(again.get("base_year_value_usd_mn"), (int, float)):
             ms = again
-            check = verify_market_size(ms, sourced)
+            check = verify_market_size(ms, sourced, market)
         check["reasked"] = True
         check["first_attempt"] = first
     if check["status"] == "sourced":

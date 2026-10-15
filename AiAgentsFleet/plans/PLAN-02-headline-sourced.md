@@ -65,6 +65,21 @@ it doesn't.
   PLAN-07 owns `guard.py`) that drops any sentence explaining a CMI-vs-published
   gap.
 
+### CMI's own figure (user decision, 2026-10-15)
+When the evidence holds a verified quote from Coherent Market Insights for
+this market, it is the headline source.
+- A CMI quote is recognised by the snippet's website (`coherentmarketinsights.com`
+  or a subdomain), never by the agent's publisher text.
+- It must name this market: every key word from `sources.market_tokens` is in
+  the quote. A CMI figure for a parent or adjacent market is not used at all.
+- A verified CMI entry wins over every other verified quote. A non-base-year
+  value is carried to the base year with the usual rules (quoted CAGR, max 2
+  years, ±2%). A headline that doesn't match it is unsourced, and the re-ask
+  tells the agent to use the CMI figure.
+- The check records `source_is_cmi`; 9.1 then reads "CMI's published estimate".
+- The `market_size` agent gets the query `"{market} Coherent Market Insights"`
+  and a prompt rule to use a CMI line as the headline basis.
+
 ### 4. Scenarios
 In `consistency._reconcile_scenarios`, keep the agent's bear/bull CAGRs when
 bear < base < bull. Today the GenAI raw 18/32/45 was overwritten. Clamp only

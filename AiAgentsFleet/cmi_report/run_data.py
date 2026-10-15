@@ -29,14 +29,18 @@ from AiAgentsFleet.market_definition import as_prompt_block  # noqa: E402
 from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.randomizer import randomize_json  # noqa: E402
 from AiAgentsFleet.sources import filter_sources, on_topic, sources_block  # noqa: E402
-from AiAgentsFleet.cmi_report.groups import (GEOGRAPHY_GROUP, GROUPS, schema_for,  # noqa: E402
-                                             validate_geography)
+from AiAgentsFleet.cmi_report.groups import (GEOGRAPHY_GROUP, GROUPS, misplaced, rest_members,  # noqa: E402
+                                             schema_for, validate_geography)
+from AiAgentsFleet.cmi_report import geo_check  # noqa: E402
+from AiAgentsFleet.field_groups import FIELD_GROUPS  # noqa: E402
 
 CACHE_PATH = ROOT / "output" / ".gen_cache.db"
 # Keys jittered +/-5-10% in groups that also carry scores or text. Like every
 # `randomize` key in groups.py, this only takes effect when the randomizer
 # switch is on (off by default; see randomizer.py).
 _PARTIAL_RANDOMIZE = {"vendors": ("value_chain", "mea_shares")}
+# the snippets each group's agent was shown, so a re-ask (geo_check) sees the same evidence
+_SHOWN: dict[str, list[dict]] = {}
 
 
 def fleet_context(data: dict) -> dict:
@@ -171,16 +175,22 @@ def definition_block(d: dict) -> str:
 
 
 def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM, log: list,
-              schema: str | None = None) -> dict:
+              schema: str | None = None, note: str = "") -> dict:
+    """One agent call. `note` (a re-ask, geo_check.reask_note) is appended to the
+    prompt, and the agent then sees the same snippets as its first answer."""
     queries = [q.format(market=market) for q in g["queries"]]
     dropped: list[dict] = []
     off_topic: list[dict] = []
-    sourced = search(market, queries, g["key"], log, dropped_out=dropped, off_topic_out=off_topic)
+    if note and g["key"] in _SHOWN:
+        sourced = _SHOWN[g["key"]]
+    else:
+        sourced = search(market, queries, g["key"], log, dropped_out=dropped, off_topic_out=off_topic)
+        _SHOWN[g["key"]] = sourced
     evidence = [s["text"] for s in sourced]
     user = (f"Market: {market}\n\n{definition_block(definition)}"
             f"CONTEXT (already published for this market):\n{json.dumps(context, ensure_ascii=False)}\n\n"
             + ("WEB EVIDENCE:\n" + "\n".join(f"- {e}" for e in evidence) if evidence else "(no web evidence found)")
-            + f"\n\nReturn ONLY valid JSON matching exactly this shape:\n{schema or g['schema']}")
+            + f"\n\nReturn ONLY valid JSON matching exactly this shape:\n{schema or g['schema']}" + note)
     try:
         raw = llm.complete_json(g["system"], user)
     except Exception as exc:  # noqa: BLE001
@@ -204,6 +214,49 @@ def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM
     return out
 
 
+def ask_regional(market: str, data: dict, llm: GenLLM, log: list):
+    """The fleet's regional agent (field_groups.py), asked again with `note`."""
+    g = next(x for x in FIELD_GROUPS if x["key"] == "regional")
+    shown: list[dict] = []
+
+    def ask(note: str) -> dict:
+        if not shown:
+            shown.extend(search(market, [q.format(market=market) for q in g["queries"]], "regional", log))
+        ev = ("WEB EVIDENCE:\n" + "\n".join(f"- {s['text']}" for s in shown[:15]) if shown
+              else "(no web evidence found -- use domain knowledge for a reasonable estimate)")
+        user = (f"Market: {market}\n\n{as_prompt_block(data.get('market_definition'))}{ev}\n\n"
+                f"Return ONLY valid JSON matching exactly this shape (fill every field, no nulls unless the "
+                f"shape explicitly allows it):\n{g['schema_hint']}" + note)
+        return llm.complete_json(g["system"], user)
+    return ask
+
+
+def _regional(data: dict, fields: dict) -> dict | None:
+    """The regional answer the model uses: re-asked if it was, else the agent's raw one."""
+    ans = ((fields.get("geo_review") or {}).get("regional") or {}).get("answer")
+    return ans or (data.get("fields_raw") or {}).get("regional") or data["fields"].get("regional")
+
+
+def sanity_review(market: str, data: dict, fields: dict, geo: dict, definition: dict, llm: GenLLM, log: list,
+                  ask_group) -> dict:
+    """One sceptical review of the final country table (geo_check), with a
+    re-ask of the country agent for every flagged region."""
+    from AiAgentsFleet.cmi_report.model import geography
+    tbl = geo_check.table(geography(data, fields)["countries"], rest_members(geo))
+    ev = search(market, [f"{market} production consumption by country largest",
+                         f"{market} top countries market share"], "geo_review", log)
+    try:
+        raw = llm.complete_json(geo_check.SANITY_SYSTEM, definition_block(definition)
+                                + geo_check.sanity_prompt(market, tbl, [s["text"] for s in ev]))
+    except Exception as exc:  # noqa: BLE001
+        log.append(f"[geo_review] sanity review failed: {exc}")
+        return {"error": str(exc), "flags": []}
+    rec = geo_check.resolve_flags(raw, tbl, fields, geo, ask_group, log, regional=_regional(data, fields))
+    log.append(f"[geo_review] sanity review: {len(rec['flags'])} flag(s), "
+               f"{sum(1 for f in rec['flags'] if f.get('open'))} still open")
+    return rec
+
+
 def run(slug: str, only: set[str] | None = None) -> Path:
     market_dir = FLEET / "output" / slug
     data = json.loads((market_dir / "whitepaper_fields.json").read_text(encoding="utf-8"))
@@ -218,16 +271,38 @@ def run(slug: str, only: set[str] | None = None) -> Path:
     llm = GenLLM(GenConfig.load(ROOT), cache_path=CACHE_PATH)
     context = fleet_context(data)
     log: list[str] = []
+    review = dict(fields.get("geo_review") or {})      # PLAN-03 checks and re-asks (geo_check.py)
 
     # 1. which countries this market names in each region (everything else depends on it)
     if not only or "geography" in only or "geography" not in fields:
         raw = run_group(market, GEOGRAPHY_GROUP, context, definition, llm, log)
+        bad = misplaced(raw)
+        review["geography"] = {"problems": bad, "reasked": bool(bad)}
+        if bad:                                         # region convention broken: ask once more
+            log.append("[geography] " + "; ".join(bad) + " -- re-asking once")
+            again = run_group(market, GEOGRAPHY_GROUP, context, definition, llm, log, note=geo_check.reask_note(
+                [{"region": "geography", "detail": b} for b in bad], raw))
+            if "error" not in again:
+                raw = again
+            review["geography"]["after"] = misplaced(raw)
         geo, why, notes = validate_geography(raw)
         fields["geography"] = {"countries": geo, "why": why, "notes": notes, "_sources": raw.get("_sources")}
         log += [f"[geography] {n}" for n in notes]
         print("  done: geography -> " + "; ".join(f"{r}: {', '.join(c)}" for r, c in geo.items()))
+        # the regional agent's five regions must add up to the global headline (re-asked once if not)
+        from AiAgentsFleet.cmi_report.model import global_series
+        regional = (data.get("fields_raw") or {}).get("regional") or data["fields"].get("regional")
+        review["regional"] = geo_check.reask_regions(regional, global_series(data)[2025],
+                                                     ask_regional(market, data, llm, log), log)
+        fields["geo_review"] = review
     geo = fields["geography"]["countries"]
+    if ((review.get("regional") or {}).get("answer") or {}).get("regions"):
+        context = fleet_context({**data, "fields": {**data["fields"], "regional": review["regional"]["answer"]}})
     context = {**context, "countries_named": geo}
+
+    def ask_group(key: str, note: str) -> dict:
+        g = next(x for x in GROUPS if x["key"] == key)
+        return run_group(market, g, context, definition, llm, log, schema_for(g, geo), note=note)
 
     wanted = [g for g in GROUPS if not only or g["key"] in only]
     # segments_mea needs the demand segments segments_global defines.
@@ -238,6 +313,13 @@ def run(slug: str, only: set[str] | None = None) -> Path:
                                                             schema_for(g, geo)), first)):
             fields[g["key"]] = res
             print(f"  done: {g['key']}")
+    # 2. country splits: checked and re-asked once, then one sceptical review of the final table
+    if any(g["key"] in geo_check.GROUP_REGIONS for g in wanted) and all(k in fields for k in geo_check.GROUP_REGIONS):
+        review["splits"] = geo_check.review_splits(fields, geo, ask_group, log, regional=_regional(data, fields))
+        fields["geo_review"] = review
+        review["sanity"] = sanity_review(market, data, fields, geo, definition, llm, log, ask_group)
+        fields["geo_review"] = review
+        print("  done: geo_review")
     if any(g["key"] == "segments_mea" for g in wanted):
         sg = fields.get("segments_global") or {}
         ctx = {**context, "demand_segments": [c["name"] for c in sg.get("demand_segments") or []]}

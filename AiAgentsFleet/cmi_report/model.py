@@ -14,7 +14,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from AiAgentsFleet.cmi_report.groups import DEFAULT_COUNTRIES, REST
+from AiAgentsFleet.cmi_report import geo_check
+from AiAgentsFleet.cmi_report.groups import DEFAULT_COUNTRIES, REST, rest_members
 
 Y0, Y1 = 2026, 2033
 YEARS = list(range(2025, Y1 + 1))
@@ -65,15 +66,19 @@ def node(v26: float, v33: float) -> dict:
 # --------------------------------------------------------------------------- #
 def _country_parts(region: str, raw: dict, rest_cagr: float, region_cagr: float,
                    names: list[str]) -> dict[str, tuple[float, float]]:
+    """{country: (share, cagr)} exactly as the agent gave them, 'Rest of' included.
+    Nothing is rescaled here: allocate() normalises a split whose sum is off,
+    and geo_check records that (or a blocker) in m["geo_review"]."""
     named = {c: (float((raw.get(c) or {}).get("share_pct_of_region") or 0),
                  float((raw.get(c) or {}).get("cagr_2026_2033_pct") or region_cagr)) for c in names}
-    total = sum(s for s, _ in named.values())
     if region not in REST:                          # North America: the named countries are the region
         return named
-    if total > 92:                                  # leave a realistic remainder
-        named = {c: (s * 88 / total, g) for c, (s, g) in named.items()}
-        total = 88
-    named[REST[region]] = (100 - total, rest_cagr)
+    rest = raw.get(REST[region])
+    if isinstance(rest, dict) and rest.get("share_pct_of_region") is not None:
+        named[REST[region]] = (float(rest["share_pct_of_region"]),
+                               float(rest.get("cagr_2026_2033_pct") or rest_cagr))
+    else:                                           # answers from before PLAN-03 had no Rest-of entry
+        named[REST[region]] = (max(100 - sum(s for s, _ in named.values()), 0.0), rest_cagr)
     return named
 
 
@@ -239,15 +244,23 @@ def sections(market: str, type_names: list[str], dem_names: list[str], c: dict) 
     return {k: {"show": bool(v[0]), "why": v[1]} for k, v in out.items()}
 
 
-def build(fleet: dict, cmi: dict) -> dict:
-    f, c = fleet["fields"], cmi["fields"]
-    ms = f["market_size"]
-    fs = {int(y): v for y, v in ms["forecast_series_usd_mn"].items()}
-    G = {y: fs[y] for y in YEARS}
+def global_series(fleet: dict) -> dict[int, float]:
+    fs = {int(y): v for y, v in fleet["fields"]["market_size"]["forecast_series_usd_mn"].items()}
+    return {y: fs[y] for y in YEARS}
 
-    # ---- regions
-    reg_raw = f["regional"]["regions"]
-    reg_parts = {r: (reg_raw[r]["value_usd_mn"], reg_raw[r]["cagr_2025_2030_pct"]) for r in MAIN_REGIONS}
+
+def geography(fleet: dict, c: dict) -> dict:
+    """Regions, the Middle East / Africa split and every country, allocated
+    from the agents' answers (the re-asked regional answer when there is one),
+    plus the check of those answers (m["geo_review"], geo_check.review)."""
+    f = fleet["fields"]
+    G = global_series(fleet)
+
+    # ---- regions: the regional agent's answer, or its re-asked answer (geo_check.reask_regions)
+    record = c.get("geo_review") or {}
+    reasked = ((record.get("regional") or {}).get("answer") or {}).get("regions")
+    reg_raw = reasked or f["regional"]["regions"]
+    reg_parts = {r: (float(reg_raw[r]["value_usd_mn"]), float(reg_raw[r]["cagr_2025_2030_pct"])) for r in MAIN_REGIONS}
     reg = allocate(G[Y0], G[Y1], reg_parts)
     reg_series = {r: series(v["v26"], v["v33"]) for r, v in reg.items()}
     normalise_years(reg_series, G)
@@ -255,10 +268,7 @@ def build(fleet: dict, cmi: dict) -> dict:
     # ---- which countries this market names (geography agent; template defaults otherwise)
     geo = (c.get("geography") or {}).get("countries") or DEFAULT_COUNTRIES
 
-    def keyed(raw: dict) -> dict:
-        """Agent output keyed by canonical country names ('United Arab Emirates' -> 'UAE')."""
-        from AiAgentsFleet.cmi_report.groups import canonical
-        return {canonical(k): v for k, v in (raw or {}).items()}
+    keyed = geo_check.keyed      # agent output keyed by canonical country names ('United Arab Emirates' -> 'UAE')
 
     # ---- Middle East / Africa split of MEA
     cm = c["countries_mea"]
@@ -293,6 +303,19 @@ def build(fleet: dict, cmi: dict) -> dict:
         country_series[r] = {k: series(v["v26"], v["v33"]) for k, v in countries[r].items()}
         normalise_years(country_series[r], sub_series[r])
 
+    review = geo_check.review(geo_check.splits_of(c), geo, record,
+                              regional_raw=(fleet.get("fields_raw") or {}).get("regional") or f.get("regional"),
+                              global_value=G[2025])
+    return {"G": G, "reg": reg, "reg_series": reg_series, "sub": sub, "sub_series": sub_series,
+            "countries": countries, "country_series": country_series, "geo": geo, "review": review}
+
+
+def build(fleet: dict, cmi: dict) -> dict:
+    f, c = fleet["fields"], cmi["fields"]
+    gg = geography(fleet, c)
+    G, reg, reg_series, sub, sub_series = gg["G"], gg["reg"], gg["reg_series"], gg["sub"], gg["sub_series"]
+    countries, country_series, geo = gg["countries"], gg["country_series"], gg["geo"]
+
     # ---- segments
     sg = c["segments_global"]
     types = f["segmentation_grade_form"]["by_grade_or_type"]
@@ -305,7 +328,7 @@ def build(fleet: dict, cmi: dict) -> dict:
     dem_global = {d["name"]: (d["share_pct_2026"], d["cagr_2026_2033_pct"]) for d in dem}
 
     seg = {"Global": {"type": allocate(G[Y0], G[Y1], type_global), "demand": allocate(G[Y0], G[Y1], dem_global)}}
-    smea = keyed(c.get("segments_mea"))
+    smea = geo_check.keyed(c.get("segments_mea"))
     for r in ("Middle East", "Africa"):
         for unit, v in countries[r].items():
             raw = smea.get(unit) or {}
@@ -451,6 +474,9 @@ def build(fleet: dict, cmi: dict) -> dict:
                      for r in ("Middle East", "Africa")},
         "geography": geo,
         "geography_why": (c.get("geography") or {}).get("why") or {},
+        # what each 'Rest of' row covers: MEMBERS minus the named countries (data, not LLM text)
+        "rest_members": rest_members(geo),
+        "geo_review": gg["review"],
         "scenarios": scen,
         "vendor_share_global": gshares + ([("Others", others)] if others > 0.5 else []),
         "vendor_share_mea": mea_sh,

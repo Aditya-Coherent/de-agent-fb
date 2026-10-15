@@ -19,7 +19,8 @@ from __future__ import annotations
 # Geography. The template's regions and table sizes are fixed; WHICH countries
 # are named in each region is chosen per market by the `geography` agent (by
 # real relevance: production, consumption, investment, project pipeline).
-# "Rest of ..." rows are the remainder of the region, never asked for.
+# "Rest of ..." rows are asked for explicitly: the country agents size them
+# from their members (MEMBERS minus the named countries, see rest_members).
 # --------------------------------------------------------------------------- #
 SLOTS = {"North America": 2, "Europe": 5, "Asia Pacific": 5, "Latin America": 5, "Middle East": 4, "Africa": 5}
 DEFAULT_COUNTRIES = {
@@ -61,6 +62,31 @@ def canonical(name: str) -> str:
     return _ALIASES.get(n.lower(), n)
 
 
+def region_of(country: str) -> str | None:
+    """The report-convention region a country belongs to (None if unknown)."""
+    c = canonical(country).lower()
+    return next((r for r, ms in MEMBERS.items() if c in {m.lower() for m in ms}), None)
+
+
+def rest_members(geo: dict[str, list[str]]) -> dict[str, list[str]]:
+    """{region: the countries its 'Rest of' row covers} -- MEMBERS minus the
+    countries named for that region. Built from data, never from LLM text."""
+    return {r: [c for c in MEMBERS[r] if c not in (geo.get(r) or [])] for r in REST}
+
+
+def misplaced(raw: dict | None) -> list[str]:
+    """Picks the geography agent put in the wrong region (the report's
+    convention: Mexico is Latin America, Turkey/Israel Middle East, Egypt Africa)."""
+    out = []
+    for region in SLOTS:
+        for item in (raw or {}).get(region) or []:
+            c = canonical(item.get("country") if isinstance(item, dict) else item)
+            home = region_of(c)
+            if home and home != region:
+                out.append(f"{c} is {home}, not {region} (report convention)")
+    return out
+
+
 def validate_geography(raw: dict | None) -> tuple[dict[str, list[str]], dict[str, str], list[str]]:
     """(countries per region, why each was chosen, notes). Each pick must belong
     to its region; missing or invalid slots are filled from the defaults."""
@@ -75,7 +101,9 @@ def validate_geography(raw: dict | None) -> tuple[dict[str, list[str]], dict[str
                 picked.append(members[c.lower()])
                 why[members[c.lower()]] = (item.get("why") if isinstance(item, dict) else "") or ""
             elif c:
-                notes.append(f"{c} is not in {region} -- not used there")
+                home = region_of(c)
+                notes.append(f"{c} is {home}, not {region} (report convention) -- not used there" if home
+                             else f"{c} is not in {region} -- not used there")
         for d in DEFAULT_COUNTRIES[region]:
             if len(picked) >= n:
                 break
@@ -106,9 +134,16 @@ _ANALYST = (
 
 
 def _country_block(regions: list[str], geo: dict) -> str:
-    """'"Europe": {"Germany": {...}, "France": {...}}, ...' for the schema hint."""
+    """'"Europe": {"Germany": {...}, ..., "Rest of Europe": {...}}, ...' for the
+    schema hint. 'Rest of' names its members so the agent sizes them knowingly."""
     cell = '{"share_pct_of_region": <number>, "cagr_2026_2033_pct": <number>}'
-    return ", ".join(f'"{r}": {{' + ", ".join(f'"{c}": {cell}' for c in geo[r]) + "}" for r in regions)
+    rest = rest_members(geo)
+
+    def rest_cell(r: str) -> str:
+        return (f', "{REST[r]}": {{"share_pct_of_region": <number>, "cagr_2026_2033_pct": <number>, '
+                f'"members_note": <1 sentence on its largest members; it covers: {", ".join(rest[r])}>}}')
+    return ", ".join(f'"{r}": {{' + ", ".join(f'"{c}": {cell}' for c in geo[r])
+                     + (rest_cell(r) if r in REST else "") + "}" for r in regions)
 
 
 def schema_for(g: dict, geo: dict) -> str:
@@ -134,8 +169,9 @@ GEOGRAPHY_GROUP = {
         "THIS market as defined (production, consumption, investment, known project pipeline). Any country with a "
         "major share of real-world activity in this market MUST be named -- never leave a dominant country inside "
         "'Rest of'. Use the report's region convention: Turkey and Israel are Middle East; Egypt and North Africa "
-        "are Africa; Russia is Europe; Mexico is Latin America. Order each region's list by relevance. For each, "
-        "give one sentence on why it matters for this market."),
+        "are Africa; Russia is Europe; Mexico is Latin America -- a country listed under another region is "
+        "not used. Order each region's list by relevance. For each, give one sentence on why it matters for "
+        "this market."),
     "schema": ('{"Europe": [{"country": <string>, "why": <1 sentence>}, x5], "Asia Pacific": [... x5], '
                '"Latin America": [... x5], "Middle East": [... x4], "Africa": [... x5]}'),
 }
@@ -149,8 +185,11 @@ GROUPS: list[dict] = [
                     "{market} fastest growing countries CAGR"],
         "system": _ANALYST + (
             " For each region give each listed country's share of the REGION's 2026 market value and its "
-            "2026-2033 CAGR. Shares within a region must sum to LESS than 100 (the remainder is 'Rest of "
-            "<region>'), except North America where the two countries sum to 100."),
+            "2026-2033 CAGR, and the same for 'Rest of <region>'. 'Rest of <region>' covers EVERY other country "
+            "of the region (the shape lists them): size it from those members -- it is a real group of "
+            "countries, not a balancing figure. Within each region the shares, INCLUDING 'Rest of', must sum "
+            "to 100 (+/-1). North America is the United States and Canada only (Mexico is Latin America): "
+            "their two shares sum to 100, and each gets its own CAGR from the evidence."),
         "schema": "{{CB_MAIN}}",
     },
     {
@@ -160,12 +199,12 @@ GROUPS: list[dict] = [
                     "{market} GCC MEA market size CAGR"],
         "system": _ANALYST + (
             " Split the Middle East & Africa (MEA) market into the Middle East and Africa, then give each "
-            "listed country's share of ITS sub-region's 2026 value and its 2026-2033 CAGR. Country shares "
-            "must sum to LESS than 100 (the remainder is 'Rest of Middle East' or 'Rest of Africa' -- the "
-            "sub-region's other countries). Also give the remainder's CAGR."),
-        "schema": ('{"middle_east_share_of_mea_pct": <number>, '
-                   '"rest_of_middle_east_cagr_2026_2033_pct": <number>, "rest_of_africa_cagr_2026_2033_pct": <number>, '
-                   '{CB_MEA}}'),
+            "listed country's share of ITS sub-region's 2026 value and its 2026-2033 CAGR, and the same for "
+            "'Rest of Middle East' and 'Rest of Africa'. Each 'Rest of' covers EVERY other country of its "
+            "sub-region (the shape lists them): size it from those members -- it is a real group of countries, "
+            "not a balancing figure. Within each sub-region the shares, INCLUDING 'Rest of', must sum to 100 "
+            "(+/-1). Turkey and Israel are Middle East; Egypt and North Africa are Africa."),
+        "schema": '{"middle_east_share_of_mea_pct": <number>, {CB_MEA}}',
     },
     {
         # Two segment dimensions per market: the supply-side "type" list the

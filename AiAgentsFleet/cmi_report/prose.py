@@ -18,7 +18,7 @@ from AiAgentsFleet.cmi_report import fmt
 from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, drop_size_comparison
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 6      # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 7      # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -205,24 +205,28 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
         # B5: every country named in a table gets at least a short profile
         "ch3p": {"facts": {"countries_by_region": {r: _block(m["countries"][r], m["regions"][r])
                                                    for r in ("North America", "Europe", "Asia Pacific", "Latin America")},
-                           "why_each_country_matters": m.get("geography_why") or {}},
+                           "why_each_country_matters": m.get("geography_why") or {},
+                           "rest_of_members": {r: (m.get("rest_members") or {}).get(r)
+                                               for r in ("Europe", "Asia Pacific", "Latin America")}},
                  "slots": {"country_profiles": (
                      "object {<every country AND every 'Rest of' group named in FACTS.countries_by_region>: "
                      "<2-3 sentences: its 2026E size and CAGR from FACTS, then the REASONS behind its trajectory "
-                     "(crops, industry, policy, climate, income); no segment figures -- this report has no segment "
+                     "(crops, industry, policy, climate, income); a 'Rest of' group covers exactly the countries in "
+                     "FACTS.rest_of_members; no segment figures -- this report has no segment "
                      "breakdown for these countries>}", 115)}},
         "ch4": {"facts": {"middle_east": _nd(m["subregions"]["Middle East"]),
                           "countries": _block(m["countries"]["Middle East"], m["subregions"]["Middle East"]),
                           "segments": {u: _segs(m, u) for u in ["Middle East"] + me_units if u in m["segments"]},
-                          "use_cases": (ag.get("use_cases") or {}).get("middle_east")},
+                          "use_cases": (ag.get("use_cases") or {}).get("middle_east"),
+                          "rest_of_members": (m.get("rest_members") or {}).get("Middle East")},
                 "slots": {
                     "region_para": ("opening paragraph: Middle East size, forecast, CAGR, absolute opportunity", 147),
                     "type_para__Middle East": (f"2-3 sentences on the Middle East {tdim} split", 162),
                     "demand_para__Middle East": (f"2-3 sentences on the Middle East {ddim} split", 167),
                     **{f"profile__{u}": (f"profile of {u}: its size and growth from FACTS and the REASONS behind its "
                                          f"trajectory (crops, industry, policy, climate, income), 2-4 sentences"
-                                         + (" -- describe only the countries NOT named elsewhere in this sub-region"
-                                            if u.startswith("Rest of") else ""), 170)
+                                         + (" -- it covers exactly the countries in FACTS.rest_of_members; "
+                                            "describe only those" if u.startswith("Rest of") else ""), 170)
                        for u in m["profiled"]["Middle East"]},
                     **{f"type_para__{u}": (f"2 sentences on {u}'s {tdim} split", 175) for u in m["profiled"]["Middle East"]},
                     **{f"demand_para__{u}": (f"2 sentences on {u}'s {ddim} split", 180) for u in m["profiled"]["Middle East"]},
@@ -231,15 +235,16 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
         "ch5": {"facts": {"africa": _nd(m["subregions"]["Africa"]),
                           "countries": _block(m["countries"]["Africa"], m["subregions"]["Africa"]),
                           "segments": {u: _segs(m, u) for u in ["Africa"] + af_units if u in m["segments"]},
-                          "use_cases": (ag.get("use_cases") or {}).get("africa")},
+                          "use_cases": (ag.get("use_cases") or {}).get("africa"),
+                          "rest_of_members": (m.get("rest_members") or {}).get("Africa")},
                 "slots": {
                     "region_para": ("opening paragraph: Africa size, forecast, CAGR and context", 227),
                     "type_para__Africa": (f"2-3 sentences on the Africa {tdim} split", 242),
                     "demand_para__Africa": (f"2-3 sentences on the Africa {ddim} split", 247),
                     **{f"profile__{u}": (f"profile of {u}: its size and growth from FACTS and the REASONS behind its "
                                          f"trajectory (crops, industry, policy, climate, income), 2-4 sentences"
-                                         + (" -- describe only the countries NOT named elsewhere in this sub-region"
-                                            if u.startswith("Rest of") else ""), 250)
+                                         + (" -- it covers exactly the countries in FACTS.rest_of_members; "
+                                            "describe only those" if u.startswith("Rest of") else ""), 250)
                        for u in m["profiled"]["Africa"]},
                     **{f"type_para__{u}": (f"2 sentences on {u}'s {tdim} split", 255) for u in m["profiled"]["Africa"]},
                     **{f"demand_para__{u}": (f"2 sentences on {u}'s {ddim} split", 260) for u in m["profiled"]["Africa"]},

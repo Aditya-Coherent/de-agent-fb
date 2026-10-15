@@ -48,7 +48,7 @@ def build_register(m: dict, ag: dict) -> list[dict]:
                     fmt.share(n[yk], glob[yk]), "share_global")
         if glob:
             gap = n["cagr"] - glob["cagr"]
-            add(f"{prefix}-GAP", f"{label} CAGR minus global CAGR", ents, f"{abs(gap):.1f}", "gap_pp")
+            add(f"{prefix}-GAP", f"{label} CAGR minus global CAGR", ents, fmt.signed(gap), "gap_pp")
 
     g = m["global"]
     node("G", "Global", ["global"] + GLOBAL_WORDS, g)
@@ -60,7 +60,7 @@ def build_register(m: dict, ag: dict) -> list[dict]:
     for r, v in m["subregions"].items():
         node(f"SR-{_code(r)}", r, [r], v, mea, "Middle East & Africa", g)
         gap = v["cagr"] - mea["cagr"]
-        add(f"SR-{_code(r)}-GAPMEA", f"{r} CAGR minus MEA CAGR", [r], f"{abs(gap):.1f}", "gap_pp")
+        add(f"SR-{_code(r)}-GAPMEA", f"{r} CAGR minus MEA CAGR", [r], fmt.signed(gap), "gap_pp")
     for region, d in m["countries"].items():
         parent = m["regions"].get(region) or m["subregions"].get(region)
         for c, v in d.items():
@@ -91,9 +91,12 @@ def build_register(m: dict, ag: dict) -> list[dict]:
             ents = [n, n.split(" (")[0]] + (["other", "regional"] if "other" in n.lower() else [])
             add(f"V-{_code(label)}-{_code(n)}-{vy}", f"{n} vendor share, {label}, {vy}", ents, fmt.pct(s), "share")
     dyn = ag.get("dynamics") or {}
-    for d in (dyn.get("mea_drivers") or []) + (dyn.get("mea_restraints") or []):
-        add(f"D-{_code(d.get('name', ''))}", f"{d.get('name')} impact on MEA CAGR (CMI assessment)",
-            [d.get("name", "")], f"{abs(float(d.get('impact_pp') or 0)):.1f}", "gap_pp")
+    if dyn.get("impact_basis") != "score":          # relative scores (rules.reconcile_drivers b) carry no pp
+        what = ("impact on MEA CAGR vs the global CAGR baseline" if dyn.get("impact_basis") == "pp_vs_global"
+                else "impact on MEA CAGR")
+        for d in (dyn.get("mea_drivers") or []) + (dyn.get("mea_restraints") or []):
+            add(f"D-{_code(d.get('name', ''))}", f"{d.get('name')} {what} (CMI assessment)",
+                [d.get("name", "")], fmt.signed(float(d.get("impact_pp") or 0)), "gap_pp")
     for st in m.get("value_chain") or []:
         for k in ("share_low_pct", "share_high_pct"):
             if st.get(k) is not None:
@@ -111,7 +114,31 @@ def build_register(m: dict, ag: dict) -> list[dict]:
 # --------------------------------------------------------------------------- #
 _MONEY = re.compile(r"[+-]?\$\s?\d[\d,]*(?:\.\d+)?\s?[BM]\b")
 _PCT = re.compile(r"(?<![\d.])\d+(?:\.\d+)?%")
-_PP = re.compile(r"(?<![\d.])[+-]?\d+(?:\.\d+)?\s?(?:pp\b|percentage[- ]points?)", re.I)
+_PP = re.compile(r"(?<![\d.])[+\-−]?\d+(?:\.\d+)?\s?(?:pp\b|percentage[- ]points?)", re.I)
+# the direction a sentence gives a pp gap: '1.2 pp below' / 'subtracts 1.2 pp' = negative
+_PP_DOWN_AFTER = re.compile(r"^\W*(?:(?:of|in)\s+\w+\s+)?(?:below|lower|less|slower|behind|under|short of)\b", re.I)
+_PP_UP_AFTER = re.compile(r"^\W*(?:(?:of|in)\s+\w+\s+)?(?:above|higher|more|faster|ahead|over)\b", re.I)
+_PP_DOWN_BEFORE = re.compile(r"\b(?:subtract\w*|reduc\w*|cuts?|cutting|drags?|dragging|lowers?|lowering|weighs?|"
+                             r"weighing|lags?|lagging|trails?|trailing|minus|shaves?|shaving|removes?|removing)\b"
+                             r"[\w\s,]{0,20}$", re.I)
+_PP_UP_BEFORE = re.compile(r"\b(?:adds?|adding|boosts?|boosting|lifts?|lifting|raises?|raising|contribut\w*|plus|"
+                           r"premium of)\b[\w\s,]{0,20}$", re.I)
+
+
+def pp_sign(token: str, before: str, after: str) -> int | None:
+    """+1 / -1 for the direction a sentence gives a pp figure, None when it doesn't say."""
+    t = token.strip()
+    if t[:1] in "-−":
+        return -1
+    if t[:1] == "+":
+        return 1
+    for rx, sign in ((_PP_DOWN_AFTER, -1), (_PP_UP_AFTER, 1)):
+        if rx.search(after):
+            return sign
+    for rx, sign in ((_PP_DOWN_BEFORE, -1), (_PP_UP_BEFORE, 1)):
+        if rx.search(before):
+            return sign
+    return None
 _MULT = re.compile(r"(?<![\d.])\d+(?:\.\d+)?x\b")
 # bare numbers, but not identifiers such as "Regulation 2019/1009"
 _BARE = re.compile(r"(?<![\w$.+/-])\d[\d,]*(?:\.\d+)?(?![\d%xBM/])")
@@ -146,10 +173,17 @@ class FactGuard:
         low = text.lower()
         return any(n and re.search(rf"(?<![a-z]){re.escape(n.lower())}(?![a-z])", low) for n in entry["entities"])
 
-    def _check(self, token: str, key: str, text: str, kinds: set[str] | None = None) -> str | None:
+    def _check(self, token: str, key: str, text: str, kinds: set[str] | None = None,
+               sign: int | None = None) -> str | None:
         cands = [e for e in self.by_display.get(key, []) if not kinds or e["metric"] in kinds]
         if not cands:
             return f"{token} is not a register value"
+        if sign is not None:
+            # a signed gap: '1.2 pp below' must be a -1.2 fact, '+1.2 pp' / '1.2 pp above' a +1.2 one
+            same = [e for e in cands if float(e["display"]) * sign >= 0]
+            if not same:
+                return f"{token} has the wrong sign: the register value is {cands[0]['display']} ({cands[0]['fact']})"
+            cands = same
         named = [e for e in cands if self._named(e, text)]
         if not named:
             return f"{token} belongs to {cands[0]['id']} ({cands[0]['fact']}), whose entity is not named here"
@@ -170,7 +204,8 @@ class FactGuard:
         rest = _MONEY.sub(" ", rest)
         for mm in _PP.finditer(rest):
             val = re.search(r"\d+(?:\.\d+)?", mm.group()).group()
-            p = self._check(mm.group(), f"{float(val):.1f}", text, {"gap_pp"})
+            sign = pp_sign(mm.group(), rest[max(0, mm.start() - 40): mm.start()], rest[mm.end(): mm.end() + 30])
+            p = self._check(mm.group(), f"{float(val):.1f}", text, {"gap_pp"}, sign)
             if p:
                 problems.append(p)
         rest = _PP.sub(" ", rest)
@@ -195,7 +230,7 @@ class FactGuard:
                 continue
             if ("." not in s and (x <= 50 or 1900 <= x <= 2040)) or s in self.extra:
                 continue
-            if not any(e["display"].strip("+$BM%x ").replace(",", "") == s for es in self.by_display.values()
+            if not any(e["display"].strip("+-$BM%x ").replace(",", "") == s for es in self.by_display.values()
                        for e in es):
                 problems.append(f"{s} is not a register value")
         return problems

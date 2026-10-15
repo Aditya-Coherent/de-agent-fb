@@ -130,7 +130,9 @@ def check_share_claims(m: dict, paras: list[str]) -> list[str]:
 
 
 def check_ties(m: dict) -> list[str]:
-    """Rankings whose top two are equal at printed precision."""
+    """Rankings whose top two are within the materiality threshold (rules.TIE_PP /
+    TIE_REL): equal at printed precision is a 'tie', otherwise a 'near-tie'."""
+    from AiAgentsFleet.cmi_report import rules
     out = []
     groups = {"regions": m["regions"], "subregions": m["subregions"], **m["countries"]}
     for geo, dims in m["segments"].items():
@@ -139,7 +141,6 @@ def check_ties(m: dict) -> list[str]:
                 groups[f"{geo} {dim}"] = segs
     for gname, d in groups.items():
         for key, label in (("cagr", "fastest"), ("v33", "largest")):
-            vals = sorted(((fmt.pct(v[key]) if key == "cagr" else fmt.usd(v[key])), n) for n, v in d.items())
             top = sorted(d, key=lambda n: -d[n][key])[:2]
             if len(top) == 2:
                 a, b = top
@@ -147,6 +148,8 @@ def check_ties(m: dict) -> list[str]:
                 fb = fmt.pct(d[b][key]) if key == "cagr" else fmt.usd(d[b][key])
                 if fa == fb:
                     out.append(f"{gname}: '{label}' is a tie at {fa} between {a} and {b}")
+                elif rules.tied(key, d[a][key], d[b][key]):
+                    out.append(f"{gname}: '{label}' is a near-tie between {a} ({fa}) and {b} ({fb})")
     return out
 
 

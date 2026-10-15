@@ -164,13 +164,18 @@ def trend_cards(trends: list[dict], path: Path) -> Path:
 
 
 def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) -> Path:
-    items = sorted(drivers, key=lambda d: -d["impact_pp"]) + sorted(restraints, key=lambda d: d["impact_pp"])
+    """Bars in pp of CAGR; after rules.reconcile_drivers the impacts are relative to
+    the global CAGR baseline (items carry `impact_pp_agent`), or are 1-5 scores."""
+    score = any("impact_pp" not in d and "impact_score" in d for d in drivers + restraints)
+    key = "impact_score" if score else "impact_pp"
+    items = sorted(drivers, key=lambda d: -d[key]) + sorted(restraints, key=lambda d: d[key])
     names = [d["name"] for d in items][::-1]
-    vals = [float(d["impact_pp"]) for d in items][::-1]
+    vals = [float(d[key]) for d in items][::-1]
+    label = (lambda v: f"{v:+.0f}") if score else fmt.pp
     fig, ax = plt.subplots(figsize=(W, 0.45 * len(items) + 1.0))
     ax.barh([_wrap(n, 34) for n in names], vals, color=[TEAL if v > 0 else RED for v in vals], height=0.62)
     for i, v in enumerate(vals):
-        ax.text(v + (0.05 if v > 0 else -0.05), i, fmt.pp(v), va="center", ha="left" if v > 0 else "right",
+        ax.text(v + (0.05 if v > 0 else -0.05), i, label(v), va="center", ha="left" if v > 0 else "right",
                 fontweight="bold", fontsize=11)
     ax.axvline(0, color=INK, lw=1)
     ax.spines["left"].set_visible(False)
@@ -179,8 +184,12 @@ def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) 
     ax.tick_params(axis="y", length=0)
     lim = max(abs(v) for v in vals) * 1.35
     ax.set_xlim(-lim, lim)
-    ax.text(0.99, 0.04, f"Net effect on MEA CAGR\n{fmt.pp(sum(vals))} vs. neutral baseline", transform=ax.transAxes,
-            ha="right", va="bottom", color=MUTED, fontsize=9, style="italic")
+    reconciled = any("impact_pp_agent" in d for d in items)
+    note = ("Relative impact score (1-5), CMI assessment" if score else
+            f"Net: MEA CAGR minus global CAGR\n{fmt.pp(sum(vals))}" if reconciled else
+            f"Net effect on MEA CAGR\n{fmt.pp(sum(vals))} vs. neutral baseline")
+    ax.text(0.99, 0.04, note, transform=ax.transAxes, ha="right", va="bottom", color=MUTED, fontsize=9,
+            style="italic")
     return _save(fig, path)
 
 
@@ -476,11 +485,12 @@ def phases(ph: list[dict], path: Path) -> Path:
     return _save(fig, path)
 
 
-PROCESS = [("Define\nscope", f"Segments, geographies, base year {Y0 - 1}, forecast to {Y1}"),
-           ("Secondary\nresearch", "Regulators, company filings, trade data, associations"),
-           ("Primary\nresearch", "Manufacturers, distributors, end users and regulators"),
-           ("Model &\ntriangulate", "Top-down + bottom-up, scenarios, reconciliation"),
-           ("Validate &\npublish", "Expert panel review, QA, periodic data refresh")]
+# what the pipeline actually does (PLAN-07): no primary research, expert panel, bottom-up or triangulation
+PROCESS = [("Define\nscope", f"Definition, value-chain level, segments, {Y0 - 1}-{Y1}"),
+           ("Desk-research\nagents", "Web agents gather cited public sources; junk filtered"),
+           ("Sourced\nheadline", "Headline from a cited quote, CMI's own figure first"),
+           ("Check &\nre-ask", "Region, country, segment splits checked, re-asked"),
+           ("Verify &\nQA", "Claim-level fact checks, automated consistency QA")]
 
 
 def process(path: Path) -> Path:

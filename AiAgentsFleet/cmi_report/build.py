@@ -24,8 +24,8 @@ from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, 
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 from AiAgentsFleet.cmi_report.guard import sentences
 from AiAgentsFleet.cmi_report.groups import canonical, short
-from AiAgentsFleet.cmi_report.prose import (absent_names, base_facts, claim_groups, region_country_fallback,
-                                            seg_fallback)
+from AiAgentsFleet.cmi_report.prose import (absent_names, base_facts, claim_groups, fill_conclusions, method_text,
+                                            region_country_fallback, seg_fallback, with_lead)
 
 _COUNT = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six"}
 
@@ -873,7 +873,12 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                      ["Primary constraint", *two("primary_constraint")]]
             b.table(i, rows)
         elif i == 43:
-            b.box(i, "Key conclusions", lst("key_conclusions"), numbered=True)
+            # at least three conclusions (the prose's, topped up from the body findings), or no box
+            concl = fill_conclusions(lst("key_conclusions"), S)
+            if not concl:
+                b.log.append("Key conclusions: fewer than three findings -- box left out")
+                continue
+            b.box(i, "Key conclusions", concl, numbered=True)
         # ------------------------------------------------------------ chapter 2
         elif i == 45:
             b.para(i, open_chapter(s("trends_intro"), r"(?i)trend|force|shift",
@@ -896,7 +901,15 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 54:
             b.para(i, s("drivers_para"))
         elif i == 56:
-            b.caption(i, "Figure", "Impact of growth factors and restraints on MEA CAGR (percentage points)")
+            basis = (ag.get("dynamics") or {}).get("impact_basis")
+            b.caption(i, "Figure", "Relative impact of growth factors and restraints in MEA (score 1-5)"
+                      if basis == "score" else
+                      "Impact of growth factors and restraints on MEA CAGR vs the global CAGR (percentage points)"
+                      if basis == "pp_vs_global" else
+                      "Impact of growth factors and restraints on MEA CAGR (percentage points)")
+        elif i == 58:
+            # the template's 'expert-panel scoring' source line describes work that never happened (X16)
+            b.para(i, "Source: CMI analysis of desk-research evidence; impacts are CMI assessments")
         elif i == 57:
             b.image(i, charts["drivers"])
         elif i == 60:
@@ -950,6 +963,10 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                 b.para(27, f"Allocation rule: {_sentence(rule)}")
         elif i == 87:
             b.para(i, seg_para("Global", "type"))
+        elif i == 392:
+            # the template's 'primary interviews ... expert panel review' describes work that never happened (X16)
+            b.para(i, "CMI's whitepapers are built by desk-research agents from cited public evidence; every "
+                      "figure passes automated consistency checks and named facts are verified claim by claim.")
         elif i == 386:
             el = b.el(i)
             lead = "Coherent Market Insights (CMI)"
@@ -1012,14 +1029,8 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             profiles = obj("country_profiles")
             why = m.get("geography_why") or {}
             for c, v in m["countries"][region].items():
-                size_line = (f"{fmt.usd(v['v26'])} in {Y0}E (CMI estimate), forecast to grow at a {fmt.pct(v['cagr'])} "
-                             f"CAGR to {fmt.usd(v['v33'])} by {Y1}F.")
-                if profiles.get(c) and "$" not in profiles[c]:
-                    # a profile always states the country's size and growth
-                    profiles[c] = size_line + " " + profiles[c]
-                text = profiles.get(c) or (
-                    f"{fmt.usd(v['v26'])} in {Y0}E, growing at a {fmt.pct(v['cagr'])} CAGR to {fmt.usd(v['v33'])} "
-                    f"by {Y1}F (CMI estimate). " + (safe(why.get(c)) or ""))
+                # every profile opens with its lead sentence: size, share of the region and CAGR
+                text = with_lead(c, profiles.get(c) or safe(why.get(c)), v, m["regions"][region], region)
                 b.lead(29, f"{c}:", text.strip())
         # ------------------------------------------------------------ chapters 4 and 5
         elif i in (146, 226):
@@ -1083,11 +1094,8 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                     if off == 0:
                         b.para(j, unit)
                     elif off == 1:
-                        size_line = (f"{unit} is a {fmt.usd(d['v26'])} market in {Y0}E (CMI estimate), forecast to "
-                                     f"grow at a {fmt.pct(d['cagr'])} CAGR to {fmt.usd(d['v33'])} by {Y1}F.")
-                        prof = s(f"profile__{unit}")
-                        # a profile always states the country's size and growth
-                        b.para(j, prof if prof and "$" in prof else (size_line + (" " + prof if prof else "")))
+                        # a profile always opens with its lead sentence (size, share, CAGR)
+                        b.para(j, with_lead(unit, s(f"profile__{unit}"), d, m["subregions"][sub], f"the {sub}"))
                     elif off == 2:
                         b.para(j, f"{unit} Opportunity by {tl}")
                     elif off == 3:
@@ -1221,9 +1229,8 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                   acts, numbered=True)
         # ------------------------------------------------------------ chapter 9
         elif i == 363:
-            b.para(i, open_chapter(s("method_para"), r"(?i)\bCMI\b|estimat|method|model",
-                                   f"CMI's {root.lower()} estimates combine top-down sizing from regional and national "
-                                   f"totals with bottom-up build-ups by segment and country."))
+            # exactly what the pipeline does (PLAN-07): no expert panel, interviews, bottom-up or triangulation
+            b.para(i, method_text(m, root))
         elif i == 364:
             b.caption(i, "Figure", "CMI five-step research process")
         elif i == 365:

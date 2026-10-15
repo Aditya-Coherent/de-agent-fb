@@ -55,6 +55,12 @@ def _bn(mn: float) -> float:
     return mn / 1000
 
 
+def _no_data(values) -> bool:
+    """Nothing to draw: the values total zero (e.g. a 'Rest of' unit with no market). The chart is
+    skipped (the function returns None) and the builder leaves the figure out."""
+    return not values or sum(max(0.0, float(v)) for v in values) <= 0
+
+
 def _axis_unit(values: list[float]) -> tuple[float, str, str]:
     """(divisor, axis label, total-label format) for a USD-million series."""
     if max(values) >= 1000:
@@ -196,9 +202,14 @@ def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) 
 # --------------------------------------------------------------------------- #
 # global sizing
 # --------------------------------------------------------------------------- #
-def stacked_years(rows: dict[str, dict[int, float]], colors: dict[str, str], path: Path, ncol: int = 3) -> Path:
+def stacked_years(rows: dict[str, dict[int, float]], colors: dict[str, str], path: Path,
+                  ncol: int = 3) -> Path | None:
+    if not rows:
+        return None
     years = sorted(next(iter(rows.values())))
     totals = [sum(r[y] for r in rows.values()) for y in years]
+    if _no_data(totals):
+        return None
     div, label, tfmt = _axis_unit(totals)
     fig, ax = plt.subplots(figsize=(W, 5.0))
     bottom = [0.0] * len(years)
@@ -240,11 +251,14 @@ def scenarios(m: dict, path: Path) -> Path:
     return _save(fig, path)
 
 
-def type_chart(seg: dict, dim: str, path: Path) -> Path:
-    """Stacked 2026E vs 2033F by segment + CAGR bars (template 'by drone type')."""
+def type_chart(seg: dict, dim: str, path: Path) -> Path | None:
+    """Stacked 2026E vs 2033F by segment + CAGR bars (template 'by drone type'). None when the
+    segments total zero."""
     names = sorted(seg, key=lambda n: -seg[n]["v33"])
     cols = {n: CATEGORICAL[i % len(CATEGORICAL)] for i, n in enumerate(names)}
     tot26, tot33 = sum(seg[n]["v26"] for n in names), sum(seg[n]["v33"] for n in names)
+    if _no_data([seg[n]["v33"] for n in names]):
+        return None
     unit = fmt.unit_for([tot26])
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(W, 4.6), gridspec_kw={"width_ratios": [1, 1.15]})
     for x, key, tot in ((0, "v26", tot26), (1, "v33", tot33)):
@@ -273,7 +287,7 @@ def type_chart(seg: dict, dim: str, path: Path) -> Path:
     a2.invert_yaxis()
     a2.set_xticks([])
     a2.spines["bottom"].set_visible(False)
-    a2.set_xlim(0, max(cg) * 1.3)
+    a2.set_xlim(0, max(max(cg), 0.1) * 1.3)
     a2.set_title(f"CAGR {Y0}-{str(Y1)[2:]}", loc="left", fontweight="bold", fontsize=11.5)
     fig.tight_layout()
     return _save(fig, path)
@@ -284,9 +298,12 @@ def fmt_dim(dim: str) -> str:
     return " ".join(w if w.isupper() and len(w) > 1 else w.lower() for w in dim.split())
 
 
-def demand_chart(seg: dict, path: Path) -> Path:
-    """2026E vs 2033F paired bars with the increment (template 'by end user')."""
+def demand_chart(seg: dict, path: Path) -> Path | None:
+    """2026E vs 2033F paired bars with the increment (template 'by end user'). None when the
+    segments total zero."""
     names = sorted(seg, key=lambda n: seg[n]["v33"])
+    if _no_data([seg[n]["v33"] for n in names]):
+        return None
     fig, ax = plt.subplots(figsize=(W, 0.62 * len(names) + 1.0))
     y = range(len(names))
     v26 = [seg[n]["v26"] for n in names]
@@ -307,8 +324,10 @@ def demand_chart(seg: dict, path: Path) -> Path:
     return _save(fig, path)
 
 
-def region_donuts(m: dict, path: Path) -> Path:
+def region_donuts(m: dict, path: Path) -> Path | None:
     regs = ["North America", "Asia Pacific", "Europe", "Latin America", "Middle East & Africa"]
+    if any(_no_data([m["regions"][r][key] for r in regs]) for key in ("v26", "v33")):
+        return None
     fig, axes = plt.subplots(1, 2, figsize=(W, 4.6))
     for ax, key, yl in ((axes[0], "v26", f"{Y0}E"), (axes[1], "v33", f"{Y1}F")):
         vals = [m["regions"][r][key] for r in regs]
@@ -329,7 +348,10 @@ def region_donuts(m: dict, path: Path) -> Path:
     return _save(fig, path)
 
 
-def opportunity_bars(items: list[tuple[str, dict]], colors: dict[str, str], title: str, path: Path) -> Path:
+def opportunity_bars(items: list[tuple[str, dict]], colors: dict[str, str], title: str,
+                     path: Path) -> Path | None:
+    if _no_data([d["incr"] for _, d in items]):
+        return None
     items = sorted(items, key=lambda kv: kv[1]["incr"])
     fig, ax = plt.subplots(figsize=(W, 0.6 * len(items) + 1.0))
     vals = [d["incr"] for _, d in items]
@@ -345,7 +367,9 @@ def opportunity_bars(items: list[tuple[str, dict]], colors: dict[str, str], titl
     return _save(fig, path)
 
 
-def bubble(countries: dict[str, dict], colors: dict[str, str], path: Path) -> Path:
+def bubble(countries: dict[str, dict], colors: dict[str, str], path: Path) -> Path | None:
+    if _no_data([d["v26"] for d in countries.values()]):
+        return None
     fig, ax = plt.subplots(figsize=(W, 4.8))
     big = max(d["v26"] for d in countries.values())
     incs = [d["incr"] for d in countries.values()]
@@ -450,9 +474,12 @@ def value_chain(stages: list[dict], path: Path) -> Path:
     return _save(fig, path)
 
 
-def vendor_donut(rows: list[tuple[str, float]], center: str, path: Path, year: int) -> Path:
+def vendor_donut(rows: list[tuple[str, float]], center: str, path: Path, year: int) -> Path | None:
     """`rows` = the model's folded slices (model._fold), last one 'Regional & other' --
-    sourced shares only (PLAN-05). `year` is model.VENDOR_YEAR, the one vendor year."""
+    sourced shares only (PLAN-05). `year` is model.VENDOR_YEAR, the one vendor year.
+    Returns None when the shares total zero (nothing to chart)."""
+    if _no_data([s for _, s in rows]):
+        return None
     colors = CATEGORICAL[: len(rows) - 1] + [GRAY]
     fig, ax = plt.subplots(figsize=(9.0, 4.6))
     wedges, _ = ax.pie([s for _, s in rows], colors=colors, startangle=90, counterclock=False,

@@ -4,6 +4,12 @@ template's own paragraph for that slot. Each sentence then passes the
 NumberGuard and ClaimGuard (guard.py); failing sentences are dropped and
 logged, and data-only fallbacks fill slots that come back empty.
 
+After the chapters (PLAN-07): every priority action is judged against the
+finding it cites (one LLM call each; regenerated once, then dropped), a phrase
+repeated in 3+ sentences is rewritten, and a domain-sanity pass drops
+sentences stating a real-world fact that is likely false. All drops are logged
+in cmi_prose.json["dropped"].
+
 Writes output/<slug>/cmi_prose.json.
 """
 from __future__ import annotations
@@ -14,11 +20,12 @@ from pathlib import Path
 
 import docx
 
-from AiAgentsFleet.cmi_report import fmt
-from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, drop_size_comparison
+from AiAgentsFleet.cmi_report import fmt, rules
+from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text, contradiction_guard,
+                                            drop_mea_basis, drop_size_comparison, fix_plurals)
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 8      # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 21     # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -31,9 +38,10 @@ _SYSTEM = (
     "1. Every number you write must appear in FACTS exactly as formatted there (e.g. '$4.10B', '15.0%', "
     "'+$1.78B'). Never compute, round differently, estimate or invent a number; no other years than those in "
     "FACTS.\n"
-    "2. Comparative words (largest, fastest, smallest, leads, dominates, anchors) only as FACTS.rankings states "
-    "them, in the year it states (a 'largest_in_2026' ranking is about 2026 values); when rankings say "
-    "'(tied)', say they are tied.\n"
+    "2. Comparative words (largest, fastest, smallest, second-largest, leads, dominates, anchors, momentum, "
+    "faster than) only as FACTS.rankings and FACTS values state them, in the year they state (a "
+    "'largest_in_2026' ranking is about 2026 values); when rankings say '(tied)' or '(similar)', name every "
+    "party and say they are level or grow at a similar rate -- never call one of them the largest or fastest.\n"
     "3. Qualitative specifics (named regulations, programmes, companies, crops, technologies, country "
     "dynamics) may come from EVIDENCE or well-established knowledge of this market; if unsure, stay general.\n"
     "4. Plain prose, no markdown, no URLs, no 'according to'. Use 'CMI estimates' for our figures.\n"
@@ -68,6 +76,10 @@ _SYSTEM = (
     "export sectors).\n"
     "12. When FACTS.body_findings is given (executive summary, recommendations), summarise or build only on "
     "those findings -- never introduce a finding the body does not contain.\n"
+    "19. Never describe research steps (interviews, expert panels, surveys, bottom-up builds, triangulation); "
+    "the methodology chapter states what was done.\n"
+    "20. A causal or comparative claim ('X shapes share more than Y', 'tighter rules sustain demand', 'high "
+    "mobile penetration') must follow from FACTS; never contradict a listed driver or restraint.\n"
     "Return ONLY JSON with exactly the SLOTS keys."
 )
 
@@ -82,12 +94,16 @@ def _nd(d: dict) -> dict:
 
 def _rank(d: dict) -> dict:
     """Rankings register for one peer group: each entry names its metric and
-    year, and a tie at printed precision is stated as a tie."""
+    year. A tie at printed precision is '(tied)'; leaders within the
+    materiality threshold (rules.TIE_PP / TIE_REL) are '(similar)'."""
     def pick(key: str, best: bool) -> str:
         order = sorted(d, key=lambda k: d[k][key], reverse=best)
         show = (lambda v: fmt.pct(v)) if key == "cagr" else (lambda v: fmt.usd(v))
-        tied = [k for k in order if show(d[k][key]) == show(d[order[0]][key])]
-        return order[0] if len(tied) == 1 else " and ".join(tied) + " (tied)"
+        same = [k for k in order if show(d[k][key]) == show(d[order[0]][key])]
+        if len(same) > 1:
+            return " and ".join(same) + " (tied)"
+        near = rules.top_tied(d, key, best)
+        return order[0] if len(near) == 1 else " and ".join(near) + " (similar)"
     if len(d) < 2:
         return {}
     return {f"largest_in_{Y0}": pick("v26", True), f"largest_in_{Y1}": pick("v33", True),
@@ -119,7 +135,8 @@ def base_facts(m: dict) -> dict:
         "mea": {**_nd(mea), f"{Y0 - 1}": fmt.usd(mea["v25"]),
                 f"share_of_global_{Y0}": fmt.pct(mea["v26"] / g["v26"] * 100),
                 f"share_of_global_{Y1}": fmt.pct(mea["v33"] / g["v33"] * 100),
-                "cagr_premium_vs_global_pp": f"{mea['cagr'] - g['cagr']:.1f}"},
+                # signed: negative = MEA grows more slowly than the world
+                "cagr_gap_vs_global_pp": fmt.pp(mea["cagr"] - g["cagr"])},
         "regions": _block(m["regions"], g),
         "subregions": _block(m["subregions"], mea),
         "size_check": _size_facts(m),
@@ -141,6 +158,74 @@ def _size_facts(m: dict) -> dict:
                     "estimates, ranges or triangulation"}
 
 
+def _impact(x: dict) -> float:
+    return float(x.get("impact_pp") if x.get("impact_pp") is not None else x.get("impact_score") or 0)
+
+
+def top_factors(m: dict, ag: dict) -> dict:
+    """The largest global driver / restraint (fleet desk research, in bps of the
+    global CAGR) and the largest MEA ones (CMI agents), by name only."""
+    fd = m.get("fleet_drivers") or {}
+    dyn = ag.get("dynamics") or {}
+
+    def top(xs, key):
+        xs = [x for x in xs or [] if x.get("name")]
+        return max(xs, key=key)["name"] if xs else None
+    return {"global_driver": top(fd.get("drivers"), lambda x: abs(float(x.get("cagr_contribution_bps") or 0))),
+            "global_restraint": top(fd.get("restraints"), lambda x: abs(float(x.get("cagr_drag_bps") or 0))),
+            "mea_driver": top(dyn.get("mea_drivers"), lambda x: abs(_impact(x))),
+            "mea_restraint": top(dyn.get("mea_restraints"), lambda x: abs(_impact(x)))}
+
+
+def driver_facts(dyn: dict) -> dict:
+    """The MEA growth factors as the prose may state them (after rules.reconcile_drivers)."""
+    basis = dyn.get("impact_basis")
+    rows = lambda xs, k: [{"name": x.get("name"),  # noqa: E731
+                           k: fmt.pp(float(x.get("impact_pp") or 0)) if k == "impact" else x.get(k)}
+                          for x in xs or []]
+    if basis == "score":
+        return {"impact_basis": "relative impact score 1-5 (CMI assessment); no percentage points",
+                "mea_drivers_score": rows(dyn.get("mea_drivers"), "impact_score"),
+                "mea_restraints_score": rows(dyn.get("mea_restraints"), "impact_score")}
+    out = {"mea_drivers_pp": rows(dyn.get("mea_drivers"), "impact"),
+           "mea_restraints_pp": rows(dyn.get("mea_restraints"), "impact")}
+    if basis == "pp_vs_global":
+        out["impact_basis"] = (f"pp of CAGR relative to the global CAGR baseline: global CAGR "
+                               f"{fmt.pct(dyn['baseline_cagr_pct'])} + drivers + restraints = MEA CAGR "
+                               f"{fmt.pct(dyn['mea_cagr_pct'])}")
+    return out
+
+
+def driver_para_spec(dyn: dict) -> str:
+    if dyn.get("impact_basis") == "score":
+        return ("paragraph on MEA growth factors and restraints, each rated by its relative impact score (1-5, "
+                "CMI assessment) -- never in percentage points")
+    if dyn.get("impact_basis") == "pp_vs_global":
+        return ("paragraph on MEA growth factors and restraints: start from the global CAGR baseline, then the "
+                "drivers' and restraints' impacts in pp (as in FACTS, restraints negative), so that they add up to "
+                "the MEA CAGR -- state the baseline and the MEA CAGR")
+    return "paragraph on MEA growth factors and restraints, impact in pp of CAGR"
+
+
+def method_text(m: dict, root: str) -> str:
+    """The methodology paragraph: exactly what the pipeline does (PLAN-07, single source).
+    No expert panel, interviews, bottom-up build or triangulation -- none of them happen."""
+    chk = m.get("size_check") or {}
+    if chk.get("status") == "sourced" and chk.get("source_is_cmi"):
+        head = "the global headline is CMI's own published estimate, taken from a quote found in that evidence"
+    elif chk.get("status") == "sourced":
+        head = ("the global headline is taken from a figure quoted in that evidence (CMI's own published figure "
+                "is preferred whenever one is found; none was found for this market)")
+    else:
+        head = ("no published figure could be confirmed from a cited quote, so the global headline is a CMI "
+                "estimate built from the agents' evidence (CMI's own published figure is preferred whenever one "
+                "is found)")
+    return (f"CMI's {root.lower()} estimates come from web desk-research agents that collect cited public evidence; "
+            f"{head}. Regional, country and segment splits are checked for coherence and re-asked when they are "
+            f"not, named facts are verified claim by claim against the evidence, and automated consistency checks "
+            f"tie every number in the report to one register.")
+
+
 # --------------------------------------------------------------------------- #
 # chapters: slot -> (instruction, template element giving the style example)
 # --------------------------------------------------------------------------- #
@@ -149,8 +234,11 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
     me_units = list(m["countries"]["Middle East"])
     af_units = list(m["countries"]["Africa"])
     pub = m.get("published_2025") or []          # same-scope figures only
+    dyn = ag.get("dynamics") or {}
     chs = {
         "ch1": {"facts": {"published_2025_estimates_usd_bn": [f"{p['publisher']}: ${p['value_usd_bn']:g}B" for p in pub],
+                          # the scorecard's global column gets global factors only, the MEA column MEA ones (X14)
+                          "top_factors": top_factors(m, ag),
                           "segments_global": _segs(m, "Global"),
                           "middle_east_countries": _block(m["countries"]["Middle East"], m["subregions"]["Middle East"]),
                           "africa_countries": _block(m["countries"]["Africa"], m["subregions"]["Africa"])},
@@ -168,22 +256,28 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                    "estimates'; no comparison with any other figures"), 24),
                     "global_bullets": ("list of 3 bullets: largest region; fastest-growing region and its "
                                        "incremental value; one structural shift", 29),
-                    "mea_bullets": ("list of 3 bullets: MEA size, share and CAGR premium; Middle East led by its two "
-                                    "largest countries; Africa size, CAGR and fastest countries", 33),
+                    "mea_bullets": ("list of 3 bullets: MEA size, share and its CAGR gap to the global market "
+                                    "(FACTS.mea.cagr_gap_vs_global_pp: a negative gap means MEA grows more slowly -- "
+                                    "say 'below'); Middle East led by its two largest countries; Africa size, CAGR "
+                                    "and fastest countries", 33),
                     "largest_demand_pool": ("object {global, mea}: short phrases naming the largest demand pools", 41),
-                    "primary_catalyst": ("object {global, mea}: short phrases", 41),
-                    "primary_constraint": ("object {global, mea}: short phrases", 41),
+                    "primary_catalyst": ("object {global: FACTS.top_factors.global_driver in a short phrase, global "
+                                         "facts only; mea: FACTS.top_factors.mea_driver in a short phrase}. The global "
+                                         "phrase never mentions MEA, pp or percentage points", 41),
+                    "primary_constraint": ("object {global: FACTS.top_factors.global_restraint in a short phrase, "
+                                           "global facts only; mea: FACTS.top_factors.mea_restraint in a short "
+                                           "phrase}. The global phrase never mentions MEA, pp or percentage points",
+                                           41),
                     "key_conclusions": ("list of 3 numbered-style conclusions (without the number), the first with "
                                         "the Middle East's absolute opportunity and its largest country pools", 43)}},
-        "ch2": {"facts": {"trends": (ag.get("dynamics") or {}).get("trends"),
-                          "mea_drivers_pp": (ag.get("dynamics") or {}).get("mea_drivers"),
-                          "mea_restraints_pp": (ag.get("dynamics") or {}).get("mea_restraints")},
+        "ch2": {"facts": {"trends": dyn.get("trends"), **driver_facts(dyn)},
                 "slots": {
                     "trends_intro": ("1-2 sentences introducing six structural trends", 45),
                     "trend_paras": ("list of 6 objects, one for EACH of the six FACTS.trends in order {lead: <its "
-                                    "title exactly>, text: <2-3 sentences explaining it, tied to countries or "
-                                    "segments that appear later>}", 50),
-                    "drivers_para": ("paragraph on MEA growth factors and restraints, impact in pp of CAGR", 54),
+                                    "title exactly>, text: <2-3 sentences explaining it, tied to the specific "
+                                    "countries or segments that appear later -- a different one per trend; never "
+                                    "end trends with the same stock phrase such as where it is 'most visible'>}", 50),
+                    "drivers_para": (driver_para_spec(dyn), 54),
                     "matrix_para": ("paragraph introducing the impact matrix", 60)}},
         "ch3": {"facts": {"segments_global": _segs(m, "Global"),
                           "scenarios": {k: {"CAGR": fmt.pct(v["cagr"]), f"{Y1}F": fmt.usd(v["series"][Y1])}
@@ -275,13 +369,13 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                                "FACTS.body_findings it follows from, with its figure and its "
                                                "context (e.g. 'In the optimistic scenario, ...')>} -- the finding "
                                                "must DIRECTLY justify the action, not merely be related", 361)}},
-        # 9.1 (the basis of the headline) is written from m["size_check"] by build.py, not by the LLM
+        # 9.1 (the basis of the headline) is written from m["size_check"] by build.py, and the method
+        # paragraph by method_text() -- both state what the pipeline did, so neither is LLM-written
         "ch9": {"facts": {"cmi_base_2025": fmt.usd(m["global"]["v25"]),
                           "scope": (ag.get("_definition") or {})},
                 "slots": {
-                    "method_para": ("2 sentences on CMI's top-down and bottom-up method", 363),
                     "assumptions": ("list of 4 assumptions and limitations bullets for this market (no template or "
-                                    "draft wording)", 381)}},
+                                    "draft wording, no research steps)", 381)}},
     }
     # each chapter closes with a sentence that sets up the next one (storyline transitions)
     nxt = {"ch1": "the market trends, drivers and restraints behind these numbers",
@@ -301,11 +395,26 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
 # --------------------------------------------------------------------------- #
 # guards per slot
 # --------------------------------------------------------------------------- #
+def _node(m: dict, geo: str) -> dict | None:
+    """The model node of a geography (global, region, sub-region or country)."""
+    if geo == "Global":
+        return m["global"]
+    return m["regions"].get(geo) or m["subregions"].get(geo) or \
+        next((d[geo] for d in m["countries"].values() if geo in d), None)
+
+
 def claim_groups(m: dict, geo: str | None) -> list[dict]:
-    gs = [{"names": m["regions"], "aliases": ALIASES}, {"names": m["subregions"]}]
-    gs += [{"names": d, "aliases": ALIASES} for d in m["countries"].values()]
+    """Peer groups for the claim checks; `parent_cagr` is the group's peer average
+    (its parent's CAGR) for 'momentum' / 'high-growth' claims."""
+    mea = m["regions"]["Middle East & Africa"]
+    gs = [{"names": m["regions"], "aliases": ALIASES, "parent_cagr": m["global"]["cagr"]},
+          {"names": m["subregions"], "parent_cagr": mea["cagr"]}]
+    gs += [{"names": d, "aliases": ALIASES, "parent_cagr": (_node(m, r) or {}).get("cagr")}
+           for r, d in m["countries"].items()]
     if geo and geo in m["segments"]:
-        gs += [{"names": m["segments"][geo]["type"]}, {"names": m["segments"][geo]["demand"]}]
+        parent = (_node(m, geo) or {}).get("cagr")
+        gs += [{"names": m["segments"][geo]["type"], "parent_cagr": parent},
+               {"names": m["segments"][geo]["demand"], "parent_cagr": parent}]
     return gs
 
 
@@ -323,8 +432,24 @@ def set_template(template: Path) -> None:
             _TPL_SENT.extend(word_set(s) for s in sentences(part) if len(s.split()) >= 6)
 
 
-def make_guard(m: dict, geo: str | None) -> ClaimGuard:
+def _other_share(rows) -> float | None:
+    """The 'Regional & other' slice of a vendor share chart (None when the chart is empty)."""
+    rows = list(rows or [])
+    if not rows:
+        return None
+    return sum(float(s) for n, s in rows if "other" in str(n).lower())
+
+
+def make_guard(m: dict, geo: str | None, ag: dict | None = None) -> ClaimGuard:
     g = ClaimGuard(claim_groups(m, geo), m["global"]["cagr"], _TPL_SENT)
+    # contradiction_guard inputs: vendor concentration, MEA restraints, names outside the MEA
+    g.other_share = {k: v for k, v in (("global", _other_share(m.get("vendor_chart_global"))),
+                                       ("mea", _other_share(m.get("vendor_chart_mea")))) if v is not None}
+    dyn = (ag or {}).get("dynamics") or {}
+    g.restraints = [x.get("name", "") for x in dyn.get("mea_restraints") or [] if x.get("name")]
+    g.non_mea = [r for r in m["regions"] if r != "Middle East & Africa"] + \
+        [c for r, d in m["countries"].items() if r not in ("Middle East", "Africa") for c in d] + \
+        ["global", "globally", "worldwide"]
     # segment data exists only for the Middle East & Africa units: no segment claims for other countries
     with_breakdown = {u for v in m["profiled"].values() for u in v}
     g.no_breakdown = [c for r, d in m["countries"].items() for c in d
@@ -343,11 +468,13 @@ def _geo_of(slot: str, ch: str) -> str | None:
 
 
 def _guard(text, ng, cg, dropped, absent) -> str:
-    out = clean_text(text, ng, cg, dropped, absent)
+    out = clean_text(fix_plurals(text, getattr(cg, "segment_names", None)), ng, cg, dropped, absent)
     return drop_size_comparison(out, dropped, getattr(cg, "headline_unsourced", False))
 
 
 def _clean(v, ng, cg, dropped, absent, limit=110):
+    """Guards a slot value of any shape. In a {global, mea} object (the scorecard
+    cells) the global cell may not carry MEA-basis figures (FINDINGS X14)."""
     if isinstance(v, str):
         return cap_words(_guard(v, ng, cg, dropped, absent), limit) or None
     if isinstance(v, list):
@@ -365,7 +492,10 @@ def _clean(v, ng, cg, dropped, absent, limit=110):
                 # so the claim check reads "North America: Smallest region ..."
                 lead = f"{k}: "
                 c = _guard(lead + x, ng, cg, dropped, absent)
-                out[k] = cap_words(c[len(lead):] if c.startswith(lead) else c, 60) or None
+                c = c[len(lead):] if c.startswith(lead) else c
+                if k == "global" and set(v) <= {"global", "mea"}:
+                    c = drop_mea_basis(c, dropped)
+                out[k] = cap_words(c, 60) or None
             else:
                 out[k] = _clean(x, ng, cg, dropped, absent, 60)
         return {k: x for k, x in out.items() if x}
@@ -415,7 +545,20 @@ def cap_words(text: str, limit: int) -> str:
     return " ".join(out)
 
 
-def write(market_dir: Path, m: dict, ag: dict, llm, template: Path, evidence_fn=None, log=print) -> dict:
+def prepare(m: dict, ag: dict) -> dict:
+    """Ties the MEA drivers / restraints to the CAGRs (rules.reconcile_drivers), in
+    place, so the register, the prose facts, the chart and the tables agree.
+    Idempotent; write() and reguard() call it."""
+    dyn = ag.get("dynamics")
+    if isinstance(dyn, dict):
+        rules.reconcile_drivers(dyn, m["global"]["cagr"], m["regions"]["Middle East & Africa"]["cagr"])
+    return ag
+
+
+def write(market_dir: Path, m: dict, ag: dict, llm, template: Path, evidence_fn=None, log=print,
+          judge_llm=None) -> dict:
+    """`judge_llm` (default: `llm`) answers the yes/no checks: action support and domain sanity."""
+    prepare(m, ag)
     tpl = template_texts(template)
     set_template(template)
     facts0 = base_facts(m)
@@ -453,7 +596,7 @@ def write(market_dir: Path, m: dict, ag: dict, llm, template: Path, evidence_fn=
         dropped: list[str] = []
         absent = absent_names(m)
         for k, (desc, idx) in slots.items():
-            cg = make_guard(m, _geo_of(k, ch))
+            cg = make_guard(m, _geo_of(k, ch), ag)
             v = _normalise(raw.get(k), desc)
             # a 'Rest of' profile may not describe a separately profiled country
             geo_k = _geo_of(k, ch) or ""
@@ -471,11 +614,29 @@ def write(market_dir: Path, m: dict, ag: dict, llm, template: Path, evidence_fn=
             out["dropped"][ch] = dropped
         log(f"  [{ch}] {sum(1 for k in slots if raw.get(k))}/{len(slots)} slots written"
             + (f", {len(dropped)} sentence(s) dropped by the guards" if dropped else ""))
+        if ch == "ch8" and out["slots"].get("priority_actions"):
+            # B9 / X13: every action must follow from the finding it cites (before the summary uses them)
+            acts, log_a = check_actions(out["slots"]["priority_actions"], m, ag, judge_llm or llm, llm, fact_guard,
+                                        out["slots"])
+            out["slots"]["priority_actions"] = acts
+            if log_a:
+                out["dropped"]["priority_actions"] = log_a
+                log(f"  [actions] {len(log_a)} action check note(s); {len(acts)} action(s) kept")
+            if not acts:
+                del out["slots"]["priority_actions"]
     out["slots"] = in_document_order(out["slots"], specs)
     repeats = dedupe(out["slots"], m)
     if repeats:
         out["dropped"]["repetition"] = repeats
         log(f"  [repetition] {len(repeats)} repeated sentence(s) removed")
+    phrases = rewrite_repeated_phrases(out["slots"], m, ag, llm, fact_guard, specs)
+    if phrases:
+        out["dropped"]["repeated_phrases"] = phrases
+        log(f"  [boilerplate] {len(phrases)} sentence(s) with a repeated phrase rewritten or removed")
+    insane = domain_sanity(out["slots"], m, judge_llm or llm)
+    if insane:
+        out["dropped"]["domain_sanity"] = insane
+        log(f"  [domain sanity] {len(insane)} sentence(s) with a likely false real-world claim removed")
     (market_dir / "cmi_prose.json").write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
     return out
 
@@ -515,24 +676,38 @@ def in_document_order(slots: dict, specs: dict) -> dict:
 def reguard(pr: dict, m: dict, ag: dict) -> int:
     """Re-applies the current guards and the repetition pass to saved text
     (no LLM calls) -- so a guard improvement reaches reports whose text is
-    reused. Returns the number of sentences removed."""
+    reused. Returns the number of sentences removed. A phrase repeated in 3+
+    sentences is removed from all but the first (rewriting needs the LLM)."""
+    prepare(m, ag)
     slots = pr.get("slots") or {}
     before = json.dumps(slots, ensure_ascii=False)
     absent = absent_names(m)
     dropped: list[str] = []
     from AiAgentsFleet.cmi_report.register import FactGuard, build_register
     fact_guard = FactGuard(build_register(m, ag))
-    for ch, spec in chapters(m, ag).items():
+    specs = chapters(m, ag)
+    for ch, spec in specs.items():
         ng = fact_guard
         for k in spec["slots"]:
             key = k if ch not in ("ch4", "ch5") or "__" in k else f"{ch}.{k}"
             if key in slots:
-                v = _clean(slots[key], ng, make_guard(m, _geo_of(k, ch)), dropped, absent)
+                v = _clean(slots[key], ng, make_guard(m, _geo_of(k, ch), ag), dropped, absent)
                 if v:
                     slots[key] = v
                 else:
                     del slots[key]
+    # text saved before the methodology was made deterministic (method_text)
+    slots.pop("method_para", None)
+    if isinstance(slots.get("priority_actions"), list):
+        # the deterministic part of the action check (the judge needs the LLM)
+        acts, notes = check_actions(slots["priority_actions"], m, ag, None, None, fact_guard, slots)
+        dropped += notes
+        if acts:
+            slots["priority_actions"] = acts
+        else:
+            del slots["priority_actions"]
     dropped += dedupe(slots, m)
+    dropped += rewrite_repeated_phrases(slots, m, ag, None, fact_guard, specs)
     if dropped:
         pr.setdefault("dropped", {})["reguard"] = dropped
     return len(dropped) if json.dumps(slots, ensure_ascii=False) != before else 0
@@ -603,28 +778,375 @@ def dedupe(slots: dict, m: dict) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+# post-passes (PLAN-07): action support, repeated phrases, domain sanity
+# --------------------------------------------------------------------------- #
+def _map_sentences(slots: dict, fn) -> None:
+    """Applies fn(slot_key, sentence) -> sentence | None to every sentence of
+    every slot, in place. A sentence that leans on a removed one ('This ...')
+    goes with it; emptied strings, items and slots are removed."""
+    from AiAgentsFleet.cmi_report.guard import _ORPHAN, sentences
+
+    def walk(key, v):
+        if isinstance(v, str):
+            keep, gone = [], False
+            for s in sentences(v):
+                new = None if gone and _ORPHAN.match(s) else fn(key, s)
+                gone = new is None
+                if new:
+                    keep.append(new)
+            return " ".join(keep)
+        if isinstance(v, list):
+            return [x for x in (walk(key, x) for x in v) if x]
+        if isinstance(v, dict):
+            if {"lead", "text"} <= v.keys():
+                t = walk(key, v["text"])
+                return {**v, "text": t} if t else None
+            return {k: x for k, x in ((k, walk(key, x)) for k, x in v.items()) if x}
+        return v
+    for k in list(slots):
+        v = walk(k, slots[k])
+        if v:
+            slots[k] = v
+        else:
+            del slots[k]
+
+
+def _slot_specs(specs: dict) -> dict[str, tuple[str, str]]:
+    """slot key as saved -> (chapter, slot name)."""
+    return {(k if ch not in ("ch4", "ch5") or "__" in k else f"{ch}.{k}"): (ch, k)
+            for ch, spec in specs.items() for k in spec["slots"]}
+
+
+_JUDGE_SYSTEM = (
+    "You are a strict editor of a market whitepaper whose focus is the Middle East & Africa (MEA). You get one "
+    "priority action and the finding it cites. Judge two things:\n"
+    "1. support: 'yes' only if the finding DIRECTLY justifies the action; 'weak' if it is related but indirect; "
+    "'no' if the finding is about another segment, country, region or topic, or points the other way (e.g. the "
+    "slowest segment cited for an expansion, a restraint cited as the reason to invest, a market size cited for "
+    "localising production in a tiny market).\n"
+    "2. geography_matches_focus: false if the action targets regions outside the Middle East & Africa.\n"
+    "Return ONLY JSON: {\"support\": \"yes\"|\"weak\"|\"no\", \"geography_matches_focus\": true|false, "
+    "\"why\": <one sentence>}.")
+
+
+def _action_text(a) -> tuple[str, str]:
+    if isinstance(a, dict):
+        return str(a.get("lead") or ""), str(a.get("text") or "")
+    lead, _, text = str(a).partition(":")
+    return lead, text
+
+
+def action_problem(a, m: dict, ag: dict, judge) -> tuple[str | None, str | None]:
+    """(why the action fails, a note for a weak one). Deterministic checks first:
+    every entity the action names must fit its data (a 'high-growth' country that
+    grows below its peer average fails); then one judge call."""
+    lead, text = _action_text(a)
+    finding = re.sub(r"^\s*Finding:\s*", "", text)
+    cg = make_guard(m, None, ag)
+    for label, part in (("action", lead), ("finding", finding)):
+        why = contradiction_guard(part, cg) or cg.problem(part) or cg.ordinal(part)
+        if why:
+            return f"{label} contradicts the data: {why}", None
+    if judge is None:
+        return None, None
+    try:
+        v = judge.complete_json(_JUDGE_SYSTEM, f"MARKET: {m['market']}\nACTION: {lead}\nCITED FINDING: {finding}") or {}
+    except Exception as exc:  # noqa: BLE001
+        return None, f"judge unavailable: {exc}"
+    support = str(v.get("support") or "").lower()
+    if v.get("geography_matches_focus") is False:
+        return f"geography outside the MEA focus: {v.get('why', '')}", None
+    if support == "no":
+        return f"finding does not support the action: {v.get('why', '')}", None
+    return None, (f"weak support: {v.get('why', '')}" if support == "weak" else None)
+
+
+def check_actions(acts: list, m: dict, ag: dict, judge, writer, ng, slots: dict) -> tuple[list, list[str]]:
+    """Each priority action is checked (action_problem); a failing one is
+    regenerated once by `writer` with the judge's reason and re-checked, and
+    dropped if it still fails. Returns (kept actions, log)."""
+    kept, notes = [], []
+    absent = absent_names(m)
+    for a in acts:
+        why, note = action_problem(a, m, ag, judge)
+        if why and writer is not None:
+            lead, text = _action_text(a)
+            user = (f"MARKET: {m['market']}\n\nFACTS (the only allowed source of numbers):\n"
+                    f"{json.dumps({'body_findings': body_findings(slots)}, ensure_ascii=False)}\n\n"
+                    f"This priority action was rejected: {lead} -- {text}\nReason: {why}\n\n"
+                    "SLOTS (key: what to write):\n- action: object {lead: <one action for the next 12-18 months "
+                    "in the Middle East & Africa, 8-15 words>, text: <'Finding: ' + the finding from "
+                    "FACTS.body_findings that DIRECTLY justifies it, with its figure>}")
+            try:
+                new = (writer.complete_json(_SYSTEM, user) or {}).get("action")
+            except Exception:  # noqa: BLE001
+                new = None
+            dropped: list[str] = []
+            new = _clean(new, ng, make_guard(m, None, ag), dropped, absent) if isinstance(new, dict) else None
+            if new and str(new.get("text", "")).startswith("Finding"):
+                why2, note = action_problem(new, m, ag, judge)
+                notes.append(f"[regenerated] {lead[:60]} -- {why}")
+                if not why2:
+                    kept.append(new)
+                    continue
+                why = why2
+        if why:
+            notes.append(f"[action dropped] {_action_text(a)[0][:80]} -- {why}")
+            continue
+        if note:
+            notes.append(f"[kept, {note[:100]}] {_action_text(a)[0][:60]}")
+        kept.append(a)
+    return kept, notes
+
+
+# words that make up the report's sizing sentences: a phrase of only these is data, not boilerplate
+_DATA_WORDS = set("""cagr cagrs estimate estimates estimated forecast forecasts forecasted largest smallest fastest slowest
+fastest-growing slowest-growing second-largest third-largest opportunity opportunities absolute incremental market markets
+size sizes share shares valued value values reach reaches reaching rising rise rises grow grows growing growth type types
+segment segments cmi e f by in at of to from and the a an is are with remains remain also its it while as for over between
+indicate indicates show shows""".split())
+
+
+def repeated_phrases(slots: dict, m: dict, n: int = 5, min_count: int = 3) -> dict[str, str]:
+    """{sentence: phrase} for every body sentence but the first that shares a
+    phrase of `n`+ words with `min_count`-1 other sentences ('This trend is most
+    visible in the Middle East' x6). Names, figures and sizing vocabulary don't
+    count: 'X is the largest Product Type in Y' is a data statement, not filler."""
+    from AiAgentsFleet.cmi_report.guard import sentences
+    names = set(m["regions"]) | set(m["subregions"]) | {c for d in m["countries"].values() for c in d} | \
+        {s for g in m["segments"].values() for d in g.values() for s in d} | \
+        {m["dimensions"][d][k] for d in ("type", "demand") for k in ("singular", "plural")} | {"MEA", "UAE", "KSA"}
+    root = re.sub(r"(?i)^\s*global\s+|\s+market\s*$", "", m["market"])
+    # the market's and the segments' own words ('farm advisory' in 'generative AI for farm advisory')
+    words = {w for x in [root] + [s for g in m["segments"].values() for d in g.values() for s in d]
+             for w in re.findall(r"[A-Za-z][A-Za-z-]+", x) if len(w) > 3}
+    names |= {root} | words | {w.rstrip("s") for w in words}
+    rx = re.compile("|".join(re.escape(x) for x in sorted(names, key=len, reverse=True) if x), re.I)
+    order: list[str] = []
+
+    def walk(v):
+        if isinstance(v, str):
+            order.extend(sentences(v))
+        elif isinstance(v, list):
+            for x in v:
+                walk(x)
+        elif isinstance(v, dict):
+            for x in v.values():
+                walk(x)
+    for k, v in slots.items():
+        if k.split(".")[-1].split("__")[0] not in _SUMMARY_SLOTS:
+            walk(v)
+    where: dict[str, list[int]] = {}
+    for i, s in enumerate(order):
+        w = re.findall(r"\$?\d[\d.,]*[%bm]?|[a-z][a-z'-]*", rx.sub(" 0 ", s).lower())
+        for j in range(len(w) - n + 1):
+            g = w[j:j + n]
+            if any(re.match(r"[\d$]", t) for t in g) or sum(t not in _DATA_WORDS for t in g) < 3:
+                continue
+            ix = where.setdefault(" ".join(g), [])
+            if not ix or ix[-1] != i:
+                ix.append(i)
+    out: dict[str, str] = {}
+    for phrase, ix in where.items():
+        if len(ix) >= min_count:
+            for i in ix[1:]:
+                if i != ix[0] and order[i] != order[ix[0]]:
+                    out.setdefault(order[i], phrase)
+    return out
+
+
+_REWRITE_SYSTEM = (
+    "You edit a market whitepaper. Each sentence below repeats a stock phrase used elsewhere in the report. "
+    "Rewrite each one so it no longer uses that phrase: keep every number, name and claim exactly as written, add "
+    "nothing, one sentence each, UK English. Return ONLY JSON {\"rewrites\": [{\"id\": <id>, \"text\": <sentence>}]}.")
+
+
+def rewrite_repeated_phrases(slots: dict, m: dict, ag: dict, llm, ng, specs: dict) -> list[str]:
+    """Rewrites (one LLM call) every sentence but the first that repeats a 5+ word
+    phrase; a rewrite that fails the guards or keeps the phrase -- or every such
+    sentence when `llm` is None -- is removed. Returns the log."""
+    hits = repeated_phrases(slots, m)
+    if not hits:
+        return []
+    items = list(hits.items())
+    new: dict[str, str] = {}
+    if llm is not None:
+        try:
+            raw = llm.complete_json(_REWRITE_SYSTEM, json.dumps(
+                [{"id": i, "phrase": p, "sentence": s} for i, (s, p) in enumerate(items)], ensure_ascii=False)) or {}
+            for r in raw.get("rewrites") or []:
+                if isinstance(r, dict) and isinstance(r.get("id"), int) and 0 <= r["id"] < len(items):
+                    new[items[r["id"]][0]] = str(r.get("text") or "").strip()
+        except Exception:  # noqa: BLE001
+            new = {}
+    where = _slot_specs(specs)
+    absent = absent_names(m)
+    log: list[str] = []
+
+    def fix(key: str, s: str) -> str | None:
+        if s not in hits:
+            return s
+        ch, k = where.get(key, (None, key))
+        r = new.get(s)
+        if r and hits[s] not in " ".join(re.findall(r"[a-z][a-z'-]*", r.lower())):
+            dropped: list[str] = []
+            r = _guard(r, ng, make_guard(m, _geo_of(k, ch) if ch else None, ag), dropped, absent)
+            if r:
+                log.append(f"[rewritten: '{hits[s]}'] {s[:90]} -> {r[:90]}")
+                return r
+        log.append(f"[repeated phrase '{hits[s]}' removed] {s[:110]}")
+        return None
+    _map_sentences(slots, fix)
+    return log
+
+
+_SANITY_SYSTEM = (
+    "You are a domain fact-checker for a market-research whitepaper. You get numbered sentences from the report. "
+    "List ONLY the sentences that state a real-world fact -- about an industry, technology, crop, country, "
+    "company or policy -- that is likely false or unsupported. Examples: calling a country a key producer of "
+    "something it imports; calling a technology that has been commercial for years 'pilot-scale'; the post-Brexit "
+    "UK as a gateway to the EU market; a nutrient deficiency unrelated to the product; a market 'already mature' "
+    "for a nascent technology; tighter rules said to sustain demand. Do NOT flag market sizes, shares, growth rates "
+    "or rankings (CMI estimates, checked elsewhere), forecasts, or opinions. When unsure, do not flag. "
+    "Return ONLY JSON {\"flagged\": [{\"id\": <int>, \"why\": <short reason>}]}.")
+
+
+def domain_sanity(slots: dict, m: dict, llm, batch: int = 60) -> list[str]:
+    """Drops sentences the domain-sanity judge flags as stating a likely false
+    real-world fact (FINDINGS B7, D7, E7, F5). Returns the log."""
+    if llm is None:
+        return []
+    from AiAgentsFleet.cmi_report.guard import sentences
+    allsent: list[str] = []
+
+    def walk(v):
+        if isinstance(v, str):
+            allsent.extend(s for s in sentences(v) if len(s.split()) >= 6)
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                walk(x)
+        elif isinstance(v, dict):
+            for x in v.values():
+                walk(x)
+    for k, v in slots.items():
+        if k not in ("practice", "cover_subtitle"):
+            walk(v)
+    allsent = list(dict.fromkeys(allsent))
+    flagged: dict[str, str] = {}
+    for start in range(0, len(allsent), batch):
+        part = allsent[start:start + batch]
+        user = f"MARKET: {m['market']}\n\nSENTENCES:\n" + "\n".join(f"{i}. {s}" for i, s in enumerate(part))
+        try:
+            raw = llm.complete_json(_SANITY_SYSTEM, user) or {}
+        except Exception:  # noqa: BLE001
+            continue
+        for f in raw.get("flagged") or []:
+            if isinstance(f, dict) and isinstance(f.get("id"), int) and 0 <= f["id"] < len(part):
+                flagged[part[f["id"]]] = str(f.get("why") or "")
+    log: list[str] = []
+
+    def fix(_key: str, s: str) -> str | None:
+        if s in flagged:
+            log.append(f"[domain sanity: {flagged[s][:80]}] {s[:110]}")
+            return None
+        return s
+    if flagged:
+        _map_sentences(slots, fix)
+    return log
+
+
+# --------------------------------------------------------------------------- #
+# structure helpers for build.py (PLAN-07)
+# --------------------------------------------------------------------------- #
+def fill_conclusions(items: list, slots: dict, need: int = 3) -> list:
+    """'Key conclusions' with at least `need` items: the prose's own, then the
+    first body findings that are not already there. Fewer than `need` -> []
+    (the box is left out)."""
+    out = [x for x in items or [] if isinstance(x, str) and x.strip()]
+    if len(out) >= need:
+        return out
+    # data-led slots first (where the opportunity is), then the rest of the body
+    first = ("abs_para", "share_para", "highlights", "ch4.region_para", "ch5.region_para", "sizing_para",
+             "country_intro")
+    body = {k: slots[k] for k in first if k in slots} | \
+        {k: v for k, v in slots.items() if k.split(".")[-1].split("__")[0] not in _SUMMARY_SLOTS}
+    have = [_words(x) for x in out]
+    for f in body_findings(body, limit=200):
+        w = _words(f)
+        # out of its paragraph, 'This trend ...' / '... these farms' points at nothing
+        if re.search(r"\b(this|these|those|such|together|they|it|figure|chart|table)\b", f.split(": ", 1)[-1], re.I) \
+                or len(w) < 6 \
+                or any(len(w & h) / len(w | h) >= 0.5 for h in have):
+            continue
+        out.append(f)
+        have.append(w)
+        if len(out) >= need:
+            return out
+    return out if len(out) >= need else []
+
+
+def profile_lead(unit: str, d: dict, parent: dict | None, parent_name: str) -> str:
+    """A country profile's lead sentence: size, share of its region and CAGR."""
+    share = f", {fmt.share(d['v26'], parent['v26'])} of {parent_name}," if parent and parent.get("v26") else ""
+    return (f"{unit} is a {fmt.usd(d['v26'])} market in {Y0}E (CMI estimate){share} forecast to grow at a "
+            f"{fmt.pct(d['cagr'])} CAGR to {fmt.usd(d['v33'])} by {Y1}F.")
+
+
+def with_lead(unit: str, text: str | None, d: dict, parent: dict | None, parent_name: str) -> str:
+    """A profile that opens with its lead sentence (size and CAGR): the LLM's own
+    first sentence when it states both, else profile_lead() before the text."""
+    from AiAgentsFleet.cmi_report.guard import sentences
+    sents = sentences(text or "")
+    if sents and fmt.usd(d["v26"]) in sents[0] and fmt.pct(d["cagr"]) in sents[0]:
+        return " ".join(sents)
+    # the LLM's size sentence elsewhere in the text would now repeat the lead
+    rest = [s for s in sents if fmt.usd(d["v26"]) not in s]
+    return " ".join([profile_lead(unit, d, parent, parent_name)] + rest)
+
+
+# --------------------------------------------------------------------------- #
 # data-only fallbacks (used when a slot is empty after the guards)
 # --------------------------------------------------------------------------- #
+def _names(xs: list[str]) -> str:
+    return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
 def seg_fallback(seg: dict, dim: str, geo: str) -> str:
-    big = max(seg, key=lambda n: seg[n]["v33"])
-    fast = max(seg, key=lambda n: seg[n]["cagr"])
+    """Data-only segment sentence; leaders within the tie threshold are named together."""
+    bigs, fasts = rules.top_tied(seg, "v33"), rules.top_tied(seg, "cagr")
+    big = bigs[0]
     where = "globally" if geo == "Global" else f"in {geo}"
-    txt = f"{big} remains the largest {dim.lower()} {where} through {Y1}F ({fmt.usd(seg[big]['v33'])})"
-    if fast != big:
-        txt += (f", while {fast} grows fastest, from {fmt.usd(seg[fast]['v26'])} to {fmt.usd(seg[fast]['v33'])} "
-                f"at a {fmt.pct(seg[fast]['cagr'])} CAGR.")
+    verb = "remain" if len(bigs) > 1 or fix_plurals(f"{big} remains", [big]) != f"{big} remains" else "remains"
+    if len(bigs) > 1:
+        txt = (f"{_names(bigs)} are level as the largest {dim.lower()} {where} in {Y1}F "
+               f"({', '.join(fmt.usd(seg[b]['v33']) for b in bigs)})")
     else:
-        txt += f" and also grows fastest, at a {fmt.pct(seg[big]['cagr'])} CAGR."
-    return txt
+        txt = f"{big} {verb} the largest {dim.lower()} {where} through {Y1}F ({fmt.usd(seg[big]['v33'])})"
+    if len(fasts) > 1:
+        return txt + (f", while {_names(fasts)} grow at a similar rate "
+                      f"({', '.join(fmt.pct(seg[f]['cagr']) for f in fasts)} CAGR).")
+    fast = fasts[0]
+    if fast not in bigs:
+        return txt + (f", while {fast} grows fastest, from {fmt.usd(seg[fast]['v26'])} to "
+                      f"{fmt.usd(seg[fast]['v33'])} at a {fmt.pct(seg[fast]['cagr'])} CAGR.")
+    return txt + f" and also grows fastest, at a {fmt.pct(seg[fast]['cagr'])} CAGR."
 
 
 def region_country_fallback(region: str, d: dict) -> str:
-    big = max(d, key=lambda n: d[n]["v26"])
-    fast = max(d, key=lambda n: d[n]["cagr"])
-    txt = (f"{big} is the largest market in {region} at {fmt.usd(d[big]['v26'])} in {Y0}E, reaching "
-           f"{fmt.usd(d[big]['v33'])} by {Y1}F.")
-    if fast != big:
-        txt += f" {fast} is the fastest-growing, at a {fmt.pct(d[fast]['cagr'])} CAGR."
+    """Data-only country sentence; leaders within the tie threshold are named together."""
+    bigs, fasts = rules.top_tied(d, "v26"), rules.top_tied(d, "cagr")
+    big = bigs[0]
+    if len(bigs) > 1:
+        txt = (f"{_names(bigs)} are the largest markets in {region}, level at "
+               f"{', '.join(fmt.usd(d[b]['v26']) for b in bigs)} in {Y0}E.")
+    else:
+        txt = (f"{big} is the largest market in {region} at {fmt.usd(d[big]['v26'])} in {Y0}E, reaching "
+               f"{fmt.usd(d[big]['v33'])} by {Y1}F.")
+    if len(fasts) > 1:
+        txt += (f" {_names(fasts)} grow at a similar rate "
+                f"({', '.join(fmt.pct(d[f]['cagr']) for f in fasts)} CAGR).")
+    elif fasts[0] != big:
+        txt += f" {fasts[0]} is the fastest-growing, at a {fmt.pct(d[fasts[0]]['cagr'])} CAGR."
     return txt
 
 

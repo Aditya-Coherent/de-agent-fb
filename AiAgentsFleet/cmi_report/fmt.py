@@ -38,8 +38,13 @@ def pct(x: float, d: int = 1) -> str:
     return f"{x:.{d}f}%"
 
 
+def signed(x: float) -> str:
+    """A percentage-point gap with its sign and no unit ('-1.2', '+0.6')."""
+    return f"{x:+.1f}".replace("-0.0", "0.0").replace("+0.0", "0.0")
+
+
 def pp(x: float) -> str:
-    return f"{x:+.1f} pp"
+    return f"{signed(x)} pp"
 
 
 def share(part: float, whole: float) -> str:

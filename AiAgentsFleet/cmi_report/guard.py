@@ -4,13 +4,19 @@
     facts (as formatted by fmt.py, any rounding of it) or a year / small count;
   * ClaimGuard  -- a sentence that calls something the largest / fastest /
     smallest / slowest / biggest opportunity must be naming the entity that
-    really is, within that entity's own peer group.
+    really is, within that entity's own peer group; a near-tie (rules.py)
+    must be called a tie, and an ordinal ('second-largest') must be right;
+  * contradiction_guard -- comparative and causal sentences ('faster than',
+    'momentum', 'more concentrated', a 'high X' that a restraint calls
+    limited) must agree with the model (PLAN-07).
 
 A sentence that fails is dropped (not the whole paragraph).
 """
 from __future__ import annotations
 
 import re
+
+from AiAgentsFleet.cmi_report import rules
 
 _NUM = re.compile(r"(?<![A-Za-z\d.])\d[\d,]*(?:\.\d+)?")
 _SENT = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(])")
@@ -85,8 +91,15 @@ _SUPER = {
     "growth_max": r"\b(fastest|fastest-growing|quickest|highest (?:growth|cagr))\b",
     "growth_min": r"\b(slowest|lowest (?:growth|cagr))\b",
 }
-_QUALIFIED = re.compile(r"\b(second|third|fourth|fifth|one of|among|next|after)\b[\w\s-]{0,15}$", re.I)
+# 'one of the largest' / 'among the fastest' are checked by ClaimGuard.qualified; ordinals by ClaimGuard.ordinal
+_QUALIFIED = re.compile(r"\b(one of|among|next|after)\b[\w\s-]{0,15}$", re.I)
+_ORDINAL_BEFORE = re.compile(r"\b(?:second|third|fourth|fifth)[- ]$", re.I)
+_ORDINAL = re.compile(r"\b(second|third|fourth|fifth)[- ](largest|biggest|smallest|fastest|slowest)\b", re.I)
+_ORDINAL_N = {"second": 2, "third": 3, "fourth": 4, "fifth": 5}
 _CLAUSE = re.compile(r";|,\s*(?:but|while|whereas|and)\b|\bwhile\b|\bwhereas\b|\bbut\b")
+# a sentence that says two leaders are level may name either of them
+_TIE_WORDS = re.compile(r"\b(tie|ties|tied|joint|jointly|equal|level with|alongside|similar|on par|in line with|"
+                        r"neck and neck|matching)\b", re.I)
 
 
 class ClaimGuard:
@@ -102,6 +115,11 @@ class ClaimGuard:
                            for w in word_set(n)}
         self.no_breakdown: list[str] = []       # countries without a segment breakdown in the report
         self.segment_names: list[str] = []
+        # contradiction_guard inputs (prose.make_guard fills them): the 'Regional & other' vendor
+        # share {"global": %, "mea": %}, the MEA restraint names, and names outside the MEA
+        self.other_share: dict[str, float] = {}
+        self.restraints: list[str] = []
+        self.non_mea: list[str] = []
         names = {n for g in groups for n in list(g["names"]) + list(g.get("aliases", {}))}
         # For each group, the longer names of OTHER groups that contain one of its
         # names ('Middle East & Africa' vs 'Africa'), blanked before matching it.
@@ -164,6 +182,43 @@ class ClaimGuard:
                 best = (max if word in ("faster", "larger", "bigger") else min)(d, key=lambda n: d[n][key])
                 if best != e:
                     return f"'the {word}' names {e} but it is {best}"
+                a, b = (d[n][key] for n in d)
+                if rules.tied(key, a, b) and not _TIE_WORDS.search(sentence):
+                    return f"'the {word}' for {e}, but the two are within the tie threshold ({a:.1f} vs {b:.1f})"
+        return None
+
+    def _hits(self, text: str) -> list[tuple[dict, list[str]]]:
+        """(group, names of that group mentioned in `text`) for every group with a hit."""
+        out = []
+        for g, shadow in zip(self.groups, self._shadow):
+            t = text
+            for sh in shadow:
+                t = re.sub(re.escape(sh), " ", t, flags=re.I)
+            hit = self._mentions(t, g["names"], g.get("aliases", {}))
+            if hit:
+                out.append((g, hit))
+        return out
+
+    def ordinal(self, sentence: str) -> str | None:
+        """'Europe is the second-largest region' must be true: the entity named
+        holds that rank in its peer group (or is tied with the one that does)."""
+        size_key = "v33" if re.search(r"\b2033F?\b|\bby 2033\b|\bforecast\b", sentence, re.I) else "v26"
+        for clause in _CLAUSE.split(sentence):
+            for mm in _ORDINAL.finditer(clause):
+                n, word = _ORDINAL_N[mm.group(1).lower()], mm.group(2).lower()
+                key = "cagr" if word in ("fastest", "slowest") else \
+                    "incr" if re.search(r"opportunit|increment|absolute", clause, re.I) else size_key
+                window = self._blank_scopes(clause[max(0, mm.start() - 80): mm.end() + 40])
+                for g, hit in self._hits(window):
+                    d = g["names"]
+                    order = sorted(d, key=lambda k: d[k][key], reverse=word in ("largest", "biggest", "fastest"))
+                    if len(order) < n:
+                        return f"'{mm.group(0)}' for {hit}, but the peer group has only {len(order)} members"
+                    target = order[n - 1]
+                    if target in hit or any(rules.tied(key, d[h][key], d[target][key]) for h in hit):
+                        continue
+                    ranks = ", ".join(f"{h} is #{order.index(h) + 1}" for h in hit)
+                    return f"'{mm.group(0)}' names {hit} but #{n} is {target} ({ranks}, {key})"
         return None
 
     def growth_vs(self, sentence: str, global_cagr: float | None) -> str | None:
@@ -199,11 +254,12 @@ class ClaimGuard:
     def problem(self, sentence: str) -> str | None:
         # a size ranking is judged in the year the sentence talks about: 2033 only when it says so
         size_key = "v33" if re.search(r"\b2033F?\b|\bby 2033\b|\bforecast\b", sentence, re.I) else "v26"
-        tie_words = re.search(r"\b(tie|tied|joint|equal|level with|alongside)\b", sentence, re.I)
+        tie_words = _TIE_WORDS.search(sentence)
         for clause in _CLAUSE.split(sentence):
             for kind, pat in _SUPER.items():
                 m = re.search(pat, clause, re.I)
-                if not m or _QUALIFIED.search(clause[: m.start()]):
+                # 'second-largest' is an ordinal (ClaimGuard.ordinal), not a 'largest' claim
+                if not m or _QUALIFIED.search(clause[: m.start()]) or _ORDINAL_BEFORE.search(clause[: m.start()]):
                     continue
                 # the claim's subject sits near the superlative ('X is the largest', 'largest is X')
                 window = self._blank_scopes(clause[max(0, m.start() - 80): m.end() + 40])
@@ -229,11 +285,14 @@ class ClaimGuard:
                             return f"'{m.group()} ... after' names {hit} but second is {order[1]}"
                         continue
                     if order[0] not in hit:
-                        return f"'{m.group()}' names {hit} but it is {order[0]} ({key})"
-                    # a tie at printed precision must be described as a tie
-                    if len(order) > 1 and not tie_words and \
-                            self._printed(key, d[order[0]][key]) == self._printed(key, d[order[1]][key]):
-                        return f"'{m.group()}' for {order[0]}, but it is tied with {order[1]}"
+                        # 'A and B grow at a similar rate, the fastest ...' may name the tied runner-up
+                        if not (tie_words and any(rules.tied(key, d[h][key], d[order[0]][key]) for h in hit)):
+                            return f"'{m.group()}' names {hit} but it is {order[0]} ({key})"
+                        continue
+                    # a near-tie (rules.TIE_PP / TIE_REL) must be described as a tie
+                    if len(order) > 1 and not tie_words and rules.tied(key, d[order[0]][key], d[order[1]][key]):
+                        return (f"'{m.group()}' for {order[0]}, but it is level with {order[1]} "
+                                f"({self._printed(key, d[order[0]][key])} vs {self._printed(key, d[order[1]][key])})")
         return None
 
 
@@ -278,6 +337,138 @@ def no_breakdown_claim(s: str, countries: list[str], segments: list[str]) -> str
     c = next((c for c in countries if re.search(rf"(?<![a-z]){re.escape(c.lower())}(?![a-z])", low)), None)
     seg = next((x for x in segments if len(x) > 3 and x.lower() in low), None)
     return f"segment claim ({seg}) for {c}, whose segment breakdown is not in the report" if c and seg else None
+
+
+# --------------------------------------------------------------------------- #
+# contradictions (PLAN-07): comparative / causal sentences checked against the model
+# --------------------------------------------------------------------------- #
+_FASTER = re.compile(r"\b(?:grow\w*\s+(?:\w+\s+)?faster than|faster[- ]growing than|outpac\w*|outgrow\w*|"
+                     r"grow\w*\s+(?:\w+\s+)?more (?:quickly|rapidly|strongly) than)\b", re.I)
+_SLOWER = re.compile(r"\b(?:grow\w*\s+(?:\w+\s+)?(?:slower|more slowly) than|slower[- ]growing than|"
+                     r"lags?|lagging|trails?|trailing)\b", re.I)
+_MOMENTUM = re.compile(r"\b(momentum|high[- ]growth|fast[- ]growing|rapidly[- ]growing|rapid growth|"
+                       r"growth (?:hotspots?|engines?|markets?))\b", re.I)
+# vendor concentration in MEA vs globally ('Regional & other' share: lower = more concentrated)
+_MORE_CONCENTRATED = re.compile(r"\b(more concentrated|less fragmented|smaller long tail|more consolidated|"
+                                r"global (?:brands|leaders|players|majors) (?:hold|take|capture|command) more)\b", re.I)
+_LESS_CONCENTRATED = re.compile(r"\b(less concentrated|more fragmented|larger long tail|longer tail|less consolidated|"
+                                r"(?:local|regional|domestic)\b[^.;]{0,80}\b(?:more than|outweigh\w*|over)\b[^.;]{0,30}"
+                                r"\b(?:global|international|multinational)\b)", re.I)
+# a level the restraints contradict: 'high mobile internet penetration' vs 'Limited digital infrastructure'
+_LOW_RESTRAINT = re.compile(r"^\s*(?:limited|low|weak|poor|lack of|insufficient|inadequate|scarce|underdeveloped|"
+                            r"fragmented)\s+(.+)$", re.I)
+_HIGH_CLAIM = r"\b(?:high|strong|widespread|robust|extensive|advanced|well[- ]developed|deep|excellent|good|broad)\s+"
+_TOPIC_STOP = {"the", "and", "of", "in", "for", "to", "a", "an", "local", "rural", "market", "markets", "access",
+               "level", "levels", "base", "capacity", "networks", "network", "systems", "system", "sector",
+               "consumer", "consumers", "farmer", "farmers", "some", "countries", "regional"}
+_SYNONYMS = [{"digital", "internet", "mobile", "connectivity", "broadband", "smartphone", "online", "data"},
+             {"awareness", "knowledge", "literacy", "expertise", "skills", "know-how"},
+             {"distribution", "logistics", "cold-chain", "cold", "supply"}]
+# a tightening of market-entry rules is a barrier, not a demand driver (FINDINGS B7)
+_TIGHT_RULES = re.compile(r"\b(?:tight\w*|strict\w*|stringent|tougher)\s+(?:\w+\s+){0,3}?(?:registration|"
+                          r"approval|licen[cs]\w*|permit\w*)\b|\b(?:registration|approval|licen[cs]\w*|permit\w*)\s+"
+                          r"(?:\w+\s+){0,3}?(?:tighten\w*|stricter)\b", re.I)
+_DEMAND_UP = re.compile(r"\b(?:sustain\w*|support\w*|boost\w*|driv\w*|underpin\w*|fuel\w*|lift\w*|spur\w*)\s+"
+                        r"(?:\w+\s+){0,2}?demand\b", re.I)
+
+
+def contradiction_guard(sentence: str, cg: "ClaimGuard") -> str | None:
+    """Why `sentence` contradicts the model, or None. Checks (FINDINGS B2, C11, D4, B7):
+      * 'X grows faster than Y' / 'X outpaces Y' between two named peers;
+      * 'momentum' / 'high-growth' / 'fast-growing' for an entity that does not grow
+        faster than its parent (its peer average);
+      * 'more concentrated' / 'local players shape share more than global brands' in MEA
+        vs the 'Regional & other' vendor share in MEA and globally;
+      * a 'high X' level that an MEA restraint calls limited / low / weak;
+      * tighter registration rules said to sustain demand."""
+    if not cg:
+        return None
+    for clause in _CLAUSE.split(sentence):
+        # two named peers compared on growth: subject before the comparator, object after
+        for rx, faster in ((_FASTER, True), (_SLOWER, False)):
+            mm = rx.search(clause)
+            if not mm:
+                continue
+            for g, shadow in zip(cg.groups, cg._shadow):
+                t_before, t_after = clause[: mm.start()], clause[mm.end():]
+                for sh in shadow:
+                    t_before = re.sub(re.escape(sh), " ", t_before, flags=re.I)
+                    t_after = re.sub(re.escape(sh), " ", t_after, flags=re.I)
+                subj = cg._mentions(t_before, g["names"], g.get("aliases", {}))
+                obj = cg._mentions(t_after, g["names"], g.get("aliases", {}))
+                if len(subj) != 1 or len(obj) != 1 or subj == obj:
+                    continue
+                a, b = g["names"][subj[0]]["cagr"], g["names"][obj[0]]["cagr"]
+                if rules.tied("cagr", a, b) and not _TIE_WORDS.search(sentence):
+                    return f"'{mm.group(0)}': {subj[0]} {a:.1f}% vs {obj[0]} {b:.1f}% is a tie"
+                if (a < b) if faster else (a > b):
+                    return f"'{mm.group(0)}': {subj[0]} grows {a:.1f}%, {obj[0]} {b:.1f}%"
+        # momentum words: every entity they describe grows faster than its parent
+        mm = _MOMENTUM.search(clause)
+        if mm:
+            for g, hit in cg._hits(clause):
+                parent = g.get("parent_cagr")
+                if parent is None:
+                    continue
+                slow = [h for h in hit if g["names"][h]["cagr"] <= parent + 1e-9]
+                if slow:
+                    return (f"'{mm.group(0)}' for {slow[0]}, which grows {g['names'][slow[0]]['cagr']:.1f}%, "
+                            f"not above its peer average {parent:.1f}%")
+    # vendor concentration, MEA vs global
+    gl, me = cg.other_share.get("global"), cg.other_share.get("mea")
+    if gl is not None and me is not None and not re.search(r"\bglobal(?:ly)?\b[^.]{0,20}\bmore concentrated\b",
+                                                           sentence, re.I):
+        if _MORE_CONCENTRATED.search(sentence) and me >= gl:
+            return f"says MEA is more concentrated, but regional/other hold {me:.1f}% in MEA vs {gl:.1f}% globally"
+        if _LESS_CONCENTRATED.search(sentence) and me <= gl:
+            return f"says local/regional players matter more in MEA, but they hold {me:.1f}% vs {gl:.1f}% globally"
+    # a 'high X' level contradicted by an MEA restraint ('Limited digital infrastructure')
+    low = sentence.lower()
+    if cg.restraints and not any(re.search(rf"(?<![a-z]){re.escape(n.lower())}(?![a-z])", low) for n in cg.non_mea):
+        for r in cg.restraints:
+            mr = _LOW_RESTRAINT.match(r)
+            if not mr:
+                continue
+            # a restraint scoped to a place ('Low Consumer Awareness in Africa') holds only for that place
+            what, _, place = mr.group(1).lower().partition(" in ")
+            if place.strip() and place.strip() not in low:
+                continue
+            topic = {w for w in re.findall(r"[a-z-]+", what) if w not in _TOPIC_STOP}
+            for syn in _SYNONYMS:
+                if topic & syn:
+                    topic |= syn
+            hit = next((w for w in topic if re.search(_HIGH_CLAIM + rf"(?:[\w-]+\s+){{0,2}}{re.escape(w)}\b", low)), None)
+            if hit:
+                return f"claims a high level of '{hit}', but the restraint '{r}' says it is low"
+    if _TIGHT_RULES.search(sentence) and _DEMAND_UP.search(sentence):
+        return "says tighter registration rules sustain demand (they are a barrier to entry)"
+    return None
+
+
+# research steps the pipeline does not perform (PLAN-07 / FINDINGS X16): never claimed in a report
+FALSE_METHOD = re.compile(r"\b(expert[- ]panels?|panel of experts|expert (?:review|scoring|interviews?)|"
+                          r"primary (?:interviews?|research|surveys?)|interviews? with|bottom[- ]up|"
+                          r"triangulat\w*|delphi)\b", re.I)
+# a demonstrative whose antecedent is not in the text ('the contribution of these factors')
+_DANGLING = re.compile(r"\b(?:these|those)\s+(?:factors|trends|drivers|restraints|forces|dynamics|additives|products|"
+                       r"measures|conditions|developments|shifts|challenges|pressures|solutions|tools|technologies)\b",
+                       re.I)
+# a global-column cell may not state MEA-basis figures ('-0.6 percentage points of MEA CAGR')
+_MEA_WORDS = r"(?:MEA|Middle East|Africa|regional)"
+_MEA_BASIS = re.compile(rf"\b{_MEA_WORDS}\b[^.;]{{0,40}}\b(?:CAGR|growth)\b|"
+                        rf"\b(?:pp|percentage[- ]points?)\b[^.;]{{0,25}}\b{_MEA_WORDS}\b|"
+                        r"(?<![\w.])[+\-−]?\d+(?:\.\d+)?\s?(?:pp\b|percentage[- ]points?)", re.I)
+
+
+def drop_mea_basis(text: str, dropped: list[str]) -> str:
+    """Text for a global-column slot without its MEA-basis sentences (FINDINGS X14)."""
+    keep = []
+    for s in sentences(text or ""):
+        if _MEA_BASIS.search(s):
+            dropped.append(f"[MEA-basis figure in a global slot] {s[:120]}")
+        else:
+            keep.append(s)
+    return " ".join(keep)
 
 
 _SIZE_GAP = re.compile(r"\b(gaps?|differences?|differ(?:s|ing)?|discrepanc\w*|diverg\w*|variation|var(?:y|ies)|"
@@ -427,6 +618,29 @@ def scope_violation(sentence: str, definition: dict | None, *, row: bool = False
     return None
 
 
+# singular verb -> plural, for a plural segment name used as a subject ('Microbial Biostimulants remains')
+_PLURAL_VERB = {"is": "are", "was": "were", "has": "have", "remains": "remain", "grows": "grow", "accounts": "account",
+                "leads": "lead", "holds": "hold", "represents": "represent", "captures": "capture",
+                "dominates": "dominate", "makes": "make", "continues": "continue", "shows": "show", "rises": "rise",
+                "expands": "expand", "contributes": "contribute", "reaches": "reach", "posts": "post",
+                "stays": "stay", "follows": "follow", "trails": "trail", "adds": "add", "benefits": "benefit",
+                "commands": "command", "outpaces": "outpace", "forms": "form", "ranks": "rank", "lags": "lag"}
+
+
+def is_plural_name(name: str) -> bool:
+    """'Microbial Biostimulants', 'Cereals & Grains' are plural; 'Hydroponics', 'Glass', 'Asparagus' are not."""
+    last = re.sub(r"\s*\([^)]*\)\s*$", "", name).split()[-1].lower() if name.strip() else ""
+    return len(last) > 3 and last.endswith("s") and not last.endswith(("ss", "us", "is", "ics", "ous"))
+
+
+def fix_plurals(text: str, names) -> str:
+    """Subject-verb agreement for plural segment names ('Microbial Biostimulants remain')."""
+    for n in sorted((n for n in names or [] if is_plural_name(n)), key=len, reverse=True):
+        text = re.sub(rf"(?<![\w-]){re.escape(n)}(?=\s+(?:{'|'.join(_PLURAL_VERB)})\b)\s+(\w+)",
+                      lambda mm: f"{n} {_PLURAL_VERB.get(mm.group(1).lower(), mm.group(1))}", text)
+    return text
+
+
 def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, dropped: list[str],
                absent: list[str] | None = None) -> str:
     """The text with every failing sentence removed. `absent`: entity names
@@ -448,10 +662,16 @@ def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, droppe
                f"out of scope: {scope}" if scope else
                "template/draft caveat" if _BANNED.search(s) else
                "drone-template phrasing" if _TEMPLATE_PHRASES.search(s) else
+               f"claims a research step the pipeline does not perform ('{FALSE_METHOD.search(s).group(0)}')"
+               if FALSE_METHOD.search(s) else
                "pronoun refers to removed or missing text" if prev_dropped and _ORPHAN.match(s) else
+               # a quoted finding has lost its context: 'these factors' there points at nothing
+               "refers to factors that are not in the text" if s.startswith("Finding:") and _DANGLING.search(s) else
                "copied from the template's example text" if cguard and copied(s, cguard.template_sentences,
                                                                                  cguard.name_words) else
-               (cguard.problem(s) or cguard.growth_vs(s, cguard.global_cagr) or cguard.qualified(s) or
+               (cguard.problem(s) or cguard.ordinal(s) or cguard.growth_vs(s, cguard.global_cagr) or
+                cguard.qualified(s) or
+                (f"contradicts the data: {c}" if (c := contradiction_guard(s, cguard)) else None) or
                 (no_breakdown_claim(s, cguard.no_breakdown, cguard.segment_names)
                  if cguard.no_breakdown else None)) if cguard else None)
         prev_dropped = bool(why)

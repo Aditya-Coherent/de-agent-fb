@@ -83,11 +83,13 @@ def build_register(m: dict, ag: dict) -> list[dict]:
             fmt.pct(sc["cagr"]), "cagr")
         add(f"SC-{_code(name)}-{Y1}", f"{name} scenario market size, {Y1}F", [name, f"{name.lower()} scenario"],
             fmt.usd(sc["series"][Y1]), "value")
+    # sourced vendor shares only (empty when the report shows a positioning table), all at the one vendor year
+    vy = m.get("vendor_year", Y0 - 1)
     for label, rows in (("global", m["vendor_chart_global"]), ("MEA", m["vendor_chart_mea"]),
                         ("global (detail)", m["vendor_share_global"]), ("MEA (detail)", m["vendor_share_mea"])):
         for n, s in rows:
             ents = [n, n.split(" (")[0]] + (["other", "regional"] if "other" in n.lower() else [])
-            add(f"V-{_code(label)}-{_code(n)}", f"{n} vendor share, {label}, {Y0 - 1}E", ents, fmt.pct(s), "share")
+            add(f"V-{_code(label)}-{_code(n)}-{vy}", f"{n} vendor share, {label}, {vy}", ents, fmt.pct(s), "share")
     dyn = ag.get("dynamics") or {}
     for d in (dyn.get("mea_drivers") or []) + (dyn.get("mea_restraints") or []):
         add(f"D-{_code(d.get('name', ''))}", f"{d.get('name')} impact on MEA CAGR (CMI assessment)",

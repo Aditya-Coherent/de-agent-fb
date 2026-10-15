@@ -20,7 +20,7 @@ from docx.oxml.ns import qn
 from PIL import Image
 
 from AiAgentsFleet.cmi_report import fmt
-from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text
+from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, vendor_clean
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 from AiAgentsFleet.cmi_report.guard import sentences
 from AiAgentsFleet.cmi_report.groups import canonical, short
@@ -196,8 +196,11 @@ def skipped(m: dict) -> tuple[set[int], list[str]]:
         drop("use_cases_me: Middle East use-case heat map", range(221, 225))
     if not sec["use_cases_af"]["show"]:
         drop("use_cases_af: Africa use-case heat map", range(298, 302))
-    if not sec["vendor_mea"]["show"]:
-        drop("vendor_mea: MEA vendor share", range(337, 342))
+    # vendor shares (PLAN-05): a donut only from sourced shares; otherwise the positioning table
+    if not sec["vendor_global"]["show"] and not sec["positioning"]["show"]:
+        drop("vendor_global: global vendor share", range(332, 337))
+    if not sec["vendor_mea"]["show"] and not sec["positioning"]["show"]:
+        drop("vendor_mea: MEA vendor share", range(337, 343))
     if not sec["capabilities"]["show"]:
         drop("capabilities: vendor capability map", range(343, 347))
     if not sec["dashboard"]["show"]:
@@ -227,6 +230,90 @@ def to_verify_items(b: "Builder", ag: dict, m: dict) -> list[str]:
         items += [f"Timeline chart: {x.get('date')} {x.get('jurisdiction', '')} -- {x.get('event')} [to verify]"
                   for x in (ag.get("regulation") or {}).get("milestones") or [] if x.get("verified") is False]
     return list(dict.fromkeys(items))
+
+
+POSITIONING_HEADER = ["Vendor", "HQ", "Parent group", "Business type", "Role in this market (tier: CMI assessment)",
+                      "MEA presence (CMI assessment)"]
+_POSITIONING_WIDTHS = [1700, 1100, 1500, 1400, 2306, 1500]      # the dashboard table's 9,506 twips
+
+
+def _widen(tbl, widths: list[int]):
+    """The template's 4-column vendor dashboard table with len(widths) columns
+    (cells cloned from each row's last cell)."""
+    grid = tbl.find(qn("w:tblGrid"))
+    for gc in grid.findall(qn("w:gridCol")):
+        grid.remove(gc)
+    for w in widths:
+        gc = grid.makeelement(qn("w:gridCol"), {})
+        gc.set(qn("w:w"), str(w))
+        grid.append(gc)
+    for tr in tbl.findall(qn("w:tr")):
+        while len(tr.findall(qn("w:tc"))) < len(widths):
+            last = tr.findall(qn("w:tc"))[-1]
+            last.addnext(copy.deepcopy(last))
+        for tc, w in zip(tr.findall(qn("w:tc")), widths):
+            tcw = tc.find(qn("w:tcPr") + "/" + qn("w:tcW"))
+            if tcw is not None:
+                tcw.set(qn("w:w"), str(w))
+    return tbl
+
+
+def short_note(note: str | None) -> str:
+    """A confirmed ownership note beside a vendor name ('now part of Huber'); a long
+    sentence is not a name annotation and is left out."""
+    note = str(note or "").strip().rstrip(".")
+    return note if note and len(note.split()) <= 10 else ""
+
+
+def positioning_rows(m: dict, vsafe) -> list[list[str]]:
+    """vendor | HQ | parent group | business type | role (tier) | MEA presence -- confirmed vendors only;
+    tiers and MEA presence are CMI assessments, never percentages."""
+    rows = []
+    for r in m["vendor_positioning"]:
+        role = vsafe(r["role"]).rstrip(".")
+        tier = f"{r['tier']}: " if r["tier"] else ""
+        own = short_note(r.get("ownership_note"))
+        rows.append([r["vendor"] + (f" ({own})" if own and own.lower() not in r["vendor"].lower() else ""),
+                     r["hq"], r["parent"], r["business_type"], (tier + role) if role else r["tier"],
+                     r["mea_presence"] or "Not assessed"])
+    return rows
+
+
+def vendor_shares(b: "Builder", i: int, m: dict, s, root: str, charts: dict, vsafe) -> None:
+    """Sections 7.2 / 7.3 (template elements 332-341): a share donut where at least
+    3 shares are sourced, else the positioning table (once, in the first section
+    without a donut) and the section's paragraph (PLAN-05)."""
+    sec, vy = m["sections"], m["vendor_year"]
+    show_g, show_m, pos = sec["vendor_global"]["show"], sec["vendor_mea"]["show"], sec["positioning"]["show"]
+    pos_at = 332 if not show_g else 337           # where the positioning table goes
+    geo, show, label = ("global", show_g, "Global") if i < 337 else ("MEA", show_m, "MEA")
+    k = i - (332 if i < 337 else 337)              # 0 heading, 1 caption, 2 figure, 3 source, 4 paragraph
+    if k == 0:
+        if show:
+            b.keep(i)
+        else:
+            b.para(i, f"7.{2 if i < 337 else 3} Vendor positioning ({label})")
+    elif k == 4:
+        b.para(i, s("global_share_para" if i < 337 else "mea_share_para"))
+    elif show:
+        if k == 1:
+            b.caption(i, "Figure", f"Vendor share of {geo} {root.lower()} market value, {vy} (published figures)")
+        elif k == 2:
+            b.image(i, charts[f"vendor_{geo.lower()}"])
+        else:
+            pubs = dict.fromkeys(x.get("domain") or "" for x in m["vendor_sources"][geo.lower()])
+            b.para(i, "Source: " + ", ".join(p for p in pubs if p) + "; shares as stated by each source")
+    elif pos and (i - k) == pos_at:
+        if k == 1:
+            b.caption(i, "Table", f"Vendor positioning in the {root.lower()} market (published shares are not "
+                                  f"available for enough vendors; tiers and MEA presence are CMI assessments)")
+        elif k == 2:
+            b.src.append(_widen(b.el(349), _POSITIONING_WIDTHS))     # the dashboard table, 6 columns
+            b.table(len(b.src) - 1, complete_rows(positioning_rows(m, vsafe), b.log, "vendor positioning"),
+                    header=POSITIONING_HEADER)
+        else:
+            b.para(i, "Source: company websites, filings and news (HQ, parent group, business type, confirmed in "
+                      "the evidence); CMI assessment (tier, role, MEA presence)")
 
 
 def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: list[str],
@@ -579,6 +666,10 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
     def safe(text: str | None) -> str:
         """Agent-written table/box text through the same guards as the prose."""
         return clean_text(text or "", ng, cg, dropped, absent) if text else ""
+
+    def vsafe(text: str | None) -> str:
+        """Vendor-chapter text: the same guards, then the vendor data (guard.vendor_clean)."""
+        return vendor_clean(safe(text), m.get("vendor_text"), dropped) if text else ""
 
     def s(key: str, fallback: str | None = None):
         v = S.get(key)
@@ -1074,25 +1165,16 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 326:
             b.para(i, open_chapter(s("vendor_intro"), r"(?i)vendor|compan|player|supplier|tier|producer",
                                    f"The {root.lower()} vendor landscape is set out below by tier, value-chain position, "
-                                   f"market share and capability."))
+                                   + ("market share and capability." if sec["vendor_global"]["show"]
+                                      else "market position and capability.")))
         elif i == 328:
             b.caption(i, "Figure", f"{root} value chain and indicative share of value pool")
         elif i == 329:
             b.image(i, charts["value_chain"])
         elif i == 331:
             b.para(i, s("value_chain_para"))
-        elif i == 333:
-            b.caption(i, "Figure", f"Vendor share of global {root.lower()} market value, {Y0 - 1}E")
-        elif i == 334:
-            b.image(i, charts["vendor_global"])
-        elif i == 336:
-            b.para(i, s("global_share_para"))
-        elif i == 338:
-            b.caption(i, "Figure", f"Vendor share of MEA {root.lower()} market value, {Y0 - 1}E")
-        elif i == 339:
-            b.image(i, charts["vendor_mea"])
-        elif i == 341:
-            b.para(i, s("mea_share_para"))
+        elif 332 <= i <= 341:
+            vendor_shares(b, i, m, s, root, charts, vsafe)
         elif i == 344:
             b.caption(i, "Figure", "Capability heat map of leading vendors in MEA")
         elif i == 345:
@@ -1100,18 +1182,14 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 348:
             b.caption(i, "Table", "Vendor dashboard")
         elif i == 349:
-            from AiAgentsFleet.cmi_report.model import display_name
-            rows, seen_v = [], set()
-            for r in (ag.get("vendors") or {}).get("dashboard") or []:
-                name = display_name(m, r.get("vendor", ""))
-                if name in seen_v:                 # a corporate group appears once
-                    continue
-                seen_v.add(name)
-                own = str(r.get("ownership_note") or "").strip()
-                rows.append([name + (f" ({own})" if own and own.lower() not in name.lower() else ""),
-                             r.get("hq", ""), safe(r.get("core_strength")),
-                             (safe(r.get("mea_footprint")) + ("" if r.get("verified") else " [to verify]"))
-                             if safe(r.get("mea_footprint")) else ""])
+            # vendors with a confirmed HQ only; HQ and ownership note from the entity check (PLAN-05)
+            rows = []
+            for r in m["vendor_dashboard"]:
+                own = short_note(r["ownership_note"])
+                foot = vsafe(r["mea_footprint"])
+                rows.append([r["vendor"] + (f" ({own})" if own and own.lower() not in r["vendor"].lower() else ""),
+                             r["hq"], vsafe(r["core_strength"]),
+                             (foot + ("" if r["verified"] else " [to verify]")) if foot else ""])
             b.table(i, complete_rows(rows, b.log, "vendor dashboard"))
         elif i == 351:
             b.box(i, "Competitive implications", lst("implications"), numbered=True)

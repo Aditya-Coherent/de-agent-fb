@@ -31,14 +31,15 @@ from AiAgentsFleet.randomizer import randomize_json  # noqa: E402
 from AiAgentsFleet.sources import filter_sources, on_topic, sources_block  # noqa: E402
 from AiAgentsFleet.cmi_report.groups import (GEOGRAPHY_GROUP, GROUPS, misplaced, rest_members,  # noqa: E402
                                              schema_for, validate_geography)
-from AiAgentsFleet.cmi_report import geo_check, segments_check  # noqa: E402
+from AiAgentsFleet.cmi_report import entities, geo_check, segments_check  # noqa: E402
 from AiAgentsFleet.field_groups import FIELD_GROUPS  # noqa: E402
 
 CACHE_PATH = ROOT / "output" / ".gen_cache.db"
 # Keys jittered +/-5-10% in groups that also carry scores or text. Like every
 # `randomize` key in groups.py, this only takes effect when the randomizer
-# switch is on (off by default; see randomizer.py).
-_PARTIAL_RANDOMIZE = {"vendors": ("value_chain", "mea_shares")}
+# switch is on (off by default; see randomizer.py). Vendor data is never
+# jittered (PLAN-05), so `vendors` is not listed.
+_PARTIAL_RANDOMIZE: dict[str, tuple[str, ...]] = {}
 # the snippets each group's agent was shown, so a re-ask (geo_check) sees the same evidence
 _SHOWN: dict[str, list[dict]] = {}
 
@@ -266,6 +267,31 @@ def sanity_review(market: str, data: dict, fields: dict, geo: dict, definition: 
     return rec
 
 
+def entity_search(queries: list[str]) -> list[dict]:
+    """Search for one company's facts (entities.py): blocked sources dropped, but
+    no market-topic filter -- a page on a company's headquarters need not name
+    the market."""
+    try:
+        sourced = gather_with_sources(queries, per_query=4, cap=12)
+    except Exception:  # noqa: BLE001
+        return []
+    return filter_sources(sourced)[0]
+
+
+def review_vendors(market: str, data: dict, fields: dict, definition: dict, llm: GenLLM, log: list,
+                   ask_group, check_answer: bool = True) -> None:
+    """PLAN-05: the vendors answer checked (MEA share quotes, companies outside
+    the definition) and re-asked once; then one entity check per vendor (HQ,
+    parent, business type, entities.check_entities). Writes
+    fields["vendor_review"] and fields["entities"]."""
+    if check_answer:
+        fields["vendor_review"] = entities.review_vendor_answer(fields, _SHOWN.get("vendors") or [], market,
+                                                                ask_group, log)
+    names = entities.universe(data["fields"], fields.get("vendors"))
+    fields["entities"] = entities.check_entities(names, market, definition_block(definition), fields.get("vendors"),
+                                                 llm, entity_search, log)
+
+
 def run(slug: str, only: set[str] | None = None) -> Path:
     market_dir = FLEET / "output" / slug
     data = json.loads((market_dir / "whitepaper_fields.json").read_text(encoding="utf-8"))
@@ -382,6 +408,12 @@ def run(slug: str, only: set[str] | None = None) -> Path:
             seg_review["segments_mea"] = {"problems": [], "reasked": False, "skipped": str(exc)}
         fields["segment_review"] = seg_review
         print("  done: segments_mea")
+    # vendors: share quotes and market fit checked (re-asked once), then each vendor's entity facts (PLAN-05);
+    # `--groups entities` re-runs only the entity check on the saved vendors answer
+    if any(g["key"] == "vendors" for g in wanted) or (only and "entities" in only and "vendors" in fields):
+        review_vendors(market, data, fields, definition, llm, log, ask_group,
+                       check_answer=any(g["key"] == "vendors" for g in wanted))
+        print("  done: vendor_review + entities")
 
     out_path.write_text(json.dumps({"market_name": market, "generated_at": datetime.now(timezone.utc).isoformat(),
                                     "fields": fields, "log": (prev.get("log") or []) + log},

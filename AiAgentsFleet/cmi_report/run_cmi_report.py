@@ -102,18 +102,17 @@ def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
         C["reg_scorecard"] = ch.heatmap(list(sc), reg.get("scorecard_dimensions") or [], list(sc.values()),
                                         "Regulatory enablement score (1 = restrictive, 5 = enabling) - CMI assessment",
                                         cdir / "reg_scorecard.png")
-    ven = ag.get("vendors") or {}
     C["value_chain"] = ch.value_chain(m["value_chain"], cdir / "value_chain.png")
-    C["vendor_global"] = ch.vendor_donut(m["vendor_chart_global"], "Global", cdir / "vendor_global.png")
+    # share donuts only from sourced shares (PLAN-05); otherwise the report prints a positioning table
+    if sec["vendor_global"]["show"]:
+        C["vendor_global"] = ch.vendor_donut(m["vendor_chart_global"], "Global", cdir / "vendor_global.png",
+                                             m["vendor_year"])
     if sec["vendor_mea"]["show"]:
-        C["vendor_mea"] = ch.vendor_donut(m["vendor_chart_mea"], "MEA", cdir / "vendor_mea.png")
-    # one name per corporate group (same names as the share charts); a group listed twice keeps its first row
-    caps = {}
-    for n, row in (ven.get("capabilities") or {}).items():
-        disp = model.display_name(m, n)
-        caps.setdefault(disp, row)
+        C["vendor_mea"] = ch.vendor_donut(m["vendor_chart_mea"], "MEA", cdir / "vendor_mea.png", m["vendor_year"])
+    # the final vendors only: one name per corporate group, no excluded or unconfirmed company
+    caps = m["vendor_capabilities"]
     if sec["capabilities"]["show"]:
-        C["capabilities"] = ch.heatmap(list(caps), ven.get("capability_dimensions") or [], list(caps.values()),
+        C["capabilities"] = ch.heatmap(list(caps), m["vendor_capability_dimensions"], list(caps.values()),
                                        "Vendor capability mapping (1 = limited, 5 = leading) - CMI assessment",
                                        cdir / "capabilities.png")
     C["phases"] = ch.phases((ag.get("strategy") or {}).get("phases") or [], cdir / "phases.png")

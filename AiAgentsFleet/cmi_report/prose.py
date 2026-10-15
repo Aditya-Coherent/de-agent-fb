@@ -15,10 +15,11 @@ from pathlib import Path
 import docx
 
 from AiAgentsFleet.cmi_report import fmt
-from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, drop_size_comparison
+from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text, drop_size_comparison,
+                                            vendor_clean)
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 8      # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 9      # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -255,16 +256,21 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                     "reg_intro": ("paragraph on regulation as enabler and swing factor in MEA", 304),
                     "policy_bullets": ("list of 4 bullets: policy outlook to 2030", 316),
                     "entry_implication": ("2 sentences: implication for market entry", 324)}},
-        "ch7": {"facts": {"value_chain": m.get("value_chain"),
-                          # exactly the slices the donut charts show
-                          "vendor_share_global_pct": [[n, round(s, 1)] for n, s in m["vendor_chart_global"]],
-                          "vendor_share_mea_pct": [[n, round(s, 1)] for n, s in m["vendor_chart_mea"]],
-                          "dashboard": (ag.get("vendors") or {}).get("dashboard")},
+        "ch7": {"facts": {"value_chain": m.get("value_chain"), **vendor_facts(m)},
                 "slots": {
-                    "vendor_intro": ("paragraph: the vendor tiers in this market", 326),
+                    "vendor_intro": ("paragraph: the vendor tiers in this market, naming only FACTS.vendors", 326),
                     "value_chain_para": ("2 sentences on where value sits in the chain", 331),
-                    "global_share_para": ("2 sentences on global vendor shares", 336),
-                    "mea_share_para": ("2 sentences on MEA vendor shares", 341),
+                    "global_share_para": (("2 sentences on the published global vendor shares in "
+                                           "FACTS.vendor_share_global_pct, for FACTS.vendor_year")
+                                          if m["sections"]["vendor_global"]["show"] else
+                                          ("2 sentences on how the leading vendors are positioned globally "
+                                           "(FACTS.vendor_positioning; tiers are CMI assessments; no shares or %)"), 336),
+                    "mea_share_para": (("2 sentences on the published MEA vendor shares in FACTS.vendor_share_mea_pct, "
+                                        "naming FACTS.mea_leader as the leader")
+                                       if m["sections"]["vendor_mea"]["show"] else
+                                       ("2 sentences on vendor positioning in the Middle East & Africa, naming "
+                                        "FACTS.mea_leader as the leading vendor on CMI's assessment (no shares or %)"),
+                                       341),
                     "implications": ("list of 3 competitive implications", 351)}},
         "ch8": {"facts": {"strategy": {k: v for k, v in (ag.get("strategy") or {}).items()
                                        if k not in ("_sources", "priority_actions")}},
@@ -301,6 +307,52 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
 # --------------------------------------------------------------------------- #
 # guards per slot
 # --------------------------------------------------------------------------- #
+def vendor_facts(m: dict) -> dict:
+    """The vendor chapter's facts, from the final vendor data only (PLAN-05):
+    sourced shares when there are enough, else the positioning table; never an
+    excluded or unconfirmed company, never a share without a source."""
+    sec = m["sections"]
+    out = {"vendor_year": str(m["vendor_year"]),
+           "vendors": [r["vendor"] for r in m["vendor_positioning"]] or list(m["vendor_text"]["names"]),
+           "mea_leader": m["vendor_mea_leader"],
+           "dashboard": [{k: r[k] for k in ("vendor", "hq", "core_strength")} for r in m["vendor_dashboard"]],
+           "rule": "name only companies in these facts; a % next to a vendor only as listed in "
+                   "vendor_share_*_pct; a deal or move only with its year"}
+    if sec["vendor_global"]["show"]:
+        out["vendor_share_global_pct"] = [[n, fmt.pct(s)] for n, s in m["vendor_chart_global"]]
+    if sec["vendor_mea"]["show"]:
+        out["vendor_share_mea_pct"] = [[n, fmt.pct(s)] for n, s in m["vendor_chart_mea"]]
+    if not (sec["vendor_global"]["show"] and sec["vendor_mea"]["show"]):
+        out["vendor_positioning"] = [{"vendor": r["vendor"], "hq": r["hq"], "parent_group": r["parent"],
+                                      "business_type": r["business_type"],
+                                      "tier_cmi_assessment": r["tier"], "role": r["role"],
+                                      "mea_presence_cmi_assessment": r["mea_presence"]}
+                                     for r in m["vendor_positioning"]]
+    return out
+
+
+def mea_leader_named(slots: dict, m: dict) -> str | None:
+    """The MEA paragraph names the MEA leader in the vendor data (F3: NAQUA was
+    dropped from it). When the guarded text does not, a sentence built from
+    the data opens the paragraph. Returns what was done, or None."""
+    from AiAgentsFleet.cmi_report.entities import named_in
+    leader = m.get("vendor_mea_leader")
+    sec = m["sections"]
+    if not leader or not (sec["vendor_mea"]["show"] or sec["positioning"]["show"]):
+        return None
+    text = slots.get("mea_share_para") or ""
+    if named_in(text, leader):
+        return None
+    if sec["vendor_mea"]["show"]:
+        share = dict(m["vendor_chart_mea"]).get(leader)
+        lead = (f"{leader} holds the largest published share of the Middle East & Africa market, at "
+                f"{fmt.pct(share)} in {m['vendor_year']}.")
+    else:
+        lead = f"{leader} is the leading vendor in the Middle East & Africa on CMI's assessment of regional presence."
+    slots["mea_share_para"] = (lead + " " + text).strip()
+    return f"MEA paragraph did not name the MEA leader {leader}: a data sentence was added"
+
+
 def claim_groups(m: dict, geo: str | None) -> list[dict]:
     gs = [{"names": m["regions"], "aliases": ALIASES}, {"names": m["subregions"]}]
     gs += [{"names": d, "aliases": ALIASES} for d in m["countries"].values()]
@@ -333,6 +385,7 @@ def make_guard(m: dict, geo: str | None) -> ClaimGuard:
                        if not n.lower().startswith("other")]
     g.headline_unsourced = (m.get("size_check") or {}).get("status") != "sourced"
     g.definition = m.get("definition")       # no sentence may describe another value-chain level (PLAN-04)
+    g.vendor_text = m.get("vendor_text")     # vendors named only from the final vendor data (PLAN-05)
     return g
 
 
@@ -344,6 +397,7 @@ def _geo_of(slot: str, ch: str) -> str | None:
 
 def _guard(text, ng, cg, dropped, absent) -> str:
     out = clean_text(text, ng, cg, dropped, absent)
+    out = vendor_clean(out, getattr(cg, "vendor_text", None), dropped)
     return drop_size_comparison(out, dropped, getattr(cg, "headline_unsourced", False))
 
 
@@ -476,6 +530,10 @@ def write(market_dir: Path, m: dict, ag: dict, llm, template: Path, evidence_fn=
     if repeats:
         out["dropped"]["repetition"] = repeats
         log(f"  [repetition] {len(repeats)} repeated sentence(s) removed")
+    fixed = mea_leader_named(out["slots"], m)
+    if fixed:
+        out["vendor_check"] = [fixed]
+        log(f"  [vendors] {fixed}")
     (market_dir / "cmi_prose.json").write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
     return out
 
@@ -533,6 +591,10 @@ def reguard(pr: dict, m: dict, ag: dict) -> int:
                 else:
                     del slots[key]
     dropped += dedupe(slots, m)
+    fixed = mea_leader_named(slots, m)
+    if fixed:
+        pr["vendor_check"] = [fixed]
+        dropped.append(f"[vendors] {fixed}")
     if dropped:
         pr.setdefault("dropped", {})["reguard"] = dropped
     return len(dropped) if json.dumps(slots, ensure_ascii=False) != before else 0

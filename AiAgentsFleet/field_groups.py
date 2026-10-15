@@ -178,10 +178,23 @@ FIELD_GROUPS: list[dict] = [
         "queries": [
             "{market} top companies market share",
             "{market} leading manufacturers competitive landscape",
+            "{market} largest producers share percent",
         ],
-        "system": "You summarize web search results into a named-competitor market-share breakdown, Google AI-Overview style.",
+        "system": (
+            "You summarize web search results into the market's leading companies, Google AI-Overview style. "
+            "List the top producers or vendors that EARN THE REVENUE the MARKET DEFINITION measures, at its "
+            "value-chain level -- never suppliers of inputs, buyers, or companies whose business is another level "
+            "of the value chain. If one country's producers dominate the market's supply (e.g. Chinese producers "
+            "for vitamin C), the list must reflect that. share_pct is your estimate and only orders the list; it "
+            "is never published. A share counts as SOURCED only when one WEB EVIDENCE line states that company's "
+            "share of THIS market (or its revenue in it): copy that line exactly into share_quote and use its "
+            "figure as share_pct (or revenue_usd_mn). Otherwise share_quote is \"\". Never invent a quote."
+        ),
         "schema_hint": (
-            '{"companies": [{"name": <string>, "share_pct": <number>, "positioning_note": <string>}, '
+            '{"companies": [{"name": <string>, "share_pct": <number>, '
+            '"share_quote": <the WEB EVIDENCE line stating this company\'s share of this market, copied exactly, or "">, '
+            '"revenue_usd_mn": <number|null, only when share_quote states its revenue in this market>, '
+            '"positioning_note": <string>}, '
             '... 8-12 named real companies, ranked descending by share], '
             '"others_share_pct": <number>}'
         ),

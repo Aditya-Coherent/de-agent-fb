@@ -106,6 +106,13 @@ def run_field_group(
         data, src["size_check"] = check_with_reask(data, shown, lambda note: llm.complete_json(system, user + note), log,
                                                    market)
         src["snippets"] = shown
+    elif group["key"] == "competitive_landscape":
+        # a company share is printed only when a quote in these snippets states it; re-asked once (PLAN-05)
+        from AiAgentsFleet.cmi_report.entities import check_shares_with_reask
+        shown = [{k: s.get(k) for k in ("text", "url", "domain")} for s in sourced[:15]]
+        data, src["share_check"] = check_shares_with_reask(data, shown, lambda note: llm.complete_json(system, user + note),
+                                                           log, market)
+        src["snippets"] = shown
 
     jittered = randomize and randomizer.ENABLED
     out = randomize_json(data) if randomize else data

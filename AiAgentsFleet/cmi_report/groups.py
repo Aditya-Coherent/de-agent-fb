@@ -329,28 +329,44 @@ GROUPS: list[dict] = [
     },
     {
         "key": "vendors",
-        "randomize": True,
-        "queries": ["{market} value chain suppliers manufacturers distribution margins",
+        # vendor data is never jittered (PLAN-05): a share is printed only when a quote states it
+        "randomize": False,
+        "queries": ["{market} leading producers manufacturers companies market share",
                     "{market} Middle East Africa companies distributors market share",
+                    "{market} value chain suppliers manufacturers distribution margins",
                     "{market} company acquisitions partnerships Middle East Africa 2025"],
         "system": _ANALYST + (
-            " Describe the vendor landscape. Name only real, verifiable companies. Capability scores are integers "
-            "1 (limited) to 5 (leading) and are an assessment. MEA shares are % of 2025 MEA market value, count a "
-            "parent and its subsidiaries as ONE group, include only companies that earn the revenue the DEFINITION "
-            "measures (not suppliers of excluded inputs), include the largest real local/regional players, and "
-            "must sum to 100 including 'Regional & Other'. Classify every company in CONTEXT.top_companies: its "
-            "parent group, business type, and whether it earns the revenue the DEFINITION measures. For each "
-            "dashboard row set verified=true only if the EVIDENCE confirms the MEA moves described."),
+            " Describe the vendor landscape. Name only real, verifiable companies, and only companies that EARN "
+            "THE REVENUE the DEFINITION measures, at its VALUE-CHAIN LEVEL -- never suppliers of inputs or of "
+            "excluded products, never buyers, never firms whose business is another level of the value chain. "
+            "If one country's producers dominate this market's supply (e.g. Chinese producers for vitamin C), "
+            "the lists must reflect that; include the largest real local/regional players in MEA. Count a parent "
+            "and its WHOLLY OWNED subsidiaries as one company; a joint venture is its own company. "
+            "A vendor's MEA share is given ONLY when a WEB EVIDENCE line states that company's share of the MEA "
+            "market (or its MEA revenue in this market): copy that line exactly into quote. Otherwise share_pct "
+            "is null and quote is \"\" -- never estimate a share and never invent a quote. "
+            "Positioning tiers (Leader / Challenger / Niche) and MEA presence are CMI assessments of each "
+            "company's role in THIS market; position every company in CONTEXT.top_companies and the largest MEA "
+            "players. Capability scores are integers 1 (limited) to 5 (leading) and are an assessment. Classify "
+            "every company in CONTEXT.top_companies: its parent group, business type, and whether it earns the "
+            "revenue the DEFINITION measures. For each dashboard row set verified=true only if the EVIDENCE "
+            "confirms the MEA moves described; give the year of every deal, acquisition or expansion, and leave "
+            "out a move whose year is not in the evidence (never call it 'recent')."),
         "schema": ('{"value_chain": [{"stage": <1-3 words>, "examples": [<3-4 items, 1-3 words each>], '
                    '"share_low_pct": <number>, "share_high_pct": <number>}, x5 stages from inputs to the sales '
                    'channel; the end-user stage is added automatically], '
-                   '"mea_shares": [{"vendor": <string>, "share_pct": <number>}, x7, then {"vendor": "Regional & Other", '
-                   '"share_pct": <number>}], '
+                   '"mea_shares": [{"vendor": <string>, "share_pct": <number|null, ONLY if a WEB EVIDENCE line states '
+                   'it>, "quote": <that evidence line copied exactly, or "">}, ... up to 7 companies], '
+                   '"positioning": [{"vendor": <string>, "tier": "Leader|Challenger|Niche", '
+                   '"role": <one line: what it sells in THIS market and to whom>, '
+                   '"mea_presence": "Leading|Strong|Moderate|Limited|None"}, ... 8-12 companies, every company in '
+                   'CONTEXT.top_companies that earns the defined revenue plus the largest MEA players], '
                    '"capability_dimensions": [<6 short names (1-3 words) of the capabilities that differentiate vendors '
                    'in THIS market; the last one is "MEA presence">], '
                    '"capabilities": {"<vendor>": [<6 integer scores>], ... x10 vendors}, '
                    '"dashboard": [{"vendor": <string>, "hq": <country>, "core_strength": <string>, '
-                   '"mea_footprint": <1 sentence on MEA presence and recent moves>, "verified": <true|false>, '
+                   '"mea_footprint": <1 sentence on MEA presence and dated moves (with their year)>, '
+                   '"verified": <true|false>, '
                    '"ownership_note": <"now part of X", "formerly Y", "acquired Z in 2024" -- current ownership, '
                    'mergers and rebrands; "" if none>}, x8], '
                    '"company_classification": [{"company": <name exactly as in CONTEXT.top_companies>, '

@@ -460,3 +460,74 @@ def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, droppe
         else:
             keep.append(s)
     return " ".join(keep)
+
+
+# --------------------------------------------------------------------------- #
+# vendors (PLAN-05): text names only the final vendor data, with its own shares,
+# and a "recent" deal carries a year from the evidence
+# --------------------------------------------------------------------------- #
+_VENDOR_PCT = re.compile(r"(?<![\d.])\d+(?:\.\d+)?%")
+_DEAL = re.compile(r"\b(deals?|acqui\w*|merg\w*|partner\w*|joint ventures?|invest\w*|expan\w*|launch\w*|open\w*|"
+                   r"agreements?|stakes?|moves?|entered|entry)\b", re.I)
+_RECENT = re.compile(r"\s*\b(?:more\s+)?recent(?:ly)?\b\s*", re.I)
+_YEAR = re.compile(r"(?<!\d)(20[0-4]\d)(?!\d)")
+
+
+def vendor_problem(sentence: str, vt: dict | None) -> str | None:
+    """Why a sentence breaks the vendor data, or None. `vt` is m["vendor_text"]:
+    {"names", "blocked", "shares": {vendor: [printed %]}, "moves": {vendor: [years]}, "year"}.
+    - a company that is not in the final vendor data (excluded, unconfirmed,
+      merged away) may not be named;
+    - a % in a sentence naming a vendor must be the printed share of a vendor
+      it names, and a vendor share may only carry the vendor year;
+    - a "recent" deal or move needs a year confirmed by the evidence."""
+    if not vt or not sentence:
+        return None
+    from AiAgentsFleet.cmi_report.entities import named_in
+    # company names are capitalised in prose; 'Egyptian shrimp farms' is not 'Egyptian Shrimp Company'
+    named = [n for n in vt.get("names") or [] if named_in(sentence, n, case=True)]
+    blocked = [n for n in vt.get("blocked") or [] if named_in(sentence, n, case=True)
+               and not any(named_in(n, x) or named_in(x, n) for x in named)]
+    if blocked:
+        return f"names {blocked[0]}, which is not in the final vendor data"
+    pcts = _VENDOR_PCT.findall(sentence)
+    if named and pcts:
+        shares = vt.get("shares") or {}
+        allowed = {p for n in named for p in (shares.get(n) or [])}
+        bad = [p for p in pcts if p not in allowed]
+        if bad:
+            return f"vendor share {bad[0]} is not in the vendor data"
+        years = {int(y) for y in _YEAR.findall(sentence)}
+        if years - {vt.get("year")}:
+            return f"vendor share stated for {sorted(years - {vt.get('year')})[0]}, not {vt.get('year')}"
+    if _RECENT.search(sentence) and _DEAL.search(sentence):
+        years = {int(y) for y in _YEAR.findall(sentence)}
+        known = {y for n in named for y in (vt.get("moves") or {}).get(n, [])}
+        if not years:
+            return "undated 'recent' deal or move"
+        if not years <= known:
+            return f"deal year {sorted(years - known)[0]} not confirmed by the evidence"
+    return None
+
+
+def vendor_clean(text: str, vt: dict | None, dropped: list[str]) -> str:
+    """The text with every clause that breaks the vendor data removed (a "recent"
+    claim is judged clause by clause, so 'Present in Egypt; recent moves include
+    ...' keeps its first half), and "recent" dropped from a dated, confirmed deal."""
+    if not vt or not text:
+        return text or ""
+    keep = []
+    for s in sentences(text):
+        parts = [p for p in re.split(r"\s*;\s*", s) if p.strip()]
+        ok = []
+        for p in parts:
+            why = vendor_problem(p, vt)
+            if why:
+                dropped.append(f"[vendor: {why}] {p[:120]}")
+            else:
+                ok.append(re.sub(r"^[\W_]+", "", _RECENT.sub(" ", p)).strip() if _DEAL.search(p) else p)
+        if ok:
+            out = "; ".join(ok)
+            out = out[0].upper() + out[1:]
+            keep.append(out if out[-1] in ".!?" else out + ".")
+    return " ".join(keep)

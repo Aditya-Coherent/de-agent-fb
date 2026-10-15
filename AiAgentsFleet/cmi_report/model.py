@@ -19,6 +19,8 @@ from AiAgentsFleet.cmi_report import geo_check, segments_check
 from AiAgentsFleet.cmi_report.groups import DEFAULT_COUNTRIES, REST, rest_members
 
 Y0, Y1 = 2026, 2033
+# the one year of every vendor share: chart titles, captions, register IDs and prose facts (X10)
+VENDOR_YEAR = Y0 - 1
 YEARS = list(range(2025, Y1 + 1))
 N = Y1 - Y0
 MAIN_REGIONS = ["North America", "Europe", "Asia Pacific", "Latin America", "Middle East & Africa"]
@@ -173,32 +175,270 @@ def display_name(m: dict, name: str) -> str:
     return alias.get(n.lower()) or alias.get(n.split(" (")[0].lower()) or n
 
 
-def merge_parents(shares: list[tuple[str, float]]) -> tuple[list[tuple[str, float]], list[str]]:
-    """Counts a subsidiary with its parent group ('Valagro (Syngenta Group)' ->
-    'Syngenta (incl. Valagro)') so no group appears twice in a share chart."""
-    import re
+def merge_parents(shares: list[tuple[str, float]], records: dict | None = None
+                  ) -> tuple[list[tuple[str, float]], list[str], list[str]]:
+    """Counts a subsidiary with its parent group ('Syngenta (incl. Valagro)') --
+    ONLY when the entity check (entities.py) confirmed the parent from the
+    evidence and that the parent owns it outright. A joint venture (Wayne-
+    Sanderson) or an unconfirmed parent is never merged. Subsidiaries of a
+    parent that is not itself listed are grouped under the parent's name when
+    two or more of them are listed. Returns (shares, merge notes, declined)."""
+    from AiAgentsFleet.cmi_report import entities as ent
     names = [n for n, _ in shares]
+    notes, declined = [], []
 
-    def parent_of(name: str) -> str | None:
-        m = re.search(r"\(([^)]+?)(?:\s+Group)?\)", name)
-        if not m:
+    def owner(n: str) -> str | None:
+        rec = ent.lookup(n, records or {}) or {}
+        if rec.get("parent_is_self") or not rec.get("parent_group"):
             return None
-        p = m.group(1).strip().lower()
-        return next((o for o in names if o != name and (o.lower() == p or o.lower().startswith(p + " ")
-                                                       or p.startswith(o.lower()))), None)
+        if not rec.get("wholly_owned"):
+            declined.append(f"{n} with {rec['parent_group']} ({rec.get('ownership', 'unknown')} ownership, "
+                            f"not a wholly owned subsidiary)")
+            return None
+        return rec["parent_group"]
+    parents = {n: owner(n) for n in names}
+    counts: dict[str, int] = {}
+    for p in parents.values():
+        if p:
+            counts[p] = counts.get(p, 0) + 1
     merged: dict[str, float] = {}
     subs: dict[str, list[str]] = {}
-    notes = []
     for n, s in shares:
-        p = parent_of(n)
-        if p:
-            merged[p] = merged.get(p, 0) + s
-            subs.setdefault(p, []).append(n.split(" (")[0])
-            notes.append(f"'{n}' counted within its parent '{p}'")
+        p = parents[n]
+        listed = next((o for o in names if o != n and p and ent.same_vendor(o, p)), None)
+        target = listed or (p if p and counts[p] >= 2 else None)
+        if target:
+            merged[target] = merged.get(target, 0) + s
+            subs.setdefault(target, []).append(n.split(" (")[0])
+            notes.append(f"'{n}' counted within its parent '{target}' (wholly owned, confirmed in the evidence)")
         else:
             merged[n] = merged.get(n, 0) + s
     out = [(f"{n} (incl. {', '.join(subs[n])})" if n in subs else n, s) for n, s in merged.items()]
-    return out, notes
+    return out, notes, list(dict.fromkeys(declined))
+
+
+def share_check(fleet: dict) -> dict | None:
+    """The fleet competitive_landscape share check (entities.check_shares_with_reask),
+    or None for a fleet run from before PLAN-05."""
+    for part in ("fields_raw", "fields"):
+        chk = (((fleet.get(part) or {}).get("competitive_landscape") or {}).get("_sources") or {}).get("share_check")
+        if chk:
+            return chk
+    return None
+
+
+def _fold(shares: list[tuple[str, float]], keep: int = 7) -> list[tuple[str, float]]:
+    """The slices a donut shows: the `keep` largest named vendors plus one
+    'Regional & other' slice holding everyone else."""
+    named = sorted(((n, s) for n, s in shares if n.lower() not in ("others", "regional & other")), key=lambda kv: -kv[1])
+    rest = sum(s for n, s in shares if n.lower() in ("others", "regional & other")) + sum(s for _, s in named[keep:])
+    return named[:keep] + [("Regional & other", rest)]
+
+
+def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value) -> dict:
+    """Every vendor fact the report prints, from the final vendor data only.
+
+    - Shares: only those an evidence quote states (entities.check_shares); with
+      fewer than 3 sourced shares for a geography its donut (and its A.2 rows)
+      is dropped and the positioning table takes its place.
+    - One exclusion list (entities.exclusions) for the global and MEA lists.
+    - A vendor is printed in the positioning table / dashboard only when its HQ,
+      parent and business type are confirmed (entities.verify_entity).
+    - Parents and subsidiaries are merged only when wholly owned (merge_parents).
+    `home_value(country)` is that country's market at VENDOR_YEAR (plausibility)."""
+    from AiAgentsFleet.cmi_report import entities as ent
+    from AiAgentsFleet.cmi_report import fmt
+    f = fleet["fields"]
+    ven = c.get("vendors") if isinstance(c.get("vendors"), dict) and "error" not in c["vendors"] else {}
+    ents = c.get("entities") if isinstance(c.get("entities"), dict) else None
+    records = (ents or {}).get("records") or {}
+    comp = f.get("competitive_landscape") or {}
+    notes: list[str] = []
+
+    # ---- one exclusion list for every vendor list, global and MEA
+    excluded = ent.exclusions(records, ven.get("company_classification"))
+
+    def excl(n: str) -> bool:
+        return ent.lookup(n, excluded) is not None
+    if excluded:
+        notes.append("Left out of every vendor list, global and MEA (does not earn the revenue this market "
+                     "measures): " + "; ".join(f"{n} ({w})" for n, w in excluded.items()))
+
+    # ---- one name per company: merges only for confirmed, wholly owned subsidiaries
+    known = ent.universe(f, ven)
+    uni = [n for n in known if not excl(n)]
+    merged_u, unotes, declined = merge_parents([(n, 0.0) for n in uni], records)
+    notes += unotes
+    members: dict[str, list[str]] = {}
+    for d, _ in merged_u:
+        base = d.split(" (incl. ")[0]
+        members[d] = [base] + (d.split(" (incl. ")[1].rstrip(")").split(", ") if " (incl. " in d else [])
+    alias = {mb.lower(): d for d, ms in members.items() for mb in ms}
+    for n in uni:                                     # the full names too ('Valagro (Syngenta Group)')
+        d = next((d for d, ms in members.items() if any(ent.same_vendor(n, mb) for mb in ms)), n)
+        alias.setdefault(n.lower(), d)
+
+    def disp(n: str) -> str:
+        return alias.get(str(n).lower()) or next((d for d, ms in members.items()
+                                                 if any(ent.same_vendor(n, mb) for mb in ms)), str(n))
+
+    # ---- sourced shares only; implausible ones blocked
+    fcheck = share_check(fleet)
+    arec = c.get("vendor_review") or {}
+    mcheck = arec.get("mea_shares") or {}
+    blocked_s: list[dict] = []
+    blocked_u: list[dict] = []
+
+    def sourced(check: dict | None, total: float, label: str) -> tuple[list[tuple[str, float]], list[dict]]:
+        rows = []
+        for v in (check or {}).get("verified") or []:
+            if excl(v["vendor"]):
+                continue
+            s = v.get("share_pct")
+            if s is None and v.get("revenue_usd_mn") and total:
+                s = v["revenue_usd_mn"] / total * 100
+            rows.append({**v, "share_pct": float(s), "sourced": True})
+        probs = [p for p in ent.plausibility(rows, total, home_value, records) if p["kind"] == "over_home"]
+        blocked_s.extend(probs)
+        rows = [r for r in rows if r["vendor"] not in {p["vendor"] for p in probs}]
+        agg: dict[str, float] = {}
+        for r in rows:
+            agg[disp(r["vendor"])] = agg.get(disp(r["vendor"]), 0) + r["share_pct"]
+        srcs = [{"vendor": disp(r["vendor"]), "share_pct": r["share_pct"], "quote": r.get("quote"),
+                 "url": r.get("url"), "domain": r.get("domain")} for r in rows]
+        if len(agg) < len(rows):
+            notes.append(f"{label} shares: a parent and its wholly owned subsidiary counted as one group")
+        return sorted(agg.items(), key=lambda kv: -kv[1]), srcs
+    gsh, gsrc = sourced(fcheck, global_v, "Global")
+    msh, msrc = sourced(mcheck, mea_v, "MEA")
+    # unsourced estimates are never printed; one above 20% is recorded as blocked
+    for chk, total, fallback in ((fcheck, global_v, comp.get("companies")), (mcheck, mea_v, None)):
+        rows = [{"vendor": u["vendor"], "share_pct": u["share_pct"], "sourced": False}
+                for u in ((chk or {}).get("unsourced") or []) + [r for r in (chk or {}).get("rejected") or []
+                                                                 if isinstance(r.get("share_pct"), (int, float))]]
+        if chk is None and fallback:
+            rows = [{"vendor": x.get("name"), "share_pct": float(x.get("share_pct") or 0), "sourced": False}
+                    for x in fallback if isinstance(x, dict) and x.get("name")]
+        rows = [r for r in rows if not excl(r["vendor"])]
+        blocked_u += [p for p in ent.plausibility(rows, total, home_value, records) if p["kind"] == "unsourced_over_20"]
+    show_g, show_m = len(gsh) >= 3, len(msh) >= 3
+
+    def with_others(sh: list[tuple[str, float]]) -> list[tuple[str, float]]:
+        rest = 100 - sum(s for _, s in sh)
+        return sh + ([("Others", rest)] if rest > 0.5 else [])
+    share_g, share_m = (with_others(gsh) if show_g else []), (with_others(msh) if show_m else [])
+
+    # ---- positioning table: confirmed HQ, parent and business type only
+    pos_src = {p["vendor"]: p for p in ven.get("positioning") or [] if isinstance(p, dict) and p.get("vendor")}
+    notes_by = {x.get("name"): x.get("positioning_note") for x in comp.get("companies") or [] if isinstance(x, dict)}
+    not_checked = set((ents or {}).get("not_checked") or [])
+    dropped: list[str] = []
+
+    def confirmed(n: str) -> dict | None:
+        lead = disp(n).split(" (incl. ")[0]
+        rec = ent.lookup(lead, records)
+        if rec and rec.get("verified"):
+            return rec
+        why = ("beyond the entity-check cap" if any(ent.same_vendor(lead, x) for x in not_checked) else
+               "entity not checked" if not rec else "; ".join(rec.get("why") or []) or "not confirmed")
+        line = f"{lead} ({why})"
+        if line not in dropped:
+            dropped.append(line)
+        return None
+    rows, seen = [], set()
+    for n in uni:
+        d = disp(n)
+        if d in seen:
+            continue
+        rec = confirmed(n)
+        if not rec:
+            continue
+        seen.add(d)
+        lead = d.split(" (incl. ")[0]
+        p = ent.lookup(lead, pos_src) or {}
+        rows.append({"vendor": d, "hq": rec["hq_country"],
+                     "parent": "Independent" if rec.get("parent_is_self") else rec["parent_group"],
+                     "business_type": rec["business_type"],
+                     "tier": p.get("tier") if p.get("tier") in ent.TIERS else "",
+                     "role": str(p.get("role") or ent.lookup(lead, notes_by) or "").strip(),
+                     "mea_presence": p.get("mea_presence") if p.get("mea_presence") in ent.MEA_PRESENCE else "",
+                     "ownership_note": rec.get("ownership_note") or ""})
+    tier_rank = {t: i for i, t in enumerate(ent.TIERS)}
+    rows.sort(key=lambda r: tier_rank.get(r["tier"], len(ent.TIERS)))
+    pos_show = len(rows) >= 1 and not (show_g and show_m)
+
+    # ---- the MEA leader: the largest sourced MEA share, else the positioning assessment
+    if show_m:
+        leader = msh[0][0]
+    else:
+        leader = next((r["vendor"] for lvl in ("Leading", "Strong") for r in rows if r["mea_presence"] == lvl), None)
+
+    # ---- dashboard: confirmed vendors only; HQ and ownership note from the entity check
+    dash, dseen = [], set()
+    for r in ven.get("dashboard") or []:
+        if not isinstance(r, dict) or not r.get("vendor") or excl(r["vendor"]):
+            continue
+        d = disp(r["vendor"])
+        rec = confirmed(r["vendor"])
+        if d in dseen or not rec:
+            continue
+        dseen.add(d)
+        if r.get("ownership_note") and not rec.get("ownership_note"):
+            notes.append(f"Ownership note for {d} ('{r['ownership_note']}') not confirmed by the evidence: not printed")
+        dash.append({"vendor": d, "hq": rec["hq_country"], "core_strength": r.get("core_strength") or "",
+                     "mea_footprint": r.get("mea_footprint") or "", "verified": bool(r.get("verified")),
+                     "ownership_note": rec.get("ownership_note") or ""})
+
+    # ---- the final vendor names; every other known company may not be named in the text
+    final = list(dict.fromkeys([r["vendor"] for r in rows] + [r["vendor"] for r in dash]
+                               + [n for n, _ in gsh + msh]))
+    caps: dict[str, list] = {}
+    for n, sc in (ven.get("capabilities") or {}).items():
+        if not excl(n) and disp(n) in final:
+            caps.setdefault(disp(n), sc)
+    final_members = [mb for d in final for mb in members.get(d, [d])] + final
+    every = known + [x.get("company") for x in ven.get("company_classification") or [] if isinstance(x, dict)] \
+        + list(ven.get("capabilities") or {}) + [s for r in records.values() for s in r.get("subsidiaries_in_list") or []]
+    blocked = list(dict.fromkeys(n for n in every if n and not ent.is_other(n)
+                                 and not any(ent.same_vendor(n, x) for x in final_members)))
+    shares_txt: dict[str, list[str]] = {}
+    for n, s in gsh if show_g else []:
+        shares_txt.setdefault(n, []).append(fmt.pct(s))
+    for n, s in msh if show_m else []:
+        shares_txt.setdefault(n, []).append(fmt.pct(s))
+    moves = {disp(n): sorted({mv["year"] for mv in r.get("moves") or []}) for n, r in records.items() if r.get("moves")}
+
+    mode = {"shares_global": show_g, "shares_mea": show_m, "positioning": pos_show}
+    vrev = ent.review(fleet_check=fcheck, answer_record=arec, entities=ents, has_vendors=bool(known),
+                      excluded=excluded, dropped=dropped, merges=unotes, declined=declined, blocked_sourced=blocked_s,
+                      blocked_unsourced=blocked_u, mode=mode, mea_leader=leader, positioning_rows=len(rows))
+    dims = ven.get("capability_dimensions") or []
+    return {
+        "vendor_year": VENDOR_YEAR,
+        "vendor_share_global": share_g, "vendor_share_mea": share_m,
+        "vendor_chart_global": _fold(share_g) if show_g else [], "vendor_chart_mea": _fold(share_m) if show_m else [],
+        "vendor_sources": {"global": gsrc if show_g else [], "mea": msrc if show_m else []},
+        "vendor_positioning": rows, "vendor_dashboard": dash,
+        "vendor_capabilities": caps, "vendor_capability_dimensions": dims,
+        "vendor_mea_leader": leader, "vendor_alias": alias,
+        "vendor_text": {"year": VENDOR_YEAR, "names": final_members, "blocked": blocked, "shares": shares_txt,
+                        "moves": moves, "mea_leader": leader},
+        "vendor_review": vrev,
+        "sections": {
+            "vendor_global": {"show": show_g, "why": "" if show_g else
+                              f"only {len(gsh)} sourced global vendor share(s): positioning table instead"},
+            "vendor_mea": {"show": show_m, "why": "" if show_m else
+                           f"only {len(msh)} sourced MEA vendor share(s): positioning table instead"},
+            "positioning": {"show": pos_show, "why": "" if pos_show else
+                            "shares shown instead" if show_g and show_m else
+                            "no vendor with confirmed HQ, parent and business type"},
+            "capabilities": {"show": len(caps) >= 3 and len(dims) >= 3,
+                             "why": "" if len(caps) >= 3 else "fewer than 3 confirmed vendors scored"},
+            "dashboard": {"show": len(dash) >= 2, "why": "" if len(dash) >= 2 else
+                          "fewer than 2 vendors with a confirmed HQ"},
+        },
+        "notes": notes,
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -254,14 +494,8 @@ def sections(market: str, type_names: list[str], dem_names: list[str], c: dict) 
     for key, region in (("use_cases_me", "middle_east"), ("use_cases_af", "africa")):
         n = len(uc.get(region) or [])
         out[key] = (n >= 3, "" if n >= 3 else f"only {n} use case(s) identified")
-    ven = c.get("vendors") or {}
-    named = [v for v in ven.get("mea_shares") or [] if "other" not in str(v.get("vendor", "")).lower()]
-    out["vendor_mea"] = (len(named) >= 3, "" if len(named) >= 3 else f"only {len(named)} MEA vendor(s) identified")
-    caps = ven.get("capabilities") or {}
-    out["capabilities"] = (len(caps) >= 3 and len(ven.get("capability_dimensions") or []) >= 3,
-                           "" if len(caps) >= 3 else "fewer than 3 vendors scored")
-    out["dashboard"] = (len(ven.get("dashboard") or []) >= 2, "" if len(ven.get("dashboard") or []) >= 2
-                        else "no vendor dashboard data")
+    # vendor sections (vendor_global, vendor_mea, positioning, capabilities, dashboard) are set by
+    # vendor_block from the final vendor data
     reg = c.get("regulation") or {}
     has_reg = len(reg.get("snapshot") or []) >= 2 or len(reg.get("scorecard") or {}) >= 2
     out["regulation"] = (reg.get("applicable") is not False and has_reg,
@@ -419,63 +653,12 @@ def build(fleet: dict, cmi: dict) -> dict:
         scen[name] = {"cagr": cg, "series": {y: G[Y0] * (1 + cg / 100) ** (y - Y0) for y in range(Y0, Y1 + 1)}}
     scen["Base"]["series"] = {y: G[y] for y in range(Y0, Y1 + 1)}
 
-    # ---- vendors
-    comp = f.get("competitive_landscape") or {}
-    gshares = [(x["name"], x["share_pct"]) for x in comp.get("companies") or []]
-    others = max(0.0, 100 - sum(s for _, s in gshares))
+    # ---- vendors: sourced shares or a positioning table, one exclusion list, verified entities (PLAN-05)
     merge_notes: list[str] = []
-    # like-for-like: a company that does not earn the revenue the definition measures
-    # (e.g. a feed supplier in a farming market) is not charted against those that do
-    cls = {str(x.get("company", "")).lower(): x for x in (c.get("vendors") or {}).get("company_classification") or []}
-    kept = []
-    for n, s in gshares:
-        k = cls.get(n.lower())
-        if k and k.get("earns_defined_revenue") is False:
-            others += s
-            merge_notes.append(f"'{n}' ({k.get('business_type', 'other business')}) left out of the share chart: "
-                               f"it does not earn the revenue this market measures")
-        else:
-            kept.append((n, s))
-    # same parent group (per the classification) -> one entry
-    by_parent: dict[str, list[tuple[str, float]]] = {}
-    for n, s in kept:
-        p = str((cls.get(n.lower()) or {}).get("parent_group") or n).strip()
-        by_parent.setdefault(p.lower(), []).append((n, s))
-    gshares = []
-    for members in by_parent.values():
-        if len(members) == 1:
-            gshares.append(members[0])
-        else:
-            lead = max(members, key=lambda kv: kv[1])[0]
-            subs = [n.split(" (")[0] for n, _ in members if n != lead]
-            gshares.append((f"{lead.split(' (')[0]} (incl. {', '.join(subs)})", sum(s for _, s in members)))
-            merge_notes.append(f"{', '.join(n for n, _ in members)} counted as one group")
-    gshares, more = merge_parents(gshares)
-    merge_notes += more
-    # one name per entity: a company merged into a group in the global chart keeps that
-    # group's name in the MEA chart too
-    alias = {}
-    for disp, _ in gshares:
-        base = disp.split(" (incl. ")[0]
-        members = [base] + (disp.split(" (incl. ")[1].rstrip(")").split(", ") if " (incl. " in disp else [])
-        for mbr in members:
-            alias[mbr.lower()] = disp
-            alias[mbr.split(" (")[0].lower()] = disp
-    for k in cls.values():
-        p = str(k.get("parent_group") or "").lower()
-        if p and str(k.get("company", "")).lower() in alias:
-            alias.setdefault(p, alias[str(k["company"]).lower()])
-    mea_sh = [(x["vendor"], float(x["share_pct"])) for x in (c.get("vendors") or {}).get("mea_shares") or []]
-    tot = sum(s for _, s in mea_sh) or 1
-    mea_named: dict[str, float] = {}
-    for n, s in mea_sh:
-        key = n.lower()
-        disp = alias.get(key) or alias.get(key.split(" (")[0]) or n
-        if disp != n:
-            merge_notes.append(f"MEA chart: '{n}' shown as '{disp}' (same entity as the global chart)")
-        mea_named[disp] = mea_named.get(disp, 0) + s * 100 / tot
-    mea_sh, merge_mea = merge_parents(list(mea_named.items()))
-    merge_notes += merge_mea
+    mea_v = reg_series["Middle East & Africa"][VENDOR_YEAR]
+    country_v = {k: v["v26"] * G[VENDOR_YEAR] / G[Y0] for d in countries.values() for k, v in d.items()}
+    vend = vendor_block(fleet, c, G[VENDOR_YEAR], mea_v, country_v.get)
+    merge_notes += vend.pop("notes")
 
     # published third-party figures: only those measuring the same scope as this report
     # (a figure far outside the CMI base describes a parent or adjacent market). An
@@ -504,14 +687,6 @@ def build(fleet: dict, cmi: dict) -> dict:
             s["share_high_pct"] = round(float(s.get("share_high_pct") or 0) * k)
         merge_notes.append(f"Value-chain share ranges rescaled so their midpoints sum to 100% (they summed to "
                            f"{mids:.0f}%)")
-
-    def fold(shares, keep=7):
-        """The slices a donut shows: the `keep` largest named vendors plus one
-        'Regional & other' slice holding everyone else."""
-        named = sorted(((n, s) for n, s in shares if n.lower() not in ("others", "regional & other")),
-                       key=lambda kv: -kv[1])
-        rest = sum(s for n, s in shares if n.lower() in ("others", "regional & other")) + sum(s for _, s in named[keep:])
-        return named[:keep] + [("Regional & other", rest)]
 
     def nodes(d):
         return {k: node(v["v26"], v["v33"]) for k, v in d.items()}
@@ -542,17 +717,13 @@ def build(fleet: dict, cmi: dict) -> dict:
         "rest_members": rest_members(geo),
         "geo_review": gg["review"],
         "scenarios": scen,
-        "vendor_share_global": gshares + ([("Others", others)] if others > 0.5 else []),
-        "vendor_share_mea": mea_sh,
-        "vendor_chart_global": fold(gshares + ([("Others", others)] if others > 0.5 else [])),
-        "vendor_chart_mea": fold(mea_sh),
-        "sections": sections(fleet["market_name"], type_names, dem_names, c),
+        **{k: v for k, v in vend.items() if k != "sections"},
+        "sections": {**sections(fleet["market_name"], type_names, dem_names, c), **vend["sections"]},
         "definition": dfn,
         "segment_review": segment_review,
         "published_2025": published,
         "size_check": check,
         "value_chain": vchain,
-        "vendor_alias": alias,
         "segment_definitions": seg_defs,
         "allocation_rules": [r for r in sg.get("allocation_rules") or [] if isinstance(r, str) and r.strip()],
         "fleet_drivers": {k: v for k, v in (f.get("drivers_restraints") or {}).items() if k != "_sources"},

@@ -443,14 +443,15 @@ def value_chain(stages: list[dict], path: Path) -> Path:
     return _save(fig, path)
 
 
-def vendor_donut(rows: list[tuple[str, float]], center: str, path: Path) -> Path:
-    """`rows` = the model's folded slices (model.fold), last one 'Regional & other'."""
+def vendor_donut(rows: list[tuple[str, float]], center: str, path: Path, year: int) -> Path:
+    """`rows` = the model's folded slices (model._fold), last one 'Regional & other' --
+    sourced shares only (PLAN-05). `year` is model.VENDOR_YEAR, the one vendor year."""
     colors = CATEGORICAL[: len(rows) - 1] + [GRAY]
     fig, ax = plt.subplots(figsize=(9.0, 4.6))
     wedges, _ = ax.pie([s for _, s in rows], colors=colors, startangle=90, counterclock=False,
                        wedgeprops={"width": 0.36, "edgecolor": "white", "linewidth": 2})
     ax.text(0, 0.07, center, ha="center", va="center", fontsize=17, fontweight="bold")
-    ax.text(0, -0.15, f"{Y0 - 1}E value share (est.)", ha="center", va="center", fontsize=9, color=MUTED)
+    ax.text(0, -0.15, f"{year} value share (published)", ha="center", va="center", fontsize=9, color=MUTED)
     ax.legend(wedges, [f"{_wrap(n, 30)}   {fmt.pct(s)}" for n, s in rows], loc="center left",
               bbox_to_anchor=(1.02, 0.5), frameon=False, fontsize=9.5)
     ax.set_aspect("equal")

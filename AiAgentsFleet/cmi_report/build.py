@@ -1143,8 +1143,9 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 312:
             b.caption(i, "Table", "Regulatory snapshot")
         elif i == 313:
-            rows = [[r.get("country", ""), r.get("regulator", "") + ("" if r.get("verified") else " [to verify]"),
-                     safe(r.get("requirements"))]
+            # regulators and requirements as fact-checked (verify_facts.apply): confirmed, corrected
+            # from the evidence, or "Competent authority not confirmed" -- never a marker
+            rows = [[r.get("country", ""), r.get("regulator", ""), safe(r.get("requirements"))]
                     for r in (ag.get("regulation") or {}).get("snapshot") or []
                     if canonical(r.get("country", "")) in model_reg_countries]
             b.table(i, complete_rows(rows, b.log, "regulatory snapshot"))
@@ -1183,14 +1184,14 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 348:
             b.caption(i, "Table", "Vendor dashboard")
         elif i == 349:
-            # vendors with a confirmed HQ only; HQ and ownership note from the entity check (PLAN-05)
+            # vendors with a confirmed HQ only; HQ and ownership note from the entity check (PLAN-05);
+            # vendor moves that could not be confirmed were removed by verify_facts.apply (PLAN-06), so no marker
             rows = []
             for r in m["vendor_dashboard"]:
                 own = short_note(r["ownership_note"])
                 foot = vsafe(r["mea_footprint"])
                 rows.append([r["vendor"] + (f" ({own})" if own and own.lower() not in r["vendor"].lower() else ""),
-                             r["hq"], vsafe(r["core_strength"]),
-                             (foot + ("" if r["verified"] else " [to verify]")) if foot else ""])
+                             r["hq"], vsafe(r["core_strength"]), foot or ""])
             b.table(i, complete_rows(rows, b.log, "vendor dashboard"))
         elif i == 351:
             b.box(i, "Competitive implications", lst("implications"), numbered=True)

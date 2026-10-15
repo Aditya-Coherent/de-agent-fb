@@ -1,0 +1,85 @@
+{
+  "_note": "Regression cases for cmi_report/verify_facts.py (PLAN-06), from FINDINGS-2026-10-15. TESTS ONLY -- never read at run time. Each trap is a fact as a report printed it, which must not be printed as stated. 'evidence' is a mock search result; 'honest_judge' is a judge that reads it correctly, 'lazy_judge' one that rubber-stamps the claim with a quote from the same snippet.",
+  "traps": [
+    {
+      "name": "AU fertiliser plan years",
+      "finding": "B1",
+      "market": "Agricultural Biostimulants Market",
+      "milestone": {"date": "2023", "jurisdiction": "African Union", "event": "Fertilizer and Soil Health Action Plan 2023-2033 adopted"},
+      "evidence": [{"text": "African Union heads of state adopted the Fertilizer and Soil Health Action Plan 2024-2034 at the Africa Fertilizer and Soil Health Summit in Nairobi in May 2024.", "url": "https://au.int/en/fertilizer-soil-health", "domain": "au.int"}],
+      "honest_judge": {"verdict": "contradicted", "corrected": "Fertilizer and Soil Health Action Plan 2024-2034 adopted at the Nairobi summit", "corrected_year": 2024, "evidence": 1, "quote": "adopted the Fertilizer and Soil Health Action Plan 2024-2034 at the Africa Fertilizer and Soil Health Summit in Nairobi in May 2024"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "adopted the Fertilizer and Soil Health Action Plan 2024-2034 at the Africa Fertilizer and Soil Health Summit"},
+      "must_not_print": "2023-2033",
+      "expected_printed": "2024-2034",
+      "expected_year": "2024"
+    },
+    {
+      "name": "AMA year",
+      "finding": "E4",
+      "market": "Global Vitamin C Market",
+      "milestone": {"date": "2023", "jurisdiction": "African Union", "event": "African Medicines Agency treaty entered into force for harmonisation"},
+      "evidence": [{"text": "The Treaty for the Establishment of the African Medicines Agency entered into force on 5 November 2021, thirty days after the fifteenth instrument of ratification was deposited.", "url": "https://www.who.int/news/ama-treaty", "domain": "who.int"}],
+      "honest_judge": {"verdict": "contradicted", "corrected": "Treaty establishing the African Medicines Agency entered into force", "corrected_year": 2021, "evidence": 1, "quote": "The Treaty for the Establishment of the African Medicines Agency entered into force on 5 November 2021"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "The Treaty for the Establishment of the African Medicines Agency entered into force on 5 November 2021"},
+      "must_not_print": "2023",
+      "expected_printed": "African Medicines Agency",
+      "expected_year": "2021"
+    },
+    {
+      "name": "Turkey TITCK",
+      "finding": "E4",
+      "market": "Global Vitamin C Market",
+      "snapshot": {"country": "Turkey", "regulator": "Turkish Medicines and Medical Devices Agency (TITCK)", "requirements": ""},
+      "evidence": [{"text": "In Turkey, food supplements are registered and approved by the Ministry of Agriculture and Forestry under the Turkish Food Codex regulation on food supplements.", "url": "https://www.tarimorman.gov.tr/supplements", "domain": "tarimorman.gov.tr"}],
+      "honest_judge": {"verdict": "contradicted", "corrected": "Ministry of Agriculture and Forestry", "corrected_year": null, "evidence": 1, "quote": "food supplements are registered and approved by the Ministry of Agriculture and Forestry"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "In Turkey, food supplements are registered and approved by the Ministry of Agriculture and Forestry"},
+      "must_not_print": "TITCK",
+      "expected_printed": "Ministry of Agriculture and Forestry"
+    },
+    {
+      "name": "SA Animal Feed Act 2023",
+      "finding": "C10",
+      "market": "Functional Poultry Feed Market",
+      "milestone": {"date": "2023", "jurisdiction": "South Africa", "event": "Animal Feed Act revision tightened approval of functional feed additives"},
+      "evidence": [{"text": "Farm feeds in South Africa are regulated under the Fertilizers, Farm Feeds, Agricultural Remedies and Stock Remedies Act 36 of 1947, administered by the Registrar in the Department of Agriculture.", "url": "https://www.dalrrd.gov.za/act36", "domain": "dalrrd.gov.za"}],
+      "honest_judge": {"verdict": "contradicted", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "Farm feeds in South Africa are regulated under the Fertilizers, Farm Feeds, Agricultural Remedies and Stock Remedies Act 36 of 1947"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "Farm feeds in South Africa are regulated under the Fertilizers, Farm Feeds, Agricultural Remedies and Stock Remedies Act 36 of 1947"},
+      "must_not_print": "Animal Feed Act revision",
+      "expected_printed": null
+    },
+    {
+      "name": "German coccidiostat phase-out",
+      "finding": "C10",
+      "market": "Functional Poultry Feed Market",
+      "milestone": {"date": "2006", "jurisdiction": "Germany", "event": "Phase-out of conventional coccidiostats in poultry feed"},
+      "evidence": [{"text": "The EU-wide ban on antibiotics used as growth promoters in animal feed took effect on 1 January 2006 under Regulation (EC) No 1831/2003; coccidiostats remain authorised as feed additives.", "url": "https://food.ec.europa.eu/agp-ban", "domain": "ec.europa.eu"}],
+      "honest_judge": {"verdict": "contradicted", "corrected": "EU-wide ban on antibiotics used as growth promoters in animal feed took effect", "corrected_year": 2006, "evidence": 1, "quote": "The EU-wide ban on antibiotics used as growth promoters in animal feed took effect on 1 January 2006"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "The EU-wide ban on antibiotics used as growth promoters in animal feed took effect on 1 January 2006 under Regulation (EC) No 1831/2003; coccidiostats remain authorised as feed additives"},
+      "must_not_print": "coccidiostat",
+      "expected_printed": "growth promoters",
+      "expected_year": "2006"
+    },
+    {
+      "name": "Egypt GAFRD",
+      "finding": "F4",
+      "market": "Super-Intensive Shrimp Farming Market",
+      "snapshot": {"country": "Egypt", "regulator": "General Authority for Fish Resources Development (GAFRD)", "requirements": ""},
+      "evidence": [{"text": "Egypt's Lakes and Fish Resources Protection and Development Agency (LFPDA) replaced the General Authority for Fish Resources Development (GAFRD) and now licenses aquaculture farms.", "url": "https://www.egypttoday.com/lfpda", "domain": "egypttoday.com"}],
+      "honest_judge": {"verdict": "renamed", "corrected": "Lakes and Fish Resources Protection and Development Agency (LFPDA)", "corrected_year": null, "evidence": 1, "quote": "Egypt's Lakes and Fish Resources Protection and Development Agency (LFPDA) replaced the General Authority for Fish Resources Development (GAFRD)"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "Egypt's Lakes and Fish Resources Protection and Development Agency (LFPDA) replaced the General Authority for Fish Resources Development (GAFRD)"},
+      "must_not_print": "GAFRD",
+      "expected_printed": "Lakes and Fish Resources Protection and Development Agency (LFPDA)"
+    },
+    {
+      "name": "Israel ministry name",
+      "finding": "B8, F4",
+      "market": "Agricultural Biostimulants Market",
+      "snapshot": {"country": "Israel", "regulator": "Ministry of Agriculture and Rural Development", "requirements": ""},
+      "evidence": [{"text": "Israel's Ministry of Agriculture and Rural Development was renamed the Ministry of Agriculture and Food Security in 2023, and its Plant Protection and Inspection Services register fertilisers.", "url": "https://www.gov.il/en/departments/ministry_of_agriculture", "domain": "gov.il"}],
+      "honest_judge": {"verdict": "renamed", "corrected": "Ministry of Agriculture and Food Security", "corrected_year": null, "evidence": 1, "quote": "Israel's Ministry of Agriculture and Rural Development was renamed the Ministry of Agriculture and Food Security in 2023"},
+      "lazy_judge": {"verdict": "supported", "corrected": "", "corrected_year": null, "evidence": 1, "quote": "Israel's Ministry of Agriculture and Rural Development was renamed the Ministry of Agriculture and Food Security in 2023"},
+      "must_not_print": "Rural Development",
+      "expected_printed": "Ministry of Agriculture and Food Security"
+    }
+  ]
+}

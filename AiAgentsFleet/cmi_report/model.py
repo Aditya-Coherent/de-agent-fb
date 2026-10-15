@@ -15,7 +15,7 @@ import json
 import re
 from pathlib import Path
 
-from AiAgentsFleet.cmi_report import geo_check, segments_check
+from AiAgentsFleet.cmi_report import geo_check, segments_check, verify_facts
 from AiAgentsFleet.cmi_report.groups import DEFAULT_COUNTRIES, REST, rest_members
 
 Y0, Y1 = 2026, 2033
@@ -599,7 +599,9 @@ def geography(fleet: dict, c: dict) -> dict:
 
 
 def build(fleet: dict, cmi: dict) -> dict:
-    f, c = fleet["fields"], cmi["fields"]
+    f = fleet["fields"]
+    # regulators, milestones and vendor moves as fact-checked: unconfirmed ones left out (PLAN-06)
+    c = verify_facts.apply(cmi["fields"])
     gg = geography(fleet, c)
     G, reg, reg_series, sub, sub_series = gg["G"], gg["reg"], gg["reg_series"], gg["sub"], gg["sub_series"]
     countries, country_series, geo = gg["countries"], gg["country_series"], gg["geo"]
@@ -749,6 +751,7 @@ def build(fleet: dict, cmi: dict) -> dict:
         "segment_review": segment_review,
         "published_2025": published,
         "size_check": check,
+        "fact_review": verify_facts.review(cmi["fields"]),
         "value_chain": vchain,
         "segment_definitions": seg_defs,
         "allocation_rules": [r for r in sg.get("allocation_rules") or [] if isinstance(r, str) and r.strip()],

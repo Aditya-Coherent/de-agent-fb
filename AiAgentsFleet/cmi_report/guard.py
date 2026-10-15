@@ -312,6 +312,96 @@ def drop_size_comparison(text: str, dropped: list[str], unsourced: bool = False)
 
 
 # --------------------------------------------------------------------------- #
+# regulatory facts (PLAN-06): a regulator, law, decree, 'Vision 20xx' or dated
+# policy may be named only if it is in the verified fact list (verify_facts.py)
+# --------------------------------------------------------------------------- #
+_CAP = r"[A-Z][\w&'’-]*"
+_BODY = (r"Ministry|Authority|Agency|Directorate|Inspectorate|Commission|Administration|Regulator|Bureau|Board|"
+         r"Council|Department")
+_TAIL = rf"(?:(?:\s+|,\s+)(?:(?:of|for|and|on|the|&)\s+)*{_CAP})*"
+_REG_BODY = re.compile(rf"(?:{_CAP}\s+){{0,4}}(?:{_BODY})\b{_TAIL}")
+_REG_LAW = re.compile(rf"(?:{_CAP}\s+){{1,6}}(?:Act|Law|Decree|Directive|Regulation|Ordinance|Charter|Strategy|"
+                      rf"Plan|Programme|Program|Policy|Framework|Guidelines)\b(?:\s+(?:No\.?\s*)?\d[\d/]*)?"
+                      rf"(?:\s+of\s+(?:19|20)\d\d)?|\b(?:Act|Law|Decree)\s+(?:No\.?\s*)?\d[\d/]*(?:\s+of\s+(?:19|20)\d\d)?|"
+                      rf"\b(?:Regulation|Directive)\s+(?:\((?:EU|EC|EEC)\)\s+)?(?:No\.?\s*)?\d{{2,4}}/\d+(?:/\w+)?")
+_VISION = re.compile(r"\bVision\s+20\d\d\b")
+_DATED_POLICY = re.compile(r"(?<!\bby )(?<!\bto )(?<!\buntil )(?<!\bthrough )(?<!\btowards )(?<!\bbefore )"
+                           r"(?<![\w-])((?:19|20)\d\d)(?![\w-])[^.;,]{0,40}?\b(act|law|decree|directive|regulation|ban|"
+                           r"policy|plan|strategy|framework|guidelines?|charter|amendment|revision|reform|mandate)\b|"
+                           r"\b(act|law|decree|directive|regulation|ban|policy|plan|strategy|framework|guidelines?|"
+                           r"charter|amendment|revision|reform|mandate)\b[^.;,]{0,30}?\b(?:of|in|from|since)\s+"
+                           r"((?:19|20)\d\d)(?![\w-])", re.I)
+_REG_CONTEXT = re.compile(r"\b(regulat\w*|approv\w*|regist\w*|licen[cs]\w*|authori[sz]\w*|law|act|decree|ban\w*|"
+                          r"polic\w*|complian\w*|enforce\w*|permit\w*|ministry|agency|mandat\w*)\b", re.I)
+# acronyms that are never a regulator
+_NOT_REGULATOR = {"CMI", "CAGR", "MEA", "GCC", "USD", "UAE", "USA", "KSA", "GDP", "ASEAN", "APAC", "LATAM", "EMEA",
+                  "GMP", "HACCP", "ISO", "ESG", "IOT", "RAS", "SME", "SMES", "B2B", "B2C", "OEM", "OEMS", "API", "SAAS",
+                  "NGO", "NGOS", "FDI", "R&D", "LLM", "LLMS", "GENAI", "AI", "MENA", "SSA", "ROI", "KPI", "KPIS",
+                  "COVID", "PPP", "EU", "UK", "US"}
+_NOT_BODY = ("gulf cooperation council",)
+_GENERIC = {"ministry", "authority", "agency", "directorate", "inspectorate", "commission", "administration",
+            "regulator", "bureau", "board", "council", "department", "act", "law", "decree", "directive",
+            "regulation", "ordinance", "charter", "strategy", "plan", "programme", "program", "policy", "framework",
+            "guidelines", "guideline", "national", "general", "federal", "the", "and", "for"}
+
+
+def _fact_words(s: str) -> set[str]:
+    return {w[:-1] if len(w) > 4 and w.endswith("s") and not w.endswith("ss") else w
+            for w in re.findall(r"[a-z]+", s.lower()) if len(w) >= 3}
+
+
+def _named_in(phrase: str, facts: list[str]) -> bool:
+    """`phrase` (a body or instrument name) is one of the verified facts: verbatim,
+    or most of its distinctive words in one fact."""
+    low = re.sub(r"\s+", " ", phrase.lower()).strip()
+    if any(low in f.lower() for f in facts):
+        return True
+    w = _fact_words(phrase) - _GENERIC
+    if not w:
+        return True                      # nothing distinctive ('the Ministry') -- not a named fact
+    return any(len(w & _fact_words(f)) / len(w) >= 0.8 for f in facts)
+
+
+def unverified_fact(sentence: str, facts: list[str] | None) -> str | None:
+    """Why `sentence` names a regulatory fact that is not in `facts` (the
+    verified fact list), or None. Checked: government bodies ('Ministry of
+    ...', '... Authority'), acronyms in a regulatory sentence ('SFDA'), named
+    laws and instruments ('Fertilizers Act', 'Act 36 of 1947', 'Regulation (EU)
+    2019/1009'), 'Vision 20xx' and year-dated policies ('the 2023 Animal Feed
+    Act revision'). `facts` None means no verification ran: nothing is checked."""
+    if facts is None or not sentence:
+        return None
+    if re.search(r"\[(?:to verify|unverified)\]", sentence, re.I):
+        return "carries a verification marker"
+    for m in _VISION.finditer(sentence):
+        if not any(m.group(0).lower() in f.lower() for f in facts):
+            return f"names '{m.group(0)}', which is not a verified fact"
+    for m in _REG_BODY.finditer(sentence):
+        # a possessive left of the body names its country, not the body ("Egypt's Ministry of ...")
+        name = re.split(r"\b\w+['’]s\s+", m.group(0))[-1].strip(" ,")
+        if any(n in name.lower() for n in _NOT_BODY):
+            continue
+        if not _named_in(name, facts):
+            return f"names '{name}', which is not a verified fact"
+    for m in _REG_LAW.finditer(sentence):
+        name = re.split(r"\b\w+['’]s\s+", m.group(0))[-1].strip(" ,")
+        if not _named_in(name, facts):
+            return f"names '{name}', which is not a verified fact"
+    if _REG_CONTEXT.search(sentence):
+        # a hyphenated acronym is a company or a modifier ('DSM-Firmenich', 'FAO-guided'), not a regulator
+        for a in re.findall(r"(?<![\w&-])[A-Z][A-Z&]{2,7}(?![\w&-])", sentence):
+            if a.upper() not in _NOT_REGULATOR and not any(re.search(rf"\b{re.escape(a)}\b", f) for f in facts):
+                return f"names '{a}', which is not a verified fact"
+    for m in _DATED_POLICY.finditer(sentence):
+        year = m.group(1) or m.group(4)
+        noun = (m.group(2) or m.group(3)).lower()
+        ctx = _fact_words(m.group(0)) - _GENERIC - {noun}
+        if not any(year in f and (not ctx or ctx & _fact_words(f)) for f in facts):
+            return f"names a {year}-dated {noun}, which is not a verified fact"
+    return None
+
+
+# --------------------------------------------------------------------------- #
 # scope (PLAN-04): text may not describe the market at another value-chain level,
 # or count something the definition excludes
 # --------------------------------------------------------------------------- #

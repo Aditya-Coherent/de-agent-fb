@@ -15,11 +15,11 @@ from pathlib import Path
 import docx
 
 from AiAgentsFleet.cmi_report import fmt
-from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text, drop_size_comparison,
-                                            vendor_clean)
+from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text, drop_size_comparison, sentences,
+                                            unverified_fact, vendor_clean)
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 10     # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 20     # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -49,9 +49,10 @@ _SYSTEM = (
     "not reuse a sentence pattern across slots.\n"
     "10. Label statement types: market sizes, shares and growth rates are 'CMI estimates' (to 2026) or "
     "'forecasts' (2027 onward) -- say so at least once in every paragraph that uses them; scores and ratings "
-    "are 'CMI assessments'. A real-world fact you are not certain is current (regulator names, law dates, "
-    "company moves, project names) gets ' [to verify]' right after it; never invent companies, projects or "
-    "partnerships.\n"
+    "are 'CMI assessments'. Name a regulator, ministry, agency, law, decree, 'Vision 20xx' programme or dated "
+    "policy ONLY if it is in FACTS.verified_regulatory_facts, exactly as written there; otherwise describe it "
+    "generically ('the national food safety authority', 'registration rules'). Never write '[to verify]' or any "
+    "other verification marker; never invent companies, projects or partnerships.\n"
     "11. Avoid vague filler ('considerable headroom', 'anchors', 'a volume story') unless a figure from FACTS "
     "backs it in the same sentence.\n"
     "13. Write in UK English (programme, localisation, defence, organisation).\n"
@@ -124,6 +125,8 @@ def base_facts(m: dict) -> dict:
         "regions": _block(m["regions"], g),
         "subregions": _block(m["subregions"], mea),
         "size_check": _size_facts(m),
+        # the only regulators, laws and dated policies the text may name (verify_facts.py, PLAN-06)
+        "verified_regulatory_facts": (m.get("fact_review") or {}).get("verified_facts") or [],
     }
 
 
@@ -388,6 +391,8 @@ def make_guard(m: dict, geo: str | None) -> ClaimGuard:
     g.headline_unsourced = (m.get("size_check") or {}).get("status") != "sourced"
     g.definition = m.get("definition")       # no sentence may describe another value-chain level (PLAN-04)
     g.vendor_text = m.get("vendor_text")     # vendors named only from the final vendor data (PLAN-05)
+    # regulators, laws and dated policies only from the verified fact list (PLAN-06); None = no check ran
+    g.verified_facts = (m["fact_review"].get("verified_facts") or []) if m.get("fact_review") else None
     return g
 
 
@@ -400,7 +405,18 @@ def _geo_of(slot: str, ch: str) -> str | None:
 def _guard(text, ng, cg, dropped, absent) -> str:
     out = clean_text(text, ng, cg, dropped, absent)
     out = vendor_clean(out, getattr(cg, "vendor_text", None), dropped)
-    return drop_size_comparison(out, dropped, getattr(cg, "headline_unsourced", False))
+    out = drop_size_comparison(out, dropped, getattr(cg, "headline_unsourced", False))
+    facts = getattr(cg, "verified_facts", None)
+    if facts is None:
+        return out
+    keep = []
+    for s in sentences(out):
+        why = unverified_fact(s, facts)
+        if why:
+            dropped.append(f"[unverified fact: {why}] {s[:120]}")
+        else:
+            keep.append(s)
+    return " ".join(keep)
 
 
 def _clean(v, ng, cg, dropped, absent, limit=110):

@@ -31,7 +31,7 @@ from me_engine.generation.config import GenConfig  # noqa: E402
 from me_engine.generation.llm import GenLLM  # noqa: E402
 
 from AiAgentsFleet import randomizer  # noqa: E402
-from AiAgentsFleet.cmi_report import build as builder, charts as ch, fmt, model, prose, run_data  # noqa: E402
+from AiAgentsFleet.cmi_report import build as builder, charts as ch, fmt, model, prose, run_data, verify_facts  # noqa: E402
 from AiAgentsFleet.cmi_report.guard import NumberGuard  # noqa: E402
 
 TEMPLATE = ROOT / "templates" / "cmi_whitepaper_template.docx"
@@ -317,7 +317,12 @@ def main() -> int:
     if a.refresh_data or not (cdir / "cmi_fields.json").exists():
         run_data.run(slug)
     cmi = json.loads((cdir / "cmi_fields.json").read_text(encoding="utf-8"))
-    ag = dict(cmi["fields"])
+    # every regulator, requirement, milestone and vendor move checked claim by claim (PLAN-06); the
+    # results are stored with the agent data and in fact_checks.json, and unconfirmed items are left out
+    if verify_facts.ensure(cdir, fleet["market_name"], cmi["fields"],
+                           verify_facts.judge_llm(GenConfig.load(ROOT), ROOT / "output" / ".gen_cache.db")):
+        (cdir / "cmi_fields.json").write_text(json.dumps(cmi, indent=2, ensure_ascii=False), encoding="utf-8")
+    ag = verify_facts.apply(cmi["fields"])
     m = model.build(fleet, cmi)
     definition = m["definition"]
     ag["_definition"] = definition
@@ -384,6 +389,8 @@ def main() -> int:
             w.writerow([e["id"], e["fact"], e["display"], e["metric"], "; ".join(x for x in e["entities"] if x)])
     report = {"build_log": log, "prose_dropped": pr.get("dropped"), "verification": verification,
               "headline_size_check": {k: m["size_check"].get(k) for k in ("status", "notes", "source")},
+              "fact_review": {k: m["fact_review"].get(k) for k in ("status", "claims", "supported", "corrected",
+                                                                   "omitted", "blockers", "warnings")},
               **qa(out, m, ag, root)}
     (cdir / "qa_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"QA: {len(report['numbers_not_in_model'])} text block(s) with numbers not in the model, "

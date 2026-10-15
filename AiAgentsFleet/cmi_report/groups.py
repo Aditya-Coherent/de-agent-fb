@@ -309,22 +309,29 @@ GROUPS: list[dict] = [
                     "{market} new regulation law 2025 2026",
                     "{market} regulation European Union United States"],
         "system": _ANALYST + (
-            " Describe the regulatory environment, focusing on MEA. Name the CURRENT, SPECIFIC government agency "
-            "that actually registers or approves this product in each country as of today -- not just its parent "
-            "ministry (ministries are often renamed, merged or split -- check); "
-            "never list a research institute or an industry association as a regulator. Milestones must each be "
-            "a DIFFERENT jurisdiction and real; give the year only unless the month is certain. For every "
-            "regulator and milestone set verified=true ONLY if the EVIDENCE explicitly confirms it, else false. "
-            "Scores are 1 (restrictive) to 5 (enabling), integers, and are an assessment. If the market has no "
-            "product- or sector-specific regulation worth a chapter, set applicable to false."),
-        "schema": ('{"applicable": <true|false>, "milestones": [{"date": <e.g. "Jul 2022" or "2025">, '
-                   '"jurisdiction": <string>, "event": <8-14 words>, "verified": <true|false>}, x5, chronological, '
-                   '5 different jurisdictions], '
+            " Describe the regulatory environment, focusing on MEA. For each country name the competent authority "
+            "for THIS product category as the DEFINITION describes it (a food supplement, a medicine, a "
+            "fertiliser and an animal feed are each regulated by a different body) -- the CURRENT, SPECIFIC "
+            "government agency that registers or approves it, under its name as of today. "
+            "Ministries are often renamed, merged or split: give the current name, never a former one. Never "
+            "list a research institute or an industry association as a regulator. Name the legal instrument "
+            "with its name and number in the form '<Name> Act <number> of <year>'. Milestones must each be a DIFFERENT jurisdiction and real: the date is the year "
+            "the instrument ENTERED INTO FORCE (not when it was proposed or announced), and each names its "
+            "instrument; give the year only unless the month is certain. Do not describe an amendment, "
+            "revision or phase-out unless the EVIDENCE names it. Every regulator, requirement and milestone is "
+            "checked claim by claim against independent evidence and left out if it cannot be confirmed, so "
+            "prefer fewer, certain items. Scores are 1 (restrictive) to 5 (enabling), integers, and are an "
+            "assessment. If the market has no product- or sector-specific regulation worth a chapter, set "
+            "applicable to false."),
+        "schema": ('{"applicable": <true|false>, "milestones": [{"date": <year it entered into force, e.g. "2022">, '
+                   '"jurisdiction": <string>, "event": <8-14 words>, "instrument": <legal instrument name and '
+                   'number>}, x5, chronological, 5 different jurisdictions], '
                    '"scorecard_dimensions": [<5 short names of the regulatory dimensions that matter for THIS '
                    'market, e.g. "Registration framework", "Approval speed", "Import & licensing">], '
                    '"scorecard": {"<country>": [<5 integer scores>], ... one per country in: {REG_COUNTRIES}}, '
-                   '"snapshot": [{"country": <string>, "regulator": <current government authority>, '
-                   '"requirements": <1-2 sentences>, "verified": <true|false>}, one per country in: {REG_COUNTRIES}], '
+                   '"snapshot": [{"country": <string>, "regulator": <current competent authority for this product '
+                   'category>, "instrument": <the legal instrument name and number it registers under>, '
+                   '"requirements": <1-2 sentences>}, one per country in: {REG_COUNTRIES}], '
                    '"watchlist": [{"theme": <string>, "what_to_watch": <string>, "implication": <string>}, x5]}'),
     },
     {

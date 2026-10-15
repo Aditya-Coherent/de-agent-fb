@@ -376,8 +376,6 @@ def timeline(milestones: list[dict], path: Path) -> Path:
         up = i % 2 == 0
         ax.plot([x, x], [21, 25 if up else 17], color=c, lw=1.2)
         label = f"{ms.get('jurisdiction', '')}: {ms.get('event', '')}" if ms.get("jurisdiction") else ms.get("event", "")
-        if ms.get("verified") is False:
-            label += " [to verify]"
         ax.text(x, 26.5 if up else 15.5, ms.get("date", ""), ha="center", va="bottom" if up else "top",
                 color=c, fontweight="bold", fontsize=13)
         ax.text(x, 30 if up else 12, _wrap(label, 22), ha="center", va="bottom" if up else "top", fontsize=11)

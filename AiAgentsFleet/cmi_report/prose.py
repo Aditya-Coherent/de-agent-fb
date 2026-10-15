@@ -339,8 +339,9 @@ def mea_leader_named(slots: dict, m: dict) -> str | None:
     from AiAgentsFleet.cmi_report.entities import named_in
     leader = m.get("vendor_mea_leader")
     sec = m["sections"]
-    if not leader or not (sec["vendor_mea"]["show"] or sec["positioning"]["show"]):
-        return None
+    if not leader or (m.get("vendor_unconfirmed") or {}).get("mea") or not (sec["vendor_mea"]["show"]
+                                                                          or sec["positioning"]["show"]):
+        return None             # an unconfirmed MEA section prints its data sentence instead (build.vendor_shares)
     text = slots.get("mea_share_para") or ""
     if named_in(text, leader):
         return None
@@ -476,7 +477,10 @@ def write(market_dir: Path, m: dict, ag: dict, llm, template: Path, evidence_fn=
     facts0 = base_facts(m)
     out = {"version": PROSE_VERSION, "slots": {}, "dropped": {}}
     sec = m["sections"]
-    hidden = {"type_para": not sec["type"]["show"], "demand_para": not sec["demand"]["show"]}
+    hidden = {"type_para": not sec["type"]["show"], "demand_para": not sec["demand"]["show"],
+              # a vendor section without confirmed vendors prints one data sentence, not generated text
+              "global_share_para": bool((m.get("vendor_unconfirmed") or {}).get("global")),
+              "mea_share_para": bool((m.get("vendor_unconfirmed") or {}).get("mea"))}
     specs = chapters(m, ag)
     # every number must be a register value of an entity named in the same sentence
     from AiAgentsFleet.cmi_report.register import FactGuard, build_register

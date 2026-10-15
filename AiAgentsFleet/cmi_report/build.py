@@ -196,11 +196,8 @@ def skipped(m: dict) -> tuple[set[int], list[str]]:
         drop("use_cases_me: Middle East use-case heat map", range(221, 225))
     if not sec["use_cases_af"]["show"]:
         drop("use_cases_af: Africa use-case heat map", range(298, 302))
-    # vendor shares (PLAN-05): a donut only from sourced shares; otherwise the positioning table
-    if not sec["vendor_global"]["show"] and not sec["positioning"]["show"]:
-        drop("vendor_global: global vendor share", range(332, 337))
-    if not sec["vendor_mea"]["show"] and not sec["positioning"]["show"]:
-        drop("vendor_mea: MEA vendor share", range(337, 343))
+    # vendor sections 7.2 / 7.3 are always kept: a donut, the positioning table, or one sentence saying
+    # vendor-level data could not be confirmed (PLAN-05, vendor_shares)
     if not sec["capabilities"]["show"]:
         drop("capabilities: vendor capability map", range(343, 347))
     if not sec["dashboard"]["show"]:
@@ -281,19 +278,24 @@ def positioning_rows(m: dict, vsafe) -> list[list[str]]:
 def vendor_shares(b: "Builder", i: int, m: dict, s, root: str, charts: dict, vsafe) -> None:
     """Sections 7.2 / 7.3 (template elements 332-341): a share donut where at least
     3 shares are sourced, else the positioning table (once, in the first section
-    without a donut) and the section's paragraph (PLAN-05)."""
+    without a donut) and the section's paragraph (PLAN-05). A section with fewer
+    than 3 confirmed vendors prints only its heading and one sentence from data
+    (m["vendor_unconfirmed"]) -- never an empty or near-empty table."""
     sec, vy = m["sections"], m["vendor_year"]
     show_g, show_m, pos = sec["vendor_global"]["show"], sec["vendor_mea"]["show"], sec["positioning"]["show"]
     pos_at = 332 if not show_g else 337           # where the positioning table goes
     geo, show, label = ("global", show_g, "Global") if i < 337 else ("MEA", show_m, "MEA")
     k = i - (332 if i < 337 else 337)              # 0 heading, 1 caption, 2 figure, 3 source, 4 paragraph
+    none = (m.get("vendor_unconfirmed") or {}).get(geo.lower())
     if k == 0:
         if show:
             b.keep(i)
         else:
-            b.para(i, f"7.{2 if i < 337 else 3} Vendor positioning ({label})")
+            b.para(i, f"7.{2 if i < 337 else 3} Vendor {'landscape' if none else 'positioning'} ({label})")
     elif k == 4:
-        b.para(i, s("global_share_para" if i < 337 else "mea_share_para"))
+        b.para(i, none or s("global_share_para" if i < 337 else "mea_share_para"))
+    elif none:
+        return
     elif show:
         if k == 1:
             b.caption(i, "Figure", f"Vendor share of {geo} {root.lower()} market value, {vy} (published figures)")

@@ -320,6 +320,33 @@ def mentions_product(text: str, phrases: list[str]) -> str | None:
     return None
 
 
+# a snippet ties a company to the product only when it says the company makes, supplies or sells it
+_SUPPLY = re.compile(r"mak(?:e|es|er|ers|ing)|made|produc\w*|manufactur\w*|suppl(?:y|ies|ier|iers|ying)|sell\w*|"
+                     r"sold|export\w*|offer\w*|farm(?:s|er|ers|ed)?|operat\w*|grow(?:s|er|ers|n)?|portfolio")
+# a snippet that is only a publication about the product is not evidence that the company sells it
+_MENTION_ONLY = re.compile(r"\b(guides?|guidance|articles?|webinars?|reports?|study|studies|blog|white ?papers?|"
+                           r"podcasts?|interviews?)\b", re.I)
+_NEAR = 12                                       # words between the supply word and the company / the product
+
+
+def states_supply(text: str, who: list[str], phrase: str) -> bool:
+    """`text` states that the company (any name in `who`) makes, produces,
+    supplies or sells the product `phrase`: a supply word within _NEAR words of
+    both the company and the product -- not merely the two in one text. A
+    publication snippet ('guide', 'article', 'webinar', 'report') never counts."""
+    if not text or _MENTION_ONLY.search(text):
+        return False
+    toks = _simple(text).split()
+
+    def starts(seq: list[str]) -> list[int]:
+        return [i for i in range(len(toks) - len(seq) + 1) if toks[i:i + len(seq)] == seq]
+    at_name = [i for w in who if w for k in name_keys(w) for i in starts(k.split())]
+    first = phrase.split()[0]
+    at_prod = [i for i, t in enumerate(toks) if t.startswith(_stem(first))]
+    at_verb = [i for i, t in enumerate(toks) if _SUPPLY.fullmatch(t)]
+    return any(abs(v - n) <= _NEAR and abs(v - p) <= _NEAR for v in at_verb for n in at_name for p in at_prod)
+
+
 # --------------------------------------------------------------------------- #
 # entity facts (HQ, parent, business type, product)
 # --------------------------------------------------------------------------- #
@@ -444,7 +471,10 @@ def verify_entity(raw: dict, name: str, snippets: list[dict], products: list[str
     phrase = mentions_product(pq, products or []) if products else None
     role = str(raw.get("role") or "").strip()
     prod_ok = bool(phrase) and bool(role) and bool(backed("product_quote", who=(name, division)))
-    if not prod_ok:
+    if prod_ok and not states_supply(pq, [name, division], phrase):
+        prod_ok = False
+        why.append("the product evidence line does not say it makes, supplies or sells the product")
+    elif not prod_ok:
         why.append("no evidence line names it with this market's product" if products else "product not checked")
     earns = raw.get("earns_defined_revenue")
     reason = str(raw.get("earns_reason") or "").strip()
@@ -579,7 +609,9 @@ def included(names: list[str], records: dict) -> list[str]:
 # --------------------------------------------------------------------------- #
 # a thin vendor list is asked for once more
 # --------------------------------------------------------------------------- #
-MIN_VENDORS = 5
+MIN_VENDORS = 5                      # fewer confirmed vendors: the list is asked for once more
+MIN_TABLE_VENDORS = 3                # fewer: no vendor table at all, one sentence instead
+UNCONFIRMED = "Vendor-level data for this market could not be confirmed from public sources."
 THIN_QUERIES = ["{market} leading manufacturers producers", "{market} key players list",
                 "{market} largest companies by capacity"]
 
@@ -595,44 +627,51 @@ def concentrated_in(records: dict) -> str | None:
     return top if hqs.count(top) >= 3 and hqs.count(top) * 3 >= len(hqs) else None
 
 
-def thin_note(definition: dict, records: dict, n_included: int) -> str:
+THIN_SYSTEM = (
+    "You name companies for a market report. List ONLY companies that earn EXACTLY the revenue the DEFINITION "
+    "measures, at its value-chain level -- e.g. for a farm-output market, companies that farm (not processors, "
+    "exporters, feed or equipment suppliers); for a manufacturer market, companies that make the product (not "
+    "retailers, brands of finished goods or traders). Never list a company on the EXCLUDE list. Prefer companies "
+    "named in the WEB EVIDENCE; never invent a company. Return ONLY valid JSON.")
+THIN_SCHEMA = ('{"companies": [{"vendor": <company name>, "role": <one line: what it makes or sells in this '
+               'market>}, ... up to 10 companies NOT on the EXCLUDE list]}')
+
+
+def thin_prompt(definition: dict, records: dict, n_included: int) -> str:
+    """The body of the dedicated thin-list re-ask (THIN_SYSTEM): the definition,
+    the companies already checked as an EXCLUDE list and why companies were
+    excluded -- and nothing else (no top-companies context, no instruction to
+    position every company, which made the agent repeat the same names)."""
     excl = [f"- {n}: {r['excluded_why']}" for n, r in records.items() if r.get("excluded_why")]
-    unconf = [f"- {n}: {'; '.join(r.get('why') or [])}" for n, r in records.items()
-              if not r.get("excluded_why") and not (r.get("verified") and r.get("product_verified"))]
-    return ("\n\nYOUR VENDOR LIST IS TOO THIN: only " + str(n_included) + " company(ies) could be confirmed as earning "
-            "the revenue this market measures.\n"
-            f"ALREADY CHECKED (do not list these again; name OTHER companies): {', '.join(records)}\n"
+    return (f"Only {n_included} company(ies) could be confirmed as earning the revenue this market measures.\n"
             f"- Value-chain level: {definition.get('value_chain_level') or '(not stated)'}\n"
             f"- Measures: {definition.get('measures') or definition.get('definition') or '(not stated)'}\n"
-            + ("These were EXCLUDED, with the reason:\n" + "\n".join(excl) + "\n" if excl else "")
-            + ("These could not be confirmed from the evidence:\n" + "\n".join(unconf[:8]) + "\n" if unconf else "")
-            + "List (in positioning, mea_shares and dashboard) companies that earn EXACTLY that revenue at that "
-              "value-chain level -- e.g. for a farm-output market, companies that farm, not processors or "
-              "exporters -- named in the WEB EVIDENCE where possible, including the largest MEA players. Return "
-              "the full JSON again in the same shape.")
+            f"EXCLUDE (already checked -- do not list any of these): {'; '.join(records)}\n"
+            + ("Companies excluded, with the reason (do not list companies like them):\n" + "\n".join(excl) + "\n"
+               if excl else "")
+            + "Name OTHER companies that earn exactly that revenue.\n"
+            + f"Return ONLY valid JSON matching exactly this shape:\n{THIN_SCHEMA}")
 
 
-def merge_answers(new: dict, old: dict) -> dict:
-    """The re-asked vendors answer, keeping the first answer's companies it does not repeat."""
-    out = dict(new)
-    for k in ("positioning", "mea_shares", "dashboard", "company_classification"):
-        key = "company" if k == "company_classification" else "vendor"
-        rows = [x for x in new.get(k) or [] if isinstance(x, dict)]
-        rows += [x for x in old.get(k) or [] if isinstance(x, dict) and x.get(key)
-                 and not any(same_vendor(x[key], y.get(key, "")) for y in rows)]
-        out[k] = rows
-    out["capabilities"] = {**(old.get("capabilities") or {}), **(new.get("capabilities") or {})}
+def merge_new(vendors: dict, companies: list[dict]) -> dict:
+    """The vendors answer with the re-ask's new companies added to positioning."""
+    out = dict(vendors or {})
+    rows = [x for x in out.get("positioning") or [] if isinstance(x, dict)]
+    rows += [{"vendor": str(c["vendor"]), "role": str(c.get("role") or "")} for c in companies
+             if isinstance(c, dict) and c.get("vendor") and not is_other(c["vendor"])
+             and not any(same_vendor(c["vendor"], y.get("vendor", "")) for y in rows)]
+    out["positioning"] = rows
     return out
 
 
 def reask_if_thin(fields: dict, fleet_fields: dict, definition: dict, market: str, ask: Callable, check_new: Callable,
                   log: list[str]) -> dict:
-    """Fewer than MIN_VENDORS confirmed vendors: the vendors agent is asked once
-    more -- with the value-chain level, the measures and why companies were
-    excluded -- on extra searches (THIN_QUERIES and one country query when the
-    confirmed HQs are concentrated in one country). The new companies get their
-    own entity checks (`check_new(names) -> {name: record}`). Returns the record
-    kept in fields["vendor_review"]["thin_reask"]."""
+    """Fewer than MIN_VENDORS confirmed vendors: one dedicated re-ask
+    (`ask(THIN_SYSTEM, thin_prompt(...), queries) -> {"companies": [...]}`) on
+    extra searches (THIN_QUERIES and one country query when the confirmed HQs
+    are concentrated in one country). The new companies -- any that is already
+    checked is dropped -- get their own entity checks (`check_new(names) ->
+    {name: record}`). Returns the record kept in fields["vendor_review"]["thin_reask"]."""
     ents = fields.get("entities") or {}
     records = dict(ents.get("records") or {})
     names = universe(fleet_fields, fields.get("vendors"))
@@ -642,28 +681,31 @@ def reask_if_thin(fields: dict, fleet_fields: dict, definition: dict, market: st
         return rec
     country = concentrated_in(records)
     queries = THIN_QUERIES + ([f"{{market}} {country} manufacturers producers companies"] if country else [])
-    note = thin_note(definition, records, len(before))
     log.append(f"[vendors] only {len(before)} confirmed vendor(s) -- re-asking once"
                + (f" (with a {country} search)" if country else ""))
-    rec.update({"reasked": True, "queries": queries, "country": country,
+    rec.update({"reasked": True, "queries": queries, "country": country, "exclude": list(records),
                 "excluded_reasons": {n: r["excluded_why"] for n, r in records.items() if r.get("excluded_why")}})
     try:
-        again = ask("vendors", note, queries)
+        again = ask(THIN_SYSTEM, thin_prompt(definition, records, len(before)), queries)
     except Exception as exc:  # noqa: BLE001
         log.append(f"[vendors] thin re-ask failed: {exc}")
         again = None
-    if not (isinstance(again, dict) and "error" not in again and again.get("positioning")):
+    companies = (again or {}).get("companies") if isinstance(again, dict) else None
+    if not companies:
         rec["reask_failed"] = True
         return rec
-    fields["vendors"] = merge_answers(again, fields.get("vendors") or {})
-    names = universe(fleet_fields, fields["vendors"])
-    new = [n for n in names if lookup(n, records) is None]
+    new = [str(c["vendor"]) for c in companies if isinstance(c, dict) and c.get("vendor")
+           and not is_other(c["vendor"]) and lookup(str(c["vendor"]), records) is None]
+    rec["repeated"] = [str(c.get("vendor")) for c in companies if isinstance(c, dict)
+                       and lookup(str(c.get("vendor")), records) is not None]
+    fields["vendors"] = merge_new(fields.get("vendors") or {}, [c for c in companies if str(c.get("vendor")) in new])
     records.update(check_new(new[:VENDOR_CAP]))
+    names = universe(fleet_fields, fields["vendors"])
     fields["entities"] = {**ents, "records": records,
                           "not_checked": [n for n in names if lookup(n, records) is None]}
     rec["new_vendors"] = new
     rec["included_after"] = included(names, records)
-    log.append(f"[vendors] after the re-ask: {len(rec['included_after'])} confirmed vendor(s)")
+    log.append(f"[vendors] after the re-ask: {len(new)} new compan(ies), {len(rec['included_after'])} confirmed vendor(s)")
     return rec
 
 

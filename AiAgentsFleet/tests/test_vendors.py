@@ -249,12 +249,15 @@ def test_a_diversified_company_with_a_relevant_division_is_included():
     assert vague["excluded_why"] is None
     # in the report the company carries the division's name
     f = seg_fleet()
-    f["fields"]["competitive_landscape"] = {"companies": [{"name": "Cargill", "share_pct": 8}]}
+    others = ["De Heus Animal Nutrition", "ForFarmers"]                # a table needs 3 confirmed vendors
+    f["fields"]["competitive_landscape"] = {"companies": [{"name": n, "share_pct": 8} for n in ["Cargill"] + others]}
     c = seg_cmi()
     c["fields"]["vendors"] = {"positioning": [{"vendor": "Cargill", "role": "x", "mea_presence": "Strong"}]}
-    c["fields"]["entities"] = {"records": {"Cargill": r}, "not_checked": []}
+    c["fields"]["entities"] = {"records": {"Cargill": r, **{n: rec(n, hq="Netherlands") for n in others}},
+                               "not_checked": []}
     m = model.build(f, c)
-    assert [x["vendor"] for x in m["vendor_positioning"]] == ["Cargill (Cargill Animal Nutrition)"]
+    assert [x["vendor"] for x in m["vendor_positioning"]] == ["Cargill (Cargill Animal Nutrition)",
+                                                              "De Heus Animal Nutrition", "ForFarmers"]
     assert m["vendor_positioning"][0]["role"] == "Makes functional poultry feed"
 
 
@@ -280,10 +283,11 @@ def test_a_thin_vendor_list_is_reasked_once_with_the_exclusion_reasons():
     fields = {"vendors": {"positioning": [{"vendor": n, "role": "x"} for n in recs]},
               "entities": {"records": recs, "not_checked": []}}
     asks, checked, log = [], [], []
-    again = {"positioning": [{"vendor": "National Aquaculture Group (NAQUA)", "role": "farms shrimp"}]}
+    again = {"companies": [{"vendor": "National Aquaculture Group (NAQUA)", "role": "farms shrimp"},
+                           {"vendor": "Minh Phu Seafood", "role": "repeated"}]}
 
-    def ask(key, note, queries):
-        asks.append((key, note, queries))
+    def ask(system, body, queries):
+        asks.append((system, body, queries))
         return again
 
     def check_new(names):
@@ -291,20 +295,101 @@ def test_a_thin_vendor_list_is_reasked_once_with_the_exclusion_reasons():
         return {n: rec(n, hq="Saudi Arabia") for n in names}
     dfn = {"value_chain_level": "farm-gate output", "measures": "Farm-gate value of super-intensive shrimp"}
     out = entities.reask_if_thin(fields, {}, dfn, "Super-Intensive Shrimp Farming Market", ask, check_new, log)
-    assert len(asks) == 1 and asks[0][0] == "vendors"
-    note, queries = asks[0][1], asks[0][2]
-    assert "farm-gate output" in note and "Farm-gate value of super-intensive shrimp" in note
-    assert "Thai Union Group: a seafood processor, not a farm" in note
-    assert "ALREADY CHECKED (do not list these again; name OTHER companies): Thai Union Group, Minh Phu Seafood" in note
+    assert len(asks) == 1 and asks[0][0] == entities.THIN_SYSTEM
+    body, queries = asks[0][1], asks[0][2]
+    assert "farm-gate output" in body and "Farm-gate value of super-intensive shrimp" in body
+    assert "Thai Union Group: a seafood processor, not a farm" in body
+    assert "EXCLUDE (already checked -- do not list any of these): Thai Union Group; Minh Phu Seafood; CP Foods" in body
     assert queries[:3] == entities.THIN_QUERIES
-    assert checked == [["National Aquaculture Group (NAQUA)"]]
-    assert out["reasked"] and out["included_before"] == ["Minh Phu Seafood"]
+    assert checked == [["National Aquaculture Group (NAQUA)"]]               # the repeated name is not re-checked
+    assert out["reasked"] and out["included_before"] == ["Minh Phu Seafood"] and out["repeated"] == ["Minh Phu Seafood"]
     assert set(out["included_after"]) == {"Minh Phu Seafood", "National Aquaculture Group (NAQUA)"}
     assert len(fields["vendors"]["positioning"]) == 4                  # the first answer's companies are kept
     # enough vendors: no re-ask
     many = {f"Vendor {i} Shrimp Farms": rec(f"Vendor {i} Shrimp Farms") for i in range(5)}
     f2 = {"vendors": {"positioning": [{"vendor": n} for n in many]}, "entities": {"records": many}}
     assert entities.reask_if_thin(f2, {}, dfn, "x", lambda *a: 1 / 0, check_new, [])["reasked"] is False
+
+
+def test_the_reask_prompt_has_no_top_companies_list_and_has_the_exclude_list(monkeypatch, tmp_path):
+    """run_data with the LLM and search mocked: the thin-list re-ask is its own prompt."""
+    from AiAgentsFleet.cmi_report import run_data
+    d = tmp_path / "output" / "vc"
+    d.mkdir(parents=True)
+    (d / "whitepaper_fields.json").write_text(json.dumps(fleet(GLOBAL[:3])), encoding="utf-8")
+    (d / "cmi_fields.json").write_text(json.dumps(seg_cmi()), encoding="utf-8")
+    llm = _LLM()
+    monkeypatch.setattr(entities.time, "sleep", lambda s: None)
+    monkeypatch.setattr(run_data, "FLEET", tmp_path)
+    monkeypatch.setattr(run_data.GenConfig, "load", staticmethod(lambda root: None))
+    monkeypatch.setattr(run_data, "GenLLM", lambda cfg, cache_path=None: llm)
+    monkeypatch.setattr(run_data, "search", lambda *a, **k: [snip("Vitamin C producers in China")])
+    monkeypatch.setattr(run_data, "entity_search", lambda qs: [snip(
+        f"{qs[0].replace(' company headquarters', '')} is a vitamin C producer headquartered in Shijiazhuang, China.")])
+    run_data._SHOWN.clear()
+    run_data.run("vc", {"vendors"})
+    thin = [u for sys_, u in llm.prompts if sys_ == entities.THIN_SYSTEM]
+    assert len(thin) == 1
+    reask = thin[0]
+    vendors_prompt = next(u for sys_, u in llm.prompts if sys_ not in (entities.THIN_SYSTEM, entities.ENTITY_SYSTEM))
+    assert "top_companies" in vendors_prompt                               # the first vendors call has the context ...
+    assert "top_companies" not in reask and "CONTEXT" not in reask         # ... the re-ask does not
+    assert "position every company" not in reask.lower() and "CONTEXT.top_companies" not in entities.THIN_SYSTEM
+    assert "EXCLUDE (already checked -- do not list any of these): DSM-Firmenich; CSPC Pharmaceutical Group" in reask
+    assert "Value-chain level: manufacturer" in reask
+
+
+def test_a_snippet_must_say_the_company_supplies_the_product():
+    adisseo = ("Adisseo releases new vitamin nutrition guide - aquafeed.com: This new version of the Microvit "
+               "Nutrition Guide presents minimum and maximum recommended levels of vitamin C for animal feed.")
+    assert not entities.states_supply(adisseo, ["Adisseo"], "vitamin c")
+    r = entities.verify_entity({"hq_country": "France", "hq_quote": "Adisseo is headquartered in Antony, France.",
+                                "business_type": "feed additive maker",
+                                "business_quote": "Adisseo is headquartered in Antony, France.",
+                                "product_quote": adisseo, "role": "vitamin nutrition guidance",
+                                "earns_defined_revenue": True}, "Adisseo",
+                               [snip(adisseo), snip("Adisseo is headquartered in Antony, France.")], PRODUCTS_VC)
+    assert not r["product_verified"] and r["role"] == ""
+    assert any("does not say it makes, supplies or sells" in w for w in r["why"])
+    cspc = "CSPC Pharmaceutical Group is a leading manufacturer of bulk drugs, including vitamin C."
+    assert entities.states_supply(cspc, ["CSPC Pharmaceutical Group"], "vitamin c")
+    assert entities.states_supply("CSPC Pharmaceutical Group Limited - Bulk Drugs: Major products: vitamin C",
+                                  ["CSPC Pharmaceutical Group"], "vitamin c")
+    # the same words, far apart, are not a statement that the company sells it
+    far = ("CSPC Pharmaceutical Group reported results on Tuesday after a board meeting chaired by its chief "
+           "executive in Shijiazhuang where analysts asked about margins and exports to Europe and Africa; separately "
+           "the city also hosts several unrelated plants and a museum about vitamin C history")
+    assert not entities.states_supply(far, ["CSPC Pharmaceutical Group"], "vitamin c")
+
+
+def test_fewer_than_3_confirmed_vendors_print_one_sentence_not_a_table():
+    recs = {"National Aquaculture Group (NAQUA)": rec("National Aquaculture Group (NAQUA)", hq="Saudi Arabia"),
+            "Minh Phu Seafood": rec("Minh Phu Seafood", hq="Vietnam")}
+    c = cmi(vendors={"positioning": [{"vendor": "National Aquaculture Group (NAQUA)", "role": "x",
+                                      "mea_presence": "Leading"},
+                                     {"vendor": "Minh Phu Seafood", "role": "x", "mea_presence": "Limited"}],
+                     "dashboard": [{"vendor": n, "hq": "x", "core_strength": "y", "mea_footprint": "z",
+                                    "verified": True} for n in recs]},
+            records=recs)
+    m = model.build(fleet([row(n, 5) for n in recs], check_of([])), c)
+    assert m["vendor_positioning"] == [] and m["vendor_dashboard"] == [] and m["vendor_capabilities"] == {}
+    assert not m["sections"]["positioning"]["show"] and not m["sections"]["dashboard"]["show"]
+    assert m["vendor_unconfirmed"]["global"] == entities.UNCONFIRMED
+    assert m["vendor_unconfirmed"]["mea"].startswith(entities.UNCONFIRMED)
+    assert "National Aquaculture Group (NAQUA) (Saudi Arabia) has the strongest Middle East & Africa presence" in \
+        m["vendor_unconfirmed"]["mea"]                                     # a confirmed MEA leader may be named
+    assert any("only 2 confirmed vendor(s) (fewer than 3)" in w for w in m["vendor_review"]["warnings"])
+    assert any("MEA leader National Aquaculture Group (NAQUA)" in w for w in m["vendor_review"]["warnings"])
+    # the report: headings and the one sentence each, no table and no vendor text from the LLM
+    out = _vendor_section(m)
+    assert out["tables"] == 0
+    assert out["texts"] == ["7.2 Vendor landscape (Global)", entities.UNCONFIRMED,
+                            "7.3 Vendor landscape (MEA)", m["vendor_unconfirmed"]["mea"]]
+    from AiAgentsFleet.cmi_report import prose
+    assert prose.mea_leader_named({"mea_share_para": "x"}, m) is None
+    # Minh Phu (confirmed but in no table) may not be named in the text; the MEA leader may
+    assert vendor_problem("Minh Phu Seafood farms shrimp.", m["vendor_text"])
+    assert vendor_problem("National Aquaculture Group (NAQUA) farms shrimp.", m["vendor_text"]) is None
 
 
 def test_there_is_no_tier_column():
@@ -508,12 +593,15 @@ def test_vendors_answer_is_reasked_once_and_recorded():
 
 
 class _LLM:
-    """vendors group, then one entity call per company."""
+    """vendors group, then one entity call per company (and the thin-list re-ask)."""
     def __init__(self):
-        self.calls = []
+        self.calls, self.prompts = [], []
 
     def complete_json(self, system, user):
         self.calls.append(system)
+        self.prompts.append((system, user))
+        if system == entities.THIN_SYSTEM:
+            return {"companies": [{"vendor": "Zhejiang Tianli", "role": "Makes vitamin C"}]}
         if system == entities.ENTITY_SYSTEM:
             name = user.split("COMPANY: ", 1)[1].split("\n", 1)[0]
             q = f"{name} is a vitamin C producer headquartered in Shijiazhuang, China."
@@ -544,12 +632,13 @@ def test_run_data_vendors_runs_the_checks_and_the_entity_calls(monkeypatch, tmp_
     assert out["vendor_review"]["reasked"] is False and out["vendor_review"]["problems"] == []
     recs = out["entities"]["records"]
     assert set(recs) == {"DSM-Firmenich", "CSPC Pharmaceutical Group", "Shandong Luwei Pharmaceutical",
-                         "Northeast Pharmaceutical Group"}
+                         "Northeast Pharmaceutical Group", "Zhejiang Tianli"}   # + the re-ask's new company
     assert all(r["verified"] and r["product_verified"] and r["hq_country"] == "China" for r in recs.values())
-    assert llm.calls.count(entities.ENTITY_SYSTEM) == 4
+    assert llm.calls.count(entities.ENTITY_SYSTEM) == 5
     # 4 confirmed vendors < 5: the vendor list was asked for once more, on the extra searches
     thin = out["vendor_review"]["thin_reask"]
     assert thin["reasked"] and len(thin["included_before"]) == 4 and thin["country"] == "China"
+    assert thin["new_vendors"] == ["Zhejiang Tianli"] and len(thin["included_after"]) == 5
     assert "{market} key players list" in thin["queries"] and "{market} China manufacturers producers companies" in \
         thin["queries"]
 

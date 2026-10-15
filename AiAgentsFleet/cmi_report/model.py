@@ -365,13 +365,33 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
                      "mea_presence": p.get("mea_presence") if p.get("mea_presence") in ent.MEA_PRESENCE else "",
                      "ownership_note": rec.get("ownership_note") or ""})
     rows.sort(key=lambda r: r["vendor"].lower())             # alphabetical: no ranking without shares
-    pos_show = len(rows) >= 1 and not (show_g and show_m)
 
     # ---- the MEA leader: the largest sourced MEA share, else the positioning assessment
     if show_m:
         leader = msh[0][0]
     else:
         leader = next((r["vendor"] for lvl in ("Leading", "Strong") for r in rows if r["mea_presence"] == lvl), None)
+    leader_hq = next((r["hq"] for r in rows if r["vendor"] == leader), "")
+
+    # ---- never an empty or near-empty vendor table: with fewer than 3 confirmed vendors for a geography
+    # its section says so in one sentence from data (a confirmed MEA leader may still be named)
+    min_n = ent.MIN_TABLE_VENDORS
+    mea_rows = [r for r in rows if r["mea_presence"] not in ("", "None")]
+    table_ok, mea_ok = len(rows) >= min_n, show_m or len(mea_rows) >= min_n
+    unconfirmed = {
+        "global": None if show_g or table_ok else ent.UNCONFIRMED,
+        "mea": None if mea_ok else " ".join(
+            [ent.UNCONFIRMED] + ([f"Of the vendors confirmed from public sources, {leader} ({leader_hq}) has the "
+                                  f"strongest Middle East & Africa presence (CMI assessment)."] if leader else []))}
+    thin_warnings = ([f"only {len(rows)} confirmed vendor(s) (fewer than {min_n}): the positioning table is left "
+                      f"out and the global section says vendor-level data could not be confirmed"]
+                     if unconfirmed["global"] else []) +                     ([f"only {len(mea_rows)} confirmed vendor(s) with an MEA presence (fewer than {min_n}): the MEA "
+                      f"section says vendor-level data could not be confirmed"
+                      + (f", naming only the MEA leader {leader}" if leader else "")] if unconfirmed["mea"] else [])
+    n_confirmed = len(rows)
+    if not table_ok:
+        rows = []                                              # nothing printed from a near-empty list
+    pos_show = table_ok and not (show_g and show_m)
 
     # ---- dashboard: confirmed vendors only; HQ and ownership note from the entity check
     dash, dseen = [], set()
@@ -389,9 +409,12 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
                      "mea_footprint": r.get("mea_footprint") or "", "verified": bool(r.get("verified")),
                      "ownership_note": rec.get("ownership_note") or ""})
 
+    if len(dash) < min_n:
+        dash = []                                              # the same rule for the dashboard
+
     # ---- the final vendor names; every other known company may not be named in the text
     final = list(dict.fromkeys([r["vendor"] for r in rows] + [r["vendor"] for r in dash]
-                               + [n for n, _ in gsh + msh]))
+                               + [n for n, _ in gsh + msh] + ([leader] if leader else [])))
     caps: dict[str, list] = {}
     for n, sc in (ven.get("capabilities") or {}).items():
         if not excl(n) and disp(n) in final:
@@ -411,7 +434,8 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
     mode = {"shares_global": show_g, "shares_mea": show_m, "positioning": pos_show}
     vrev = ent.review(fleet_check=fcheck, answer_record=arec, entities=ents, has_vendors=bool(known),
                       excluded=excluded, dropped=dropped, merges=unotes, declined=declined, blocked_sourced=blocked_s,
-                      blocked_unsourced=blocked_u, mode=mode, mea_leader=leader, positioning_rows=len(rows))
+                      blocked_unsourced=blocked_u, mode=mode, mea_leader=leader, positioning_rows=n_confirmed)
+    vrev["warnings"] += thin_warnings
     dims = ven.get("capability_dimensions") or []
     return {
         "vendor_year": VENDOR_YEAR,
@@ -421,6 +445,8 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
         "vendor_positioning": rows, "vendor_dashboard": dash,
         "vendor_capabilities": caps, "vendor_capability_dimensions": dims,
         "vendor_mea_leader": leader, "vendor_alias": alias,
+        # the one sentence a section without confirmed vendor data prints (None: the section has data)
+        "vendor_unconfirmed": unconfirmed,
         "vendor_text": {"year": VENDOR_YEAR, "names": final_members, "blocked": blocked, "shares": shares_txt,
                         "moves": moves, "mea_leader": leader},
         "vendor_review": vrev,
@@ -431,11 +457,11 @@ def vendor_block(fleet: dict, c: dict, global_v: float, mea_v: float, home_value
                            f"only {len(msh)} sourced MEA vendor share(s): positioning table instead"},
             "positioning": {"show": pos_show, "why": "" if pos_show else
                             "shares shown instead" if show_g and show_m else
-                            "no vendor with confirmed HQ, parent, business type and product"},
+                            f"fewer than {min_n} vendors with confirmed HQ, parent, business type and product"},
             "capabilities": {"show": len(caps) >= 3 and len(dims) >= 3,
                              "why": "" if len(caps) >= 3 else "fewer than 3 confirmed vendors scored"},
-            "dashboard": {"show": len(dash) >= 2, "why": "" if len(dash) >= 2 else
-                          "fewer than 2 confirmed vendors"},
+            "dashboard": {"show": len(dash) >= min_n, "why": "" if len(dash) >= min_n else
+                          f"fewer than {min_n} confirmed vendors"},
         },
         "notes": notes,
     }

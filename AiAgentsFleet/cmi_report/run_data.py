@@ -180,16 +180,13 @@ def definition_block(d: dict) -> str:
 
 
 def run_group(market: str, g: dict, context: dict, definition: dict, llm: GenLLM, log: list,
-              schema: str | None = None, note: str = "", queries: list[str] | None = None) -> dict:
+              schema: str | None = None, note: str = "") -> dict:
     """One agent call. `note` (a re-ask, geo_check.reask_note) is appended to the
-    prompt, and the agent then sees the same snippets as its first answer --
-    unless `queries` are given (the thin vendor-list re-ask): then those are
-    searched and the agent sees what they find."""
-    fresh = queries is not None
-    queries = [q.format(market=market) for q in (queries or g["queries"])]
+    prompt, and the agent then sees the same snippets as its first answer."""
+    queries = [q.format(market=market) for q in g["queries"]]
     dropped: list[dict] = []
     off_topic: list[dict] = []
-    if note and g["key"] in _SHOWN and not fresh:
+    if note and g["key"] in _SHOWN:
         sourced = _SHOWN[g["key"]]
     else:
         sourced = search(market, queries, g["key"], log, dropped_out=dropped, off_topic_out=off_topic)
@@ -300,7 +297,14 @@ def review_vendors(market: str, data: dict, fields: dict, definition: dict, llm:
     def check_new(new: list[str]) -> dict:
         return entities.check_entities(new, market, definition_block(definition), fields.get("vendors"), llm,
                                        entity_search, log, products=products)["records"]
-    thin = entities.reask_if_thin(fields, data["fields"], definition, market, ask_group, check_new, log)
+    def ask_thin(system: str, body: str, queries: list[str]) -> dict:
+        """The dedicated thin-list re-ask: its own searches, the definition and the evidence -- no
+        CONTEXT (top companies) and none of the vendors group's instructions."""
+        shown = search(market, [q.format(market=market) for q in queries], "vendors_reask", log)
+        ev = ("WEB EVIDENCE:\n" + "\n".join(f"- {s['text']}" for s in shown) if shown
+              else "(no web evidence found)")
+        return llm.complete_json(system, f"Market: {market}\n\n{definition_block(definition)}{ev}\n\n{body}")
+    thin = entities.reask_if_thin(fields, data["fields"], definition, market, ask_thin, check_new, log)
     fields["vendor_review"] = {**(fields.get("vendor_review") or {}), "thin_reask": thin}
 
 
@@ -356,9 +360,9 @@ def run(slug: str, only: set[str] | None = None) -> Path:
         context = fleet_context({**data, "fields": {**data["fields"], "regional": review["regional"]["answer"]}})
     context = {**context, "countries_named": geo}
 
-    def ask_group(key: str, note: str, queries: list[str] | None = None) -> dict:
+    def ask_group(key: str, note: str) -> dict:
         g = next(x for x in GROUPS if x["key"] == key)
-        return run_group(market, g, context, definition, llm, log, schema_for(g, geo), note=note, queries=queries)
+        return run_group(market, g, context, definition, llm, log, schema_for(g, geo), note=note)
 
     wanted = [g for g in GROUPS if not only or g["key"] in only]
     # segments_mea needs the demand segments segments_global defines.

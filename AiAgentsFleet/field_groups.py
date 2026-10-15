@@ -22,16 +22,30 @@ FIELD_GROUPS: list[dict] = [
             "{market} market size 2025 USD billion",
             "{market} market size forecast 2035 CAGR",
             "{market} market size historical 2020 2021 2022 2023 2024",
+            "{market} market size 2024",
+            "{market} market size 2025",
+            "{market} market worth billion",
+            "{market} market valued at",
         ],
         "system": (
             "You summarize web search results the way Google's AI Overview does: a concise, "
             "confident, well-cited answer synthesized from multiple sources. Extract market-sizing "
-            "numbers for the requested market. If the evidence doesn't cover a field, give your own "
-            "best estimate using domain knowledge and reasonable extrapolation -- never leave a "
-            "field null."
+            "numbers for the requested market.\n"
+            "CITE YOUR HEADLINE: base_year_value_usd_mn and cagr_pct must be taken from, or directly "
+            "derived from, the quotes you list in `basis`. Each basis.quote is copied EXACTLY from one "
+            "WEB EVIDENCE line and states the value and its year. Derived means only: a 2024 or 2026 "
+            "value carried to the base year with a CAGR a quote states, or a conversion to USD million. "
+            "If several quotes disagree, use the one whose scope best matches the market definition and "
+            "say why in `how_derived`. If no evidence line states a size for this market, return "
+            "\"basis\": [] and give your own best estimate.\n"
+            "For the other fields, if the evidence doesn't cover them, give your own best estimate using "
+            "domain knowledge and reasonable extrapolation -- never leave a field null."
         ),
         "schema_hint": (
-            '{"base_year": <int, e.g. 2025>, "base_year_value_usd_mn": <number>, '
+            '{"basis": [{"quote": <exact evidence text>, "publisher": <firm or site the quote is from>, '
+            '"value_usd_mn": <number>, "year": <int>, "cagr_pct": <number|null>}, ...], '
+            '"how_derived": <1 sentence: how the headline follows from basis>, '
+            '"base_year": <int, e.g. 2025>, "base_year_value_usd_mn": <number>, '
             '"forecast_year": <int, e.g. 2035>, "forecast_value_usd_mn": <number>, '
             '"cagr_pct": <number>, '
             '"historical_usd_mn": {"<year>": <number>, ... 5 recent past years}, '

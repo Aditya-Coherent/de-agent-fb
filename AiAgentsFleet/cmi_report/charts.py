@@ -502,7 +502,9 @@ def process(path: Path) -> Path:
 
 
 def published_vs_cmi(published: list[dict], cmi_2025_mn: float, path: Path) -> Path:
-    rows = [(p["publisher"], float(p["value_usd_bn"])) for p in published] + [("CMI triangulated", cmi_2025_mn / 1000)]
+    """Drawn only for a sourced headline (model.py empties `published_2025`
+    otherwise); the CMI bar is the sourced base, not a blend of the others."""
+    rows = [(p["publisher"], float(p["value_usd_bn"])) for p in published] + [("CMI base", cmi_2025_mn / 1000)]
     fig, ax = plt.subplots(figsize=(W, 0.55 * len(rows) + 1.0))
     ys = list(range(len(rows)))[::-1]
     ax.barh(ys, [v for _, v in rows], color=[LIGHT] * (len(rows) - 1) + [TEAL], height=0.6)
@@ -514,6 +516,6 @@ def published_vs_cmi(published: list[dict], cmi_2025_mn: float, path: Path) -> P
     ax.spines["bottom"].set_visible(False)
     ax.tick_params(axis="y", length=0)
     ax.set_xlim(0, max(v for _, v in rows) * 1.25)
-    ax.set_title(f"Published {Y0 - 1} global market estimates vs. CMI triangulated base", fontweight="bold",
+    ax.set_title(f"Published {Y0 - 1} global market estimates (for reference) vs. CMI base", fontweight="bold",
                  fontsize=11.5)
     return _save(fig, path)

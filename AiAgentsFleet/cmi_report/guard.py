@@ -280,6 +280,37 @@ def no_breakdown_claim(s: str, countries: list[str], segments: list[str]) -> str
     return f"segment claim ({seg}) for {c}, whose segment breakdown is not in the report" if c and seg else None
 
 
+_SIZE_GAP = re.compile(r"\b(gaps?|differences?|differ(?:s|ing)?|discrepanc\w*|diverg\w*|variation|var(?:y|ies)|"
+                       r"spread)\b", re.I)
+_SIZE_CAUSE = re.compile(r"\b(reflect\w*|because|due to|owing to|stem\w* from|explain\w*|attribut\w*|driven by|"
+                         r"result\w* from|arises?|arising)\b", re.I)
+_SIZE_COMPARE = re.compile(r"\b(publish\w*|third[- ]party|other (?:estimates|sources|firms|publishers|reports|"
+                           r"analysts)|research firms|scope|definition\w*|methodolog\w*)\b", re.I)
+_SIZE_BASE_WHY = re.compile(r"\bCMI\b[^.]{0,40}\b(?:sets?|places?|positions?|pitche?s?)\b[^.]{0,20}\b(?:base|estimate)\b"
+                            r"[^.]{0,60}\b(?:because|reflect\w*|due to|given)\b", re.I)
+_PUBLISHED_WORDING = re.compile(r"\bpublish\w*|\btriangulat\w*|\bthird[- ]party (?:estimate|figure|data|source)s?\b",
+                                re.I)
+
+
+def drop_size_comparison(text: str, dropped: list[str], unsourced: bool = False) -> str:
+    """Drops sentences that explain a gap between the CMI figure and published
+    figures ('The gap reflects scope ...'): the pipeline has no basis for such
+    reasons (PLAN-02, FINDINGS E). When the headline is `unsourced` (a CMI
+    estimate), every sentence with published-comparison or triangulation
+    wording goes too."""
+    keep = []
+    for s in sentences(text or ""):
+        why = ("explains a CMI-vs-published gap" if (_SIZE_GAP.search(s) and _SIZE_CAUSE.search(s)
+                                                     and _SIZE_COMPARE.search(s)) or _SIZE_BASE_WHY.search(s) else
+               "published/triangulation wording on an unsourced headline" if unsourced
+               and _PUBLISHED_WORDING.search(s) else None)
+        if why:
+            dropped.append(f"[{why}] {s[:120]}")
+        else:
+            keep.append(s)
+    return " ".join(keep)
+
+
 def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, dropped: list[str],
                absent: list[str] | None = None) -> str:
     """The text with every failing sentence removed. `absent`: entity names

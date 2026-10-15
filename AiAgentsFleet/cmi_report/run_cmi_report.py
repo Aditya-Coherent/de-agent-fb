@@ -384,6 +384,7 @@ def main() -> int:
         for e in build_register(m, ag):
             w.writerow([e["id"], e["fact"], e["display"], e["metric"], "; ".join(x for x in e["entities"] if x)])
     report = {"build_log": log, "prose_dropped": pr.get("dropped"), "verification": verification,
+              "headline_size_check": {k: m["size_check"].get(k) for k in ("status", "notes", "source")},
               **qa(out, m, ag, root)}
     (cdir / "qa_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"QA: {len(report['numbers_not_in_model'])} text block(s) with numbers not in the model, "

@@ -141,6 +141,10 @@ def main() -> int:
     out_path = Path(args.out) if args.out else OUTPUT_ROOT / _slug(args.market) / "whitepaper_fields.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    check = ((result["fields_raw"].get("market_size") or {}).get("_sources") or {}).get("size_check")
+    if check:                    # is the headline backed by its own evidence? (PLAN-02)
+        (out_path.parent / "market_size_check.json").write_text(json.dumps(check, indent=2, ensure_ascii=False),
+                                                                 encoding="utf-8")
 
     print("\n--- run log ---")
     for line in result["log"]:

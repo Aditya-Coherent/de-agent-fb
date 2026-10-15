@@ -46,7 +46,6 @@ _GEO_PREFIXES = {
 }
 _SCENARIO_MIN_GAP_PP = 1.5
 _SCENARIO_MIN_GAP_REL = 0.20
-_SCENARIO_MAX_GAP_MULT = 2.0
 _MAX_RESTRAINT_TO_DRIVER_RATIO = 0.30
 
 
@@ -465,18 +464,25 @@ def _reconcile_scenarios(scen: dict, base_val: float, forecast_val: float, cagr_
 
     bear = scen.setdefault("bear", {})
     bull = scen.setdefault("bull", {})
-    # Bull/bear must be a meaningful spread around base, not a value nudged
-    # 0.3 pp past it just to satisfy the ordering.
+    # The agent's bear/bull CAGRs are kept when bear < base < bull (PLAN-02: a
+    # raw 18/32/45 is not rewritten). Only a value that breaks the order (or is
+    # missing) is clamped, to `gap` below/above base, and that is logged.
     gap = max(_SCENARIO_MIN_GAP_PP, abs(cagr_pct) * _SCENARIO_MIN_GAP_REL)
-    bear_cagr = min(float(bear.get("cagr_pct", cagr_pct - gap) or cagr_pct - gap), cagr_pct - gap)
-    bull_cagr = max(float(bull.get("cagr_pct", cagr_pct + gap) or cagr_pct + gap), cagr_pct + gap)
-    # ...and not an implausibly wide one (e.g. a 48% bull case on a 22% base).
-    bear_cagr = max(bear_cagr, cagr_pct - _SCENARIO_MAX_GAP_MULT * gap)
-    bull_cagr = min(bull_cagr, cagr_pct + _SCENARIO_MAX_GAP_MULT * gap)
-    if bear.get("cagr_pct") is not None and abs(float(bear["cagr_pct"]) - bear_cagr) > 0.01:
-        changes.append(f"bear CAGR widened to {bear_cagr:.2f}% (min {gap:.2f} pp below base)")
-    if bull.get("cagr_pct") is not None and abs(float(bull["cagr_pct"]) - bull_cagr) > 0.01:
-        changes.append(f"bull CAGR widened to {bull_cagr:.2f}% (min {gap:.2f} pp above base)")
+
+    def _num(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+    bear_raw, bull_raw = _num(bear.get("cagr_pct")), _num(bull.get("cagr_pct"))
+    bear_cagr = bear_raw if bear_raw is not None and bear_raw < cagr_pct else cagr_pct - gap
+    bull_cagr = bull_raw if bull_raw is not None and bull_raw > cagr_pct else cagr_pct + gap
+    if bear_cagr != bear_raw:
+        changes.append(f"bear CAGR {bear_raw}% is not below base {cagr_pct:.2f}%: clamped to {bear_cagr:.2f}% "
+                       f"({gap:.2f} pp below base)")
+    if bull_cagr != bull_raw:
+        changes.append(f"bull CAGR {bull_raw}% is not above base {cagr_pct:.2f}%: clamped to {bull_cagr:.2f}% "
+                       f"({gap:.2f} pp above base)")
     bear["cagr_pct"] = round(bear_cagr, 2)
     bull["cagr_pct"] = round(bull_cagr, 2)
     bear["terminal_value_usd_mn"] = round(base_val * (1 + bear_cagr / 100) ** years, 2)

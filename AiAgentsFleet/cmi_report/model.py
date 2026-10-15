@@ -391,9 +391,12 @@ def build(fleet: dict, cmi: dict) -> dict:
     merge_notes += merge_mea
 
     # published third-party figures: only those measuring the same scope as this report
-    # (a figure far outside the CMI base describes a parent or adjacent market)
+    # (a figure far outside the CMI base describes a parent or adjacent market). An
+    # unsourced headline is a CMI estimate with no published comparison at all (PLAN-02).
+    check = size_check(fleet)
     published, pub_notes = [], []
-    for p in (c.get("published") or {}).get("global_2025") or []:
+    pub_raw = (c.get("published") or {}).get("global_2025") or [] if check["status"] == "sourced" else []
+    for p in pub_raw:
         p = {**p, "publisher": clean_publisher(p.get("publisher", ""), p.get("url", ""))}
         ratio = float(p.get("value_usd_bn") or 0) * 1000 / G[2025] if G[2025] else 0
         if 1 / 3 <= ratio <= 3:
@@ -456,6 +459,7 @@ def build(fleet: dict, cmi: dict) -> dict:
         "sections": sections(fleet["market_name"], type_names, dem_names, c),
         "definition": definition(fleet),
         "published_2025": published,
+        "size_check": check,
         "value_chain": vchain,
         "vendor_alias": alias,
         "segment_definitions": sg.get("segment_definitions") or {},
@@ -465,10 +469,24 @@ def build(fleet: dict, cmi: dict) -> dict:
     }
 
 
+def size_check(fleet: dict) -> dict:
+    """The market_size agent's headline check (cmi_report/verify_size.py), as
+    recorded by the fleet run. A run without one is treated as unsourced."""
+    for part in ("fields_raw", "fields"):
+        chk = (((fleet.get(part) or {}).get("market_size") or {}).get("_sources") or {}).get("size_check")
+        if chk:
+            return {k: v for k, v in chk.items()}
+    return {"status": "unsourced", "notes": ["no size check recorded (fleet run predates PLAN-02)"],
+            "source": None, "cagr_sourced": False}
+
+
 def write(market_dir: Path) -> Path:
     fleet = json.loads((market_dir / "whitepaper_fields.json").read_text(encoding="utf-8"))
     cmi = json.loads((market_dir / "cmi_fields.json").read_text(encoding="utf-8"))
     m = build(fleet, cmi)
     out = market_dir / "cmi_model.json"
     out.write_text(json.dumps(m, indent=1, ensure_ascii=False), encoding="utf-8")
+    # the check the report was built on, beside it (same content as m["size_check"])
+    (market_dir / "market_size_check.json").write_text(json.dumps(m["size_check"], indent=2, ensure_ascii=False),
+                                                        encoding="utf-8")
     return out

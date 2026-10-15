@@ -15,10 +15,10 @@ from pathlib import Path
 import docx
 
 from AiAgentsFleet.cmi_report import fmt
-from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text
+from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, drop_size_comparison
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 5      # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 6      # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -122,7 +122,22 @@ def base_facts(m: dict) -> dict:
                 "cagr_premium_vs_global_pp": f"{mea['cagr'] - g['cagr']:.1f}"},
         "regions": _block(m["regions"], g),
         "subregions": _block(m["subregions"], mea),
+        "size_check": _size_facts(m),
     }
+
+
+def _size_facts(m: dict) -> dict:
+    """Where the headline comes from (verify_size.py): a named source, or a CMI estimate."""
+    chk = m.get("size_check") or {}
+    if chk.get("status") == "sourced" and chk.get("source"):
+        s = chk["source"]
+        who = s["domain"] if s["publisher"] == s["domain"] else f"{s['publisher']} ({s['domain']})"
+        return {"status": "sourced", "headline_source": who,
+                "rule": "the global base is this source's figure: name the source; never explain why other "
+                        "figures differ"}
+    return {"status": "unsourced", "headline_label": "CMI estimate",
+            "rule": "the headline is a CMI estimate: call it that; never mention published or third-party "
+                    "estimates, ranges or triangulation"}
 
 
 # --------------------------------------------------------------------------- #
@@ -145,7 +160,11 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                "relative opportunity is largest' -- only if the findings support it)", None),
                     "cover_subtitle": ("one line like the example, naming this market's themes", 3),
                     "about_scope": ("1-2 sentences: what this whitepaper sizes and why the Middle East and Africa are the focus", 20),
-                    "exec_para": ("executive summary opener with the CMI global estimates and the published range", 24),
+                    "exec_para": (("executive summary opener with the CMI global estimates, naming "
+                                   "FACTS.size_check.headline_source as the source of the base-year figure")
+                                  if m.get("size_check", {}).get("status") == "sourced" else
+                                  ("executive summary opener with the global figures, explicitly called 'CMI "
+                                   "estimates'; no comparison with any other figures"), 24),
                     "global_bullets": ("list of 3 bullets: largest region; fastest-growing region and its "
                                        "incremental value; one structural shift", 29),
                     "mea_bullets": ("list of 3 bullets: MEA size, share and CAGR premium; Middle East led by its two "
@@ -250,13 +269,11 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                                "FACTS.body_findings it follows from, with its figure and its "
                                                "context (e.g. 'In the optimistic scenario, ...')>} -- the finding "
                                                "must DIRECTLY justify the action, not merely be related", 361)}},
-        "ch9": {"facts": {"published_2025_estimates_usd_bn": [f"{p['publisher']}: ${p['value_usd_bn']:g}B" for p in pub],
-                          "cmi_base_2025": fmt.usd(m["global"]["v25"]),
+        # 9.1 (the basis of the headline) is written from m["size_check"] by build.py, not by the LLM
+        "ch9": {"facts": {"cmi_base_2025": fmt.usd(m["global"]["v25"]),
                           "scope": (ag.get("_definition") or {})},
                 "slots": {
                     "method_para": ("2 sentences on CMI's top-down and bottom-up method", 363),
-                    "triangulation_para": ("2-3 sentences: published range for 2025 and why CMI sets its base where it "
-                                           "does (scope)", 368),
                     "assumptions": ("list of 4 assumptions and limitations bullets for this market (no template or "
                                     "draft wording)", 381)}},
     }
@@ -308,6 +325,7 @@ def make_guard(m: dict, geo: str | None) -> ClaimGuard:
                       if c not in with_breakdown and not c.startswith("Rest of")]
     g.segment_names = [n for dims in m["segments"].get("Global", {}).values() for n in dims
                        if not n.lower().startswith("other")]
+    g.headline_unsourced = (m.get("size_check") or {}).get("status") != "sourced"
     return g
 
 
@@ -317,16 +335,21 @@ def _geo_of(slot: str, ch: str) -> str | None:
     return {"ch1": "Global", "ch3": "Global", "ch4": "Middle East", "ch5": "Africa"}.get(ch)
 
 
+def _guard(text, ng, cg, dropped, absent) -> str:
+    out = clean_text(text, ng, cg, dropped, absent)
+    return drop_size_comparison(out, dropped, getattr(cg, "headline_unsourced", False))
+
+
 def _clean(v, ng, cg, dropped, absent, limit=110):
     if isinstance(v, str):
-        return cap_words(clean_text(v, ng, cg, dropped, absent), limit) or None
+        return cap_words(_guard(v, ng, cg, dropped, absent), limit) or None
     if isinstance(v, list):
         out = [_clean(x, ng, cg, dropped, absent, 45) for x in v]
         return [x for x in out if x]
     if isinstance(v, dict):
         if {"lead", "text"} <= v.keys():
             lead = v["lead"] if not ng.bad(v["lead"]) else None
-            text = cap_words(clean_text(v["text"], ng, cg, dropped, absent), 60)
+            text = cap_words(_guard(v["text"], ng, cg, dropped, absent), 60)
             return {"lead": lead, "text": text} if lead and text else None
         out = {}
         for k, x in v.items():
@@ -334,7 +357,7 @@ def _clean(v, ng, cg, dropped, absent, limit=110):
                 # {"North America": "Smallest region ..."}: the key is the sentence's subject,
                 # so the claim check reads "North America: Smallest region ..."
                 lead = f"{k}: "
-                c = clean_text(lead + x, ng, cg, dropped, absent)
+                c = _guard(lead + x, ng, cg, dropped, absent)
                 out[k] = cap_words(c[len(lead):] if c.startswith(lead) else c, 60) or None
             else:
                 out[k] = _clean(x, ng, cg, dropped, absent, 60)
@@ -517,7 +540,7 @@ _SUMMARY_SLOTS = {"thesis", "practice", "cover_subtitle", "about_scope", "exec_p
                   "priority_actions"}
 # Slots allowed to state the global / MEA headline figures.
 _HEADLINE_OWNERS = ("practice", "about_scope", "exec_para", "global_bullets", "mea_bullets", "key_conclusions",
-                    "largest_demand_pool", "sizing_para", "highlights", "scenario_conditions", "triangulation_para")
+                    "largest_demand_pool", "sizing_para", "highlights", "scenario_conditions")
 
 
 def _words(s: str) -> set[str]:

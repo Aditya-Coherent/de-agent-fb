@@ -57,7 +57,10 @@ def run_field_group(
     than 3 on-topic snippets remain the search is retried once. Also tracks source domains and quality (`_sources`)
     for the confidence scoring computed later; added AFTER any jitter so
     it's never itself jittered. `randomize=False` returns the LLM's answer
-    as is, so a caller can keep the raw answer and jitter it itself."""
+    as is, so a caller can keep the raw answer and jitter it itself.
+    For `market_size` only, the snippets shown are kept (`_sources.snippets`)
+    and the headline is checked against them (`_sources.size_check`, see
+    cmi_report/verify_size.py)."""
     log = log if log is not None else []
     queries = [q.format(market=market) for q in group["queries"]]
     best: tuple[list[dict], list[dict], list[dict]] | None = None
@@ -96,6 +99,12 @@ def run_field_group(
     except Exception as exc:  # noqa: BLE001
         log.append(f"[{group['key']}] LLM synthesis failed: {exc}")
         return {"error": str(exc)}
+    if group["key"] == "market_size":
+        # the headline must cite a quote from these snippets; re-asked once if it doesn't (PLAN-02)
+        from AiAgentsFleet.cmi_report.verify_size import check_with_reask
+        shown = [{k: s.get(k) for k in ("text", "url", "domain")} for s in sourced[:15]]
+        data, src["size_check"] = check_with_reask(data, shown, lambda note: llm.complete_json(system, user + note), log)
+        src["snippets"] = shown
 
     jittered = randomize and randomizer.ENABLED
     out = randomize_json(data) if randomize else data

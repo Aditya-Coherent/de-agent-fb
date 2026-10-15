@@ -342,6 +342,28 @@ def add_appendix(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: li
     b.bullets(BULLET, log)
 
 
+def size_basis_text(m: dict, root: str) -> str:
+    """Section 9.1: where the global base comes from (cmi_report/verify_size.py). Names the
+    source of a sourced headline; otherwise calls it a CMI estimate. Never explains gaps
+    to other figures, and an unsourced headline gets no published-comparison wording."""
+    g, chk = m["global"], m.get("size_check") or {}
+    base = f"CMI's global {root.lower()} base of {fmt.usd(g['v25'])} for {Y0 - 1}"
+    src = chk.get("source") if chk.get("status") == "sourced" else None
+    if not src:
+        return (f"{base} is a CMI estimate built from the desk research for this report; no third-party "
+                f"figure for this market could be confirmed in the evidence gathered, so none is cited.")
+    how = ("is the figure reported by" if src.get("derivation") == "as quoted" else
+           f"is carried forward from the {src['year']} figure reported by")
+    tail = ("" if src.get("derivation") == "as quoted" else ", at the growth rate that source states")
+    who = src["domain"] if src["publisher"] == src["domain"] else f"{src['publisher']} ({src['domain']})"
+    text = f"{base} {how} {who}{tail}."
+    if not chk.get("cagr_sourced"):
+        text += " The forecast growth rate is a CMI estimate."
+    if m.get("published_2025"):
+        text += " Other published figures are shown below for reference only."
+    return text
+
+
 def renumber(b: "Builder", toc_titles: dict[int, str], toc_pages: dict[int, int] | None) -> None:
     """Chapters and numbered sub-sections are renumbered in order (a removed
     section leaves no gap), and the contents page lists exactly the chapters
@@ -588,6 +610,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
     fastest = {geo: max(seg[geo][fdim], key=lambda n: seg[geo][fdim][n]["cagr"]) for geo in seg} if fdim else {}
     fdim_label = (tdim if fdim == "type" else ddim)["singular"].lower() if fdim else ""
     toc_titles: dict[int, str] = {}
+    size_unsourced = (m.get("size_check") or {}).get("status") != "sourced"
     from AiAgentsFleet.cmi_report.model import regulatory_countries
     model_reg_countries = regulatory_countries(ag)
 
@@ -676,9 +699,14 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                                                  f"deep on the Middle East and Africa.", units) if x])
         # ------------------------------------------------------------ chapter 1
         elif i == 24:
-            b.para(i, ((s("thesis") or "") + " " if s("thesis") else "") + s("exec_para", f"CMI estimates the global {root.lower()} market at {fmt.usd(g['v25'])} in "
-                                     f"{Y0 - 1}, rising to {fmt.usd(g['v26'])} in {Y0} and {fmt.usd(g['v33'])} by "
-                                     f"{Y1}, a {fmt.pct(g['cagr'])} CAGR."))
+            headline = (f"CMI estimates the global {root.lower()} market at {fmt.usd(g['v25'])} in "
+                        f"{Y0 - 1}, rising to {fmt.usd(g['v26'])} in {Y0} and {fmt.usd(g['v33'])} by "
+                        f"{Y1}, a {fmt.pct(g['cagr'])} CAGR.")
+            opener = s("exec_para", headline)
+            # an unsourced headline is always called a CMI estimate (PLAN-02)
+            if size_unsourced and not re.search(r"\bCMI estimat", opener):
+                opener = headline
+            b.para(i, ((s("thesis") or "") + " " if s("thesis") else "") + opener)
         elif i == 25:
             b.caption(i, "Figure", "Headline market metrics: Global vs Middle East & Africa")
         elif i == 26:
@@ -1111,8 +1139,10 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             b.caption(i, "Figure", "CMI five-step research process")
         elif i == 365:
             b.image(i, charts["process"])
+        elif i == 367:
+            b.para(i, "9.1 Basis of the headline estimate")
         elif i == 368:
-            b.para(i, s("triangulation_para"))
+            b.para(i, size_basis_text(m, root))
         elif i in (369, 370, 371):
             pub = m["published_2025"]
             if not pub:
@@ -1124,11 +1154,12 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             else:
                 b.para(i, "Source: " + ", ".join(dict.fromkeys(p["publisher"] for p in pub)) + "; CMI analysis")
         elif i in (372, 373, 374, 375):
-            refs = (ag.get("published") or {}).get("references") or []
+            # reference figures only beside a sourced headline; they never set the CMI numbers
+            refs = (ag.get("published") or {}).get("references") or [] if not size_unsourced else []
             if not refs:
                 continue
             if i == 373:
-                b.caption(i, "Table", "Third-party data used for calibration")
+                b.caption(i, "Table", "Third-party reference figures (for reference only; not used in the model)")
             elif i == 374:
                 b.table(i, [[r["name"], r.get("scope", ""), r["published_value"]] for r in refs])
             else:

@@ -39,7 +39,7 @@ from pathlib import Path
 
 from AiAgentsFleet.cmi_report.guard import sentences, unverified_fact
 
-VERSION = 3          # 3: regulator searches use the product category; 2: quotes must name it, unconfirmed rows dropped
+VERSION = 4          # 4: the judge must pick a quote tying the authority to the product category
 MAX_CLAIMS = 40                      # cost cap per report; the rest are not checked (and so not printed)
 NOT_CONFIRMED = "Competent authority not confirmed"
 REQ_NOT_CONFIRMED = "Requirements not confirmed"
@@ -65,7 +65,11 @@ _JUDGE_SHAPE = ('{"verdict": "supported|contradicted|renamed|not_found", "correc
                 '"corrected_year": <integer or null>, "evidence": <snippet number or null>, '
                 '"quote": <exact words from that snippet, "" for not_found>, "reason": <1 sentence>}')
 _CORRECTION_HINT = {
-    "regulator": "corrected = the full current name of the competent authority for this product in this country.",
+    "regulator": "corrected = the full current name of the competent authority for this product in this country. "
+                 "The quote must show that this authority registers, licenses or regulates the PRODUCT or its "
+                 "CATEGORY (below) -- prefer the snippet that says so (e.g. an official registration page). A "
+                 "quote that only describes the body in general ('X is a ministry responsible for agriculture') "
+                 "is not enough: answer not_found.",
     "milestone": "corrected = the event in 8-14 words with the instrument's correct name; corrected_year = the year "
                  "it entered into force.",
     "law": "corrected = the instrument's correct name and number; corrected_year = its correct year.",
@@ -192,7 +196,8 @@ def queries(c: dict, product: str) -> list[str]:
 def judge_prompt(c: dict, snippets: list[dict], product: str = "") -> str:
     ev = "\n".join(f"[{k + 1}] ({s.get('domain') or s.get('url') or 'unknown'}) {s.get('text', '')}"
                    for k, s in enumerate(snippets))
-    return ((f"PRODUCT: {product}\n" if product else "") + f"CLAIM ({c['kind']}{', ' + c['country'] if c.get('country') else ''}): {c['text']}\n\n"
+    cat = ", ".join(c.get("tie_terms") or [])
+    return ((f"PRODUCT: {product}\n" if product else "") + (f"CATEGORY: {cat}\n" if cat else "") + f"CLAIM ({c['kind']}{', ' + c['country'] if c.get('country') else ''}): {c['text']}\n\n"
             f"EVIDENCE:\n{ev or '(none)'}\n\n{_CORRECTION_HINT.get(c['kind'], '')}\n\n"
             f"Return ONLY JSON of exactly this shape:\n{_JUDGE_SHAPE}")
 

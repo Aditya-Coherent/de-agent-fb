@@ -1236,8 +1236,11 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 308:
             b.caption(i, "Figure", "Regulatory enablement scorecard by country")
         elif i == 309:
-            b.image(i, charts["reg_scorecard"])
+            b.image(i, charts.get("reg_scorecard"))     # None (no confirmed country): figure left out
         elif i == 312:
+            if not [r for r in (ag.get("regulation") or {}).get("snapshot") or []
+                    if canonical(r.get("country", "")) in model_reg_countries]:
+                continue                          # no confirmed authority: caption and table left out
             b.caption(i, "Table", "Regulatory snapshot (competent authorities confirmed from public sources only)")
         elif i == 313:
             # regulators and requirements as fact-checked (verify_facts.apply): confirmed, corrected
@@ -1245,7 +1248,10 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             rows = [[r.get("country", ""), r.get("regulator", ""), safe(r.get("requirements"))]
                     for r in (ag.get("regulation") or {}).get("snapshot") or []
                     if canonical(r.get("country", "")) in model_reg_countries]
-            b.table(i, complete_rows(rows, b.log, "regulatory snapshot"))
+            if rows:
+                b.table(i, complete_rows(rows, b.log, "regulatory snapshot"))
+            else:
+                b.log.append("regulatory snapshot left out: no competent authority confirmed from public sources")
         elif i == 316:
             b.bullets(i, lst("policy_bullets"))
         elif i in (317, 318, 319):

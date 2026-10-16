@@ -62,8 +62,9 @@ def _entity_before(clause: str, pos: int, names: list[str]) -> str | None:
             key = (mm.end(), len(n))
             if key > best_key:
                 best, best_key = n, key
-    if best is None and re.search(r"\b(global|world|overall market|the market)\b", low[:pos]):
-        return "global"
+    glob = list(re.finditer(r"\b(global|world|overall market|the market)\b", low[:pos]))
+    if glob and (best is None or glob[-1].end() > best_key[0]):
+        return "global"                    # 'MEA ... 9.5%, 2.5 pp below the global 12.0% rate': 12.0% is global
     return best
 
 
@@ -102,10 +103,24 @@ def entities_in(clause: str, names: list[str]) -> list[str]:
     return found
 
 
+_UNPINNED = "__unpinned__"     # marks a number whose subject is not named right before it: never tracked
+
+
+def _subject(clause: str, pos: int, names: list[str], ent: list[str], prev: str | None = None) -> list[str]:
+    """The entity a number belongs to: the one named directly before it (or 'global'); else the subject
+    of the sentence's earlier clause ('The Middle East & Africa is ... , but grows to $175M': MEA). With
+    neither, every entity in the clause is still checked for a mismatch, but the number is not tracked
+    as a repeated fact -- its subject is unknown."""
+    subj = _entity_before(clause, pos, names) or prev
+    return [subj] if subj else ent + [_UNPINNED]
+
+
 def mentions(text: str, names: list[str]):
     """Yields (token, display_key, entity, kind, year, clause) for each pin-downable number."""
     for sent in sentences(text):
+        prev = None                     # the subject named in this sentence's earlier clauses
         for clause in _CLAUSE.split(sent):
+            named_here = [e for e in entities_in(clause, names) if e != "global"]
             money = list(_MONEY.finditer(clause))
             years = sorted({y for y in _YEAR.findall(clause)})
             # "at $X and $Y (respectively) in 2026E and 2033F" / "from $X to $Y": values pair with years in order
@@ -116,6 +131,7 @@ def mentions(text: str, names: list[str]):
                 ent = entities_in(clause, names)
                 if not ent:
                     continue
+                ent = _subject(clause, mm.start(), names, ent, prev)
                 if paired and mm in plain and not _INCR_WORDS.search(clause[max(0, mm.start() - 30): mm.start()]):
                     yield mm.group(), _norm_money(mm.group()), ent, "value", years[plain.index(mm)], clause
                     continue
@@ -129,6 +145,7 @@ def mentions(text: str, names: list[str]):
                 ent = entities_in(clause, names)
                 if not ent:
                     continue
+                ent = _subject(clause, mm.start(), names, ent, prev)
                 win = clause[max(0, mm.start() - 45): mm.end() + 15]
                 if _CAGR_WORDS.search(win) and not re.search(r"\bshare\b", win, re.I):
                     kind = "cagr"
@@ -142,6 +159,8 @@ def mentions(text: str, names: list[str]):
                 if ent:
                     val = re.search(r"\d+(?:\.\d+)?", mm.group()).group()
                     yield mm.group(), f"{float(val):.1f}", ent, "gap", None, clause
+            if named_here:
+                prev = named_here[0]
 
 
 def check(register: list[dict], texts: list[str], tables: list[list[list[str]]]) -> dict:

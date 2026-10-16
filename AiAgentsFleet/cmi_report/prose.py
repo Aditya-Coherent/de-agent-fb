@@ -26,7 +26,7 @@ from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text,
                                             unverified_fact, vendor_clean)
 from AiAgentsFleet.cmi_report.model import Y0, Y1
 
-PROSE_VERSION = 24     # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 25     # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -213,17 +213,16 @@ def method_text(m: dict, root: str) -> str:
     No expert panel, interviews, bottom-up build or triangulation -- none of them happen."""
     chk = m.get("size_check") or {}
     if chk.get("status") == "sourced" and chk.get("source_is_cmi"):
-        head = "the global headline is CMI's own published estimate, taken from a quote found in that evidence"
+        head = "the global headline is CMI's own estimate for this market, taken from a cited source"
     elif chk.get("status") == "sourced":
-        head = "the global headline is a CMI estimate based on a market-size figure quoted in that evidence"
+        head = "the global headline is a CMI estimate based on a market-size figure quoted in a cited source"
     else:
-        head = ("no published figure could be confirmed from a cited quote, so the global headline is a CMI "
-                "estimate built from the agents' evidence (CMI's own published figure is preferred whenever one "
-                "is found)")
-    return (f"CMI's {root.lower()} estimates come from web desk-research agents that collect cited public evidence; "
-            f"{head}. Regional, country and segment splits are checked for coherence and re-asked when they are "
-            f"not, named facts are verified claim by claim against the evidence, and automated consistency checks "
-            f"tie every number in the report to one register.")
+        head = ("no market-size figure could be confirmed from a cited source, so the global headline is a CMI "
+                "estimate built from the desk research")
+    return (f"CMI's {root.lower()} estimates are built from desk research of cited public sources; "
+            f"{head}. Regional, country and segment splits are checked for internal coherence, named regulatory "
+            f"facts are verified against public sources, and every number in the report is tied to a single "
+            f"data register.")
 
 
 # --------------------------------------------------------------------------- #

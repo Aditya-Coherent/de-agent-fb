@@ -286,7 +286,9 @@ def test_methodology_wording_matches_the_pipeline():
                 {"status": "sourced", "source_is_cmi": False}):
         m["size_check"] = chk
         t = prose.method_text(m, "Widget")
-        assert not FALSE_METHOD.search(t) and "desk-research agents" in t and "consistency checks" in t
+        assert not FALSE_METHOD.search(t) and "desk research" in t and "single data register" in t
+        assert "agents" not in t and "re-asked" not in t                  # no pipeline jargon in client text
+        assert "published figure" not in t and "published estimate" not in t
     assert "headline is a CMI estimate" in prose.method_text({**m, "size_check": {"status": "unsourced"}}, "Widget")
     assert not any(FALSE_METHOD.search(t + " " + d) for t, d in charts.PROCESS)
     assert "method_para" not in prose.chapters(m, AG)["ch9"]["slots"]

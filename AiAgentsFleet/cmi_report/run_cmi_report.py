@@ -226,11 +226,20 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
         header = " | ".join(c.text for c in t.rows[0].cells)
         units += [header + " || " + " | ".join(c.text for c in r.cells) for r in t.rows[1:]]
     issues, checked = [], 0
+    # names and definition text that contain digits: their numbers belong to the name, not to the data
+    # ('Ascorbic Acid 97% Granulation', '>150 shrimp/m2' in the market definition)
+    _dfn = m.get("definition") or {}
+    named_with_digits = sorted({n for dims in (m.get("segments") or {}).values() for d in dims.values() for n in d
+                                if re.search(r"\d", n)}
+                               | {str(_dfn.get(k)) for k in ("definition", "measures", "included", "excluded")
+                                  if _dfn.get(k) and re.search(r"\d", str(_dfn.get(k)))}, key=len, reverse=True)
     for t in units:
         # section numbers ('6.1 ...'), figure/table numbers ('Figure 41:') and contents-page
         # page numbers ('... Way Forward<tab>31') are not data
         t = re.sub(r"\t\s*\d+\s*$", "", t)
         t = re.sub(r"^\s*(?:(?:Figure|Table)\s+\d+:|\d+(?:\.\d+)*\s)", "", t)
+        for nm in named_with_digits:
+            t = t.replace(nm, " ")
         checked += count_numbers(t)
         bad = ng.bad(t)
         if bad:
@@ -238,8 +247,12 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
     leftovers = [t[:120] for t in texts if re.search(r"\[insert|draft template|publication template|disclaimer",
                                                      t, re.I)]
     market_words = set(re.findall(r"[a-z]+", m["market"].lower()))
-    drone_words = [t[:120] for t in texts if re.search(r"\b(drones?|UAS|UAV|BVLOS)\b", t, re.I)] \
-        if not market_words & {"drone", "drones", "uav", "uas"} else []
+    dfn = m.get("definition") or {}
+    dfn_text = " ".join(str(dfn.get(k) or "") for k in ("definition", "measures", "included", "excluded"))
+    drone_re = re.compile(r"\b(drones?|UAS|UAV|BVLOS)\b", re.I)
+    # drones are a template leftover only when neither the market name nor its definition concerns them
+    drone_words = [t[:120] for t in texts if drone_re.search(t)] \
+        if not (market_words & {"drone", "drones", "uav", "uas"} or drone_re.search(dfn_text)) else []
     # repeated sentences anywhere in the finished document (same words, no new figure)
     from AiAgentsFleet.cmi_report.guard import sentences
     seen, repeats = [], []

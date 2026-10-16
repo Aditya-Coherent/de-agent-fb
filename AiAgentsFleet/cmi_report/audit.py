@@ -496,7 +496,10 @@ def release_gate(m: dict, blocks: list[dict], *, qa_report: dict, computed: dict
     """{"ready": bool, "blockers": [...], "warnings": [...]}. Any blocker -> not ready."""
     blockers, warnings = [], []
     market_words = set(re.findall(r"[a-z]+", m["market"].lower()))
-    drone_ok = bool(market_words & {"drone", "drones", "uav", "uas"})
+    dfn = m.get("definition") or {}
+    dfn_text = " ".join(str(dfn.get(k) or "") for k in ("definition", "measures", "included", "excluded"))
+    # drones are a template leftover only when neither the market name nor its definition concerns them
+    drone_ok = bool(market_words & {"drone", "drones", "uav", "uas"}) or bool(_DRONE.search(dfn_text))
     leftovers, internal, published = [], [], []
     for b, h1, h2 in _sections(blocks):
         text = b["text"]

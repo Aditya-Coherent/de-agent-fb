@@ -26,6 +26,27 @@ PERPLEXITY_URL = "https://api.perplexity.ai/search"
 _PPLX_TOKENS_PER_PAGE = 300          # ~1,200 characters of page text per result: enough to quote, not a page dump
 _dotenv_loaded = False
 
+# Cost controls (Perplexity bills per request: standard $5 / 1,000, fast $1 / 1,000).
+# WEB_SEARCH_MODE = "auto" (default): fast search for bulk desk research, standard search only for
+#   `precise=True` lookups (fact checks, company verification) -- a live test showed fast mode
+#   returning drug-registration pages for a fertiliser-regulator query that standard mode answered
+#   with the GCC fertiliser law. "standard" / "fast" force one mode everywhere.
+# Batching several queries into one request was tested and rejected: the merged results are
+#   dominated by the first query (9 of 12), so later queries lose their evidence.
+# WEB_SEARCH_CACHE_DAYS (default 30; 0 disables): identical searches are answered from a local cache,
+#   so re-running a market or rebuilding a report does not pay for the same searches again.
+_CACHE_PATH = Path(__file__).resolve().parents[3] / "output" / ".search_cache.db"
+_PRICE_PER_1000 = {"fast": 1.0, "standard": 5.0}
+# paid Perplexity requests and cache hits in this process, for the cost line printed after each run
+STATS = {"fast": 0, "standard": 0, "cached": 0}
+
+
+def cost_summary() -> str:
+    """'Perplexity: 41 fast + 23 standard searches paid (~$0.16), 30 from cache'."""
+    usd = sum(STATS[m] * _PRICE_PER_1000[m] / 1000 for m in ("fast", "standard"))
+    return (f"Perplexity: {STATS['fast']} fast + {STATS['standard']} standard searches paid "
+            f"(~${usd:.2f}), {STATS['cached']} from cache")
+
 
 def _ensure_env() -> None:
     """Load the project .env once (same rule as GenConfig: never overrides a set variable)."""
@@ -59,7 +80,60 @@ def _domain(url: str) -> str:
     return url.split("//")[-1].split("/")[0].removeprefix("www.") if url else ""
 
 
-def _perplexity_results(query: str, max_results: int, retries: int = 2) -> list[dict] | None:
+def search_mode(precise: bool = False) -> str:
+    """"fast" or "standard" for a Perplexity request (see WEB_SEARCH_MODE above)."""
+    _ensure_env()
+    choice = os.environ.get("WEB_SEARCH_MODE", "auto").strip().lower()
+    if choice in ("fast", "standard"):
+        return choice
+    return "standard" if precise else "fast"
+
+
+def _cache_days() -> float:
+    _ensure_env()
+    try:
+        return float(os.environ.get("WEB_SEARCH_CACHE_DAYS", "30"))
+    except ValueError:
+        return 30.0
+
+
+def _cache_key(*parts) -> str:
+    import hashlib
+    return hashlib.sha256("|".join(str(p) for p in parts).encode("utf-8")).hexdigest()
+
+
+def _cache_get(key: str) -> list[dict] | None:
+    days = _cache_days()
+    if days <= 0 or not _CACHE_PATH.exists():
+        return None
+    try:
+        import json
+        import sqlite3
+        with sqlite3.connect(_CACHE_PATH, timeout=10) as db:
+            row = db.execute("SELECT value, created FROM search WHERE key = ?", (key,)).fetchone()
+        if row and time.time() - row[1] <= days * 86400:
+            return json.loads(row[0])
+    except Exception:  # noqa: BLE001 - a broken cache is just a miss
+        return None
+    return None
+
+
+def _cache_put(key: str, results: list[dict]) -> None:
+    if _cache_days() <= 0:
+        return
+    try:
+        import json
+        import sqlite3
+        _CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(_CACHE_PATH, timeout=10) as db:
+            db.execute("CREATE TABLE IF NOT EXISTS search (key TEXT PRIMARY KEY, value TEXT, created REAL)")
+            db.execute("INSERT OR REPLACE INTO search VALUES (?, ?, ?)",
+                       (key, json.dumps(results, ensure_ascii=False), time.time()))
+    except Exception:  # noqa: BLE001 - caching must never break a search
+        pass
+
+
+def _perplexity_results(query: str, max_results: int, retries: int = 2, mode: str = "fast") -> list[dict] | None:
     """Raw Perplexity Search API results [{title, url, snippet, date}], or None on failure
     (the caller then falls back to ddgs). Retries 429/5xx with a short backoff."""
     import httpx
@@ -67,6 +141,8 @@ def _perplexity_results(query: str, max_results: int, retries: int = 2) -> list[
     key = os.environ.get("PERPLEXITY_API_KEY", "")
     body = {"query": query, "max_results": max(1, min(20, int(max_results))),
             "max_tokens_per_page": _PPLX_TOKENS_PER_PAGE}
+    if mode == "fast":
+        body["search_type"] = "fast"
     for attempt in range(retries + 1):
         try:
             r = httpx.post(PERPLEXITY_URL, json=body, timeout=30.0,
@@ -94,11 +170,20 @@ def _ddgs_results(query: str, max_results: int) -> list[dict]:
         return []
 
 
-def _raw_results(query: str, max_results: int) -> list[dict]:
-    """[{title, url, snippet}] from the configured backend; Perplexity falls back to ddgs on failure."""
+def _raw_results(query: str, max_results: int, precise: bool = False) -> list[dict]:
+    """[{title, url, snippet}] from the configured backend (cached); Perplexity falls back to ddgs on failure.
+    Only successful Perplexity answers are cached -- a ddgs fallback is retried next time."""
     if backend() == "perplexity":
-        res = _perplexity_results(query, max_results)
+        mode = search_mode(precise)
+        key = _cache_key("perplexity", mode, _PPLX_TOKENS_PER_PAGE, int(max_results), query.strip().lower())
+        hit = _cache_get(key)
+        if hit is not None:
+            STATS["cached"] += 1
+            return hit
+        res = _perplexity_results(query, max_results, mode=mode)
         if res is not None:
+            STATS[mode] += 1
+            _cache_put(key, res)
             return res
     return _ddgs_results(query, max_results)
 
@@ -132,14 +217,14 @@ def gather(queries: list[str], per_query: int = 4, cap: int = 12) -> list[str]:
     return out
 
 
-def search_snippets_with_sources(query: str, max_results: int = 6) -> list[dict]:
+def search_snippets_with_sources(query: str, max_results: int = 6, precise: bool = False) -> list[dict]:
     """Same as `search_snippets`, but also returns each result's URL/domain --
     additive, new function (never raises; degrades to []), so existing
     `search_snippets`/`gather` callers (Desk Research's `agents.py`) are
     completely untouched. Used by `AiAgentsFleet` to compute a
     per-section confidence label from source-domain diversity."""
     out: list[dict] = []
-    for r in _raw_results(query, max_results):
+    for r in _raw_results(query, max_results, precise):
         title = (r.get("title") or "").strip()
         body = " ".join((r.get("snippet") or "").split())
         url = (r.get("url") or "").strip()
@@ -151,14 +236,14 @@ def search_snippets_with_sources(query: str, max_results: int = 6) -> list[dict]
     return out
 
 
-def gather_with_sources(queries: list[str], per_query: int = 4, cap: int = 12) -> list[dict]:
+def gather_with_sources(queries: list[str], per_query: int = 4, cap: int = 12, precise: bool = False) -> list[dict]:
     """Source-tracked version of `gather`. Returns
     `[{"text": ..., "url": ..., "domain": ...}, ...]`, de-duplicated by text
     and capped the same way."""
     out: list[dict] = []
     seen: set[str] = set()
     for q in queries:
-        for item in search_snippets_with_sources(q, max_results=per_query):
+        for item in search_snippets_with_sources(q, max_results=per_query, precise=precise):
             key = item["text"][:80].lower()
             if key not in seen:
                 seen.add(key)

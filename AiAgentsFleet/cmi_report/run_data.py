@@ -272,7 +272,7 @@ def entity_search(queries: list[str]) -> list[dict]:
     no market-topic filter -- a page on a company's headquarters need not name
     the market."""
     try:
-        sourced = gather_with_sources(queries, per_query=4, cap=16)
+        sourced = gather_with_sources(queries, per_query=4, cap=16, precise=True)   # standard search
     except Exception:  # noqa: BLE001
         return []
     return filter_sources(sourced)[0]

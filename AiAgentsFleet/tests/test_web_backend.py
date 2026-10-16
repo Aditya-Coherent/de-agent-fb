@@ -27,8 +27,11 @@ class _Resp:
 
 
 @pytest.fixture
-def env(monkeypatch):
+def env(monkeypatch, tmp_path):
     monkeypatch.setattr(w, "_dotenv_loaded", True)          # never read the real .env in tests
+    monkeypatch.setattr(w, "_CACHE_PATH", tmp_path / "search_cache.db")   # never touch the real cache
+    monkeypatch.delenv("WEB_SEARCH_CACHE_DAYS", raising=False)
+    monkeypatch.delenv("WEB_SEARCH_MODE", raising=False)
     monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
     monkeypatch.delenv("WEB_SEARCH_BACKEND", raising=False)
     monkeypatch.setattr(w.time, "sleep", lambda s: None)
@@ -91,3 +94,36 @@ def test_without_a_key_ddgs_is_used(env):
     _ddgs(env, [{"title": "T", "href": "https://d.example/p", "body": "a ddgs result body long enough"}])
     _httpx(env, [_Resp(500)])
     assert w.search_snippets("q", 5) == ["T: a ddgs result body long enough"]
+
+
+def test_bulk_searches_are_fast_and_precise_ones_standard(env):
+    env.setenv("PERPLEXITY_API_KEY", "pplx-test")
+    calls = _httpx(env, [_Resp(200, PPLX)])
+    w.search_snippets_with_sources("bulk desk research query", 5)
+    w.search_snippets_with_sources("regulator fact check query", 5, precise=True)
+    assert calls[0]["json"].get("search_type") == "fast"
+    assert "search_type" not in calls[1]["json"]                     # standard search
+    env.setenv("WEB_SEARCH_MODE", "standard")
+    w.search_snippets_with_sources("another bulk query", 5)
+    assert "search_type" not in calls[2]["json"]
+
+
+def test_identical_searches_are_served_from_the_cache(env):
+    env.setenv("PERPLEXITY_API_KEY", "pplx-test")
+    calls = _httpx(env, [_Resp(200, PPLX)])
+    first = w.search_snippets_with_sources("same query", 5)
+    again = w.search_snippets_with_sources("  Same Query ", 5)        # normalised: still a hit
+    assert first == again and len(calls) == 1
+    w.search_snippets_with_sources("same query", 5, precise=True)     # other mode: a separate entry
+    assert len(calls) == 2
+    env.setenv("WEB_SEARCH_CACHE_DAYS", "0")                          # cache off
+    w.search_snippets_with_sources("same query", 5)
+    assert len(calls) == 3
+
+
+def test_a_failed_search_is_not_cached(env):
+    env.setenv("PERPLEXITY_API_KEY", "pplx-test")
+    calls = _httpx(env, [_Resp(401), _Resp(200, PPLX)])
+    _ddgs(env, [])
+    assert w.search_snippets_with_sources("q2", 5) == []                 # 401 -> ddgs (empty), nothing cached
+    assert len(w.search_snippets_with_sources("q2", 5)) == 1 and len(calls) == 2

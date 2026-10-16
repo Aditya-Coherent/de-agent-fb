@@ -150,6 +150,9 @@ def main() -> int:
     for line in result["log"]:
         print("  " + line)
     print(f"\nWrote {out_path}")
+    from me_engine.generation.web_evidence import backend as _search_backend, cost_summary as _search_cost
+    if _search_backend() == "perplexity":
+        print(_search_cost())
     return 0
 
 

@@ -40,7 +40,7 @@ from pathlib import Path
 from AiAgentsFleet.cmi_report.guard import sentences, unverified_fact
 
 VERSION = 5          # 5: evidence from the Perplexity Search API; 4: judge must tie the authority to the category
-MAX_CLAIMS = 40                      # cost cap per report; the rest are not checked (and so not printed)
+MAX_CLAIMS = 25                      # cost cap per report; the rest are not checked (and so not printed)
 NOT_CONFIRMED = "Competent authority not confirmed"
 REQ_NOT_CONFIRMED = "Requirements not confirmed"
 VERDICTS = ("supported", "contradicted", "renamed", "not_found")
@@ -285,7 +285,7 @@ def default_search(qs: list[str]) -> list[dict]:
     """Live web search, junk sources dropped (PLAN-01). Not used by the tests."""
     from me_engine.generation.web_evidence import gather_with_sources
     from AiAgentsFleet.sources import filter_sources
-    kept, _ = filter_sources(gather_with_sources(qs, per_query=5, cap=10))
+    kept, _ = filter_sources(gather_with_sources(qs, per_query=5, cap=10, precise=True))   # standard search
     return kept
 
 
@@ -332,7 +332,12 @@ def check_claim(c: dict, product: str, llm, search_fn) -> dict:
                    "note": f"the quote does not tie this authority to {product}"}
         return {**c, **hit, "cached": True}
     try:
-        snippets = search_fn(queries(c, product)) or []
+        # the first (most specific) query; the second only when the first finds nothing -- halves the
+        # searches per claim (cost) without losing claims that the first query already answers
+        qs = queries(c, product)
+        snippets = search_fn(qs[:1]) or []
+        if not snippets and len(qs) > 1:
+            snippets = search_fn(qs[1:2]) or []
     except Exception as exc:  # noqa: BLE001
         return {**c, "verdict": "not_found", "status": "error", "note": f"search failed: {exc}"}
     if not snippets:

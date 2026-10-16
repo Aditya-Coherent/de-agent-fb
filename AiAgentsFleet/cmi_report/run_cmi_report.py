@@ -409,6 +409,9 @@ def main() -> int:
                                                                    "omitted", "blockers", "warnings")},
               "internal_log": internal, **qa(out, m, ag, root)}
     (cdir / "qa_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    from me_engine.generation.web_evidence import backend as _search_backend, cost_summary as _search_cost
+    if _search_backend() == "perplexity":
+        print(_search_cost())
     print(f"QA: {len(report['numbers_not_in_model'])} text block(s) with numbers not in the model, "
           f"{len(report['template_leftovers'])} template leftover(s), {len(report['drone_wording'])} drone-wording hit(s), "
           f"{len(report['repeated_sentences'])} repeated sentence(s); {report['numbers_checked']} numbers checked; "

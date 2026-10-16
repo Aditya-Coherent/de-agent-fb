@@ -39,7 +39,7 @@ from pathlib import Path
 
 from AiAgentsFleet.cmi_report.guard import sentences, unverified_fact
 
-VERSION = 4          # 4: the judge must pick a quote tying the authority to the product category
+VERSION = 5          # 5: evidence from the Perplexity Search API; 4: judge must tie the authority to the category
 MAX_CLAIMS = 40                      # cost cap per report; the rest are not checked (and so not printed)
 NOT_CONFIRMED = "Competent authority not confirmed"
 REQ_NOT_CONFIRMED = "Requirements not confirmed"

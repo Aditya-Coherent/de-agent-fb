@@ -1,4 +1,5 @@
-"""Live web evidence via `ddgs` (multi-backend: Bing, Mojeek, Google,
+"""Live web evidence: the Perplexity Search API when PERPLEXITY_API_KEY is set
+(see `backend()`), otherwise `ddgs` (multi-backend: Bing, Mojeek, Google,
 DuckDuckGo, with fallback). Degrades gracefully to [] on any failure.
 
 Replaces the previous single-backend raw DuckDuckGo-HTML scrape, which was
@@ -9,20 +10,105 @@ knowledge alone. `ddgs` has been confirmed to actually return results here.
 """
 from __future__ import annotations
 
+import os
+import time
+from pathlib import Path
 
-def search_snippets(query: str, max_results: int = 6) -> list[str]:
-    """Return short text snippets for a query. Never raises — returns [] on failure."""
+# --------------------------------------------------------------------------- #
+# backend selection: Perplexity Search API when a key is available, else ddgs
+# --------------------------------------------------------------------------- #
+# WEB_SEARCH_BACKEND = "auto" (default: Perplexity if PERPLEXITY_API_KEY is set, else ddgs),
+# "perplexity" or "ddgs". Perplexity's Search API returns real search-engine results with
+# extracted page text; the free ddgs backends were returning off-topic pages (airline sites
+# for a regulator query, software firms for Kenya's fertiliser regulator), so facts that
+# exist on the web could not be confirmed.
+PERPLEXITY_URL = "https://api.perplexity.ai/search"
+_PPLX_TOKENS_PER_PAGE = 300          # ~1,200 characters of page text per result: enough to quote, not a page dump
+_dotenv_loaded = False
+
+
+def _ensure_env() -> None:
+    """Load the project .env once (same rule as GenConfig: never overrides a set variable)."""
+    global _dotenv_loaded
+    if _dotenv_loaded:
+        return
+    _dotenv_loaded = True
+    env = Path(__file__).resolve().parents[3] / ".env"
+    if not env.exists():
+        return
+    for line in env.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+def backend() -> str:
+    """The search backend in use: "perplexity" or "ddgs"."""
+    _ensure_env()
+    choice = os.environ.get("WEB_SEARCH_BACKEND", "auto").strip().lower()
+    if choice == "ddgs":
+        return "ddgs"
+    if choice == "perplexity" or os.environ.get("PERPLEXITY_API_KEY"):
+        return "perplexity" if os.environ.get("PERPLEXITY_API_KEY") else "ddgs"
+    return "ddgs"
+
+
+def _domain(url: str) -> str:
+    return url.split("//")[-1].split("/")[0].removeprefix("www.") if url else ""
+
+
+def _perplexity_results(query: str, max_results: int, retries: int = 2) -> list[dict] | None:
+    """Raw Perplexity Search API results [{title, url, snippet, date}], or None on failure
+    (the caller then falls back to ddgs). Retries 429/5xx with a short backoff."""
+    import httpx
+
+    key = os.environ.get("PERPLEXITY_API_KEY", "")
+    body = {"query": query, "max_results": max(1, min(20, int(max_results))),
+            "max_tokens_per_page": _PPLX_TOKENS_PER_PAGE}
+    for attempt in range(retries + 1):
+        try:
+            r = httpx.post(PERPLEXITY_URL, json=body, timeout=30.0,
+                           headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+        except Exception:  # noqa: BLE001 - network error: retry, then give up
+            r = None
+        if r is not None and r.status_code == 200:
+            try:
+                return list(r.json().get("results") or [])
+            except Exception:  # noqa: BLE001
+                return None
+        if r is not None and r.status_code not in (429, 500, 502, 503, 504):
+            return None                      # 4xx other than 429: bad key / bad request -- don't retry
+        time.sleep(2 * (attempt + 1))
+    return None
+
+
+def _ddgs_results(query: str, max_results: int) -> list[dict]:
     try:
         from ddgs import DDGS
 
-        results = DDGS().text(query, max_results=max_results)
+        return [{"title": r.get("title"), "url": r.get("href"), "snippet": r.get("body")}
+                for r in DDGS().text(query, max_results=max_results)]
     except Exception:  # noqa: BLE001 - never let a search failure break generation
         return []
 
+
+def _raw_results(query: str, max_results: int) -> list[dict]:
+    """[{title, url, snippet}] from the configured backend; Perplexity falls back to ddgs on failure."""
+    if backend() == "perplexity":
+        res = _perplexity_results(query, max_results)
+        if res is not None:
+            return res
+    return _ddgs_results(query, max_results)
+
+
+def search_snippets(query: str, max_results: int = 6) -> list[str]:
+    """Return short text snippets for a query. Never raises — returns [] on failure."""
     snippets: list[str] = []
-    for r in results:
+    for r in _raw_results(query, max_results):
         title = (r.get("title") or "").strip()
-        body = (r.get("body") or "").strip()
+        body = " ".join((r.get("snippet") or "").split())
         if not body:
             continue
         text = f"{title}: {body}" if title else body
@@ -52,26 +138,16 @@ def search_snippets_with_sources(query: str, max_results: int = 6) -> list[dict]
     `search_snippets`/`gather` callers (Desk Research's `agents.py`) are
     completely untouched. Used by `AiAgentsFleet` to compute a
     per-section confidence label from source-domain diversity."""
-    try:
-        from ddgs import DDGS
-
-        results = DDGS().text(query, max_results=max_results)
-    except Exception:  # noqa: BLE001
-        return []
-
     out: list[dict] = []
-    for r in results:
+    for r in _raw_results(query, max_results):
         title = (r.get("title") or "").strip()
-        body = (r.get("body") or "").strip()
-        url = (r.get("href") or "").strip()
+        body = " ".join((r.get("snippet") or "").split())
+        url = (r.get("url") or "").strip()
         if not body:
             continue
         text = f"{title}: {body}" if title else body
         if len(text) > 30:
-            domain = ""
-            if url:
-                domain = url.split("//")[-1].split("/")[0].removeprefix("www.")
-            out.append({"text": text, "url": url, "domain": domain, "title": title})
+            out.append({"text": text, "url": url, "domain": _domain(url), "title": title})
     return out
 
 

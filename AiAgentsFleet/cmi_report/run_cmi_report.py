@@ -233,13 +233,14 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
                                 if re.search(r"\d", n)}
                                | {str(_dfn.get(k)) for k in ("definition", "measures", "included", "excluded")
                                   if _dfn.get(k) and re.search(r"\d", str(_dfn.get(k)))}, key=len, reverse=True)
+    # the name stays in the text (its figures are matched to it); only the name's own digits are allowed
+    name_tokens = sorted({tok for nm in named_with_digits for tok in re.findall(r"\d[\d,]*(?:\.\d+)?%?", nm)})
+    ng = FactGuard(build_register(m, ag), extra_ok=name_tokens)
     for t in units:
         # section numbers ('6.1 ...'), figure/table numbers ('Figure 41:') and contents-page
         # page numbers ('... Way Forward<tab>31') are not data
         t = re.sub(r"\t\s*\d+\s*$", "", t)
         t = re.sub(r"^\s*(?:(?:Figure|Table)\s+\d+:|\d+(?:\.\d+)*\s)", "", t)
-        for nm in named_with_digits:
-            t = t.replace(nm, " ")
         checked += count_numbers(t)
         bad = ng.bad(t)
         if bad:

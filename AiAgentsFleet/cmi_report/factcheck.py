@@ -62,9 +62,8 @@ def _entity_before(clause: str, pos: int, names: list[str]) -> str | None:
             key = (mm.end(), len(n))
             if key > best_key:
                 best, best_key = n, key
-    glob = list(re.finditer(r"\b(global|world|overall market|the market)\b", low[:pos]))
-    if glob and (best is None or glob[-1].end() > best_key[0]):
-        return "global"                    # 'MEA ... 9.5%, 2.5 pp below the global 12.0% rate': 12.0% is global
+    if best is None and re.search(r"\b(global|world|overall market|the market)\b", low[:pos]):
+        return "global"
     return best
 
 
@@ -103,24 +102,29 @@ def entities_in(clause: str, names: list[str]) -> list[str]:
     return found
 
 
-_UNPINNED = "__unpinned__"     # marks a number whose subject is not named right before it: never tracked
+_GLOBAL_BEFORE = re.compile(r"\b(?:the\s+)?(?:global|world)\s*$", re.I)
 
 
-def _subject(clause: str, pos: int, names: list[str], ent: list[str], prev: str | None = None) -> list[str]:
-    """The entity a number belongs to: the one named directly before it (or 'global'); else the subject
-    of the sentence's earlier clause ('The Middle East & Africa is ... , but grows to $175M': MEA). With
-    neither, every entity in the clause is still checked for a mismatch, but the number is not tracked
-    as a repeated fact -- its subject is unknown."""
-    subj = _entity_before(clause, pos, names) or prev
-    return [subj] if subj else ent + [_UNPINNED]
+def _own_entities(clause: str, names: list[str], prev: str | None) -> list[str]:
+    """entities_in(clause), but a clause naming no entity of its own keeps the sentence's subject."""
+    ent = entities_in(clause, names)
+    if prev and not [e for e in ent if e != "global"]:
+        return [prev]
+    return ent
 
 
 def mentions(text: str, names: list[str]):
     """Yields (token, display_key, entity, kind, year, clause) for each pin-downable number."""
     for sent in sentences(text):
-        prev = None                     # the subject named in this sentence's earlier clauses
+        prev = None                     # the sentence's subject, carried into later clauses
+        # only a sentence that STARTS with its entity has it as the subject ('The Middle East & Africa is
+        # ..., but grows to $175M'); in 'Humic Substances are the largest segment in the Middle East ...,
+        # forecast to reach $52.1M' the region is not the subject, so nothing is carried
+        lead = re.sub(r"^\s*(?:the\s+)?", "", sent.lower())
+        subject = next((n for n in sorted(names, key=len, reverse=True)
+                        if lead.startswith(n.lower()) and n != "global"), None)
         for clause in _CLAUSE.split(sent):
-            named_here = [e for e in entities_in(clause, names) if e != "global"]
+            named_here = [subject] if subject else []
             money = list(_MONEY.finditer(clause))
             years = sorted({y for y in _YEAR.findall(clause)})
             # "at $X and $Y (respectively) in 2026E and 2033F" / "from $X to $Y": values pair with years in order
@@ -128,10 +132,9 @@ def mentions(text: str, names: list[str]):
                       and re.search(r"\b(respectively|from\b.*\bto|both)\b", clause, re.I))
             plain = [m for m in money if not m.group().startswith("+")]
             for mm in money:
-                ent = entities_in(clause, names)
+                ent = _own_entities(clause, names, prev)
                 if not ent:
                     continue
-                ent = _subject(clause, mm.start(), names, ent, prev)
                 if paired and mm in plain and not _INCR_WORDS.search(clause[max(0, mm.start() - 30): mm.start()]):
                     yield mm.group(), _norm_money(mm.group()), ent, "value", years[plain.index(mm)], clause
                     continue
@@ -142,10 +145,11 @@ def mentions(text: str, names: list[str]):
                 else:
                     yield tok, _norm_money(tok), ent, "value", _year_near(clause, mm.start(), mm.end()), clause
             for mm in _PCT.finditer(clause):
-                ent = entities_in(clause, names)
+                ent = _own_entities(clause, names, prev)
                 if not ent:
                     continue
-                ent = _subject(clause, mm.start(), names, ent, prev)
+                if _GLOBAL_BEFORE.search(clause[:mm.start()]):
+                    ent = ["global"]
                 win = clause[max(0, mm.start() - 45): mm.end() + 15]
                 if _CAGR_WORDS.search(win) and not re.search(r"\bshare\b", win, re.I):
                     kind = "cagr"

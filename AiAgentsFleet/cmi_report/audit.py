@@ -545,16 +545,17 @@ def release_gate(m: dict, blocks: list[dict], *, qa_report: dict, computed: dict
         blockers.append(f"'Key conclusions' has {kc or 0} item(s) (at least 3 needed)")
     blockers += [f"country profile: {x}" for x in profiles_without_lead(m, blocks)]
 
+    # user decision 2026-10-16: the AI review is a judgement and varies between runs, so it never blocks;
+    # its items are warnings for the human reviewer (high first). Only deterministic checks block.
     if not plausibility or not plausibility.get("ran"):
-        blockers.append("AI plausibility review did not run"
-                        + (f" ({plausibility.get('error')})" if plausibility and plausibility.get("error") else ""))
+        warnings.append("AI plausibility review did not run"
+                        + (f" ({plausibility.get('error')})" if plausibility and plausibility.get("error") else "")
+                        + " -- review the report by hand")
     else:
         for it in plausibility.get("items") or []:
             line = f"{it['category']}: {it['issue']} -- '{it['quote'][:100]}'"
-            if it["severity"] == "high":
-                blockers.append(f"plausibility review (high) {line}")
-            elif it["severity"] == "medium":
-                warnings.append(f"plausibility review (medium) {line}")
+            if it["severity"] in ("high", "medium"):
+                warnings.append(f"plausibility review ({it['severity']}) {line}")
 
     warnings += [f"share claim vs growth: {x}" for x in computed.get("share_claims_vs_growth") or []]
     warnings += [f"announced count: {x}" for x in computed.get("announced_counts") or []]

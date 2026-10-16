@@ -203,7 +203,7 @@ class StubLLM:
         return self.answer
 
 
-def test_plausibility_high_item_blocks(tmp_path):
+def test_plausibility_high_item_is_a_warning_not_a_blocker(tmp_path):
     llm = StubLLM({"items": [{"quote": "Alibaba Cloud at 15.4%", "issue": "More than the whole China market.",
                               "category": "vendor", "severity": "high", "fix": "Drop the share."},
                              {"quote": "x", "issue": "Wording.", "category": "logic", "severity": "low", "fix": ""}]})
@@ -213,18 +213,20 @@ def test_plausibility_high_item_blocks(tmp_path):
     assert "sceptical" in system and "MASTER DATA SHEET" in user and "REPORT TEXT" in user
     assert "Generative AI in Agriculture" in user                     # FINDINGS sections B-F as few-shot
     g = _gate(_m(), _doc(tmp_path), plaus=pr)
-    assert not g["ready"]
-    assert any(b.startswith("plausibility review (high) vendor") for b in g["blockers"])
+    # user decision 2026-10-16: AI review items are warnings for the human reviewer, never blockers
+    assert g["ready"]
+    assert any(w.startswith("plausibility review (high) vendor") for w in g["warnings"])
 
 
-def test_plausibility_medium_is_a_warning_and_failure_blocks(tmp_path):
+def test_plausibility_medium_is_a_warning_and_failure_is_a_warning(tmp_path):
     p = _doc(tmp_path)
     pr = audit.plausibility_review(_m(), "text", llm=StubLLM({"items": [
         {"quote": "q", "issue": "Check this.", "category": "fact", "severity": "medium", "fix": "f"}]}))
     g = _gate(_m(), p, plaus=pr)
     assert g["ready"] and any("medium" in w for w in g["warnings"])
-    assert not _gate(_m(), p, plaus=audit.plausibility_review(_m(), "t", llm=StubLLM(RuntimeError("down"))))["ready"]
-    assert not _gate(_m(), p, plaus=None)["ready"]                   # --no-ai: the review never ran
+    g2 = _gate(_m(), p, plaus=audit.plausibility_review(_m(), "t", llm=StubLLM(RuntimeError("down"))))
+    assert g2["ready"] and any("did not run" in w for w in g2["warnings"])
+    assert _gate(_m(), p, plaus=None)["ready"]                       # --no-ai: a warning, not a blocker
 
 
 # --------------------------------------------------------------------------- internal QA report

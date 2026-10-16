@@ -39,7 +39,7 @@ from pathlib import Path
 
 from AiAgentsFleet.cmi_report.guard import sentences, unverified_fact
 
-VERSION = 2          # 2: regulator quotes must name the product; unconfirmed regulator rows dropped
+VERSION = 3          # 3: regulator searches use the product category; 2: quotes must name it, unconfirmed rows dropped
 MAX_CLAIMS = 40                      # cost cap per report; the rest are not checked (and so not printed)
 NOT_CONFIRMED = "Competent authority not confirmed"
 REQ_NOT_CONFIRMED = "Requirements not confirmed"
@@ -170,6 +170,12 @@ def claims(fields: dict) -> list[dict]:
 def queries(c: dict, product: str) -> list[str]:
     """1-2 targeted searches for one claim."""
     if c["kind"] == "regulator":
+        # the category the regulation agent named ('fertiliser') finds pages that tie the agency to the
+        # product; a product-name-only query mostly finds generic 'this ministry exists' pages
+        cat = next((t for t in c.get("tie_terms") or [] if t.strip()), "")
+        if cat:
+            return [f"{c['subject']} {c['country']} {cat} registration",
+                    f"{c['country']} {cat} registration competent authority {product}"]
         return [f"{c['subject']} {c['country']} registration {product}",
                 f"{c['country']} {product} regulator registration authority"]
     if c["kind"] == "policy":

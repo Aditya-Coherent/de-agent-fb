@@ -347,8 +347,11 @@ def master_sheet(m: dict) -> dict:
         "regions": {k: r(v) for k, v in m["regions"].items()},
         "subregions": {k: r(v) for k, v in m["subregions"].items()},
         "countries": {reg: {c: r(v) for c, v in d.items()} for reg, d in m["countries"].items()},
-        "segments_global": {m["dimensions"][d]["singular"]: {n: r(v) for n, v in m["segments"]["Global"][d].items()}
-                            for d in ("type", "demand") if sec[d]["show"]},
+        # every geography's segment split (Global, Middle East, Africa and each profiled country): the
+        # client report no longer carries an appendix, so the reviewer needs them here to check segment claims
+        "segments": {geo: {m["dimensions"][d]["singular"]: {n: r(v) for n, v in segs[d].items()}
+                           for d in ("type", "demand") if sec[d]["show"] and segs.get(d)}
+                     for geo, segs in m["segments"].items()},
         "vendor_share_global_pct": m.get("vendor_share_global") or [],
         "vendor_share_mea_pct": m.get("vendor_share_mea") or [],
         "headline_size_check": (m.get("size_check") or {}).get("status"),
@@ -513,7 +516,9 @@ def release_gate(m: dict, blocks: list[dict], *, qa_report: dict, computed: dict
         if not h2.startswith("A.2"):
             for mm in _REGISTER_ID.finditer(text):
                 internal.append(f"'{mm.group(0)}' outside A.2 in: {text[max(0, mm.start() - 60): mm.end() + 40].strip()}")
-        for mm in _PUBLISHED.finditer(text):
+        # the Research Methodology chapter names data triangulation as a step of CMI's process (the VP's text,
+        # 2026-10-19); that describes the method, not a comparison with published estimates
+        for mm in ([] if re.search(r"Research Methodology", h1) else _PUBLISHED.finditer(text)):
             published.append(text[max(0, mm.start() - 60): mm.end() + 40].strip())
     blockers += [f"leftover in client text: {x[:160]}" for x in dict.fromkeys(leftovers)]
     blockers += [f"internal pipeline wording in client text: {x[:160]}" for x in dict.fromkeys(internal)]

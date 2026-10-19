@@ -32,8 +32,9 @@ def test_demand_chart_skips_zero_rest_of_unit(tmp_path):
 
 def test_region_donuts_skip_zero_total(tmp_path):
     regs = ["North America", "Asia Pacific", "Europe", "Latin America", "Middle East & Africa"]
-    assert ch.region_donuts({"regions": {r: N(0.0, 0.0) for r in regs}}, tmp_path / "d.png") is None
-    m = {"regions": {r: N(10.0 + k, 20.0 + k) for k, r in enumerate(regs)}}
+    # one base-year (2025A) doughnut: market shares are a single-year pie (user decision 2026-10-18)
+    assert ch.region_donuts({"regions": {r: {**N(0.0, 0.0), "v25": 0.0} for r in regs}}, tmp_path / "d.png") is None
+    m = {"regions": {r: {**N(10.0 + k, 20.0 + k), "v25": 9.0 + k} for k, r in enumerate(regs)}}
     assert ch.region_donuts(m, tmp_path / "ok.png").exists()
 
 

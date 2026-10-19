@@ -50,7 +50,7 @@ def collect(obj, out: list[float]) -> list[float]:
 # A full stop after these is not the end of a sentence ("Syngenta (incl. Valagro)",
 # "Charoen Pokphand Foods Public Co. Ltd", "e.g. Kenya", "U.S. growers").
 _ABBREV = re.compile(r"\b(?:incl|Co|Ltd|Inc|Corp|Plc|PLC|e\.g|i\.e|vs|approx|est|No|St|Mt|Dr|Jr|Sr|U\.S|U\.K|"
-                     r"U\.A\.E|S\.A|N\.V|B\.V|A\.G|S\.p\.A|Pty|Pvt|Bhd|Tbk|etc|cf|al)\.$")
+                     r"U\.A\.E|S\.A|N\.V|B\.V|A\.G|S\.p\.A|Pty|Pvt|Bhd|Tbk|etc|cf|al|[A-Z](?:\.[A-Z])+)\.$")
 
 
 def sentences(text: str) -> list[str]:
@@ -741,6 +741,40 @@ def fix_plurals(text: str, names) -> str:
     return text
 
 
+# Attribution tags on every figure ('$31.1M, CMI estimates.', '(CMI estimate)', 'CMI assessments') read as
+# hedging: the report's figures are CMI's by default (user decision 2026-10-16). Only the headline sentence
+# 'CMI estimates the market at ...' keeps the wording -- it is the subject and verb, not a tag.
+_TAG_SUBS = [
+    (re.compile(r"\s*\((?:a\s+)?CMI(?:'s)?\s+(?:estimates?|assessments?|forecasts?)\)", re.I), ""),
+    (re.compile(r",?\s*(?:on|by|per|in)?\s*CMI(?:'s)?\s+(?:estimates?|assessments?|forecasts?)(?=\s*[.;,)]|\s*$)",
+                re.I), ""),
+    (re.compile(r"(?<=[,;(])\s*CMI\s+(?:estimates|forecasts)\s+(?=[+$\d])"), " at "),
+    (re.compile(r"\b(?:is|are)\s+CMI-(?:estimated|forecast)\s+at\b", re.I), lambda mm: mm.group(0).split()[0] + " valued at"),
+    (re.compile(r"\bCMI-(estimated|forecast)\b", re.I), r"\1"),
+    (re.compile(r"\s*,\s*,"), ","),
+]
+_TAG_OPENER = re.compile(r"^CMI(?:'s)?\s+(?:estimates|assessments|forecasts|analysis)\s+(?:shows?\s+|indicates?\s+)?that\s+",
+                         re.I)
+# a sentence that only comments on where a figure comes from ('The headline is a CMI estimate.')
+_TAG_ONLY = re.compile(r"^(?:The|This|These|All|Its)\s+(?:headline|figures?|estimates?|values?|numbers?)\s+"
+                       r"(?:is|are)\s+(?:an?\s+)?CMI(?:'s)?\s+(?:own\s+)?(?:estimates?|forecasts?|assessments?)\W*$", re.I)
+
+
+def strip_tags(s: str) -> str | None:
+    """One sentence without its attribution tags; None for a sentence that is only a tag."""
+    out = re.sub(r"\s*\[CHART\]\s*", " ", s).strip()      # the prompt's slot marker, copied by the model
+    if _TAG_ONLY.match(out):
+        return None
+    for rx, rep in _TAG_SUBS:
+        out = rx.sub(rep, out)
+    mm = _TAG_OPENER.match(out)
+    if mm:
+        rest = out[mm.end():]
+        out = rest[:1].upper() + rest[1:]
+    out = re.sub(r"\s+([.,;])", r"\1", out).strip()
+    return out or None
+
+
 def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, dropped: list[str],
                absent: list[str] | None = None) -> str:
     """The text with every failing sentence removed. `absent`: entity names
@@ -754,6 +788,9 @@ def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, droppe
     prev_dropped = True                     # nothing precedes the first sentence
     definition = getattr(cguard, "definition", None)
     for s in sentences(text):
+        s = strip_tags(s)
+        if not s:
+            continue
         bad = nguard.bad(s)
         gone = [a for a in absent or [] if a.lower() in s.lower()]
         scope = scope_violation(s, definition) if definition else None

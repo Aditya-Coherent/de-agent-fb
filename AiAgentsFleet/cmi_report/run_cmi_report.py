@@ -74,6 +74,27 @@ def clear_charts(cdir: Path) -> int:
     return len(old)
 
 
+def scorecard_countries(m: dict, reg: dict) -> dict[str, list]:
+    """The regulatory scorecard chart: the two largest scored Middle East countries and the two largest scored
+    African countries (by 2026E market); with fewer than two scored in either, the largest one of each
+    (user decision 2026-10-18). Scores are CMI assessments; 'Rest of' groups are never scored."""
+    from AiAgentsFleet.cmi_report.groups import canonical
+    scored = {canonical(k): v for k, v in (reg.get("scorecard") or {}).items()}
+    picks = {}
+    for sub in ("Middle East", "Africa"):
+        d = m["countries"].get(sub) or {}
+        picks[sub] = sorted((c for c in scored if c in d and not c.startswith("Rest of")), key=lambda c: -d[c]["v26"])
+    n = 2 if all(len(v) >= 2 for v in picks.values()) else 1
+    return {c: scored[c] for sub in ("Middle East", "Africa") for c in picks[sub][:n]}
+
+
+def end_user_names(m: dict, n: int = 4) -> list[str]:
+    """The End users column of the value chain: the largest demand segments (global 2026E), 'Other' groups
+    left out."""
+    d = (m["segments"].get("Global") or {}).get("demand") or {}
+    return [k for k in sorted(d, key=lambda k: -d[k]["v26"]) if not k.lower().startswith("other")][:n]
+
+
 def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
     clear_charts(cdir)
     C = {}
@@ -109,15 +130,12 @@ def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
     reg = ag.get("regulation") or {}
     if sec["regulation"]["show"] and sec["milestones"]["show"]:
         C["timeline"] = ch.timeline(reg.get("milestones") or [], cdir / "timeline.png")
-    # scorecard countries = regulator-table countries
-    from AiAgentsFleet.cmi_report.groups import canonical
-    keep_c = model.regulatory_countries(ag)
-    sc = {canonical(k): v for k, v in (reg.get("scorecard") or {}).items() if canonical(k) in keep_c}
+    sc = scorecard_countries(m, reg)
     if sec["regulation"]["show"] and sc:
         C["reg_scorecard"] = ch.heatmap(list(sc), reg.get("scorecard_dimensions") or [], list(sc.values()),
                                         "Regulatory enablement score (1 = restrictive, 5 = enabling) - CMI assessment",
                                         cdir / "reg_scorecard.png")
-    C["value_chain"] = ch.value_chain(m["value_chain"], cdir / "value_chain.png")
+    C["value_chain"] = ch.value_chain(m["value_chain"], cdir / "value_chain.png", end_users=end_user_names(m))
     # share donuts only from sourced shares (PLAN-05); otherwise the report prints a positioning table
     if sec["vendor_global"]["show"]:
         C["vendor_global"] = ch.vendor_donut(m["vendor_chart_global"], "Global", cdir / "vendor_global.png",
@@ -131,7 +149,7 @@ def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
                                        "Vendor capability mapping (1 = limited, 5 = leading) - CMI assessment",
                                        cdir / "capabilities.png")
     C["phases"] = ch.phases((ag.get("strategy") or {}).get("phases") or [], cdir / "phases.png")
-    C["process"] = ch.process(cdir / "process.png")
+    C["process"] = ch.process(prose.research_steps(m, builder._root(m["market"])), cdir / "process.png")
     pub = m["published_2025"]          # same-scope figures only (model.py)
     if pub:
         C["published"] = ch.published_vs_cmi(pub, m["global"]["v25"], cdir / "published.png")

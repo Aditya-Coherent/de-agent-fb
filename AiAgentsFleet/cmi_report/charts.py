@@ -125,28 +125,27 @@ def kpi_panel(m: dict, path: Path) -> Path:
 
 
 def cagr_and_share(m: dict, path: Path) -> Path:
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(W, 4.2), gridspec_kw={"width_ratios": [1.05, 1]})
-    names = ["Global", "Middle East\n& Africa", "Middle East", "Africa"]
-    vals = [m["global"]["cagr"], m["regions"]["Middle East & Africa"]["cagr"],
-            m["subregions"]["Middle East"]["cagr"], m["subregions"]["Africa"]["cagr"]]
-    bars = a1.bar(names, vals, color=[NAVY, TEAL, STEEL, ORANGE], width=0.62)
+    """Figure 2: Global vs MEA CAGR (two bars only) and MEA's share of the global market in the base
+    year as a pie -- market shares are always a single-year pie (user decision 2026-10-18)."""
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(W, 4.2), gridspec_kw={"width_ratios": [1, 1]})
+    g, mea = m["global"], m["regions"]["Middle East & Africa"]
+    names, vals = ["Global", "Middle East\n& Africa"], [g["cagr"], mea["cagr"]]
+    bars = a1.bar(names, vals, color=[NAVY, TEAL], width=0.5)
     for b, v in zip(bars, vals):
         a1.text(b.get_x() + b.get_width() / 2, v, fmt.pct(v), ha="center", va="bottom", fontweight="bold")
     a1.set_yticks([])
     a1.spines["left"].set_visible(False)
+    a1.set_ylim(0, max(vals) * 1.18)
     a1.set_title(f"CAGR {Y0}-{Y1}", loc="left", fontweight="bold", fontsize=12)
-    years = sorted(m["global"]["series"])
-    share = [m["regions"]["Middle East & Africa"]["series"][y] / m["global"]["series"][y] * 100 for y in years]
-    a2.plot(years, share, "-o", color=TEAL, lw=2.6, ms=6)
-    a2.fill_between(years, share, min(share) - 0.1 * (max(share) - min(share) + 0.1), color=TEAL, alpha=0.12)
-    for i in (0, len(years) - 1):
-        a2.annotate(fmt.pct(share[i]), (years[i], share[i]), textcoords="offset points", xytext=(0, 12),
-                    ha="center", color=TEAL, fontweight="bold")
-    span = max(share) - min(share)
-    a2.set_ylim(min(share) - max(span, 0.3) * 0.6, max(share) + max(span, 0.3) * 0.6)
-    a2.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.1f}%"))
-    a2.set_xticks(years[::2])
-    a2.set_title("MEA share of global market", loc="left", fontweight="bold", fontsize=12)
+    share = mea["v25"] / g["v25"] * 100
+    a2.pie([share, 100 - share], colors=[TEAL, GRAY], startangle=90, counterclock=False,
+           wedgeprops={"edgecolor": "white", "linewidth": 2})
+    a2.legend(handles=[Rectangle((0, 0), 1, 1, color=TEAL), Rectangle((0, 0), 1, 1, color=GRAY)],
+              labels=[f"Middle East & Africa ({fmt.pct(share)})", f"Rest of world ({fmt.pct(100 - share)})"],
+              loc="lower center", bbox_to_anchor=(0.5, -0.16), ncol=1, frameon=False, fontsize=10)
+    a2.set_aspect("equal")
+    a2.set_title(f"MEA share of global market, {fmt.year_label(Y0 - 1)}", loc="left", fontweight="bold",
+                 fontsize=12)
     fig.tight_layout()
     return _save(fig, path)
 
@@ -196,6 +195,16 @@ def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) 
             f"Net effect on MEA CAGR\n{fmt.pp(sum(vals))} vs. neutral baseline")
     ax.text(0.99, 0.04, note, transform=ax.transAxes, ha="right", va="bottom", color=MUTED, fontsize=9,
             style="italic")
+    # what green and red mean, and what a percentage point is (user decision 2026-10-18)
+    ax.legend(handles=[Rectangle((0, 0), 1, 1, color=TEAL), Rectangle((0, 0), 1, 1, color=RED)],
+              labels=["Growth Factors", "Restraints"], loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=2,
+              frameon=False, fontsize=11)
+    if not score:
+        ax.text(-0.45, -0.02, _wrap("Note: a percentage point (pp) is the arithmetic difference between two "
+                                    "percentages. Each bar shows how many points the factor adds to (+) or "
+                                    "subtracts from (-) the MEA CAGR; for example, a CAGR moving from 10.0% to "
+                                    "11.5% is a change of +1.5 pp.", 120),
+                transform=ax.transAxes, ha="left", va="top", color=MUTED, fontsize=9, style="italic")
     return _save(fig, path)
 
 
@@ -226,6 +235,8 @@ def stacked_years(rows: dict[str, dict[int, float]], colors: dict[str, str], pat
     ax.set_ylabel(label)
     ax.set_ylim(0, max(totals) / div * 1.12)
     ax.legend(frameon=False, ncol=ncol, loc="upper left", fontsize=10)
+    ax.text(1.0, -0.1, "A = Actual, E = Estimated, F = Forecast", transform=ax.transAxes, ha="right", va="top",
+            color=MUTED, fontsize=9, style="italic")
     return _save(fig, path)
 
 
@@ -325,26 +336,26 @@ def demand_chart(seg: dict, path: Path) -> Path | None:
 
 
 def region_donuts(m: dict, path: Path) -> Path | None:
+    """Regional share of the global market: one doughnut for the base year -- market shares are always a
+    single-year pie (user decision 2026-10-18)."""
     regs = ["North America", "Asia Pacific", "Europe", "Latin America", "Middle East & Africa"]
-    if any(_no_data([m["regions"][r][key] for r in regs]) for key in ("v26", "v33")):
+    vals = [m["regions"][r]["v25"] for r in regs]
+    if _no_data(vals):
         return None
-    fig, axes = plt.subplots(1, 2, figsize=(W, 4.6))
-    for ax, key, yl in ((axes[0], "v26", f"{Y0}E"), (axes[1], "v33", f"{Y1}F")):
-        vals = [m["regions"][r][key] for r in regs]
-        tot = sum(vals)
-        wedges, _ = ax.pie(vals, colors=[REGION_COLORS[r] for r in regs], startangle=90, counterclock=False,
-                           wedgeprops={"width": 0.36, "edgecolor": "white", "linewidth": 2})
-        for w, v in zip(wedges, vals):
-            ang = math.radians((w.theta1 + w.theta2) / 2)
-            if v / tot >= 0.04:
-                ax.text(0.82 * math.cos(ang), 0.82 * math.sin(ang), fmt.share(v, tot), ha="center",
-                        va="center", color="white", fontsize=8.5, fontweight="bold")
-        ax.text(0, 0.06, fmt.usd(tot), ha="center", va="center", fontsize=17, fontweight="bold")
-        ax.text(0, -0.16, yl, ha="center", va="center", fontsize=10, color=MUTED)
-        ax.set_aspect("equal")
-    fig.legend(handles=[Rectangle((0, 0), 1, 1, color=REGION_COLORS[r]) for r in regs], labels=regs,
-               loc="lower center", ncol=5, frameon=False, fontsize=9.5)
-    fig.subplots_adjust(bottom=0.1)
+    fig, ax = plt.subplots(figsize=(W * 0.62, 4.8))
+    tot = sum(vals)
+    wedges, _ = ax.pie(vals, colors=[REGION_COLORS[r] for r in regs], startangle=90, counterclock=False,
+                       wedgeprops={"width": 0.36, "edgecolor": "white", "linewidth": 2})
+    for w, v in zip(wedges, vals):
+        ang = math.radians((w.theta1 + w.theta2) / 2)
+        if v / tot >= 0.04:
+            ax.text(0.82 * math.cos(ang), 0.82 * math.sin(ang), fmt.share(v, tot), ha="center",
+                    va="center", color="white", fontsize=9, fontweight="bold")
+    ax.text(0, 0.06, fmt.usd(tot), ha="center", va="center", fontsize=17, fontweight="bold")
+    ax.text(0, -0.16, fmt.year_label(Y0 - 1), ha="center", va="center", fontsize=10, color=MUTED)
+    ax.set_aspect("equal")
+    ax.legend(handles=[Rectangle((0, 0), 1, 1, color=REGION_COLORS[r]) for r in regs], labels=regs,
+              loc="upper center", bbox_to_anchor=(0.5, 0.02), ncol=3, frameon=False, fontsize=9.5)
     return _save(fig, path)
 
 
@@ -447,8 +458,9 @@ def _chevron(ax, x, y, w, h, color, first=False):
     ax.add_patch(Polygon(pts, color=color))
 
 
-def value_chain(stages: list[dict], path: Path) -> Path:
-    stages = stages[:5] + [{"stage": "End users", "examples": [], "share": "Demand pull"}]
+def value_chain(stages: list[dict], path: Path, end_users: list[str] | None = None) -> Path:
+    """`end_users`: the buying industries / segments named in the End users column."""
+    stages = stages[:5] + [{"stage": "End users", "examples": list(end_users or [])[:4], "share": "Demand pull"}]
     fig = plt.figure(figsize=(CW, 3.9))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, 104)
@@ -464,8 +476,11 @@ def value_chain(stages: list[dict], path: Path) -> Path:
         ax.add_patch(FancyBboxPatch((x + 0.6, 11.5), w - 2.2, 12.5, boxstyle="round,pad=0,rounding_size=0.6",
                                     color=PANEL))
         ex = s.get("examples") or []
-        ax.text(x + w / 2 - 0.5, 17.75, "\n".join(_wrap(e, 15) for e in ex[:4]), ha="center", va="center",
-                fontsize=9.5, color=INK)
+        lines = "\n".join(_wrap(e, 15) for e in ex[:4])
+        if lines.count("\n") >= 6:          # long segment names (the End users column): smaller, at most 3
+            lines = "\n".join(_wrap(e, 19) for e in ex[:3])
+        ax.text(x + w / 2 - 0.5, 17.75, lines, ha="center", va="center",
+                fontsize=9.5 if lines.count("\n") < 6 else 8.5, color=INK)
         share = s.get("share") or f"{s['share_low_pct']:.0f}-{s['share_high_pct']:.0f}%"
         ax.text(x + w / 2 - 0.5, 6.5, _wrap(share, 10), ha="center", va="center", color=cols[i], fontweight="bold",
                 fontsize=15 if "%" in share else 12)
@@ -513,27 +528,29 @@ def phases(ph: list[dict], path: Path) -> Path:
 
 
 # what the pipeline actually does (PLAN-07): no primary research, expert panel, bottom-up or triangulation
-PROCESS = [("Define\nscope", f"Definition, value-chain level, segments, {Y0 - 1}-{Y1}"),
-           ("Desk-research\nagents", "Web agents gather cited public sources; junk filtered"),
-           ("Sourced\nheadline", "Headline from a cited quote, CMI's own figure first"),
-           ("Check &\nre-ask", "Region, country, segment splits checked, re-asked"),
-           ("Verify &\nQA", "Claim-level fact checks, automated consistency QA")]
-
-
-def process(path: Path) -> Path:
-    fig = plt.figure(figsize=(CW, 3.9))
+def process(steps: list[tuple[str, list[str]]], path: Path) -> Path:
+    """CMI's five-step research process (prose.research_steps): a numbered card per step with its title,
+    a divider and bulleted activities -- the layout of the VP's reference image (rescrh.png)."""
+    fig = plt.figure(figsize=(CW, 4.6))
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, 104)
-    ax.set_ylim(0, 39)
+    ax.set_ylim(0, 46)
     ax.axis("off")
     cols = [NAVY, STEEL, TEAL, ORANGE, RED]
-    for i, (t, d) in enumerate(PROCESS):
-        x = 2 + i * 20.2
-        ax.add_patch(FancyBboxPatch((x, 1), 19, 37, boxstyle="round,pad=0,rounding_size=0.8", color=PANEL))
-        ax.add_patch(Circle((x + 9.5, 31), 3.6, color=cols[i]))
-        ax.text(x + 9.5, 31, str(i + 1), ha="center", va="center", color="white", fontweight="bold", fontsize=16)
-        ax.text(x + 9.5, 22, t, ha="center", va="center", fontweight="bold", fontsize=13)
-        ax.text(x + 9.5, 10, _wrap(d, 17), ha="center", va="center", color="#4A5563", fontsize=11)
+    for i, (title, bullets) in enumerate(steps[:5]):
+        x = 1.2 + i * 20.6
+        ax.add_patch(FancyBboxPatch((x, 0.6), 19.6, 44.6, boxstyle="round,pad=0,rounding_size=0.8", color=PANEL))
+        ax.add_patch(Circle((x + 9.8, 39.4), 3.4, color=cols[i]))
+        ax.text(x + 9.8, 39.4, str(i + 1), ha="center", va="center", color="white", fontweight="bold", fontsize=16)
+        ax.text(x + 9.8, 31.2, title, ha="center", va="center", fontweight="bold", fontsize=11.5, linespacing=1.15)
+        ax.plot([x + 2.2, x + 17.4], [27.6, 27.6], color=GRAY, lw=0.8)
+        y = 25.6
+        for b in bullets[:4]:
+            lines = textwrap.wrap(b, 24) or [b]
+            ax.text(x + 2.0, y, "•", ha="left", va="top", color="#4A5563", fontsize=10.5)
+            ax.text(x + 3.6, y, "\n".join(lines), ha="left", va="top", color="#4A5563", fontsize=10,
+                    linespacing=1.2)
+            y -= 1.85 * len(lines) + 2.4
     return _save(fig, path)
 
 

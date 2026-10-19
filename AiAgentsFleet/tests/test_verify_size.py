@@ -170,21 +170,6 @@ def test_model_drops_published_figures_when_unsourced():
     json.dumps(chk)
 
 
-def test_size_basis_text_wording():
-    from AiAgentsFleet.cmi_report.build import size_basis_text
-    m = {"global": {"v25": 4300.0}, "published_2025": [],
-         "size_check": {"status": "unsourced", "notes": []}}
-    txt = size_basis_text(m, "Agricultural Biostimulants")
-    assert "CMI estimate" in txt and "publish" not in txt.lower() and "triangulat" not in txt.lower()
-    m["size_check"] = {"status": "sourced", "cagr_sourced": True,
-                       "source": {"publisher": "Precedence Research", "domain": "precedenceresearch.com",
-                                  "derivation": "as quoted", "year": 2025}}
-    txt = size_basis_text(m, "Agricultural Biostimulants")
-    # user decision: a non-CMI source is never named in the client report; it is worded as a CMI estimate
-    assert "CMI estimate" in txt and "Precedence" not in txt and "precedenceresearch" not in txt
-    assert "because" not in txt and "reflect" not in txt
-
-
 # --- CMI's own published figure wins (user decision, PLAN-02 "CMI's own figure") ---
 MARKET = "Agricultural Biostimulants Market"
 QCMI25 = "The agricultural biostimulants market is estimated to be valued at USD 4.10 Bn in 2025"
@@ -237,13 +222,3 @@ def test_without_cmi_quote_behaviour_unchanged():
     assert with_market["status"] == "sourced" and with_market["source_is_cmi"] is False
 
 
-def test_size_basis_text_cmi_source():
-    from AiAgentsFleet.cmi_report.build import size_basis_text
-    src = {"publisher": "Coherent Market Insights", "domain": "coherentmarketinsights.com", "derivation": "as quoted",
-           "year": 2025}
-    m = {"global": {"v25": 4100.0}, "published_2025": [],
-         "size_check": {"status": "sourced", "source_is_cmi": True, "cagr_sourced": True, "source": src}}
-    txt = size_basis_text(m, "Agricultural Biostimulants")
-    assert "CMI's published estimate" in txt and "reported by" not in txt
-    src.update(derivation="2024 value carried to 2025 at the quoted 7.5% CAGR", year=2024)
-    assert "carried forward from CMI's published 2024 estimate" in size_basis_text(m, "Agricultural Biostimulants")

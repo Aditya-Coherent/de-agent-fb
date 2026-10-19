@@ -109,13 +109,6 @@ def test_check_ties_reports_near_ties():
     assert any("subregions" in t and "near-tie" in t for t in ties)
 
 
-def test_fallback_names_both_tied_leaders():
-    m = model()
-    txt = prose.seg_fallback(m["segments"]["Global"]["type"], "Product Type", "Global")
-    assert "Microbial Biostimulants and Seaweed Extracts grow at a similar rate" in txt
-    assert "Seaweed Extracts grows fastest" not in txt
-
-
 # --------------------------------------------------------------------------- #
 # 2. ordinals
 # --------------------------------------------------------------------------- #
@@ -123,10 +116,10 @@ def test_wrong_ordinal_is_dropped():
     # FINDINGS D1: APAC is $110M, so Europe ($83.1M) is third
     out, why = kept("Europe is the second-largest region in 2026E at $83.1M, CMI estimates.")
     assert out == "" and "#2 is Asia Pacific" in why[0]
-    ok = "Asia Pacific is the second-largest region in 2026E at $110M, CMI estimates."
+    ok = "Asia Pacific is the second-largest region in 2026E at $110M."
     assert kept(ok)[0] == ok
     ok3 = "Europe is the third-largest region in 2026E at $83.1M, CMI estimates."
-    assert kept(ok3)[0] == ok3
+    assert kept(ok3)[0] == "Europe is the third-largest region in 2026E at $83.1M."     # the tag is stripped
 
 
 # --------------------------------------------------------------------------- #
@@ -280,18 +273,28 @@ def test_dangling_these_factors_in_a_finding_is_dropped():
 # --------------------------------------------------------------------------- #
 # 6. truthful methodology
 # --------------------------------------------------------------------------- #
-def test_methodology_wording_matches_the_pipeline():
+def test_methodology_is_the_five_step_process(tmp_path):
+    """User decision 2026-10-19 (the VP's methodology, rescrh.png): the methodology paragraph and figure
+    describe CMI's five-step process; a few bullets name the market's own dimensions and value chain."""
     m = model()
     for chk in ({"status": "unsourced"}, {"status": "sourced", "source_is_cmi": True},
                 {"status": "sourced", "source_is_cmi": False}):
         m["size_check"] = chk
         t = prose.method_text(m, "Widget")
-        assert not FALSE_METHOD.search(t) and "desk research" in t and "single data register" in t
-        assert "agents" not in t and "re-asked" not in t                  # no pipeline jargon in client text
-        assert "published figure" not in t and "published estimate" not in t
-    assert "headline is a CMI estimate" in prose.method_text({**m, "size_check": {"status": "unsourced"}}, "Widget")
-    assert not any(FALSE_METHOD.search(t + " " + d) for t, d in charts.PROCESS)
-    assert "method_para" not in prose.chapters(m, AG)["ch9"]["slots"]
+        # the VP's paragraph, naming the market and its segment dimensions
+        assert t.startswith("CMI follows a structured and integrated research methodology for the widget market")
+        assert "paid database intelligence, secondary research, and data triangulation" in t
+        assert m["dimensions"]["type"]["plural"].lower() in t              # varies slightly by market
+        assert "agents" not in t and "could not" not in t and "headline" not in t
+    steps = prose.research_steps(m, "Widget")
+    assert [s[0].replace("\n", " ") for s in steps] == [
+        "Defining Market Scope & Taxonomy", "Primary Research / Expert Interviews", "Paid Database Inputs",
+        "Secondary / Desk Research", "Data Triangulation & Validation"]
+    assert all(len(b) == 4 for _, b in steps)
+    assert steps[2][1][1] == "Import-export intelligence" and steps[4][1][3] == "Forecast consistency and QA"
+    assert charts.process(steps, tmp_path / "p.png").exists()
+    assert "ch9" not in prose.chapters(m, AG)                             # no LLM-written methodology text
+    # LLM-written body text still may not claim research steps on its own
     out, why = kept("The estimates rest on CMI's methodology, which combines primary interviews and trade data.")
     assert out == "" and "research step" in why[0]
 
@@ -333,13 +336,75 @@ def test_key_conclusions_topped_up_to_three():
 
 def test_profiles_open_with_a_lead_sentence():
     m = model()
-    d, parent = m["countries"]["Middle East"]["UAE"], m["subregions"]["Middle East"]
-    txt = prose.with_lead("UAE", "Controlled-environment farms drive adoption.", d, parent, "the Middle East")
-    assert txt.startswith(f"UAE is a {fmt.usd(d['v26'])} market in 2026E") and fmt.pct(d["cagr"]) in txt
-    assert fmt.share(d["v26"], parent["v26"]) in txt
-    assert prose.with_lead("UAE", None, d, parent, "the Middle East").startswith("UAE is a")
-    own = f"The UAE is {fmt.usd(d['v26'])} in 2026E at a {fmt.pct(d['cagr'])} CAGR. Farms drive it."
-    assert prose.with_lead("UAE", own, d, parent, "the Middle East") == own
+    peers = m["countries"]["Middle East"]
+    d, parent = peers["UAE"], m["subregions"]["Middle East"]
+    # the profile's own reasoning opens it; the table beside it carries the numbers
+    own = "Controlled-environment farms and date palm growers drive adoption across the Emirates."
+    assert prose.with_lead("UAE", own, d, parent, "the Middle East", peers) == own
+    # a missing or fragmentary text gets a data-derived lead with no figures from the table
+    for text in (None, "Farms drive it."):
+        txt = prose.with_lead("UAE", text, d, parent, "the Middle East", peers)
+        rank = sorted(peers, key=lambda k: -peers[k]["v26"]).index("UAE") + 1
+        assert txt.startswith("The UAE is " + {1: "the largest", 2: "the second-largest", 3: "the third-largest"}
+                              .get(rank, "one of the smaller"))
+        assert "$" not in txt and "%" not in txt
+        pace = d["cagr"] - parent["cagr"]
+        assert ("in line with" if abs(pace) < 0.3 else "faster than" if pace > 0 else "more slowly than") in txt
+    rest = prose.with_lead("Rest of Middle East", None, peers.get("Rest of Middle East", d), parent, "the Middle East")
+    assert rest.startswith("Rest of Middle East groups the smaller markets of the Middle East")
+    # an opening sentence that does not name the country gets the lead in front of it
+    anon = "Humic substances and seaweed extracts are tied as the largest ingredients."
+    assert prose.with_lead("UAE", anon, d, parent, "the Middle East", peers).startswith("The UAE is ")
+    assert prose.with_lead("UAE", "The United Arab Emirates leans on controlled-environment farms.", d, parent,
+                           "the Middle East", peers).startswith("The United Arab Emirates")
+
+
+def test_strip_tags_and_initialisms():
+    from AiAgentsFleet.cmi_report.guard import sentences, strip_tags
+    assert strip_tags("Canada: [CHART] Canada's canola belt drives demand.") == "Canada: Canada's canola belt drives demand."
+    assert strip_tags("Others grow at a similar rate, CMI assessments.") == "Others grow at a similar rate."
+    assert strip_tags("The headline is a CMI estimate.") is None
+    assert strip_tags("CMI estimates the market at $4.73B in 2025.") == "CMI estimates the market at $4.73B in 2025."
+    assert len(sentences("Products are Group 3 fertilisers under Regulations N.R. 732 of 2017. Next one.")) == 2
+
+
+def test_chart_echo_keeps_reasoning_and_drops_read_outs():
+    slots = {"type_para__Middle East":
+             "Humic Substances lead at $31.1M in 2026E and $58.3M in 2033F. Saline soils make humic products the "
+             "default soil conditioner for Gulf growers. Microbials grow fastest at 10.6% as greenhouse growers adopt "
+             "them. This lifts their share.",
+             "trend_paras": [{"lead": "Heat stress", "text": "Organic farming adds 0.8 pp. Growers spray before heat "
+                                                             "waves to protect fruit set."}],
+             "highlights": {"Europe": "Rules favour biologicals. Europe adds +$2.05B at 11.0%."},
+             "exec_para": "CMI estimates $4.73B in 2025, $5.26B in 2026E and $11.06B in 2033F."}
+    log = prose.chart_echo(slots)
+    assert slots["type_para__Middle East"] == ("Saline soils make humic products the default soil conditioner for "
+                                               "Gulf growers. Microbials grow fastest at 10.6% as greenhouse growers "
+                                               "adopt them. This lifts their share.")
+    assert slots["trend_paras"][0]["text"] == "Growers spray before heat waves to protect fruit set."
+    assert slots["highlights"] == {"Europe": "Rules favour biologicals."}
+    assert slots["exec_para"].count("$") == 3                              # summaries are not chart text
+    assert len(log) == 3
+    # a paragraph never opens on a sentence ranked against a removed one
+    s2 = {"type_para__Middle East": "Food Grade Vitamin C follows, reflecting juice and dairy production. "
+                                    "Coated grades grow fastest as formulators need moisture-stable tablets.",
+          "demand_para__Africa": "Food & Beverage leads at $5.0M and $9.0M. Supplements are close behind on immunity "
+                                 "routines. Pharma demand follows hospital tenders across the region."}
+    prose.chart_echo(s2)
+    assert s2["type_para__Middle East"] == "Coated grades grow fastest as formulators need moisture-stable tablets."
+    assert s2["demand_para__Africa"] == "Pharma demand follows hospital tenders across the region."
+    # an item that only restates a figure is dropped; one that explains keeps its single figure
+    s3 = {"highlights": {"Europe": "Europe is the second-largest region at $2.88B in 2026E.",
+                         "Asia Pacific": "Asia Pacific grows fastest at 8.0% as integrators in China and India add "
+                                         "functional additives to broiler diets."}}
+    prose.chart_echo(s3)
+    assert list(s3["highlights"]) == ["Asia Pacific"]
+
+
+def test_lower_name_keeps_acronyms():
+    assert fmt.lower_name("Generative AI in Agriculture") == "generative AI in agriculture"
+    assert fmt.lower_name("Vitamin C") == "vitamin C"
+    assert fmt.lower_name("Agricultural Biostimulants") == "agricultural biostimulants"
 
 
 def test_plural_segment_names_take_plural_verbs():
@@ -360,3 +425,40 @@ def test_domain_sanity_drops_flagged_sentences():
             return {"flagged": [{"id": int(line.split(".")[0]), "why": "India imports most of its vitamin C"}]}
     log = prose.domain_sanity(slots, m, Sanity())
     assert "key producer" not in slots["country_profiles"]["India"] and len(log) == 1
+
+
+def test_chapter_opener_never_names_the_other_subregion():
+    from AiAgentsFleet.cmi_report.build import open_chapter
+    lead = "The Middle East market is estimated at $18.4M in 2026E."
+    me, af = r"(?<!South )(?<!Rest of )\bMiddle East\b(?! &)", r"(?<!South )(?<!Rest of )\bAfrica\b(?! &)"
+    out = open_chapter("The Middle East accounts for $18.4M in 2026E and Africa $10.8M in 2026E. Gulf food-security "
+                       "programmes fund most pilots.", me, lead, avoid=af)
+    assert out == lead + " Gulf food-security programmes fund most pilots."
+    ok = "The Middle East leans on Gulf food-security programmes and irrigated estates."
+    assert open_chapter(ok, me, lead, avoid=af) == ok
+
+
+def test_changes_2026_10_18_helpers():
+    """changes.txt (2026-10-18): base year 'A', two highlight regions, segment insight without figures,
+    regulatory scorecard 2 + 2 countries, value-chain end users, clean scorecard cells."""
+    assert (fmt.year_label(2025), fmt.year_label(2026), fmt.year_label(2027)) == ("2025A", "2026E", "2027F")
+    m = model()
+    labs = prose.highlight_regions(m)
+    assert len(labs) == 2 and labs[0][1] == max(m["regions"], key=lambda r: m["regions"][r]["v26"])
+    fastest = max(m["regions"], key=lambda r: m["regions"][r]["cagr"])
+    assert fastest in [r for _, r in labs]
+    txt = prose.seg_insight(m["segments"]["Global"]["type"], "Product Type", "Global")
+    assert txt and "$" not in txt and "%" not in txt and "largest product type segment" in txt.lower()
+    from AiAgentsFleet.cmi_report.run_cmi_report import end_user_names, scorecard_countries
+    me, af = list(m["countries"]["Middle East"]), list(m["countries"]["Africa"])
+    reg = {"scorecard": {c: [3, 3] for c in me + af}}
+    sc = scorecard_countries(m, reg)
+    assert len([c for c in sc if c in me]) == 2 and len([c for c in sc if c in af]) == 2
+    one_af = {"scorecard": {c: [3] for c in me[:2] + af[:1]}}
+    assert len(scorecard_countries(m, one_af)) == 2                       # 1 + 1 when 2 + 2 is not possible
+    assert all(not n.lower().startswith("other") for n in end_user_names(m))
+    # a scorecard cell never repeats its key or prints 'Mea'
+    _, ag, cg, ng = guards()
+    out = prose._clean({"global": "Global: Rising demand for inputs.", "mea": "Mea: Soil salinity."}, ng,
+                       prose.make_guard(m, None, ag), [], [])
+    assert out == {"global": "Rising demand for inputs.", "mea": "Soil salinity."}

@@ -365,23 +365,14 @@ def test_builder_drops_empty_headings():
     assert sum(x.startswith("empty heading removed") for x in b.log) == 3
 
 
-@pytest.mark.skipif(not TEMPLATE.exists(), reason="CMI template not present")
-def test_client_appendix_has_only_a1_to_a3():
-    m = _m()
-    b = build.Builder(TEMPLATE)
-    build.add_appendix(b, m, build_register(m, {}))
-    text = "\n".join(_blocks(b.out))
-    for h in ("A.1 Master data sheet", "A.2 Number register (derived facts)", "A.3 Rankings register"):
-        assert h in text
-    for bad in ("A.4", "A.5", "A.6", "generated sentence", "self-audit", "sweep", "[to verify]"):
-        assert bad not in text
-    assert build.APPENDIX_TITLE in text
 
 
-@pytest.mark.skipif(not TEMPLATE.exists(), reason="CMI template not present")
-def test_a2_drops_vendor_rows_without_a_share_chart():
-    m = _m(vendor_chart_global=[], vendor_share_global=[])
-    reg = build_register(_m(), {})                                    # register still has the global vendor row
-    b = build.Builder(TEMPLATE)
-    build.add_appendix(b, m, reg)
-    assert "vendor share" not in "\n".join(_blocks(b.out))
+def test_triangulation_allowed_only_in_the_methodology_chapter(tmp_path):
+    """The VP's methodology text names data triangulation (2026-10-19); with an unsourced headline the
+    word still blocks anywhere else in the report."""
+    m = _m(size_check={"status": "unsourced", "notes": []})
+    ok = _doc(tmp_path, extra=[("Heading1", "09   Research Methodology"),
+                               ("", "CMI combines secondary research and data triangulation.")], name="a.docx")
+    assert _gate(m, ok)["ready"], _gate(m, ok)["blockers"]
+    bad = _doc(tmp_path, extra=[("", "CMI triangulated the published estimates.")], name="b.docx")
+    assert any("unsourced" in b for b in _gate(m, bad)["blockers"])

@@ -52,5 +52,13 @@ def share(part: float, whole: float) -> str:
     return pct(part / whole * 100) if whole else "0.0%"
 
 
-def year_label(y: int) -> str:
-    return f"{y}E" if y <= 2026 else f"{y}F"
+def year_label(y: int, estimate_year: int = 2026) -> str:
+    """'2025A' (the base year is actual), '2026E' (estimate), '2027F' onward (forecast)."""
+    return f"{y}A" if y < estimate_year else f"{y}E" if y == estimate_year else f"{y}F"
+
+
+def lower_name(name: str) -> str:
+    """A market name in running text: words lowercased, acronyms and single letters kept
+    ('Generative AI in Agriculture' -> 'generative AI in agriculture', 'Vitamin C' -> 'vitamin C')."""
+    return " ".join(w if (len(w) > 1 and w.isupper()) or (len(w) == 1 and w.isupper() and i) else w.lower()
+                    for i, w in enumerate(str(name).split()))

@@ -380,11 +380,10 @@ def test_fewer_than_3_confirmed_vendors_print_one_sentence_not_a_table():
         m["vendor_unconfirmed"]["mea"]                                     # a confirmed MEA leader may be named
     assert any("only 2 confirmed vendor(s) (fewer than 3)" in w for w in m["vendor_review"]["warnings"])
     assert any("MEA leader National Aquaculture Group (NAQUA)" in w for w in m["vendor_review"]["warnings"])
-    # the report: headings and the one sentence each, no table and no vendor text from the LLM
+    # the report: both sections are left out entirely (no "could not be confirmed" sentence, no table)
     out = _vendor_section(m)
     assert out["tables"] == 0
-    assert out["texts"] == ["7.2 Vendor landscape (Global)", entities.UNCONFIRMED,
-                            "7.3 Vendor landscape (MEA)", m["vendor_unconfirmed"]["mea"]]
+    assert out["texts"] == []
     from AiAgentsFleet.cmi_report import prose
     assert prose.mea_leader_named({"mea_share_para": "x"}, m) is None
     # Minh Phu (confirmed but in no table) may not be named in the text; the MEA leader may

@@ -21,7 +21,7 @@ from PIL import Image
 
 from AiAgentsFleet.cmi_report import fmt
 from AiAgentsFleet.cmi_report.guard import ClaimGuard, NumberGuard, clean_text, vendor_clean
-from AiAgentsFleet.cmi_report.model import Y0, Y1
+from AiAgentsFleet.cmi_report.model import REPORT_REGION_ORDER, Y0, Y1, regional_chapters
 from AiAgentsFleet.cmi_report.guard import sentences
 from AiAgentsFleet.cmi_report.groups import canonical, short
 from AiAgentsFleet.cmi_report.prose import (absent_names, base_facts, claim_groups, fill_conclusions, method_text,
@@ -64,6 +64,18 @@ def complete_rows(rows: list[list[str]], log: list[str], what: str) -> list[list
         log.append(f"{what}: {len(rows) - len(keep)} incomplete row(s) left out")
     return keep
 
+DEFINITION_CH = 0          # the definition chapter's original number: it comes first
+DEFINITION_TITLE = "Market Definition & Taxonomy"
+_MEA_WORDS = re.compile(r"\b(?:Middle East|Africa|African|MEA|Gulf|GCC)\b")
+
+
+def global_only(text: str) -> str:
+    """The sentences of `text` that do not mention the Middle East & Africa (CEO feedback 2026-10-20: the
+    summary's opening paragraph is about the global market only)."""
+    return " ".join(x for x in sentences(text or "") if not _MEA_WORDS.search(x))
+
+
+REGION_CH = 20            # original numbers of the regional chapters (the template's chapters are 1-10)
 REMOVE = {22, 76, 77, 78, 79, 80, 393, 394, 395, 396}
 # every country table: the last column names the opportunity and its period (user decision 2026-10-18)
 COUNTRY_HEADER = ["Country", f"{Y0}E", f"{Y1}F", "CAGR", f"Incremental $ Opportunity ({Y0}-{str(Y1)[2:]})"]
@@ -221,9 +233,8 @@ def to_verify_items(b: "Builder", ag: dict, m: dict) -> list[str]:
     return list(dict.fromkeys(items))
 
 
-POSITIONING_HEADER = ["Vendor", "HQ", "Parent group", "Business type", "Role in this market",
-                      "MEA presence (CMI assessment)"]
-_POSITIONING_WIDTHS = [1700, 1100, 1500, 1400, 2306, 1500]      # the dashboard table's 9,506 twips
+POSITIONING_HEADER = ["Vendor", "HQ", "Parent group", "Business type", "Role in this market"]
+_POSITIONING_WIDTHS = [1900, 1200, 1700, 1600, 3106]      # the dashboard table's 9,506 twips
 
 
 def _widen(tbl, widths: list[int]):
@@ -255,58 +266,69 @@ def short_note(note: str | None) -> str:
 
 
 def positioning_rows(m: dict, vsafe) -> list[list[str]]:
-    """vendor | HQ | parent group | business type | role | MEA presence -- confirmed vendors only, in
-    alphabetical order; no tier or ranking (there are no sourced shares to rank by). The role is the one
-    the product evidence line states; MEA presence is a CMI assessment, never a percentage."""
+    """vendor | HQ | parent group | business type | role -- confirmed vendors only, in alphabetical
+    order; no tier or ranking (there are no sourced shares to rank by). The role is the one the product
+    evidence line states. No MEA column: chapter 7 is the global view (changes.txt 2026-10-19)."""
     rows = []
     for r in m["vendor_positioning"]:
         own = short_note(r.get("ownership_note"))
         rows.append([r["vendor"] + (f" ({own})" if own and own.lower() not in r["vendor"].lower() else ""),
-                     r["hq"], r["parent"], r["business_type"], vsafe(r["role"]).rstrip("."),
-                     r["mea_presence"] or "Not assessed"])
+                     r["hq"], r["parent"], r["business_type"], vsafe(r["role"]).rstrip(".")])
     return rows
 
 
+def tier_text(tiers: list[dict]) -> str:
+    """The paragraph under the tier pyramid, from its data: who sits in each tier (the chart carries the shares)."""
+    named = {t["name"]: ", ".join(t["players"]) for t in tiers if t.get("players")}
+    if len(named) < 3:
+        return ""
+    return (f"Global value is led by a small group of Tier 1 manufacturers ({named['Tier 1']}), whose breadth of "
+            f"portfolio and distribution reach set the pace of product launches. Tier 2 brings together established "
+            f"multinationals and strong specialists ({named['Tier 2']}), while Tier 3 covers regional specialists "
+            f"({named['Tier 3']}); the remaining value is spread across smaller regional and local manufacturers.")
+
+
 def vendor_shares(b: "Builder", i: int, m: dict, s, root: str, charts: dict, vsafe) -> None:
-    """Sections 7.2 / 7.3 (template elements 332-341): a share donut where at least
-    3 shares are sourced, else the positioning table (once, in the first section
-    without a donut) and the section's paragraph (PLAN-05). A section with fewer
-    than 3 confirmed vendors prints only its heading and one sentence from data
-    (m["vendor_unconfirmed"]) -- never an empty or near-empty table."""
+    """Sections 7.2 / 7.3 (template elements 332-341), global view only (changes.txt 2026-10-19):
+    the first slot is a global share donut where at least 3 shares are sourced; the second slot
+    is the global positioning table (when vendors are confirmed). The MEA donut is not shown."""
     sec, vy = m["sections"], m["vendor_year"]
-    show_g, show_m, pos = sec["vendor_global"]["show"], sec["vendor_mea"]["show"], sec["positioning"]["show"]
-    pos_at = 332 if not show_g else 337           # where the positioning table goes
-    geo, show, label = ("global", show_g, "Global") if i < 337 else ("MEA", show_m, "MEA")
-    k = i - (332 if i < 337 else 337)              # 0 heading, 1 caption, 2 figure, 3 source, 4 paragraph
-    if (m.get("vendor_unconfirmed") or {}).get(geo.lower()):
-        # too few confirmed vendors: the whole section is left out (the reason is in the internal QA)
+    show_g, pos = sec["vendor_global"]["show"], sec["positioning"]["show"]
+    first = i < 337
+    k = i - (332 if first else 337)                # 0 heading, 1 caption, 2 figure, 3 source, 4 paragraph
+    if (m.get("vendor_unconfirmed") or {}).get("global"):
+        if k == 0 and first:
+            b.log.append("vendor section (Global) left out: too few confirmed vendors")
+        return
+    if first:
+        if not show_g:
+            return
         if k == 0:
-            b.log.append(f"vendor section ({label}) left out: too few confirmed vendors")
+            b.keep(i)
+        elif k == 1:
+            b.caption(i, "Figure", f"Vendor share of global {fmt.lower_name(root)} market value, {vy} (published figures)")
+        elif k == 2:
+            b.image(i, charts["vendor_global"])
+        elif k == 3:
+            pubs = dict.fromkeys(x.get("domain") or "" for x in m["vendor_sources"]["global"])
+            b.para(i, "Source: " + ", ".join(p for p in pubs if p) + "; shares as stated by each source")
+        else:
+            b.para(i, s("global_share_para"))
+        return
+    if not pos:
         return
     if k == 0:
-        if show:
-            b.keep(i)
-        else:
-            b.para(i, f"7.{2 if i < 337 else 3} Vendor positioning ({label})")
-    elif k == 4:
-        b.para(i, s("global_share_para" if i < 337 else "mea_share_para"))
-    elif show:
-        if k == 1:
-            b.caption(i, "Figure", f"Vendor share of {geo} {fmt.lower_name(root)} market value, {vy} (published figures)")
-        elif k == 2:
-            b.image(i, charts[f"vendor_{geo.lower()}"])
-        else:
-            pubs = dict.fromkeys(x.get("domain") or "" for x in m["vendor_sources"][geo.lower()])
-            b.para(i, "Source: " + ", ".join(p for p in pubs if p) + "; shares as stated by each source")
-    elif pos and (i - k) == pos_at:
-        if k == 1:
-            b.caption(i, "Table", f"Vendor positioning in the {fmt.lower_name(root)} market")
-        elif k == 2:
-            b.src.append(_widen(b.el(349), _POSITIONING_WIDTHS))     # the dashboard table, 6 columns
-            b.table(len(b.src) - 1, complete_rows(positioning_rows(m, vsafe), b.log, "vendor positioning"),
-                    header=POSITIONING_HEADER)
-        else:
-            b.para(i, "Source: Company websites, filings and news; CMI analysis")
+        b.para(i, "7.2 Vendor positioning (Global)")      # renumber() sets the real number
+    elif k == 1:
+        b.caption(i, "Table", f"Vendor positioning in the global {fmt.lower_name(root)} market")
+    elif k == 2:
+        b.src.append(_widen(b.el(349), _POSITIONING_WIDTHS))     # the dashboard table, 5 columns
+        b.table(len(b.src) - 1, complete_rows(positioning_rows(m, vsafe), b.log, "vendor positioning"),
+                header=POSITIONING_HEADER)
+    elif k == 3:
+        b.para(i, "Source: Company websites, filings and news; CMI analysis")
+    elif not show_g:
+        b.para(i, s("global_share_para"))
 
 
 def internal_log(b: "Builder", m: dict, ag: dict, prose: dict, removed_notes: list[str],
@@ -395,7 +417,7 @@ def renumber(b: "Builder", toc_titles: dict[int, str], toc_pages: dict[int, int]
     section leaves no gap), and the contents page lists exactly the chapters
     present, with their new numbers."""
     new_of: dict[int, int] = {}
-    ch = sub = 0
+    ch = sub = sub3 = 0
     for el in b.out:
         st = _style(el)
         if st == "Heading1":
@@ -408,8 +430,14 @@ def renumber(b: "Builder", toc_titles: dict[int, str], toc_pages: dict[int, int]
             text = el.xpath("string(.)")
             mm = re.match(r"\s*\d+\.\d+\s+(.*)", text)
             if mm and ch:
-                sub += 1
+                sub, sub3 = sub + 1, 0
                 set_text(el, f"{ch}.{sub} {mm.group(1)}")
+        elif st == "Heading3":
+            # 2.1.1 Global / 2.1.2 Middle East & Africa (changes.txt 2026-10-19)
+            mm = re.match(r"\s*\d+\.\d+\.\d+\s+(.*)", el.xpath("string(.)"))
+            if mm and ch and sub:
+                sub3 += 1
+                set_text(el, f"{ch}.{sub}.{sub3} {mm.group(1)}")
     for orig, el in b.toc.items():
         if orig not in new_of:
             b.out.remove(el)
@@ -474,12 +502,19 @@ class Builder:
         self.out.append(el)
 
     def para(self, i: int, text: str | None, bold: bool | None = None):
+        if isinstance(text, list):              # a paragraph slot the model returned as a list of sentences
+            text = " ".join(str(x).strip() for x in text if isinstance(x, str) and x.strip())
         if self._source_of_skipped_figure(text or ""):
             return
         if text:
             self.out.append(set_text(self.el(i), text, bold))
         else:
             self.log.append(f"element {i}: no text -- left out")
+
+    def heading3(self, title: str):
+        """A numbered sub-section ('0.0.1 Global'; renumber() sets the real number), cloned from the
+        template's Heading3 (element 83)."""
+        self.out.append(set_text(self.el(83), f"0.0.1 {title}"))
 
     def lead(self, i: int, lead: str, text: str):
         self.out.append(set_lead(self.el(i), lead, text))
@@ -518,10 +553,17 @@ class Builder:
                     cx, cy = int(5_200_000 * w / h), 5_200_000
                 ext.set("cx", str(cx))
                 ext.set("cy", str(cy))
+        # alt text = this figure's caption (the template's says 'drone'; Word copies it into the PDF)
+        last = self.out[-1] if self.out else None
+        cap = last.xpath("string(.)").strip() if last is not None and last.tag == qn("w:p") else ""
+        alt = re.sub(r"^Figure \d+:\s*", "", cap) if cap.startswith("Figure") else path.stem.replace("_", " ")
         for tag in (qn("wp:docPr"), qn("pic:cNvPr")):
             for node in el.iter(tag):
                 self.pic_id += 1
                 node.set("id", str(self.pic_id))
+                node.set("name", path.stem)
+                node.set("descr", alt)
+                node.set("title", alt)
         self.out.append(el)
 
     def table(self, i: int, rows: list[list[str]], total: list[str] | None = None, header: list[str] | None = None):
@@ -610,6 +652,19 @@ class Builder:
             self.body.remove(c)
         for e in self.out:
             self.body.append(e)
+        # 'Middle East & Africa (MEA)' everywhere in the text, contents and headings (user decision 2026-10-20);
+        # a name split across two runs is joined into the first run so it is caught too
+        for p in self.body.iter(qn("w:p")):
+            ts = [t for t in p.iter(qn("w:t"))]
+            if "Africa" not in "".join(t.text or "" for t in ts):
+                continue
+            for a, nxt in zip(ts, ts[1:]):
+                joined = (a.text or "") + (nxt.text or "")
+                if re.search(r"Middle East\s*(?:&|and)\s*$", a.text or "") and (nxt.text or "").startswith("Africa"):
+                    a.text, nxt.text = joined[:len(joined) - len(nxt.text) + len("Africa")], nxt.text[len("Africa"):]
+            for t in ts:
+                if t.text and "Africa" in t.text:
+                    t.text = fmt.mea(t.text)
         for s in self.doc.sections:
             for p in s.header.paragraphs:
                 for r in p.runs:
@@ -617,12 +672,25 @@ class Builder:
                         r.text = header
             for p in s.footer.paragraphs:
                 for r in p.runs:
-                    if "Confidential" in (r.text or "") or "template" in (r.text or "").lower():
+                    if re.search(r"confidential|template|whitepaper", r.text or "", re.I):
                         r.text = footer_label
+        # the document properties are this market's, not the template's: Word's PDF export uses the
+        # title as the PDF title, which viewers show instead of the file name ('The Drone Market Outlook')
+        cp = self.doc.core_properties
+        cp.title = header
+        cp.subject = header
+        cp.comments = header
+        cp.keywords = ""
+        cp.author = cp.last_modified_by = "Coherent Market Insights"
+        cp.created = cp.modified = datetime.now()
         xml = self.doc.element.xml
         for r_id, rel in list(self.doc.part.rels.items()):
             if "image" in rel.reltype and f'"{r_id}"' not in xml:
                 del self.doc.part.rels[r_id]
+        app = next((p for p in self.doc.part.package.parts if str(p.partname) == "/docProps/app.xml"), None)
+        if app is not None:          # 'TitlesOfParts' still names the template's title
+            app._blob = re.sub(rb"(<vt:lpstr>)[^<]*Outlook[^<]*(</vt:lpstr>)",
+                               lambda mm: mm.group(1) + header.replace("&", "&amp;").encode() + mm.group(2), app.blob)
         self.doc.save(str(path))
 
 
@@ -645,6 +713,9 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
     tl, dl = tdim["singular"].lower(), ddim["singular"].lower()
     g, mea = m["global"], m["regions"]["Middle East & Africa"]
     me, af = m["subregions"]["Middle East"], m["subregions"]["Africa"]
+    ex = ag.get("_extras") or {}                  # extras.derive (changes.txt 2026-10-19)
+    sources = [(l, it) for l, it in ag.get("_sources") or [] if it]         # resources.build (9.1 Sources)
+    greg = ex.get("global_regulation") or {}      # 6.1 Global (extras.global_regulation)
 
     from AiAgentsFleet.cmi_report.register import FactGuard, build_register
     register = build_register(m, ag)
@@ -730,12 +801,78 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                  fmt.pct(tot["cagr"]), fmt.incr(tot["incr"], unit)]
         return rows, total
 
+    def region_mix(b, dim: str, label: str):
+        """Comparative chart by region for one segment dimension (changes.txt 2026-10-19)."""
+        if not charts.get(f"mix_{dim}"):
+            return
+        b.caption(84, "Figure", f"{label} mix by region, {Y0}E")
+        b.image(85, charts[f"mix_{dim}"])
+        b.para(86, "Source: CMI analysis")
+
+    regions_ch = regional_chapters(m)
+
+    def regional_chapter(r: str, orig: int):
+        """One region's opportunity landscape, with every chart of the global chapter for that region
+        (changes.txt 2026-10-19): countries over the years, scenarios, segments and their country mix,
+        country shares, absolute opportunity, the country table and the country profiles."""
+        d, name = m["regions"][r], fmt.lower_name(root)
+        b.out.append(set_h1(b.el(146), num=f"{orig}   ", title=f"{r} {root} Market: Opportunity Landscape"))
+        lead_in = (f"The {r} {name} market is estimated at {fmt.usd(d['v26'])} in {Y0}E and is forecast to reach "
+                   f"{fmt.usd(d['v33'])} by {Y1}F ({fmt.pct(d['cagr'])} CAGR).")
+        b.para(147, open_chapter(s(f"region_para__{r}"), rf"\b{re.escape(r)}\b", lead_in))
+        b.caption(148, "Figure", f"{r} {name} market by country, {Y0 - 1}A-{Y1}F "
+                                 f"(USD {'billion' if d['v33'] >= 1000 else 'million'})")
+        b.image(149, charts.get(f"stack_{r}"))
+        b.para(150, "Source: CMI analysis")
+        b.para(69, f"0.1 {r} scenario analysis")
+        b.caption(70, "Figure", f"{r} {name} market scenarios: conservative, base and optimistic")
+        b.image(71, charts.get(f"scen_{r}"))
+        b.para(72, "Source: CMI analysis")
+        if r in seg and (charts.get(f"type_{r}") or charts.get(f"demand_{r}")):
+            b.para(81, f"0.2 {r} {root} Market Size by Segments")
+            for kind, dim in (("type", tdim), ("demand", ddim)):
+                key = f"{kind}_{r}"
+                if not sec[kind]["show"] or not charts.get(key):
+                    continue
+                b.para(83, f"{r} Opportunity by {dim['singular']}")
+                b.caption(84, "Figure", f"{r} market by {dim['singular'].lower()}, {Y0}E vs {Y1}F"
+                                        + (" (USD)" if kind == "demand" else ""))
+                b.image(85, charts[key])
+                b.para(86, "Source: CMI analysis")
+                b.para(87, seg_para(r, kind))
+                if charts.get(f"cmix_{kind}_{r}"):
+                    b.caption(84, "Figure", f"{dim['singular']} mix by country, {Y0}E")
+                    b.image(85, charts[f"cmix_{kind}_{r}"])
+                    b.para(86, "Source: CMI analysis")
+        b.para(94, f"0.3 {r} {root} Market Size by Country")
+        b.caption(95, "Figure", f"Country share of the {r} market, {Y0 - 1}A")
+        b.image(98, charts.get(f"cshare_{r}"))
+        b.para(99, "Source: CMI analysis")
+        b.caption(103, "Figure", f"{r}: Absolute dollar opportunity by country, {Y0}-{Y1}")
+        b.image(104, charts.get(f"copp_{r}"))
+        b.para(105, "Source: CMI analysis")
+        rows, total = country_rows(r)
+        b.caption(152, "Table", f"{r} {name} market by country (USD)")
+        b.table(153, rows, total, header=COUNTRY_HEADER)
+        b.para(154, "Source: CMI analysis")
+        profiles, why = obj("country_profiles"), m.get("geography_why") or {}
+        for c, v in m["countries"][r].items():
+            text = with_lead(c, profiles.get(c) or safe(why.get(c)), v, d, r, m["countries"][r])
+            b.lead(29, f"{c}:", text.strip())
+
     month = datetime.now().strftime("%B %Y").upper()
     practice = str(s("practice") or "Industry Research Practice").strip().rstrip(".")
     # no chapter-closing bridge sentences ('The next chapter turns to ...'): the template has none (2026-10-16)
     for i in range(len(b.src)):
         if i in REMOVE or i in skip:
             continue
+        # 3.5 'Regional Analysis, By Key Countries' is left out: every region's country table and profiles
+        # are in its own chapter now; 7.1 'Value chain analysis' is removed (user decisions 2026-10-19)
+        if 112 <= i <= 145 or 327 <= i <= 331:
+            continue
+        if i == 146:
+            for k, r in enumerate(regions_ch):
+                regional_chapter(r, REGION_CH + k)
         # ------------------------------------------------------------ cover / TOC / boxes
         if i == 0:
             b.image(i, charts["cover"])
@@ -744,7 +881,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             rs = _runs(el)
             for r in rs:
                 el.remove(r)
-            el.append(_text_run(rs[0], f"WHITEPAPER  |  {month}", True))
+            el.append(_text_run(rs[0], month, True))      # no "WHITEPAPER" label on the cover (2026-10-20)
             b.out.append(el)
         elif i == 2:
             b.para(i, f"{root} Market Outlook {Y0}-{Y1}")
@@ -757,7 +894,22 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                       10: "Current Market Trends, Growth Factors, Restraints and Impact",
                       11: f"Global {root} Market Size: Scenario Analysis by Segments, Region & Top Countries",
                       12: f"Middle East {root} Market Size: Opportunity Analysis by Segments & Country",
-                      13: f"Africa {root} Market Size: Opportunity Analysis by Segments & Country"}
+                      13: f"Africa {root} Market Size: Opportunity Analysis by Segments & Country",
+                      14: "Regulatory & Policy Outlook: Global vs Middle East & Africa",
+                      15: "Vendor Intelligence: Global"}
+            if i == 9:
+                # the report starts with the market definition, before the summary (user decision 2026-10-20)
+                el = b.el(i)
+                toc_titles[DEFINITION_CH] = DEFINITION_TITLE
+                b.toc[DEFINITION_CH] = el
+                b.out.append(el)
+            if i == 12:
+                # contents entries for the regional chapters, before the Middle East (original numbers 20+)
+                for k, r in enumerate(regions_ch):
+                    el = b.el(i)
+                    toc_titles[REGION_CH + k] = f"{r} {root} Market Size: Opportunity Analysis by Segments & Country"
+                    b.toc[REGION_CH + k] = el
+                    b.out.append(el)
             el = b.el(i)
             texts = _text_runs(el)
             toc_titles[i - 8] = titles.get(i) or "".join(r.xpath("string(.)") for r in texts[1:-1])
@@ -772,14 +924,28 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             measures = _sentence(dfn["measures"]) if dfn.get("measures") and dfn["measures"] != dfn.get("definition") \
                 else ""
             level = f"Value-chain level: {dfn['value_chain_level']}." if dfn.get("value_chain_level") else ""
-            units = (f"Values are in USD at current prices; {Y0 - 1}A is the base year (actual), {Y0}E the estimate "
-                     f"year and {Y0 + 1}F-{Y1}F the forecast period (A = Actual, E = Estimated, F = Forecast).")
-            scope = " ".join(x for x in sentences(s("about_scope", "") or "")
-                             if not re.search(r"market values|base year|forecasts?\b|excludes|scope covers", x, re.I))
-            b.box(i, None, [x for x in (f"Market definition: {what}" if what else "",
-                                        f"What is measured: {measures}" if measures else "", level,
-                                        scope or f"This whitepaper sizes the global {fmt.lower_name(root)} market and goes "
-                                                 f"deep on the Middle East and Africa.", units) if x])
+            units = (f"USD at current prices; {Y0 - 1}A is the base year (actual), {Y0}E the estimate year and "
+                     f"{Y0 + 1}F-{Y1}F the forecast period (A = Actual, E = Estimated, F = Forecast).")
+            # chapter 01 says what the market IS, what it covers, includes and excludes (CEO feedback 2026-10-20)
+            b.out.append(set_h1(b.el(23), num=f"{DEFINITION_CH:02d}   ", title=DEFINITION_TITLE))
+            b.para(24, safe(s("definition_para")) or what)
+            # no 'Market coverage' list: the taxonomy figure covers segments and geography (CEO feedback
+            # 2026-10-20); the definition, inclusions, exclusions and taxonomy remain
+
+            def items(key: str, text_key: str) -> list[str]:
+                xs = dfn.get(key) or [x for x in re.split(r";\s*", dfn.get(text_key) or "") if x.strip()]
+                return [_sentence(x.strip()[0].upper() + x.strip()[1:]) for x in xs if x.strip()]
+            if items("included_items", "included"):
+                b.para(49, "0.2 Inclusions")
+                b.bullets(29, items("included_items", "included"))
+            if items("excluded_items", "excluded"):
+                b.para(49, "0.3 Exclusions")
+                b.bullets(29, items("excluded_items", "excluded"))
+            b.para(49, "0.4 Market taxonomy")
+            # the market taxonomy follows the definition (changes.txt 2026-10-19)
+            b.caption(25, "Figure", f"{root} market taxonomy")
+            b.image(26, charts.get("taxonomy"))
+            b.para(48, "Source: CMI analysis")
         # ------------------------------------------------------------ chapter 1
         elif i == 24:
             headline = (f"CMI estimates the global {fmt.lower_name(root)} market at {fmt.usd(g['v25'])} in "
@@ -789,7 +955,9 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             # an unsourced headline is always called a CMI estimate (PLAN-02)
             if size_unsourced and not re.search(r"\bCMI estimat", opener):
                 opener = headline
-            b.para(i, ((s("thesis") or "") + " " if s("thesis") else "") + opener)
+            # the opening paragraph is about the global market only; MEA has its own snapshot in 1.2
+            # (CEO feedback 2026-10-20)
+            b.para(i, global_only(((s("thesis") or "") + " " if s("thesis") else "") + opener) or headline)
         elif i == 25:
             b.caption(i, "Figure", "Headline market metrics: Global vs Middle East & Africa")
         elif i == 26:
@@ -879,16 +1047,32 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 47:
             b.image(i, charts["trends"])
         elif i == 50:
-            # every trend shown in the figure is explained in the text
+            # every trend shown in the figure is explained in the text: 2.1.1 the global view,
+            # 2.1.2 how the trends play out in MEA (changes.txt 2026-10-19)
+            b.heading3("Global")
             got = {l.lower().rstrip("."): t for l, t in pairs("trend_paras")}
             for tr in ((ag.get("dynamics") or {}).get("trends") or [])[:6]:
                 title = tr.get("title", "")
                 text = got.get(title.lower()) or next((t for l, t in got.items() if title.lower()[:12] in l), None) \
                     or _sentence(tr.get("tagline", ""))
                 b.lead(i, title.rstrip(".") + ".", text)
+            mea_trends = pairs("trend_paras_mea")
+            if mea_trends:
+                b.heading3("Middle East & Africa")
+                for lead, text in mea_trends:
+                    b.lead(i, lead.rstrip(".:") + ".", text)
         elif i in (51, 52):
             continue
         elif i == 54:
+            # 2.2.1 global factors (fleet desk research, contributions to the global CAGR), 2.2.2 MEA
+            if charts.get("drivers_global"):
+                b.heading3("Global")
+                b.para(i, s("drivers_para_global"))
+                b.caption(56, "Figure", "Contribution of growth factors and restraints to the global CAGR "
+                                        "(percentage points)")
+                b.image(57, charts["drivers_global"])
+                b.para(58, "Source: CMI analysis")
+                b.heading3("Middle East & Africa")
             b.para(i, s("drivers_para"))
         elif i == 56:
             basis = (ag.get("dynamics") or {}).get("impact_basis")
@@ -903,9 +1087,17 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 57:
             b.image(i, charts["drivers"])
         elif i == 60:
+            # 2.3.1 global matrix (fleet factors), 2.3.2 the MEA matrix
+            if ex.get("global_matrix"):
+                b.heading3("Global")
+                b.para(i, s("matrix_para_global"))
+                b.caption(61, "Table", "Impact assessment of global market factors")
+                b.table(62, complete_rows(ex["global_matrix"], b.log, "global impact matrix"))
+                b.para(63, "Source: CMI analysis")
+                b.heading3("Middle East & Africa")
             b.para(i, s("matrix_para"))
         elif i == 61:
-            b.caption(i, "Table", "Impact assessment of market factors")
+            b.caption(i, "Table", "Impact assessment of market factors in the Middle East & Africa")
         elif i == 62:
             from AiAgentsFleet.cmi_report import rules
             dyn = ag.get("dynamics") or {}
@@ -955,6 +1147,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             b.keep(i)        # the allocation rules are listed once, in the methodology's scope table
         elif i == 87:
             b.para(i, seg_para("Global", "type"))
+            region_mix(b, "type", tdim["singular"])
         elif 387 <= i <= 392:
             # 'What we do' and 'How we work' are left out: About CMI ends with its opening paragraph
             # (user decision 2026-10-17)
@@ -972,6 +1165,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             b.image(i, charts["demand_Global"])
         elif i == 92:
             b.para(i, seg_para("Global", "demand"))
+            region_mix(b, "demand", ddim["singular"])
         elif i == 94:
             b.para(i, f"3.3 Global {root} Market Size by Region")
         elif i == 95:
@@ -1124,8 +1318,36 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             ch = "ch4" if i == 225 else "ch5"
             items = [(lead.rstrip(":") + ":", text) for lead, text in pairs(f"{ch}.where_to_play")]
             b.box(i, f"Where to play in {'the Middle East' if i == 225 else 'Africa'}", items)
-        # ------------------------------------------------------------ chapter 6
+        # ------------------------------------------------------------ chapter 6: 6.1 Global, 6.2 MEA
+        elif i == 303:
+            b.out.append(set_h1(b.el(i), title="Regulatory & Policy Outlook: Global vs Middle East & Africa"))
         elif i == 304:
+            # 6.1 Global (changes.txt 2026-10-19): the main frameworks outside MEA (each confirmed by a web
+            # search, extras.global_regulation) and the global policy outlook
+            g_rows = [[r[0], r[1], safe(r[2])] for r in greg.get("frameworks") or []]
+            g_out = [x for x in (safe(t) for t in greg.get("outlook") or []) if x]
+            if g_rows or g_out:
+                b.para(311, "6.1 Global")
+                b.para(i, safe(greg.get("intro")))
+                if g_rows:
+                    b.heading3("Regulatory frameworks")
+                    b.caption(312, "Table", "Key regulatory frameworks outside the Middle East & Africa")
+                    b.table(313, complete_rows(g_rows, b.log, "global regulatory frameworks"),
+                            header=["Jurisdiction", "Framework", "What it means for the market"])
+                    b.para(314, "Source: Public regulatory publications; CMI analysis")
+                if g_out:
+                    b.heading3("Policy outlook to 2030")
+                    b.bullets(316, g_out)
+                # the global watchlist, like the MEA one (CEO feedback 2026-10-20)
+                g_watch = complete_rows([[str(r.get("theme") or ""), safe(r.get("what_to_watch")),
+                                          safe(r.get("implication"))] for r in ex.get("global_watchlist") or []],
+                                        b.log, "global regulatory watchlist")
+                if g_watch:
+                    b.heading3(f"Regulatory watchlist {Y0}-{Y0 + 2}")
+                    b.caption(321, "Table", "Regulatory watchlist: Global")
+                    b.table(322, g_watch)
+                    b.para(323, "Source: CMI analysis")
+                b.para(311, "6.2 Middle East & Africa")
             b.para(i, open_chapter(s("reg_intro"), r"(?i)regulat|polic|approv|registr|licens|authorit",
                                    f"Regulation decides how quickly {fmt.lower_name(root)} products reach buyers in the Middle "
                                    f"East & Africa: which authority approves them, how long registration takes and "
@@ -1137,36 +1359,44 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 307:
             b.para(i, "Source: Public regulatory notices; CMI analysis")
         elif i == 308:
-            b.caption(i, "Figure", "Regulatory enablement scorecard by country")
+            b.caption(i, "Figure", "Regulatory enablement scorecard: leading Middle East & Africa countries")
         elif i == 309:
             b.image(i, charts.get("reg_scorecard"))     # None (no confirmed country): figure left out
         elif i == 312:
             if not reg_rows:
                 continue                          # nothing confirmed: caption and table left out
-            b.caption(i, "Table", "Regulatory snapshot")
+            b.caption(i, "Table", "Regulatory snapshot: Middle East & Africa")
         elif i == 313:
             if reg_rows:
                 b.table(i, reg_rows)
             else:
                 b.log.append("regulatory snapshot left out: no country with a confirmed authority and requirements")
+        elif i in (311, 315, 320):
+            # the MEA sub-sections are 6.2.x under '6.2 Middle East & Africa' when 6.1 Global is shown
+            title = {311: "Regulator and rules snapshot", 315: "Policy outlook to 2030",
+                     320: f"Regulatory watchlist {Y0}-{Y0 + 2}"}[i]
+            if greg.get("frameworks") or greg.get("outlook"):
+                b.heading3(title)
+            else:
+                b.para(i, f"6.1 {title}")
         elif i == 316:
             b.bullets(i, lst("policy_bullets"))
         elif i in (317, 318, 319):
             continue
-        elif i == 320:
-            b.para(i, f"6.3 Regulatory watchlist {Y0}-{Y0 + 2}")
         elif i == 321:
-            b.caption(i, "Table", "Regulatory watchlist")
+            b.caption(i, "Table", "Regulatory watchlist: Middle East & Africa")
         elif i == 322:
             rows = [[r.get("theme", ""), safe(r.get("what_to_watch")), safe(r.get("implication"))]
                     for r in (ag.get("regulation") or {}).get("watchlist") or []]
             b.table(i, complete_rows(rows, b.log, "regulatory watchlist"))
         elif i == 324:
             b.box(i, "Implication for market entry", [s("entry_implication", "")] if s("entry_implication") else [])
-        # ------------------------------------------------------------ chapter 7
+        # ------------------------------------------------------------ chapter 7 (global view)
+        elif i == 325:
+            b.out.append(set_h1(b.el(i), title="Vendor Intelligence: Global"))
         elif i == 326:
             b.para(i, open_chapter(s("vendor_intro"), r"(?i)vendor|compan|player|supplier|tier|producer",
-                                   f"The {fmt.lower_name(root)} vendor landscape is set out below by value-chain position, "
+                                   f"The {fmt.lower_name(root)} vendor landscape is set out below by "
                                    + ("market share and capability." if sec["vendor_global"]["show"]
                                       else "market position and capability.")))
         elif i == 328:
@@ -1176,9 +1406,21 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 331:
             b.para(i, s("value_chain_para"))
         elif 332 <= i <= 341:
+            if i == 332 and charts.get("tiers"):
+                # the global landscape by tier, manufacturers only (changes.txt 2026-10-19)
+                b.para(332, "7.2 Global market share by vendor tier")
+                b.caption(333, "Figure", f"Global {fmt.lower_name(root)} market: share of value by manufacturer "
+                                         f"tier, {Y0 - 1}")
+                b.image(334, charts["tiers"])
+                b.para(335, "Source: CMI analysis")
+                b.para(336, tier_text(ex.get("tiers") or []))
             vendor_shares(b, i, m, s, root, charts, vsafe)
+        elif i == 343:
+            b.para(i, "7.4 Vendor capability mapping")
+        elif i == 347:
+            b.para(i, "7.5 Vendor dashboard")
         elif i == 344:
-            b.caption(i, "Figure", "Capability heat map of leading vendors in MEA")
+            b.caption(i, "Figure", "Capability heat map of leading vendors")
         elif i == 345:
             b.image(i, charts["capabilities"])
         elif i == 348:
@@ -1199,16 +1441,32 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
         elif i == 353:
             b.para(i, s("reco_intro") or "The recommendations below turn the report's findings into priority moves "
                                          "for each stakeholder group in the Middle East & Africa.")
-        elif i == 354:
-            b.caption(i, "Figure", "Three-phase way forward for MEA entry and scale-up")
-        elif i == 355:
-            b.image(i, charts["phases"])
+        elif i in (354, 355, 356):
+            continue                          # the MEA phases figure sits in 8.1.2
         elif i == 358:
-            b.caption(i, "Table", "Strategic recommendations by stakeholder")
+            gl_rows = [[str(r["stakeholder"]), safe(str(r["priority_moves"])), safe(str(r["kpis"]))]
+                       for r in ex.get("global_stakeholders") or []]
+            if gl_rows:
+                b.heading3("Global")
+                b.caption(i, "Table", "Strategic recommendations by stakeholder: Global")
+                b.table(359, complete_rows(gl_rows, b.log, "global stakeholder recommendations"))
+                b.para(360, "Source: CMI analysis")
+                if charts.get("phases_global"):
+                    # the global roadmap, above the MEA one (changes.txt 2026-10-19)
+                    b.caption(354, "Figure", "Three-phase way forward for global entry and scale-up")
+                    b.image(355, charts["phases_global"])
+                    b.para(356, "Source: CMI analysis")
+                b.heading3("Middle East & Africa")
+            b.caption(i, "Table", "Strategic recommendations by stakeholder: Middle East & Africa")
         elif i == 359:
             rows = [[r.get("stakeholder", ""), safe(r.get("priority_moves")), safe(r.get("kpis"))]
                     for r in (ag.get("strategy") or {}).get("stakeholders") or []]
             b.table(i, complete_rows(rows, b.log, "stakeholder recommendations"))
+        elif i == 360:
+            b.keep(i)
+            b.caption(354, "Figure", "Three-phase way forward for MEA entry and scale-up")
+            b.image(355, charts["phases"])
+            b.para(356, "Source: CMI analysis")
         elif i == 361:
             # B9: each action carries the finding it follows from (written after the body)
             traced = [(lead.rstrip(".") + ".", text) for lead, text in pairs("priority_actions")
@@ -1220,6 +1478,16 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                   acts, numbered=True)
         # ------------------------------------------------------------ chapter 9
         elif i == 363:
+            if sources:
+                # 9.1 Sources opens the chapter: the sources used for this market, in the VP's format a-h
+                # (changes.txt 2026-10-19); the methodology framework follows as 9.2
+                b.para(367, "9.1 Sources")
+                b.para(i, f"The {fmt.lower_name(root)} market was researched with the primary, secondary and "
+                          f"proprietary sources below, covering the global market and the Middle East & Africa. "
+                          f"Consulting firms and commercial market-research publishers are not used as sources.")
+                for k, (label, items) in enumerate(sources):
+                    b.lead(50, f"{chr(ord('a') + k)}. {label}:", "; ".join(items) + ".")
+                b.para(367, "9.2 Research approach")
             # exactly what the pipeline does (PLAN-07): no expert panel, interviews, bottom-up or triangulation
             b.para(i, method_text(m, root))
         elif i == 364:
@@ -1267,7 +1535,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
                 rows.append(["Exclusions", dfn["excluded"]])
             # exactly the countries covered in the body
             gl = []
-            for r in ("North America", "Europe", "Asia Pacific", "Latin America", "Middle East", "Africa"):
+            for r in REPORT_REGION_ORDER:
                 named = [c for c in m["countries"][r] if not c.startswith("Rest of")]
                 rest = [c for c in m["countries"][r] if c.startswith("Rest of")]
                 gl.append(f"{r} ({', '.join(named + rest)})")
@@ -1300,5 +1568,5 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
     if internal is not None:
         internal.update(internal_log(b, m, ag, prose, removed_notes, verification))
     renumber(b, toc_titles, toc_pages)
-    b.save(out_path, f"The {root} Market Outlook {Y0}-{Y1}", "Whitepaper")
+    b.save(out_path, f"The {root} Market Outlook {Y0}-{Y1}", "")      # no "Whitepaper" footer label (2026-10-20)
     return removed_notes + b.log + [f"guard dropped: {d}" for d in dropped]

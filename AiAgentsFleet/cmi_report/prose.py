@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import zlib
 from pathlib import Path
 
 import docx
@@ -24,9 +25,9 @@ from AiAgentsFleet.cmi_report import fmt, rules
 from AiAgentsFleet.cmi_report.guard import (ClaimGuard, NumberGuard, clean_text, contradiction_guard,
                                             drop_mea_basis, drop_size_comparison, fix_plurals, sentences,
                                             unverified_fact, vendor_clean)
-from AiAgentsFleet.cmi_report.model import Y0, Y1
+from AiAgentsFleet.cmi_report.model import Y0, Y1, regional_chapters
 
-PROSE_VERSION = 27    # bump when prompts or guards change, so saved text is rewritten
+PROSE_VERSION = 31    # bump when prompts or guards change, so saved text is rewritten
 ALIASES = {"KSA": "Saudi Arabia", "United Arab Emirates": "UAE", "US": "United States", "U.S.": "United States",
            "UK": "United Kingdom", "MEA": "Middle East & Africa", "Middle East and Africa": "Middle East & Africa",
            "APAC": "Asia Pacific", "Asia-Pacific": "Asia Pacific", "LATAM": "Latin America"}
@@ -42,7 +43,9 @@ _SYSTEM = (
     "2. Comparative words (largest, fastest, smallest, second-largest, leads, dominates, anchors, momentum, "
     "faster than) only as FACTS.rankings and FACTS values state them, in the year they state (a "
     "'largest_in_2026' ranking is about 2026 values); when rankings say '(tied)' or '(similar)', name every "
-    "party and say they are level or grow at a similar rate -- never call one of them the largest or fastest.\n"
+    "party and say they are level or grow at a similar rate -- never call one of them the largest or fastest. "
+    "A change in ranking names exactly what is overtaken and the result (e.g. '<segment A> overtakes <segment "
+    "B> to become the largest by 2033F'); never vague phrases such as 'overtakes the field' or 'pulls ahead'.\n"
     "3. Qualitative specifics (named regulations, programmes, companies, crops, technologies, country "
     "dynamics) may come from EVIDENCE or well-established knowledge of this market; if unsure, stay general.\n"
     "4. Plain prose, no markdown, no URLs, no 'according to'. The figures are CMI's own: never tag them ('CMI "
@@ -285,24 +288,41 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                           # the scorecard's global column gets global factors only, the MEA column MEA ones (X14)
                           "top_factors": top_factors(m, ag),
                           "segments_global": _segs(m, "Global"),
+                          "definition": {k: (m.get("definition") or {}).get(k) for k in
+                                         ("definition", "measures", "value_chain_level", "included", "excluded")},
                           "middle_east_countries": _block(m["countries"]["Middle East"], m["subregions"]["Middle East"]),
                           "africa_countries": _block(m["countries"]["Africa"], m["subregions"]["Africa"])},
                 "slots": {
                     "practice": ("CMI practice name for this market, 2-5 words, e.g. 'Agriculture & Food Practice'", None),
-                    "thesis": ("ONE sentence: the report's central thesis, built from FACTS.body_findings (e.g. 'This "
-                               "market is moving from niche to mainstream, and the Middle East & Africa is where the "
-                               "relative opportunity is largest' -- only if the findings support it)", None),
+                    # the summary's opening paragraph is about the GLOBAL market only (CEO feedback 2026-10-20)
+                    "thesis": ("ONE sentence: the report's central thesis about the GLOBAL market, built from "
+                               "FACTS.body_findings (e.g. 'This market is moving from niche to mainstream as "
+                               "biological inputs enter routine crop programmes') -- never mention the Middle East, "
+                               "Africa or MEA", None),
                     "cover_subtitle": ("one line like the example, naming this market's themes", 3),
                     "about_scope": ("1-2 sentences: what this whitepaper sizes and why the Middle East and Africa are the focus", 20),
-                    "exec_para": (("executive summary opener with the CMI global estimates, naming "
+                    "exec_para": ((("executive summary opener with the CMI global estimates, naming "
                                    "FACTS.size_check.headline_source as the source of the base-year figure")
                                   if m.get("size_check", {}).get("status") == "sourced" else
                                   ("executive summary opener with the global figures, explicitly called 'CMI "
-                                   "estimates'; no comparison with any other figures"), 24),
+                                   "estimates'; no comparison with any other figures"))
+                                 + "; GLOBAL scenario only -- what drives the world market -- and never mention the "
+                                   "Middle East, Africa or MEA (they have their own snapshot)", 24),
                     # 1.1 carries the global TRENDS, not the region sizes the KPI panel shows (2026-10-18)
-                    "global_bullets": ("list of 3 bullets on the key GLOBAL market trends: each names one shift in "
-                                       "how this product is made, bought, regulated or used, and why it is "
-                                       "happening; no market sizes, shares or CAGRs", 29),
+                    # the global snapshot carries global statistics as well as the trends (CEO feedback 2026-10-20)
+                    "global_bullets": ("list of 4 bullets on the GLOBAL market. Bullet 1: the global market size in "
+                                       f"{Y0 - 1}, {Y0}E and {Y1}F with its CAGR and incremental value "
+                                       "(FACTS.global). Bullets 2-4: each one shift in how this product is made, "
+                                       "bought, regulated or used and why it is happening, backed by ONE global "
+                                       "statistic from FACTS (a segment's or region's size, share or CAGR from "
+                                       "FACTS.segments_global or FACTS.regions) that the shift explains; global "
+                                       "only, never the Middle East, Africa or MEA", 29),
+                    # chapter 01 opens with what the market IS (CEO feedback 2026-10-20)
+                    "definition_para": ("2-3 sentences defining this market for a client: what the product is and "
+                                        "what it does, who buys and uses it and for what, and which value the "
+                                        "market counts (FACTS.definition.measures, at FACTS.definition."
+                                        "value_chain_level level). Plain definition, no figures, no trends, no "
+                                        "regions", 20),
                     "mea_bullets": ("list of 3 bullets: MEA size, share and its CAGR gap to the global market "
                                     "(FACTS.mea.cagr_gap_vs_global_pp: a negative gap means MEA grows more slowly -- "
                                     "say 'below'); Middle East led by its two largest countries; Africa size, CAGR "
@@ -317,14 +337,27 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                            41),
                     "key_conclusions": ("list of 3 numbered-style conclusions (without the number), the first with "
                                         "the Middle East's absolute opportunity and its largest country pools", 43)}},
-        "ch2": {"facts": {"trends": dyn.get("trends"), **driver_facts(dyn)},
+        "ch2": {"facts": {"trends": dyn.get("trends"), **driver_facts(dyn),
+                          # 2.x.1 Global / 2.x.2 MEA (changes.txt 2026-10-19): the fleet's global factors
+                          "global_drivers": [x.get("name") for x in (m.get("fleet_drivers") or {}).get("drivers") or []],
+                          "global_restraints": [x.get("name") for x in (m.get("fleet_drivers") or {}).get("restraints") or []]},
                 "slots": {
                     "trends_intro": ("1-2 sentences introducing six structural trends", 45),
                     "trend_paras": ("list of 6 objects, one for EACH of the six FACTS.trends in order {lead: <its "
                                     "title exactly>, text: <2-3 sentences explaining the mechanism, NO figures, tied to the specific "
                                     "countries or segments that appear later -- a different one per trend; never "
-                                    "end trends with the same stock phrase such as where it is 'most visible'>}", 50),
-                    "drivers_para": (driver_para_spec(dyn), 54),
+                                    "end trends with the same stock phrase such as where it is 'most visible'>}; "
+                                    "this is the GLOBAL view: name global regions or segments, not MEA countries", 50),
+                    "trend_paras_mea": ("list of 3 objects {lead: <2-5 words naming a trend from FACTS.trends>, "
+                                        "text: <2 sentences on how that trend plays out in the Middle East & Africa, "
+                                        "naming MEA countries or crops; NO figures>}", 50),
+                    "drivers_para_global": ("[CHART] paragraph on WHY the GLOBAL market grows at the pace it does: "
+                                            "the two strongest of FACTS.global_drivers and the strongest of "
+                                            "FACTS.global_restraints, and the mechanism behind each; global view "
+                                            "only, no MEA, no figures", 54),
+                    "matrix_para_global": ("[CHART] 1-2 sentences on which global factors act soonest and which "
+                                           "world regions are most exposed, no figures", 60),
+                    "drivers_para": (driver_para_spec(dyn), 54),  # 2.2.2 MEA
                     "matrix_para": ("[CHART] 1-2 sentences on what the impact matrix reveals (which factors act soonest, which "
                                     "countries are most exposed and why), no figures", 60)}},
         "ch3": {"facts": {"segments_global": _segs(m, "Global"),
@@ -345,9 +378,9 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                     "highlights": ("object {" + ", ".join(r for _, r in highlight_regions(m)) + "}: 2 sentences "
                                    "each. " + "; ".join(f"{r} = {lab.lower()}" for lab, r in highlight_regions(m))
                                    + ". Say WHY (crops, industries, policy, buyers), with at most one figure", 107),
-                    "country_bridge": ("1-2 sentences introducing the country tables", 112),
-                    "country_intro": ("object {North America, Latin America, Europe, Asia Pacific, Middle East, "
-                                      "Africa}: [CHART] 2 sentences each on WHY that region's demand concentrates where it does", 115)}},
+                    # no country_bridge / country_intro: section 3.5 is left out, each region has its own
+                    # chapter (2026-10-19)
+                    }},
         # B5: every country named in a table gets at least a short profile
         "ch3p": {"facts": {"countries_by_region": {r: _block(m["countries"][r], m["regions"][r])
                                                    for r in ("North America", "Europe", "Asia Pacific", "Latin America")},
@@ -400,14 +433,18 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                       "growth markets, business model", 302)}},
         "ch6": {"facts": {"regulation": {k: v for k, v in (ag.get("regulation") or {}).items() if k != "_sources"}},
                 "slots": {
-                    "reg_intro": ("paragraph on regulation as enabler and swing factor in MEA", 304),
-                    "policy_bullets": ("list of 4 bullets: policy outlook to 2030", 316),
-                    "entry_implication": ("2 sentences: implication for market entry", 324)}},
-        "ch7": {"facts": {"value_chain": m.get("value_chain"), **vendor_facts(m)},
+                    # chapter 6 is about the Middle East & Africa only (changes.txt 2026-10-19)
+                    "reg_intro": ("paragraph on regulation as enabler and swing factor in the Middle East & "
+                                  "Africa, naming MEA authorities or countries only", 304),
+                    "policy_bullets": ("list of 4 bullets: policy outlook to 2030 in the Middle East & Africa, each "
+                                       "naming the MEA countries or blocs it concerns", 316),
+                    "entry_implication": ("2 sentences: implication for market entry in the Middle East & Africa", 324)}},
+        "ch7": {"facts": {**vendor_facts(m)},          # no value chain: 7.1 removed (2026-10-19)
                 "slots": {
-                    "vendor_intro": ("paragraph: the vendor landscape -- what kinds of company make this product, naming only "
-                                     "FACTS.vendors; no tiers, rankings or leaders", 326),
-                    "value_chain_para": ("[CHART] 2 sentences on WHY value concentrates where it does in the chain", 331),
+                    # chapter 7 is the GLOBAL vendor view (changes.txt 2026-10-19)
+                    "vendor_intro": ("paragraph: the GLOBAL vendor landscape -- what kinds of company make this "
+                                     "product worldwide, naming only FACTS.vendors; no tiers, rankings or leaders; "
+                                     "no MEA focus", 326),
                     "global_share_para": (("2 sentences on the published global vendor shares in "
                                            "FACTS.vendor_share_global_pct, for FACTS.vendor_year")
                                           if m["sections"].get("vendor_global", {}).get("show") else
@@ -419,7 +456,7 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                        ("2 sentences on vendor positioning in the Middle East & Africa, naming "
                                         "FACTS.mea_leader as the leading vendor on CMI's assessment (no shares or %)"),
                                        341),
-                    "implications": ("list of 3 competitive implications", 351)}},
+                    "implications": ("list of 3 competitive implications for the GLOBAL market", 351)}},
         "ch8": {"facts": {"strategy": {k: v for k, v in (ag.get("strategy") or {}).items()
                                        if k not in ("_sources", "priority_actions")}},
                 "slots": {"reco_intro": ("paragraph introducing recommendations by stakeholder, with a common theme", 353),
@@ -429,6 +466,19 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                                                "FACTS.body_findings it follows from, with its figure and its "
                                                "context (e.g. 'In the optimistic scenario, ...')>} -- the finding "
                                                "must DIRECTLY justify the action, not merely be related", 361)}},
+        # one opportunity-landscape chapter per non-MEA region (changes.txt 2026-10-19)
+        "chR": {"facts": {r: {"region": _nd(m["regions"][r]),
+                              "countries": _block(m["countries"][r], m["regions"][r]),
+                              **({"segments": _segs(m, r)} if r in m["segments"] else {})}
+                          for r in regional_chapters(m)},
+                "slots": {k: v for r in regional_chapters(m) for k, v in {
+                    f"region_para__{r}": (f"opening paragraph for the {r} chapter: WHY the {r} market grows at "
+                                          f"the pace it does (crops, policy, buyers, climate) and which countries "
+                                          f"lead, with at most 3 figures from FACTS.{r}.region", 147),
+                    **({f"type_para__{r}": (f"[CHART] 2-3 sentences on WHY the {r} {tdim} split looks as it does",
+                                            162),
+                        f"demand_para__{r}": (f"[CHART] 2-3 sentences on WHY the {r} {ddim} split looks as it does",
+                                              167)} if r in m["segments"] else {})}.items()}},
         # the methodology paragraph is method_text(); the template's 'Assumptions and limitations' list and
         # the chapter-closing bridge sentences are left out: they read as disclaimers and filler (2026-10-16)
     }
@@ -440,8 +490,9 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
 # --------------------------------------------------------------------------- #
 # slot -> how many figures the slot (or each item of a dict / list slot) may state
 FIGURE_BUDGET = {"type_para": 1, "demand_para": 1, "share_para": 1, "abs_para": 1, "drivers_para": 1,
+                 "drivers_para_global": 0, "matrix_para_global": 0, "trend_paras_mea": 0,
                  "matrix_para": 0, "value_chain_para": 1, "country_intro": 1, "country_profiles": 1, "profile": 1,
-                 "highlights": 1, "trend_paras": 0, "global_bullets": 0, "region_para": 3, "sizing_para": 3}
+                 "highlights": 1, "trend_paras": 0, "global_bullets": 2, "region_para": 3, "sizing_para": 3}
 _FIGURE = re.compile(r"[+\-−]?\$\s?\d[\d.,]*\s?(?:[BMK]\b|bn\b|billion\b|million\b)?|"
                      r"(?<![\w$.])\d[\d.,]*\s?(?:%|pp\b|percentage points?\b|x\b)")
 
@@ -928,7 +979,7 @@ def reguard(pr: dict, m: dict, ag: dict) -> int:
 # repetition
 # --------------------------------------------------------------------------- #
 # Executive summary and recommendations: written last, from the body; they restate findings by design.
-_SUMMARY_SLOTS = {"thesis", "practice", "cover_subtitle", "about_scope", "exec_para", "global_bullets", "mea_bullets",
+_SUMMARY_SLOTS = {"thesis", "practice", "cover_subtitle", "about_scope", "definition_para", "exec_para", "global_bullets", "mea_bullets",
                   "largest_demand_pool", "primary_catalyst", "primary_constraint", "key_conclusions",
                   "priority_actions"}
 # Slots allowed to state the global / MEA headline figures.
@@ -1297,6 +1348,8 @@ def fill_conclusions(items: list, slots: dict, need: int = 3) -> list:
 
 
 _ORDINAL = {1: "the largest", 2: "the second-largest", 3: "the third-largest"}
+_ORD_WORD = {2: "second", 3: "third", 4: "fourth", 5: "fifth", 6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth",
+             10: "tenth", 11: "eleventh", 12: "twelfth", 13: "thirteenth", 14: "fourteenth", 15: "fifteenth"}
 _WITH_THE = {"United States", "United Kingdom", "UAE", "Netherlands", "Philippines", "Czech Republic",
              "Dominican Republic", "Middle East"}
 
@@ -1305,19 +1358,36 @@ def profile_lead(unit: str, d: dict, parent: dict | None, parent_name: str, peer
     """A country profile's lead sentence from the data, without restating the table beside it:
     its size rank among its peers and its growth against the parent's CAGR (near-ties, rules.TIE_PP,
     read 'in line with')."""
-    if unit.startswith("Rest of"):
-        pos = f"{unit} groups the smaller markets of {parent_name}"
-    else:
-        peers = peers or {}
-        rank = sorted(peers, key=lambda k: -peers[k]["v26"]).index(unit) + 1 if unit in peers else None
-        who = f"The {unit}" if unit in _WITH_THE else unit
-        pos = (f"{who} is {_ORDINAL[rank]} market in {parent_name}" if rank in _ORDINAL else
-               f"{who} is one of the smaller markets in {parent_name}" if rank else f"{who} is a market in {parent_name}")
-    if not parent or parent.get("cagr") is None:
-        return pos + "."
+    peers = peers or {}
+    who = f"The {unit}" if unit in _WITH_THE else unit
+    mid = f"the {unit}" if unit in _WITH_THE else unit           # the same name inside a sentence
+    if unit not in peers or not parent or parent.get("cagr") is None:
+        return (f"{unit} groups the remaining markets of {parent_name}." if unit.startswith("Rest of")
+                else f"{who} is a market in {parent_name}.")
+    # each lead carries this unit's own size and growth rank among its peers, in one of three phrasings
+    # (one fixed sentence with only the name changed read as a repeat: QA 2026-10-20)
+    size = sorted(peers, key=lambda k: -peers[k]["v26"]).index(unit) + 1
+    growth = sorted(peers, key=lambda k: -peers[k]["cagr"]).index(unit) + 1
+    big = "the largest" if size == 1 else f"the {_ORD_WORD.get(size, 'smaller')}-largest"
+    fast = "the fastest" if growth == 1 else f"the {_ORD_WORD.get(growth, 'slower')}-fastest"
     gap = d["cagr"] - parent["cagr"]
     pace = ("in line with" if abs(gap) < rules.TIE_PP else "faster than" if gap > 0 else "more slowly than")
-    return f"{pos} and grows {pace} {parent_name} as a whole through {Y1}F."
+    # its share of the parent in Y0 (a register figure the table beside it does not show): a figure of its own
+    share = fmt.share(d["v26"], sum(v["v26"] for v in peers.values()))
+    if unit.startswith("Rest of"):
+        what = f"{unit}, which groups the remaining markets of {parent_name},"
+        return [f"Taken together, {what} holds {share} of regional value in {Y0}E as {big} unit and grows "
+                f"{pace} the regional total.",
+                f"{what[0].upper() + what[1:]} accounts for {share} of the {Y0}E total and expands {pace} "
+                f"{parent_name} as a whole.",
+                f"As a group, {what} carries {share} of {Y0}E value and has {fast} growth rate among its peers "
+                f"through {Y1}F."][(size - 1) % 3]
+    return [f"{who} is {big} market in {parent_name}, with {share} of {Y0}E value and {fast} growth rate, "
+            f"expanding {pace} the regional average through {Y1}F.",
+            f"Holding {share} of {parent_name}'s {Y0}E value, {mid} is {big} market there and moves {pace} the "
+            f"region with {fast} growth rate among its peers.",
+            f"With {fast} growth rate in {parent_name} through {Y1}F, {mid} grows {pace} the region from a "
+            f"{share} share of {Y0}E value, {big} by size."][(size - 1) % 3]
 
 
 def with_lead(unit: str, text: str | None, d: dict, parent: dict | None, parent_name: str,
@@ -1352,13 +1422,31 @@ def seg_insight(seg: dict, dim: str, geo: str) -> str | None:
     where = "globally" if geo == "Global" else f"in {geo}"
     bigs, fasts = rules.top_tied(seg, "v26"), rules.top_tied(seg, "cagr")
     plural = len(bigs) > 1 or bigs[0].endswith("s")
+    # the leader's share of the Y0 mix (a register figure the value chart does not show), so the insight
+    # under each chart carries a figure of its own and never reads as a copy of another (QA 2026-10-20)
+    lead_share = fmt.share(seg[bigs[0]]["v26"], sum(v["v26"] for v in seg.values()))
     big = (f"{_names(bigs)} are level as the largest {dim.lower()} segments {where}" if len(bigs) > 1 else
-           f"{bigs[0]} {'are' if plural else 'is'} the largest {dim.lower()} segment {where}")
+           f"{bigs[0]} {'are' if plural else 'is'} the largest {dim.lower()} segment {where} at {lead_share} of "
+           f"the {Y0}E mix")
     if set(fasts) == set(bigs):
         return big + " and also grow" + ("" if plural else "s") + " fastest, so the mix concentrates further " \
             f"on {'them' if plural else 'it'} through {Y1}F."
     fast = _names(fasts)
     verb = "grow" if len(fasts) > 1 or fasts[0].endswith("s") else "grows"
+    if len(bigs) == 1 and len(fasts) == 1:
+        # one fixed sentence with only the geography changed read as a repeat (QA 2026-10-20): three phrasings,
+        # chosen by the geography so a report always reads the same way
+        their = "their" if fasts[0].endswith("s") else "its"
+        holds = "hold" if plural else "holds"
+        k = zlib.crc32(geo.encode()) % 3
+        if k == 1:
+            return (f"{where[0].upper() + where[1:]}, {bigs[0]} {holds} the biggest slice of the {dim.lower()} mix "
+                    f"({lead_share} in {Y0}E), but {fast} {verb} fastest and gain{'' if verb == 'grow' else 's'} "
+                    f"share by {Y1}F.")
+        if k == 2:
+            return (f"{fast} {verb} fastest {where}, lifting {their} weight in the {dim.lower()} mix through "
+                    f"{Y1}F, while {bigs[0]} remain{'' if plural else 's'} the largest segment at {lead_share} of "
+                    f"{Y0}E value.")
     return (f"{big}, while {fast} {verb} fastest" + (" at a similar rate" if len(fasts) > 1 else "")
             + f", so {'their' if len(fasts) > 1 or fasts[0].endswith('s') else 'its'} share of the {dim.lower()} "
             f"mix rises through {Y1}F.")

@@ -2,6 +2,7 @@
 all call these, so the same value is always printed the same way."""
 from __future__ import annotations
 
+import re
 
 PRECISION_RULE = ("Values of $1B and above are shown to two decimals ($5.15B); $10M-$999M to three "
                   "significant figures ($218M, $88.2M); below $10M to two decimals ($6.27M); CAGRs and shares to "
@@ -32,6 +33,14 @@ def unit_for(values: list[float]) -> str:
 
 def incr(mn: float, unit: str | None = None) -> str:
     return ("+" if mn >= 0 else "-") + usd(abs(mn))
+
+
+_MEA_NAME = re.compile(r"(Middle East\s*(?:&|and)\s*Africa)(?!\s*\(MEA\))")
+
+
+def mea(text: str) -> str:
+    """'Middle East & Africa' always followed by '(MEA)' (user decision 2026-10-20), never twice."""
+    return _MEA_NAME.sub(r"\1 (MEA)", text) if text else text
 
 
 def pct(x: float, d: int = 1) -> str:

@@ -1,0 +1,414 @@
+# Priority 2 whitepaper run list, in order: each sheet in turn, each in the sheet's own order.
+# Source: Copy of Priority 2 Whitepaper 400 Titles_ AgriIQX Platform.xlsx
+# Labels (pending / generated / draft / failed) live in the matching .csv. Priority 1 runs before
+# Priority 2; run the next batch with:
+#   python AiAgentsFleet/cmi_report/run_batch.py --tracker --limit 10
+# A market labelled "generated" is never run again.
+
+# 01_Aquaculture (100 markets)
+Aquaculture Production Market
+Aquaculture Feed Market
+Aquaculture Health Market
+Aquaculture Equipment Market
+Aquaculture Water Management Market
+Aquaculture Monitoring & Control Market
+Aquaculture Farm Management Software Market
+Aquaculture Seed & Stocking Material Market
+Aquaculture Hatchery Equipment Market
+Aquaculture Cage & Pen Systems Market
+Aquaculture Pond Infrastructure Market
+Aquaculture Tank & Raceway Systems Market
+Aquaculture Feeding Systems Market
+Aquaculture Aeration & Oxygenation Market
+Aquaculture Water Circulation & Pumping Market
+Aquaculture Filtration Market
+Aquaculture Harvesting & Handling Equipment Market
+Aquaculture Netting & Mooring Market
+Aquaculture Testing & Diagnostics Market
+Aquaculture Disinfection & Sanitation Market
+Aquaculture Veterinary Services Market
+Aquaculture Farm Management Services Market
+Aquaculture Engineering & Design Services Market
+Aquaculture Certification & Assurance Market
+Aquaculture Insurance Market
+Aquaculture Traceability Solutions Market
+Aquaculture Environmental Monitoring Market
+Aquaculture Waste Management Market
+Aquaculture Water Recycling Market
+Aquaculture Energy Management Market
+Aquaculture Cold Chain Market
+Aquaculture Logistics Market
+Aquaculture Processing Equipment Market
+Seafood Packaging Market
+Farmed Seafood Market
+Seaweed Cultivation Market
+Ornamental Aquaculture Market
+Aquaponics Market
+Aquaculture Contract Farming Market
+Aquaculture Farm Automation Market
+Aquaculture Biofouling Management Market
+Aquaculture Predator Control Market
+Aquaculture Site Assessment Services Market
+Aquaculture Farm Construction Market
+Aquaculture Leasing & Rental Services Market
+Aquaculture Laboratory Services Market
+Aquaculture Quality Assurance Services Market
+Aquaculture Workforce Training Market
+Aquaculture Farm Financing Market
+Aquaculture Investment Advisory Market
+Aquaculture Trading Platforms Market
+Aquaculture Input Distribution Market
+Aquaculture Equipment Rental Market
+Aquaculture Maintenance Services Market
+Aquaculture Refrigeration Equipment Market
+Live Aquatic Animal Transport Market
+Aquaculture Ice Systems Market
+Aquaculture Grading & Sorting Equipment Market
+Aquaculture Slaughter & Stunning Equipment Market
+Aquaculture Biomass Estimation Solutions Market
+Aquaculture Feeding Analytics Market
+Aquaculture Production Analytics Market
+Aquaculture Farm Security Market
+Aquaculture Remote Operations Market
+Aquaculture Compliance Services Market
+Aquaculture Licensing Advisory Market
+Aquaculture Site Monitoring Services Market
+Aquaculture Farm Audit Services Market
+Aquaculture Disease Surveillance Services Market
+Aquaculture Residue Testing Market
+Aquaculture Genetic Testing Services Market
+Aquaculture Broodstock Management Services Market
+Aquaculture Nursery Services Market
+Aquaculture Seed Distribution Market
+Aquaculture Feed Distribution Market
+Aquaculture Health Product Distribution Market
+Aquaculture Equipment Distribution Market
+Aquaculture Export Services Market
+Aquaculture Import Services Market
+Aquaculture Commodity Brokerage Market
+Aquaculture Warehousing Market
+Aquaculture Reefer Transport Market
+Aquaculture Processing Services Market
+Aquaculture Contract Processing Market
+Aquaculture By-product Management Market
+Aquaculture Rendering Market
+Aquaculture Farm Utilities Market
+Aquaculture Power Backup Systems Market
+Aquaculture Solar Energy Systems Market
+Aquaculture Water Intake Systems Market
+Aquaculture Drainage Systems Market
+Aquaculture Effluent Treatment Market
+Aquaculture Farm Lighting Market
+Aquaculture Farm Buildings Market
+Aquaculture Farm Consumables Market
+Aquaculture Personal Protective Equipment Market
+Aquaculture Cleaning Equipment Market
+Aquaculture Equipment Aftermarket Market
+Aquaculture Technical Consulting Market
+Aquaculture Project Management Services Market
+
+# 02_Animal_Poultry (100 markets)
+Livestock Production Market
+Poultry Production Market
+Dairy Farming Market
+Livestock Feed Market
+Poultry Feed Market
+Animal Feed Additives Market
+Livestock Health Market
+Poultry Health Market
+Veterinary Diagnostics Market
+Veterinary Therapeutics Market
+Livestock Farm Equipment Market
+Poultry Farm Equipment Market
+Dairy Farm Equipment Market
+Livestock Housing Systems Market
+Poultry Housing Systems Market
+Animal Feeding Systems Market
+Animal Drinking Systems Market
+Milking Equipment Market
+Milk Cooling Equipment Market
+Livestock Handling Equipment Market
+Livestock Identification & Tracking Market
+Livestock Weighing Systems Market
+Livestock Transport Market
+Poultry Transport Market
+Poultry Hatchery Equipment Market
+Egg Handling & Grading Equipment Market
+Livestock Manure Management Market
+Poultry Manure Management Market
+Animal Waste-to-Energy Market
+Livestock Biogas Market
+Animal Welfare Products Market
+Animal Welfare Monitoring Market
+Livestock Farm Management Market
+Poultry Farm Management Market
+Dairy Herd Management Market
+Veterinary Services Market
+Livestock Insurance Market
+Livestock Trading Market
+Livestock Auction Services Market
+Animal Nutrition Services Market
+Livestock Farm Consulting Market
+Poultry Farm Consulting Market
+Livestock Breeding Services Market
+Livestock Genetic Testing Market
+Livestock Artificial Insemination Market
+Animal Embryo Transfer Market
+Livestock Pregnancy Testing Market
+Animal Reproductive Health Market
+Livestock Forage Market
+Commercial Hay Market
+Commercial Silage Market
+Milk Replacer Market
+Animal Feed Premix Market
+Animal Feed Enzymes Market
+Animal Feed Amino Acids Market
+Animal Feed Vitamins & Minerals Market
+Livestock Antiparasitics Market
+Veterinary Disinfectants Market
+Farm Animal Vaccines Market
+Livestock Biosecurity Services Market
+Poultry Biosecurity Services Market
+Livestock Farm Automation Market
+Poultry Farm Automation Market
+Dairy Farm Automation Market
+Livestock Environmental Control Market
+Poultry Climate Control Equipment Market
+Livestock Ventilation Systems Market
+Poultry Ventilation Systems Market
+Livestock Bedding Market
+Poultry Litter Market
+Animal Farm Wastewater Treatment Market
+Livestock Carcass Management Market
+Poultry Mortality Management Market
+Livestock Farm Energy Market
+Poultry Farm Energy Market
+Dairy Farm Refrigeration Market
+Livestock Farm Security Market
+Poultry Farm Security Market
+Livestock Farm Construction Market
+Poultry Farm Construction Market
+Livestock Equipment Rental Market
+Poultry Equipment Rental Market
+Livestock Equipment Aftermarket Market
+Poultry Equipment Aftermarket Market
+Livestock Equipment Maintenance Market
+Poultry Equipment Maintenance Market
+Livestock Farm Consumables Market
+Poultry Farm Consumables Market
+Livestock Farm PPE Market
+Poultry Farm PPE Market
+Livestock Cleaning Equipment Market
+Poultry Cleaning Equipment Market
+Livestock Farm Financing Market
+Poultry Farm Financing Market
+Livestock Compliance Services Market
+Poultry Compliance Services Market
+Livestock Certification Services Market
+Poultry Certification Services Market
+Livestock Laboratory Services Market
+Poultry Laboratory Services Market
+
+# 03_Agriculture (100 markets)
+Crop Production Market
+Commercial Seed Market
+Crop Fertilizer Market
+Crop Protection Market
+Agricultural Machinery Market
+Agricultural Irrigation Equipment Market
+Agricultural Greenhouse Market
+Agricultural Plastic Films Market
+Organic Agriculture Market
+Contract Farming Market
+Agricultural Input Distribution Market
+Agricultural Machinery Rental Market
+Custom Farming Services Market
+Agronomy Services Market
+Agricultural Soil Testing Market
+Agricultural Water Testing Market
+Post-Harvest Management Market
+Grain Storage Market
+Agricultural Silos Market
+Agricultural Cold Storage Market
+Agricultural Drying Equipment Market
+Agricultural Sorting & Grading Equipment Market
+Agricultural Packaging Market
+Agricultural Logistics Market
+Agricultural Commodity Trading Market
+Agricultural Quality Testing Market
+Agricultural Certification Services Market
+Agricultural Biomass Market
+Horticulture Market
+Plantation Crops Market
+Floriculture Market
+Medicinal & Aromatic Plants Market
+Agricultural Pumps Market
+Farm Structures Market
+Farm Fencing Market
+Agricultural Hand Tools Market
+Agricultural Power Equipment Market
+Agricultural Spraying Equipment Market
+Planting & Seeding Equipment Market
+Tillage Equipment Market
+Harvesting Equipment Market
+Crop Storage Equipment Market
+Farm Water Storage Market
+Agricultural Drainage Market
+Farm Road & Access Infrastructure Market
+Agricultural Land Development Services Market
+Crop Harvesting Services Market
+Agricultural Equipment Maintenance Market
+Agricultural Equipment Aftermarket Market
+Agricultural Equipment Rental Services Market
+Agricultural Warehousing Market
+Farm Input Warehousing Market
+Agricultural Commodity Brokerage Market
+Agricultural Export Services Market
+Agricultural Import Services Market
+Agricultural Inspection Services Market
+Agricultural Laboratory Services Market
+Seed Testing Services Market
+Fertilizer Testing Services Market
+Pesticide Testing Services Market
+Crop Residue Management Market
+Agricultural Waste Management Market
+Farm Composting Market
+Agricultural Bioenergy Market
+Farm Energy Management Market
+Agricultural Solar Pump Market
+Farm Backup Power Market
+Agricultural Refrigeration Market
+Farm Cold Room Market
+Agricultural Processing Equipment Market
+Primary Crop Processing Market
+Grain Milling Equipment Market
+Oilseed Processing Equipment Market
+Fruit & Vegetable Processing Equipment Market
+Farm Produce Cleaning Equipment Market
+Farm Produce Washing Equipment Market
+Farm Produce Conveying Equipment Market
+Agricultural Material Handling Market
+Farm Packaging Equipment Market
+Agricultural Pallets & Crates Market
+Bulk Grain Handling Market
+Grain Conveying Equipment Market
+Farm Storage Bags Market
+Hermetic Storage Market
+Agricultural Tarpaulin Market
+Crop Covers Market
+Agricultural Shade Systems Market
+Nursery Equipment Market
+Commercial Nursery Market
+Farm Labor Services Market
+Agricultural Training Services Market
+Farm Advisory Services Market
+Agricultural Project Consulting Market
+Agricultural Project Management Services Market
+Farm Certification Audit Market
+Farm Insurance Services Market
+Agricultural Finance Services Market
+Agricultural Leasing Services Market
+Farm Safety Equipment Market
+Farm Sanitation & Hygiene Market
+
+# 04_Technology (100 markets)
+Precision Agriculture Market
+Smart Farming Market
+Digital Farming Market
+Farm Automation Market
+Agricultural Telematics Market
+Agricultural Fleet Management Technology Market
+Agricultural Positioning Technology Market
+Agricultural GIS & Mapping Software Market
+Agricultural Weather Technology Market
+Agricultural Climate Analytics Market
+Agricultural Yield Analytics Market
+Crop Monitoring Technology Market
+Digital Crop Scouting Market
+Agricultural Imaging Technology Market
+Artificial Intelligence in Agriculture Market
+Machine Learning in Agriculture Market
+Agricultural Predictive Analytics Market
+Agricultural Data Management Market
+Agricultural Cloud Software Market
+Agricultural Mobile Applications Market
+Digital Agronomy Market
+Farmer Advisory Platforms Market
+Agricultural Knowledge Platforms Market
+Agricultural E-Learning Market
+Agricultural E-Commerce Market
+Agricultural Marketplace Platforms Market
+Digital Agricultural Procurement Market
+Agricultural Fintech Market
+Agricultural Insurtech Market
+Agricultural Risk Analytics Market
+Agricultural Supply Chain Technology Market
+Agricultural Logistics Technology Market
+Agricultural Warehouse Technology Market
+Agricultural Inventory Management Software Market
+Agricultural Cold Chain Technology Market
+Agricultural Quality Technology Market
+Agricultural Food Safety Technology Market
+Agricultural Inspection Technology Market
+Agricultural Laboratory Technology Market
+Digital Seed Management Market
+Digital Crop Planning Market
+Agricultural Workflow Management Software Market
+Agricultural Workforce Management Software Market
+Agricultural Equipment Maintenance Software Market
+Agricultural Predictive Maintenance Market
+Agricultural Machine Diagnostics Market
+Agricultural Energy Management Technology Market
+Agricultural Battery Storage Market
+Agricultural Electrification Technology Market
+Agricultural Charging Infrastructure Market
+Agricultural Equipment Connectivity Market
+Agricultural Interoperability Solutions Market
+Agricultural Digital Compliance Market
+Agricultural Carbon Accounting Software Market
+Agricultural Sustainability Analytics Market
+Agricultural Water Management Technology Market
+Agricultural Nutrient Management Technology Market
+Precision Fertilization Technology Market
+Precision Spraying Technology Market
+Agricultural Weed Management Technology Market
+Agricultural Pest Monitoring Technology Market
+Agricultural Disease Monitoring Technology Market
+Agricultural Pollination Technology Market
+Agricultural Nursery Automation Market
+Agricultural Transplanting Technology Market
+Agricultural Harvest Automation Market
+Agricultural Post-Harvest Technology Market
+Agricultural Storage Monitoring Market
+Grain Monitoring Technology Market
+Agricultural Identification Technology Market
+Digital Agricultural Traceability Market
+Agricultural Commodity Trading Platforms Market
+Agricultural Demand Forecasting Software Market
+Agricultural Price Analytics Market
+Agricultural Market Intelligence Software Market
+Agricultural Simulation Software Market
+Extended Reality in Agriculture Market
+Agricultural Technology Consulting Market
+Agricultural Systems Integration Market
+Agricultural Managed Technology Services Market
+Agricultural Digital Transformation Services Market
+Farm ERP Software Market
+Agricultural Accounting Software Market
+Agricultural CRM Software Market
+Farm Procurement Software Market
+Agricultural Contract Management Software Market
+Agricultural Compliance Software Market
+Farm Asset Management Software Market
+Agricultural Maintenance Management Software Market
+Agricultural Route Optimization Software Market
+Farm Workforce Scheduling Software Market
+Agricultural Document Management Software Market
+Agricultural Business Intelligence Market
+Farm Benchmarking Software Market
+Agricultural Sustainability Reporting Software Market
+Agricultural Traceability Software Market
+Farm Energy Analytics Market
+Agricultural Water Analytics Market
+Agricultural Input Optimization Software Market
+Agricultural Technology Support Services Market

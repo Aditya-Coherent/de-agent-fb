@@ -34,7 +34,7 @@ from me_engine.generation.config import GenConfig  # noqa: E402
 from me_engine.generation.llm import GenLLM  # noqa: E402
 
 from AiAgentsFleet import randomizer  # noqa: E402
-from AiAgentsFleet.cmi_report import build as builder, charts as ch, fmt, model, prose, run_data, verify_facts  # noqa: E402
+from AiAgentsFleet.cmi_report import build as builder, charts as ch, extras, fmt, model, resources, prose, run_data, verify_facts  # noqa: E402
 from AiAgentsFleet.cmi_report.guard import NumberGuard  # noqa: E402
 
 TEMPLATE = ROOT / "templates" / "cmi_whitepaper_template.docx"
@@ -95,6 +95,22 @@ def end_user_names(m: dict, n: int = 4) -> list[str]:
     return [k for k in sorted(d, key=lambda k: -d[k]["v26"]) if not k.lower().startswith("other")][:n]
 
 
+regional_chapters = model.regional_chapters
+
+
+def regional_scenarios(m: dict, region: str) -> dict:
+    """A region's conservative / base / optimistic paths: the region's base series, and the global
+    scenarios' CAGR spread around it (the same assumptions, applied to the region)."""
+    base = m["scenarios"]["Base"]["cagr"]
+    d = m["regions"][region]
+    out = {}
+    for name, sc in m["scenarios"].items():
+        c = d["cagr"] + (sc["cagr"] - base)
+        out[name] = {"cagr": c, "series": {y: d["v26"] * (1 + c / 100) ** (y - model.Y0)
+                                           for y in range(model.Y0, model.Y1 + 1)}}
+    return out
+
+
 def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
     clear_charts(cdir)
     C = {}
@@ -105,12 +121,59 @@ def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
     C["trends"] = ch.trend_cards(dyn.get("trends") or [], cdir / "trends.png")
     C["drivers"] = ch.drivers_restraints(dyn.get("mea_drivers") or [], dyn.get("mea_restraints") or [],
                                          cdir / "drivers.png")
+    # changes.txt (2026-10-19): taxonomy after the definition, 2.2.1 global factors, comparative charts by
+    # region in 3.2, the global vendor tier pyramid in chapter 7
+    sec = m["sections"]
+    tdim, ddim = m["dimensions"]["type"], m["dimensions"]["demand"]
+    branches = [(f"By {d['singular']}", list(m["segments"]["Global"][k]))
+                for k, d in (("type", tdim), ("demand", ddim)) if sec[k]["show"]]
+    branches.append(("By Region", list(m["regions"])))
+    branches += [("Middle East Countries", list(m["countries"]["Middle East"])),
+                 ("Africa Countries", list(m["countries"]["Africa"]))]
+    C["taxonomy"] = ch.taxonomy(f"{builder._root(m['market'])} Market", branches, cdir / "taxonomy.png")
+    fd = m.get("fleet_drivers") or {}
+    gd = [{"name": extras.factor_name(x["name"]), "impact_pp": float(x.get("cagr_contribution_bps") or 0) / 100}
+          for x in (fd.get("drivers") or [])[:6]]
+    gr = [{"name": extras.factor_name(x["name"]), "impact_pp": -abs(float(x.get("cagr_drag_bps") or 0)) / 100}
+          for x in (fd.get("restraints") or [])[:5]]
+    if gd and gr:
+        C["drivers_global"] = ch.drivers_restraints(gd, gr, cdir / "drivers_global.png", scope="global")
+    ex = ag.get("_extras") or {}
+    for k in ("type", "demand"):
+        if sec[k]["show"] and (ex.get("region_mix") or {}).get(k):
+            C[f"mix_{k}"] = ch.region_mix(ex["region_mix"][k], m["dimensions"][k]["singular"], cdir / f"mix_{k}.png")
+    # a chapter per non-MEA region, with every chart the global chapter has (changes.txt 2026-10-19)
+    for r in regional_chapters(m):
+        safe_r = prose.slug_safe(r)
+        units = list(m["countries"][r])
+        colors = {u: ch.CATEGORICAL[k % len(ch.CATEGORICAL)] for k, u in enumerate(units)}
+        C[f"stack_{r}"] = ch.stacked_years(m["country_series"][r], colors, cdir / f"stack_{safe_r}.png")
+        C[f"scen_{r}"] = ch.scenarios({"scenarios": regional_scenarios(m, r)}, cdir / f"scen_{safe_r}.png")
+        segs = (ex.get("region_segments") or {}).get(r) or {}
+        for k in ("type", "demand"):
+            if not (sec[k]["show"] and segs.get(k)):
+                continue
+            C[f"type_{r}" if k == "type" else f"demand_{r}"] = (
+                ch.type_chart(segs[k], m["dimensions"]["type"]["singular"], cdir / f"type_{safe_r}.png")
+                if k == "type" else ch.demand_chart(segs[k], cdir / f"demand_{safe_r}.png"))
+            cm = ((ex.get("country_mix") or {}).get(r) or {}).get(k)
+            if cm:
+                C[f"cmix_{k}_{r}"] = ch.region_mix(cm, m["dimensions"][k]["singular"], cdir / f"cmix_{k}_{safe_r}.png",
+                                                  unit="country")
+        C[f"cshare_{r}"] = ch.share_donut({u: m["country_series"][r][u][model.Y0 - 1] for u in units}, colors,
+                                          fmt.year_label(model.Y0 - 1), cdir / f"cshare_{safe_r}.png")
+        C[f"copp_{r}"] = ch.opportunity_bars(list(m["countries"][r].items()), colors,
+                                             f"Absolute dollar opportunity {model.Y0}-{model.Y1} (incremental revenue)",
+                                             cdir / f"copp_{safe_r}.png")
+    if ex.get("global_phases"):
+        C["phases_global"] = ch.phases(ex["global_phases"], cdir / "phases_global.png")
+    if ex.get("tiers"):
+        C["tiers"] = ch.tier_pyramid(ex["tiers"], cdir / "tiers.png", model.Y0 - 1)
     C["regions_stacked"] = ch.stacked_years({r: m["regions"][r]["series"] for r in ch.REGION_COLORS},
                                             ch.REGION_COLORS, cdir / "regions_stacked.png")
     C["scenarios"] = ch.scenarios(m, cdir / "scenarios.png")
     # country charts only for the countries with a profile section (m["profiled"])
     geos = ["Global", "Middle East", "Africa"] + m["profiled"]["Middle East"] + m["profiled"]["Africa"]
-    sec = m["sections"]
     for gname in geos:
         safe = prose.slug_safe(gname)
         if sec["type"]["show"]:
@@ -135,7 +198,7 @@ def make_charts(m: dict, ag: dict, cdir: Path) -> dict[str, Path]:
         C["reg_scorecard"] = ch.heatmap(list(sc), reg.get("scorecard_dimensions") or [], list(sc.values()),
                                         "Regulatory enablement score (1 = restrictive, 5 = enabling) - CMI assessment",
                                         cdir / "reg_scorecard.png")
-    C["value_chain"] = ch.value_chain(m["value_chain"], cdir / "value_chain.png", end_users=end_user_names(m))
+    # no value chain figure: section 7.1 was removed (user decision 2026-10-19)
     # share donuts only from sourced shares (PLAN-05); otherwise the report prints a positioning table
     if sec["vendor_global"]["show"]:
         C["vendor_global"] = ch.vendor_donut(m["vendor_chart_global"], "Global", cdir / "vendor_global.png",
@@ -235,10 +298,13 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
     # paragraphs are swept up to the appendix; the appendix's log paragraphs describe the checking process
     # (precision rule examples, counts) -- its tables (master data, register) are swept with the rest
     units, in_appendix = [], False
+    in_sources = False           # the 9.1 Sources list names sources: their numbers (regulation years) are not data
     for p in d.paragraphs:
         if p.style.name == "Heading 1" and "Appendix" in p.text:
             in_appendix = True
-        if not in_appendix:
+        if p.style.name in ("Heading 1", "Heading 2"):
+            in_sources = p.style.name == "Heading 2" and bool(re.match(r"\s*\d+\.\d+\s+Sources\s*$", p.text))
+        if not in_appendix and not in_sources:
             units.append(p.text)
     for t in d.tables:
         header = " | ".join(c.text for c in t.rows[0].cells)
@@ -281,7 +347,8 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
     prose_texts, zone = [], "front"
     for p in d.paragraphs:
         if p.style.name == "Heading 1":
-            zone = ("summary" if re.match(r"\s*0?1\s", p.text) else
+            # the summary by its title: it is chapter 02 since the definition chapter opens the report
+            zone = ("summary" if "Executive Summary" in p.text else
                     "appendix" if "Appendix" in p.text else "body")
         if zone == "body" and not p.text.strip().startswith("Finding:"):
             prose_texts.append(p.text)
@@ -379,6 +446,15 @@ def main() -> int:
 
     llm = GenLLM(GenConfig.load(ROOT), cache_path=ROOT / "output" / ".gen_cache.db")
     market = fleet["market_name"]
+    # regional segment mix, vendor tiers, global matrix and stakeholders (changes.txt 2026-10-19)
+    ag["_extras"] = extras.derive(m, extras.ensure(cdir, market, fleet, m, llm, refresh=a.refresh_data))
+    # the regions' segment splits are report numbers like the sub-regions': into the model, so the register,
+    # the prose guards and the reviews check them (only regions with both dimensions)
+    for r, segs in ag["_extras"]["region_segments"].items():
+        if segs.get("type") and segs.get("demand"):
+            m["segments"][r] = segs
+    # 9.1 Sources, the first part of Research Methodology (changes.txt 2026-10-19)
+    ag["_sources"] = resources.ensure(cdir, market, m, llm, refresh=a.refresh_data).get("sections") or []
 
     def evidence(chap: str) -> list[str]:
         qs = [q.format(market=market) for q in _EVIDENCE_QUERIES.get(chap, [])]

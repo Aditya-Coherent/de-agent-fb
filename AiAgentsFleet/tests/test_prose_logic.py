@@ -341,20 +341,22 @@ def test_profiles_open_with_a_lead_sentence():
     # the profile's own reasoning opens it; the table beside it carries the numbers
     own = "Controlled-environment farms and date palm growers drive adoption across the Emirates."
     assert prose.with_lead("UAE", own, d, parent, "the Middle East", peers) == own
-    # a missing or fragmentary text gets a data-derived lead with no figures from the table
+    # a missing or fragmentary text gets a data-derived lead: its size and growth rank and its share of the
+    # parent (a register figure the table does not show, so no two leads read as copies -- 2026-10-20); no $
     for text in (None, "Farms drive it."):
         txt = prose.with_lead("UAE", text, d, parent, "the Middle East", peers)
         rank = sorted(peers, key=lambda k: -peers[k]["v26"]).index("UAE") + 1
-        assert txt.startswith("The UAE is " + {1: "the largest", 2: "the second-largest", 3: "the third-largest"}
-                              .get(rank, "one of the smaller"))
-        assert "$" not in txt and "%" not in txt
+        assert ("the largest" if rank == 1 else "-largest") in txt
+        assert "$" not in txt and fmt.share(d["v26"], sum(v["v26"] for v in peers.values())) in txt
+        assert "The UAE" not in txt[1:]                       # 'the UAE' inside a sentence
         pace = d["cagr"] - parent["cagr"]
         assert ("in line with" if abs(pace) < 0.3 else "faster than" if pace > 0 else "more slowly than") in txt
     rest = prose.with_lead("Rest of Middle East", None, peers.get("Rest of Middle East", d), parent, "the Middle East")
-    assert rest.startswith("Rest of Middle East groups the smaller markets of the Middle East")
+    assert rest.startswith("Rest of Middle East groups the remaining markets of the Middle East")
     # an opening sentence that does not name the country gets the lead in front of it
     anon = "Humic substances and seaweed extracts are tied as the largest ingredients."
-    assert prose.with_lead("UAE", anon, d, parent, "the Middle East", peers).startswith("The UAE is ")
+    from AiAgentsFleet.cmi_report.guard import sentences
+    assert "UAE" in sentences(prose.with_lead("UAE", anon, d, parent, "the Middle East", peers))[0]
     assert prose.with_lead("UAE", "The United Arab Emirates leans on controlled-environment farms.", d, parent,
                            "the Middle East", peers).startswith("The United Arab Emirates")
 
@@ -448,7 +450,8 @@ def test_changes_2026_10_18_helpers():
     fastest = max(m["regions"], key=lambda r: m["regions"][r]["cagr"])
     assert fastest in [r for _, r in labs]
     txt = prose.seg_insight(m["segments"]["Global"]["type"], "Product Type", "Global")
-    assert txt and "$" not in txt and "%" not in txt and "largest product type segment" in txt.lower()
+    # the leader's share of the mix is its one figure (a register value the value chart does not show); no $
+    assert txt and "$" not in txt and txt.count("%") == 1 and "largest product type segment" in txt.lower()
     from AiAgentsFleet.cmi_report.run_cmi_report import end_user_names, scorecard_countries
     me, af = list(m["countries"]["Middle East"]), list(m["countries"]["Africa"])
     reg = {"scorecard": {c: [3, 3] for c in me + af}}

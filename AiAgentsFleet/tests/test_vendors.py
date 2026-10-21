@@ -135,7 +135,7 @@ def test_fewer_than_3_sourced_shares_gives_a_positioning_table_not_a_donut():
     # the report: the positioning table where the donut was, no vendor image
     out = _vendor_section(m)
     assert "Figure" not in " ".join(out["texts"]) and out["tables"] == 1
-    assert out["header"][:4] == ["Vendor", "HQ", "Parent group", "Business type"] and len(out["header"]) == 6
+    assert out["header"][:4] == ["Vendor", "HQ", "Parent group", "Business type"] and len(out["header"]) == 5      # no MEA column: chapter 7 is global
     assert "7.2 Vendor positioning (Global)" in out["texts"]
 
 

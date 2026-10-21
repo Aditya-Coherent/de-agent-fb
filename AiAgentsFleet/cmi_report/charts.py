@@ -42,6 +42,11 @@ plt.rcParams.update({
 
 def _save(fig, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
+    # 'Middle East & Africa (MEA)' in every chart label, legend and title (user decision 2026-10-20)
+    from matplotlib.text import Text
+    for t in fig.findobj(Text):
+        if "Africa" in (t.get_text() or ""):
+            t.set_text(fmt.mea(t.get_text()))
     fig.savefig(path, dpi=DPI, bbox_inches="tight", pad_inches=0.08)
     plt.close(fig)
     return path
@@ -168,16 +173,19 @@ def trend_cards(trends: list[dict], path: Path) -> Path:
     return _save(fig, path)
 
 
-def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) -> Path:
+def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path, scope: str = "MEA") -> Path:
     """Bars in pp of CAGR; after rules.reconcile_drivers the impacts are relative to
-    the global CAGR baseline (items carry `impact_pp_agent`), or are 1-5 scores."""
+    the global CAGR baseline (items carry `impact_pp_agent`), or are 1-5 scores. `scope` = whose CAGR
+    the bars move: 'MEA', or 'global' (the fleet's global factors, contributions to the global CAGR)."""
     score = any("impact_pp" not in d and "impact_score" in d for d in drivers + restraints)
     key = "impact_score" if score else "impact_pp"
     items = sorted(drivers, key=lambda d: -d[key]) + sorted(restraints, key=lambda d: d[key])
     names = [d["name"] for d in items][::-1]
     vals = [float(d[key]) for d in items][::-1]
     label = (lambda v: f"{v:+.0f}") if score else fmt.pp
-    fig, ax = plt.subplots(figsize=(W, 0.45 * len(items) + 1.0))
+    # rows grow with their wrapped labels, so three-line factor names never overlap
+    lines = max(_wrap(n, 34).count("\n") + 1 for n in names)
+    fig, ax = plt.subplots(figsize=(W, max(0.45, 0.24 * lines) * len(items) + 1.0))
     ax.barh([_wrap(n, 34) for n in names], vals, color=[TEAL if v > 0 else RED for v in vals], height=0.62)
     for i, v in enumerate(vals):
         ax.text(v + (0.05 if v > 0 else -0.05), i, label(v), va="center", ha="left" if v > 0 else "right",
@@ -192,7 +200,9 @@ def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) 
     reconciled = any("impact_pp_agent" in d for d in items)
     note = ("Relative impact score (1-5), CMI assessment" if score else
             f"Net: MEA CAGR minus global CAGR\n{fmt.pp(sum(vals))}" if reconciled else
-            f"Net effect on MEA CAGR\n{fmt.pp(sum(vals))} vs. neutral baseline")
+            f"Net effect on {scope} CAGR\n{fmt.pp(sum(vals))} vs. neutral baseline")
+    if scope == "global" and not score:
+        note = ""          # the chart shows the leading factors only: their sum is not the global CAGR
     ax.text(0.99, 0.04, note, transform=ax.transAxes, ha="right", va="bottom", color=MUTED, fontsize=9,
             style="italic")
     # what green and red mean, and what a percentage point is (user decision 2026-10-18)
@@ -202,7 +212,7 @@ def drivers_restraints(drivers: list[dict], restraints: list[dict], path: Path) 
     if not score:
         ax.text(-0.45, -0.02, _wrap("Note: a percentage point (pp) is the arithmetic difference between two "
                                     "percentages. Each bar shows how many points the factor adds to (+) or "
-                                    "subtracts from (-) the MEA CAGR; for example, a CAGR moving from 10.0% to "
+                                    f"subtracts from (-) the {scope} CAGR; for example, a CAGR moving from 10.0% to "
                                     "11.5% is a change of +1.5 pp.", 120),
                 transform=ax.transAxes, ha="left", va="top", color=MUTED, fontsize=9, style="italic")
     return _save(fig, path)
@@ -359,6 +369,29 @@ def region_donuts(m: dict, path: Path) -> Path | None:
     return _save(fig, path)
 
 
+def share_donut(values: dict[str, float], colors: dict[str, str], year_label: str, path: Path) -> Path | None:
+    """A single-year share doughnut for any set of units (a region's countries), like region_donuts."""
+    names = list(values)
+    vals = [values[n] for n in names]
+    if _no_data(vals):
+        return None
+    fig, ax = plt.subplots(figsize=(W * 0.62, 4.8))
+    tot = sum(vals)
+    wedges, _ = ax.pie(vals, colors=[colors[n] for n in names], startangle=90, counterclock=False,
+                       wedgeprops={"width": 0.36, "edgecolor": "white", "linewidth": 2})
+    for w, v in zip(wedges, vals):
+        ang = math.radians((w.theta1 + w.theta2) / 2)
+        if v / tot >= 0.04:
+            ax.text(0.82 * math.cos(ang), 0.82 * math.sin(ang), fmt.share(v, tot), ha="center",
+                    va="center", color="white", fontsize=9, fontweight="bold")
+    ax.text(0, 0.06, fmt.usd(tot), ha="center", va="center", fontsize=17, fontweight="bold")
+    ax.text(0, -0.16, year_label, ha="center", va="center", fontsize=10, color=MUTED)
+    ax.set_aspect("equal")
+    ax.legend(handles=[Rectangle((0, 0), 1, 1, color=colors[n]) for n in names], labels=names,
+              loc="upper center", bbox_to_anchor=(0.5, 0.02), ncol=3, frameon=False, fontsize=9.5)
+    return _save(fig, path)
+
+
 def opportunity_bars(items: list[tuple[str, dict]], colors: dict[str, str], title: str,
                      path: Path) -> Path | None:
     if _no_data([d["incr"] for _, d in items]):
@@ -481,9 +514,10 @@ def value_chain(stages: list[dict], path: Path, end_users: list[str] | None = No
             lines = "\n".join(_wrap(e, 19) for e in ex[:3])
         ax.text(x + w / 2 - 0.5, 17.75, lines, ha="center", va="center",
                 fontsize=9.5 if lines.count("\n") < 6 else 8.5, color=INK)
-        share = s.get("share") or f"{s['share_low_pct']:.0f}-{s['share_high_pct']:.0f}%"
+        # the value-pool ranges carry no % sign (user decision 2026-10-19)
+        share = s.get("share") or f"{s['share_low_pct']:.0f}-{s['share_high_pct']:.0f}"
         ax.text(x + w / 2 - 0.5, 6.5, _wrap(share, 10), ha="center", va="center", color=cols[i], fontweight="bold",
-                fontsize=15 if "%" in share else 12)
+                fontsize=12 if s.get("share") else 15)
     ax.text(2, 1, "Indicative share of the value pool by stage (CMI estimate); end users represent demand pull.",
             fontsize=9.5, color=MUTED, style="italic")
     return _save(fig, path)
@@ -504,6 +538,110 @@ def vendor_donut(rows: list[tuple[str, float]], center: str, path: Path, year: i
     ax.legend(wedges, [f"{_wrap(n, 30)}   {fmt.pct(s)}" for n, s in rows], loc="center left",
               bbox_to_anchor=(1.02, 0.5), frameon=False, fontsize=9.5)
     ax.set_aspect("equal")
+    return _save(fig, path)
+
+
+def tier_pyramid(tiers: list[dict], path: Path, year: int) -> Path | None:
+    """The global vendor landscape as a pyramid (user decision 2026-10-19): Tier 1 at the apex,
+    then Tier 2, Tier 3 and Others at the base. Left of each band: the combined share of that
+    tier's players; right: its leading manufacturers. `tiers` = [{name, share_pct, players}]."""
+    tiers = [t for t in tiers if t.get("share_pct") is not None]
+    if _no_data([t["share_pct"] for t in tiers]):
+        return None
+    n = len(tiers)
+    fig = plt.figure(figsize=(CW, 0.95 * n + 1.4))
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, 104)
+    ax.set_ylim(-3, n * 10 + 1)
+    ax.axis("off")
+    cols = [NAVY, STEEL, TEAL, GRAY]
+    cx, half, h = 40, 22.0, n * 10            # apex at (cx, h); base half-width `half`
+    for i, t in enumerate(tiers):
+        top, bot = h - i * 10, h - (i + 1) * 10
+        wt, wb = half * (h - top) / h, half * (h - bot) / h
+        ax.add_patch(Polygon([[cx - wb, bot + 0.25], [cx + wb, bot + 0.25], [cx + wt, top - 0.25],
+                              [cx - wt, top - 0.25]], color=cols[min(i, len(cols) - 1)]))
+        mid = (top + bot) / 2
+        ax.text(cx, mid - (1.2 if i == 0 else 0), t["name"], ha="center", va="center", fontweight="bold",
+                fontsize=11 if i == 0 else 12, color="white" if i < len(cols) - 1 else INK)
+        # left: the tier's combined share, joined to the band by a leader line
+        ax.plot([4.5, cx - (wt + wb) / 2 - 1], [mid, mid], color=GRAY, lw=1)
+        ax.text(1, mid + 1.6, fmt.pct(t["share_pct"]), ha="left", va="center", fontweight="bold", fontsize=15,
+                color=cols[min(i, len(cols) - 2)] if i < len(cols) - 1 else MUTED)
+        ax.text(1, mid - 2.0, "combined share", ha="left", va="center", fontsize=9, color=MUTED)
+        # right: the tier's players
+        ax.plot([cx + (wt + wb) / 2 + 1, 66], [mid, mid], color=GRAY, lw=1)
+        players = t.get("players") or []
+        label = ", ".join(players) if players else t.get("note", "")
+        ax.text(67, mid, _wrap(label, 46), ha="left", va="center", fontsize=10, color=INK)
+    ax.text(1, -2.2, f"Share of global market value, {year} (CMI estimate); Others = smaller and regional "
+                     f"manufacturers.", fontsize=9, color=MUTED, style="italic")
+    return _save(fig, path)
+
+
+def region_mix(rows: dict[str, dict[str, float]], dim: str, path: Path, unit: str = "region") -> Path | None:
+    """Comparative chart by region (user decision 2026-10-19): one 100% bar per region showing its
+    segment mix in Y0, with the region's total at the bar's end. `rows` = {region: {segment: value}}."""
+    regions = [r for r in rows if sum(rows[r].values()) > 0]
+    if not regions:
+        return None
+    names = list(next(iter(rows.values())))
+    cols = {n: CATEGORICAL[i % len(CATEGORICAL)] for i, n in enumerate(names)}
+    fig, ax = plt.subplots(figsize=(W, 0.62 * len(regions) + 1.6))
+    for i, r in enumerate(regions[::-1]):
+        tot, left = sum(rows[r].values()), 0.0
+        for nm in names:
+            sh = rows[r][nm] / tot * 100
+            ax.barh(i, sh, left=left, color=cols[nm], height=0.62, edgecolor="white", linewidth=0.8)
+            if sh >= 7:
+                ax.text(left + sh / 2, i, f"{sh:.0f}%", ha="center", va="center", color="white", fontsize=8.5,
+                        fontweight="bold")
+            left += sh
+        ax.text(101.5, i, fmt.usd(tot), ha="left", va="center", fontsize=9, fontweight="bold")
+    ax.set_yticks(range(len(regions)))
+    ax.set_yticklabels([_wrap(r, 22) for r in regions[::-1]], fontsize=9.5)
+    ax.set_xlim(0, 112)
+    ax.set_xticks([])
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(axis="y", length=0)
+    ax.legend(handles=[Rectangle((0, 0), 1, 1, color=cols[n]) for n in names], labels=[_wrap(n, 24) for n in names],
+              loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=min(len(names), 4), frameon=False, fontsize=9)
+    ax.text(1.0, -0.04, f"Share of each {unit}'s {Y0}E market by {fmt_dim(dim)}; {unit} total at the bar's end",
+            transform=ax.transAxes, ha="right", va="top", color=MUTED, fontsize=8.5, style="italic")
+    return _save(fig, path)
+
+
+def taxonomy(root: str, branches: list[tuple[str, list[str]]], path: Path) -> Path:
+    """Market taxonomy tree (user decision 2026-10-19): the market at the top, one column per
+    segmentation dimension (and geography) with its segments listed beneath."""
+    k = len(branches)
+    rows = max(len(b[1]) for b in branches)
+    fig = plt.figure(figsize=(CW, 2.4 + 0.42 * rows))
+    ax = fig.add_axes([0, 0, 1, 1])
+    hgt = 22 + 4.2 * rows
+    ax.set_xlim(0, 104)
+    ax.set_ylim(0, hgt)
+    ax.axis("off")
+    ax.add_patch(FancyBboxPatch((27, hgt - 7.5), 50, 6, boxstyle="round,pad=0,rounding_size=1", color=NAVY))
+    ax.text(52, hgt - 4.5, _wrap(root, 48), ha="center", va="center", color="white", fontweight="bold", fontsize=13)
+    cols = [STEEL, TEAL, ORANGE, RED, PURPLE]
+    w = (100 - (k - 1) * 2) / k
+    ax.plot([52, 52], [hgt - 7.5, hgt - 10], color=INK, lw=1.2)
+    xs = [2 + j * (w + 2) + w / 2 for j in range(k)]
+    ax.plot([xs[0], xs[-1]], [hgt - 10, hgt - 10], color=INK, lw=1.2)
+    for j, (title, items) in enumerate(branches):
+        x = 2 + j * (w + 2)
+        ax.plot([xs[j], xs[j]], [hgt - 10, hgt - 12], color=INK, lw=1.2)
+        ax.add_patch(FancyBboxPatch((x, hgt - 17), w, 5, boxstyle="round,pad=0,rounding_size=0.8",
+                                    color=cols[j % len(cols)]))
+        ax.text(x + w / 2, hgt - 14.5, _wrap(title, 26), ha="center", va="center", color="white",
+                fontweight="bold", fontsize=11)
+        ax.add_patch(FancyBboxPatch((x, 1), w, hgt - 19.5, boxstyle="round,pad=0,rounding_size=0.8", color=PANEL))
+        for r, it in enumerate(items):
+            y = hgt - 21 - r * 4.2
+            ax.add_patch(Circle((x + 2.2, y), 0.6, color=cols[j % len(cols)]))
+            ax.text(x + 4, y, _wrap(it, 30), va="center", fontsize=9.5, color=INK)
     return _save(fig, path)
 
 

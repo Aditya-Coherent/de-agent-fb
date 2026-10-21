@@ -1,0 +1,114 @@
+# Priority 1 whitepaper run list, in order: each sheet in turn, each in the sheet's own order.
+# Source: Copy of Priority 1 Whitepaper 100 Titles_ AgriIQX Platform.xlsx
+# Labels (pending / generated / draft / failed) live in the matching .csv. Priority 1 runs before
+# Priority 2; run the next batch with:
+#   python AiAgentsFleet/cmi_report/run_batch.py --tracker --limit 10
+# A market labelled "generated" is never run again.
+
+# Aquaculture (25 markets)
+Super-Intensive Shrimp Farming Market
+Biofloc Aquaculture Market
+Recirculating Aquaculture Systems Market
+Integrated Multi-Trophic Aquaculture Market
+Offshore Aquaculture Market
+Land-Based Aquaculture Market
+Shrimp Hatchery Market
+Fish Hatchery Market
+Aquaculture Genetics and Breeding Market
+Disease-Resistant Aquaculture Species Market
+Aquaculture Vaccines Market
+Aquaculture Probiotics Market
+Aquaculture Immunostimulants Market
+Functional Aquaculture Feed Market
+Alternative Protein Aquaculture Feed Market
+Insect-Based Aquaculture Feed Market
+Algae-Based Aquaculture Feed Market
+Shrimp Gut Health Products Market
+Aquaculture Water Treatment Products Market
+Aquaculture Biosecurity Products Market
+Aquaculture Disease Prevention Products Market
+Climate-Resilient Aquaculture Market
+Low-Carbon Aquaculture Market
+Sustainable Aquaculture Production Market
+Value-Added Seafood Processing Market
+
+# Animal-Poultry Farming (25 markets)
+Functional Poultry Feed Market
+Alternative Protein for Poultry Feed Market
+Insect-Based Poultry Feed Market
+Poultry Probiotics Market
+Poultry Postbiotics Market
+Poultry Gut Health Products Market
+Poultry Vaccines Market
+Poultry Biosecurity Products Market
+Poultry Disease Prevention Products Market
+Poultry Heat Stress Management Products Market
+Layer Poultry Production Market
+Broiler Poultry Production Market
+Free-Range Poultry Farming Market
+Organic Poultry Farming Market
+Poultry Hatchery Market
+Poultry Breeding Stock Market
+Poultry Genetics Market
+Sexed Semen for Livestock Market
+Livestock Reproductive Management Market
+Precision Dairy Nutrition Market
+Livestock Probiotics Market
+Livestock Methane Reduction Solutions Market
+Livestock Functional Feed Additives Market
+Climate-Resilient Livestock Production Market
+Specialty Livestock Farming Market
+
+# Agriculture (25 markets)
+Agricultural Biostimulants Market
+Microbial Biostimulants Market
+Agricultural Microbial Consortia Market
+Agricultural Biofertilizers Market
+Next-Generation Biofertilizer Market
+Biological Crop Protection Products Market
+Microbial Biopesticides Market
+RNA-Based Biopesticides Market
+Botanical Pesticides Market
+Biological Seed Treatment Market
+Climate-Resilient Seed Market
+Gene-Edited Crops Market
+Drought-Tolerant Crop Market
+Salt-Tolerant Crop Market
+Phage-Based Crop Protection Market
+Regenerative Agriculture Market
+Carbon Farming Market
+Agricultural Soil Carbon Market
+Low-Carbon Crop Production Market
+Agricultural Soil Health Products Market
+Soil Microbial Inoculants Market
+Water-Efficient Crop Production Market
+Controlled Environment Agriculture Market
+Agrivoltaics Market
+Agricultural Waste-to-Value Market
+
+# Technology (25 markets)
+Generative AI in Agriculture Market
+Agentic AI in Agriculture Market
+Computer Vision in Agriculture Market
+Agricultural IoT Platform Market
+Agricultural Sensor Market
+Smart Soil Monitoring Systems Market
+Smart Irrigation Systems Market
+Agricultural Drone Market
+Autonomous Agricultural Drone Market
+Agricultural Robotics Market
+Autonomous Farm Equipment Market
+Robotic Harvesting Systems Market
+Satellite-Based Agriculture Monitoring Market
+Remote Sensing in Agriculture Market
+Synthetic Aperture Radar for Agriculture Market
+Agricultural Digital Twin Market
+Digital Agriculture Platform Market
+Agricultural Data Marketplace Market
+Farm Management Information Systems Market
+Agricultural Connectivity Solutions Market
+Blockchain-Based Agricultural Traceability Market
+Agricultural Cybersecurity Market
+Agricultural Decision Support Systems Market
+Variable-Rate Application Technology Market
+Agricultural Edge Computing Market

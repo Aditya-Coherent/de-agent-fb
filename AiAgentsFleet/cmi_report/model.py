@@ -60,6 +60,17 @@ def normalise_years(rows: dict[str, dict[int, float]], totals: dict[int, float])
             r[y] *= totals[y] / s
 
 
+# Standard regional order for every report, in the TOC and the regional chapters (user decision 2026-10-21);
+# the Middle East and Africa chapters follow.
+REPORT_REGION_ORDER = ["North America", "Latin America", "Europe", "Asia Pacific", "Middle East", "Africa"]
+
+
+def regional_chapters(m: dict) -> list[str]:
+    """The regions with an opportunity-landscape chapter of their own after the global one, in
+    REPORT_REGION_ORDER; the Middle East & Africa keeps its two sub-region chapters."""
+    return [r for r in REPORT_REGION_ORDER if r in m["regions"] and m["countries"].get(r)]
+
+
 def node(v26: float, v33: float) -> dict:
     return {"v26": v26, "v33": v33, "incr": v33 - v26, "cagr": cagr(v26, v33)}
 
@@ -590,6 +601,10 @@ def geography(fleet: dict, c: dict) -> dict:
     for r in ("Middle East", "Africa"):
         country_series[r] = {k: series(v["v26"], v["v33"]) for k, v in countries[r].items()}
         normalise_years(country_series[r], sub_series[r])
+    # the other regions' chapters chart their countries over the years too (changes.txt 2026-10-19)
+    for r in ("North America", "Europe", "Asia Pacific", "Latin America"):
+        country_series[r] = {k: series(v["v26"], v["v33"]) for k, v in countries[r].items()}
+        normalise_years(country_series[r], reg_series[r])
 
     review = geo_check.review(geo_check.splits_of(c), geo, record,
                               regional_raw=(fleet.get("fields_raw") or {}).get("regional") or f.get("regional"),

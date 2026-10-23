@@ -1,13 +1,13 @@
 {
   "mcpServers": {
     "code-review-graph": {
-      "command": "C:\\Users\\aimlpc1\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+      "command": "C:\\Users\\rajeev.ranjan\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
       "args": [
         "-m",
         "code_review_graph",
         "serve"
       ],
-      "cwd": "C:\\Users\\aimlpc1\\Desktop\\de-agent-fb",
+      "cwd": "C:\\Users\\rajeev.ranjan\\Desktop\\Desktop\\Desktop\\de-agent-fb",
       "type": "stdio"
     }
   }

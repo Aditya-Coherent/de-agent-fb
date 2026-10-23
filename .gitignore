@@ -55,3 +55,7 @@ demo/high-energy-laser-*/
 
 # Headless browser profiles used for screenshots
 demo/.chrome-profile/
+
+# generated whitepaper JSON folders (kept in gs://tinysql-whitepapers/final/)
+whitepaper_jsons_completed/
+whitepaper_jsons_drafts/

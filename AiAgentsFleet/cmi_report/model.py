@@ -139,6 +139,7 @@ def definition(fleet: dict, c: dict | None = None) -> dict:
                 "definition": client.get("definition") or gen.get("measures") or "",
                 "measures": gen.get("measures") or "", "value_chain_level": gen.get("value_chain_level") or "",
                 "included": listed(inc), "excluded": listed(exc), "included_items": inc, "excluded_items": exc,
+                "product_terms": items(gen.get("product_terms")),
                 "unit": gen.get("unit") or gen.get("unit_of_measure") or "USD million, market value",
                 "source": source, "current": True, "check": gen.get("check")}
     old = fleet.get("market_definition") or {}
@@ -544,7 +545,14 @@ def sections(market: str, type_names: list[str], dem_names: list[str], c: dict) 
 
 
 def global_series(fleet: dict) -> dict[int, float]:
-    fs = {int(y): v for y, v in fleet["fields"]["market_size"]["forecast_series_usd_mn"].items()}
+    ms = fleet["fields"]["market_size"]
+    fs = {int(y): float(v) for y, v in ms["forecast_series_usd_mn"].items()}
+    # a series that stops before Y1 (an agent answering to 2030) is carried on at the market's own CAGR,
+    # as consistency.py now does for new runs -- never a KeyError for 2031
+    rate = float(ms.get("cagr_pct") or 0) / 100
+    for y in YEARS:
+        if y not in fs and (y - 1) in fs:
+            fs[y] = fs[y - 1] * (1 + rate)
     return {y: fs[y] for y in YEARS}
 
 

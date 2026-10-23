@@ -325,7 +325,7 @@ def test_the_reask_prompt_has_no_top_companies_list_and_has_the_exclude_list(mon
     monkeypatch.setattr(run_data, "GenLLM", lambda cfg, cache_path=None: llm)
     monkeypatch.setattr(run_data, "search", lambda *a, **k: [snip("Vitamin C producers in China")])
     monkeypatch.setattr(run_data, "entity_search", lambda qs: [snip(
-        f"{qs[0].replace(' company headquarters', '')} is a vitamin C producer headquartered in Shijiazhuang, China.")])
+        f"{qs[0].replace(' headquarters parent company owned by', '')} is a vitamin C producer headquartered in Shijiazhuang, China.")])
     run_data._SHOWN.clear()
     run_data.run("vc", {"vendors"})
     thin = [u for sys_, u in llm.prompts if sys_ == entities.THIN_SYSTEM]
@@ -502,9 +502,9 @@ def test_the_vendor_year_is_the_same_in_chart_caption_register_and_text(monkeypa
     monkeypatch.setattr(charts, "_save", lambda fig, path: seen.setdefault(
         "texts", [t.get_text() for ax in fig.axes for t in ax.texts]) and path)
     charts.vendor_donut(m["vendor_chart_global"], "Global", tmp_path / "v.png", m["vendor_year"])
-    assert f"{YEAR} value share (published)" in seen["texts"]
+    assert f"{YEAR} value share (CMI estimate)" in seen["texts"]
     caption = next(t for t in _vendor_section(m)["texts"] if t.startswith("Figure"))
-    assert caption.endswith(f"{YEAR} (published figures)")
+    assert caption.endswith(f"{YEAR} (CMI estimate)")
     ids = [e for e in build_register(m, {}) if e["id"].startswith("V-")]
     assert ids and all(e["id"].endswith(f"-{YEAR}") and e["fact"].endswith(str(YEAR)) for e in ids)
     assert prose.vendor_facts(m)["vendor_year"] == str(YEAR)
@@ -624,7 +624,7 @@ def test_run_data_vendors_runs_the_checks_and_the_entity_calls(monkeypatch, tmp_
     monkeypatch.setattr(run_data, "GenLLM", lambda cfg, cache_path=None: llm)
     monkeypatch.setattr(run_data, "search", lambda *a, **k: [snip("Vitamin C producers in China")])
     monkeypatch.setattr(run_data, "entity_search", lambda qs: [snip(
-        f"{qs[0].replace(' company headquarters', '')} is a vitamin C producer headquartered in Shijiazhuang, China.")])
+        f"{qs[0].replace(' headquarters parent company owned by', '')} is a vitamin C producer headquartered in Shijiazhuang, China.")])
     run_data._SHOWN.clear()
     run_data.run("vc", {"vendors"})
     out = json.loads((d / "cmi_fields.json").read_text(encoding="utf-8"))["fields"]

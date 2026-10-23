@@ -1,0 +1,6 @@
+json/
+logs/
+__pycache__/
+json-superseded/
+markets.jsonl
+rebuild_queue.txt

@@ -445,12 +445,12 @@ def chapters(m: dict, ag: dict) -> dict[str, dict]:
                     "vendor_intro": ("paragraph: the GLOBAL vendor landscape -- what kinds of company make this "
                                      "product worldwide, naming only FACTS.vendors; no tiers, rankings or leaders; "
                                      "no MEA focus", 326),
-                    "global_share_para": (("2 sentences on the published global vendor shares in "
+                    "global_share_para": (("2 sentences on the CMI-estimated global vendor shares in "
                                            "FACTS.vendor_share_global_pct, for FACTS.vendor_year")
                                           if m["sections"].get("vendor_global", {}).get("show") else
                                           ("2 sentences on what the vendors in FACTS.vendor_positioning make (their role), "
                                            "with no tiers, rankings, shares or %"), 336),
-                    "mea_share_para": (("2 sentences on the published MEA vendor shares in FACTS.vendor_share_mea_pct, "
+                    "mea_share_para": (("2 sentences on the CMI-estimated MEA vendor shares in FACTS.vendor_share_mea_pct, "
                                         "naming FACTS.mea_leader as the leader")
                                        if m["sections"].get("vendor_mea", {}).get("show") else
                                        ("2 sentences on vendor positioning in the Middle East & Africa, naming "
@@ -605,7 +605,7 @@ def mea_leader_named(slots: dict, m: dict) -> str | None:
         return None
     if sec["vendor_mea"]["show"]:
         share = dict(m["vendor_chart_mea"]).get(leader)
-        lead = (f"{leader} holds the largest published share of the Middle East & Africa market, at "
+        lead = (f"{leader} holds the largest share of the Middle East & Africa market on CMI estimates, at "
                 f"{fmt.pct(share)} in {m['vendor_year']}.")
     else:
         lead = f"{leader} is the leading vendor in the Middle East & Africa on CMI's assessment of regional presence."

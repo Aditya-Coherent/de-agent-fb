@@ -38,11 +38,18 @@ from AiAgentsFleet.cmi_report import build as builder, charts as ch, extras, fmt
 from AiAgentsFleet.cmi_report.guard import NumberGuard  # noqa: E402
 
 TEMPLATE = ROOT / "templates" / "cmi_whitepaper_template.docx"
+def _agent_query(key: str, i: int) -> str:
+    from AiAgentsFleet.cmi_report.groups import GROUPS
+    return next(g for g in GROUPS if g["key"] == key)["queries"][i]
+
+
+# each chapter's qualitative evidence: a search the fleet or a CMI agent already made on that topic in this
+# run (answered from the search cache, never paid twice -- 2026-10-21 query consolidation)
+from AiAgentsFleet.cmi_report.groups import FQ  # noqa: E402
 _EVIDENCE_QUERIES = {
-    "ch1": ["{market} outlook 2033"], "ch2": ["{market} trends Middle East Africa"],
-    "ch3": ["{market} North America Europe Asia Pacific Latin America"],
-    "ch4": ["{market} Saudi Arabia UAE Qatar Kuwait"], "ch5": ["{market} South Africa Egypt Nigeria Morocco"],
-    "ch6": ["{market} regulation Middle East Africa"], "ch7": ["{market} companies partnerships acquisitions"],
+    "ch1": [FQ("scenarios", 1)], "ch2": [_agent_query("dynamics", 1)], "ch3": [FQ("regional", 0)],
+    "ch4": [_agent_query("countries_mea", 0)], "ch5": [_agent_query("countries_mea", 1)],
+    "ch6": [_agent_query("regulation", 0)], "ch7": [_agent_query("vendors", 3)],
 }
 
 
@@ -281,6 +288,44 @@ def word_pass(docx_path: Path, pdf_path: Path | None) -> dict[int, int]:
         return {}
 
 
+def libreoffice_pass(docx_path: Path, pdf_path: Path | None) -> dict[int, int]:
+    """The word_pass for machines without MS Word (Linux VMs): LibreOffice exports a PDF whose
+    bookmarks are the headings, so {chapter: page} is read from the level-1 bookmarks ('3 Global ...').
+    Writes `pdf_path` when given. Returns {} when LibreOffice or PyMuPDF is missing."""
+    import shutil
+    import tempfile
+    soffice = shutil.which("soffice") or shutil.which("libreoffice")
+    if not soffice:
+        return {}
+    try:
+        import pymupdf
+    except ImportError:
+        pymupdf = None
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            # its own profile: parallel LibreOffice runs on one machine collide on the default one
+            subprocess.run([soffice, f"-env:UserInstallation=file://{tmp}/profile", "--headless",
+                            "--convert-to", "pdf", "--outdir", tmp, str(docx_path)],
+                           capture_output=True, timeout=600)
+        except subprocess.TimeoutExpired:
+            print("  [libreoffice] timed out -- TOC page numbers / PDF not refreshed")
+            return {}
+        made = Path(tmp) / (docx_path.stem + ".pdf")
+        if not made.exists():
+            print("  [libreoffice] no PDF produced")
+            return {}
+        pages: dict[int, int] = {}
+        if pymupdf is not None:
+            with pymupdf.open(made) as doc:
+                for level, title, page in doc.get_toc():
+                    mt = re.match(r"\s*(\d+)\s", title)
+                    if level == 1 and mt and int(mt.group(1)) not in pages:
+                        pages[int(mt.group(1))] = page
+        if pdf_path:
+            shutil.copyfile(made, pdf_path)
+    return pages
+
+
 # standard sentences the builder itself prints in several places (not repetition)
 BOILERPLATE = ("Every country in this table",)
 
@@ -308,6 +353,10 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
             units.append(p.text)
     for t in d.tables:
         header = " | ".join(c.text for c in t.rows[0].cells)
+        # the scope table defines segments ('steel silos typically above 500 MT', 'farms of 50 to 500 animals',
+        # 'counted under Others unless one ingredient exceeds 70%'): thresholds, not market data
+        if header.startswith("Dimension | Segments covered"):
+            continue
         units += [header + " || " + " | ".join(c.text for c in r.cells) for r in t.rows[1:]]
     issues, checked = [], 0
     # names and definition text that contain digits: their numbers belong to the name, not to the data
@@ -336,7 +385,8 @@ def qa(docx_path: Path, m: dict, ag: dict, root: str) -> dict:
     dfn_text = " ".join(str(dfn.get(k) or "") for k in ("definition", "measures", "included", "excluded"))
     drone_re = re.compile(r"\b(drones?|UAS|UAV|BVLOS)\b", re.I)
     # drones are a template leftover only when neither the market name nor its definition concerns them
-    drone_words = [t[:120] for t in texts if drone_re.search(t)] \
+    from AiAgentsFleet.cmi_report.guard import DRONE_LEFTOVER   # drone-market wording, not drones as equipment
+    drone_words = [t[:120] for t in texts if DRONE_LEFTOVER.search(t)] \
         if not (market_words & {"drone", "drones", "uav", "uas"} or drone_re.search(dfn_text)) else []
     # repeated sentences anywhere in the finished document (same words, no new figure)
     from AiAgentsFleet.cmi_report.guard import sentences
@@ -417,7 +467,8 @@ def main() -> int:
     g.add_argument("--market-slug")
     g.add_argument("--market")
     p.add_argument("--refresh-data", action="store_true", help="re-run the CMI agents even if cached")
-    p.add_argument("--no-word", action="store_true", help="skip the MS Word pass (TOC page numbers, PDF)")
+    p.add_argument("--no-word", action="store_true",
+                   help="no MS Word: TOC page numbers and PDF from LibreOffice instead (if installed)")
     p.add_argument("--refresh-prose", action="store_true", help="rewrite the text even if the numbers are unchanged")
     p.add_argument("--allow-randomize", action="store_true",
                    help="permit AIFLEET_RANDOMIZE=1 (jittered numbers; never for client reports)")
@@ -495,14 +546,22 @@ def main() -> int:
         builder.build(TEMPLATE, out, m, pr, ag, charts, definition)
         q = qa(out, m, ag, root)
     verification["final_sweep"] = len(q["numbers_not_in_model"])
+    if verification["fixed"]:        # the saved text must be the text the document prints (audit.ai_review reads it)
+        ppath.write_text(json.dumps(pr, indent=2, ensure_ascii=False), encoding="utf-8")
     internal: dict = {}           # the internal QA log (the client document carries none of it)
     log = builder.build(TEMPLATE, out, m, pr, ag, charts, definition, verification=verification, internal=internal)
-    if not a.no_word:
-        pages = word_pass(out, None)
-        if pages:
-            log = builder.build(TEMPLATE, out, m, pr, ag, charts, definition, toc_pages=pages,
-                                verification=verification, internal=internal)
-            word_pass(out, out.with_suffix(".pdf"))
+    # real TOC page numbers + PDF: MS Word where installed, else LibreOffice (Linux VMs)
+    page_pass = libreoffice_pass if a.no_word else word_pass
+    pages = page_pass(out, None)
+    if pages:
+        log = builder.build(TEMPLATE, out, m, pr, ag, charts, definition, toc_pages=pages,
+                            verification=verification, internal=internal)
+    page_pass(out, out.with_suffix(".pdf"))
+    # exactly what the final build received (model with the regional segments, final text, agent data with
+    # extras and sources): the market JSON is made from it, so the JSON always rebuilds this PDF
+    (cdir / "report_inputs.json").write_text(json.dumps(
+        {"model": m, "prose": pr, "agents": ag, "definition": definition, "toc_pages": pages},
+        indent=1, ensure_ascii=False, default=sorted), encoding="utf-8")
     # the complete Number Register beside the report (the appendix carries its derived facts)
     import csv
     from AiAgentsFleet.cmi_report.register import build_register

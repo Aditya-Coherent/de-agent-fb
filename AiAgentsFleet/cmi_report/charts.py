@@ -534,7 +534,7 @@ def vendor_donut(rows: list[tuple[str, float]], center: str, path: Path, year: i
     wedges, _ = ax.pie([s for _, s in rows], colors=colors, startangle=90, counterclock=False,
                        wedgeprops={"width": 0.36, "edgecolor": "white", "linewidth": 2})
     ax.text(0, 0.07, center, ha="center", va="center", fontsize=17, fontweight="bold")
-    ax.text(0, -0.15, f"{year} value share (published)", ha="center", va="center", fontsize=9, color=MUTED)
+    ax.text(0, -0.15, f"{year} value share (CMI estimate)", ha="center", va="center", fontsize=9, color=MUTED)
     ax.legend(wedges, [f"{_wrap(n, 30)}   {fmt.pct(s)}" for n, s in rows], loc="center left",
               bbox_to_anchor=(1.02, 0.5), frameon=False, fontsize=9.5)
     ax.set_aspect("equal")

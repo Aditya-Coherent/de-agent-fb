@@ -11,6 +11,7 @@ fixed text.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -107,10 +108,30 @@ def verified(name: str, domain: str, search, strict: bool = True) -> bool | None
     """True when a web search for the source returns a result that names it (its exact name, every word of
     it in a title, its acronym, or its official domain); None when the search returned nothing (backend
     down). `strict=False` (descriptive names such as regulatory frameworks): three quarters of the name's
-    words in one result is enough."""
-    hits = search(f'"{re.sub(r"\s*\([^)]*\)", "", name).strip()}"')
+    words in one result is enough.
+
+    NAME_CHECK_FREE_FIRST=1 (cost, 2026-10-21): the default search first asks the free metasearch; a name it
+    confirms costs nothing, anything it does not confirm is checked on Perplexity as before -- so the free
+    engine can save a paid search but never drop a source."""
+    query = f'"{re.sub(r"\s*\([^)]*\)", "", name).strip()}"'
+    if search is _default_search and os.environ.get("NAME_CHECK_FREE_FIRST", "0") == "1":
+        if _names_it(name, domain, _free_search(query), strict):
+            return True
+    hits = search(query)
     if not hits:
         return None
+    return _names_it(name, domain, hits, strict)
+
+
+def _free_search(query: str) -> list[dict]:
+    from me_engine.generation import web_evidence as w
+    w._log_search(query, "free", "ddgs")
+    return [{"title": r.get("title") or "", "text": r.get("snippet") or "", "domain": w._domain(r.get("url") or "")}
+            for r in w._ddgs_results(query, 5)]
+
+
+def _names_it(name: str, domain: str, hits: list[dict], strict: bool) -> bool:
+    """A result that names the source (see verified)."""
     bare = re.sub(r"\s*\([^)]*\)", "", name).strip().lower()
     want, acro = _tokens(bare), _acronym(name)
     dom = (domain or "").lower().removeprefix("www.")

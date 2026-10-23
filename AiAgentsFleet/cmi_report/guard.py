@@ -54,7 +54,9 @@ _ABBREV = re.compile(r"\b(?:incl|Co|Ltd|Inc|Corp|Plc|PLC|e\.g|i\.e|vs|approx|est
 
 
 def sentences(text: str) -> list[str]:
-    parts = [s for s in _SENT.split((text or "").strip()) if s.strip()]
+    if isinstance(text, (list, tuple)):         # a model field given as a list of strings: read it as one text
+        text = " ".join(str(x) for x in text if x)
+    parts = [s for s in _SENT.split((str(text) if text else "").strip()) if s.strip()]
     out: list[str] = []
     for s in parts:
         # re-join a split made right after an abbreviation
@@ -318,6 +320,24 @@ def copied(s: str, template_sentences: list[set[str]], ignore: set[str] = frozen
     skip = _GENERIC_WORDS | ignore
     w = word_set(s) - skip
     return len(w) >= 6 and any(len(w & (t - skip)) / len(w) >= 0.7 for t in template_sentences if len(t) >= 6)
+
+
+# Drone wording that is left over from the template (written about the drone MARKET), as opposed to drones as
+# equipment ('underwater drones' in aquaculture, 'spraying drones' in crop protection), which is real content.
+# Shared by this guard, run_cmi_report.qa and audit.release_gate.
+DRONE_LEFTOVER = re.compile(
+    r"\b(?:drones?|UAS|UAV)\s+(?:markets?|industry|sector|ecosystem|operators?|programmes?|programs?|"
+    r"regulations?|rules|regime|corridors?|traffic|airspace|permits?|pilots?|services market)\b|"
+    r"\b(?:BVLOS|beyond visual line of sight|UTM)\b", re.I)
+_DRONE_ANY = re.compile(r"\b(drones?|UAS|UAV|BVLOS)\b", re.I)   # any drone word: is the market about drones?
+
+
+def _drone_market(cguard) -> bool:
+    """The report is about drones (its name or definition says so): drone words are then its subject."""
+    name = " ".join(getattr(cguard, "name_words", None) or [])
+    d = getattr(cguard, "definition", None) or {}
+    text = name + " " + " ".join(str(d.get(k) or "") for k in ("market_name", "definition", "measures", "included"))
+    return bool(_DRONE_ANY.search(text))
 
 
 # The drone template's signature phrasings: written for one market, they read as boilerplate in every
@@ -799,6 +819,9 @@ def clean_text(text: str, nguard: NumberGuard, cguard: ClaimGuard | None, droppe
                f"out of scope: {scope}" if scope else
                "template/draft caveat" if _BANNED.search(s) else
                "drone-template phrasing" if _TEMPLATE_PHRASES.search(s) else
+               # the model imitates the template's drone example ('... carries in the drone market'): the
+               # release gate blocks any drone word in a non-drone report, so it is dropped here first
+               "drone wording from the template" if DRONE_LEFTOVER.search(s) and not _drone_market(cguard) else
                f"claims a research step the pipeline does not perform ('{FALSE_METHOD.search(s).group(0)}')"
                if FALSE_METHOD.search(s) else
                "pronoun refers to removed or missing text" if prev_dropped and _ORPHAN.match(s) else

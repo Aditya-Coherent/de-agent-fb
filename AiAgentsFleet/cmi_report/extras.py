@@ -33,7 +33,23 @@ def factor_name(name: str) -> str:
     name = re.sub(r"\s*\([^)]*\d[^)]*\)", "", str(name))
     # and a clause carrying a figure ('..., especially feed accounting for ~69% of expenses')
     name = re.sub(r"[,;]\s*[^,;()]*\d[^,;()]*", "", name)
-    return name.strip().rstrip(",;:")
+    # and a figure mid-phrase ('... adoption enabling 2-3x yield gains on existing assets'): cut back to the
+    # linking word before it; with no such word, drop just the figure
+    # (only figures the number guard rejects: years and small counts -- 'Top 3 producers', 'since 2022' -- stay)
+    d = _RISKY_FIGURE.search(name)
+    if d:
+        first_digit = d.start() + re.search(r"\d", d.group()).start()
+        links = list(re.finditer(r"\s(?:enabling|with|at|by|of|to|up to|driving|reducing|cutting|from|delivering|"
+                                 r"offering|lifting|yielding|saving|for|via|worth|reaching|above|below|over|under)\s",
+                                 name[:first_digit]))
+        name = name[:links[-1].start()] if links else _RISKY_FIGURE.sub(" ", name)
+    return re.sub(r"\s{2,}", " ", name).strip().rstrip(",;:")
+
+
+# a figure that is not a year or a small count: %, x multiple, pp, bps, $ amount, decimal or range
+_RISKY_FIGURE = re.compile(r"[~≈<>]?\$?\s?\d[\d,]*(?:\.\d+)?\s*(?:[-–]\s*\d[\d,]*(?:\.\d+)?\s*)?"
+                           r"(?:%|x\b|pp\b|bps\b|percent\b|(?:bn|billion|mn|million)\b)|\$\s?\d|\d+\.\d+|"
+                           r"\b\d+\s*[-–]\s*\d+\b(?!\s*(?:year|month))")
 
 
 def _ask_mix(market: str, m: dict, llm) -> dict:

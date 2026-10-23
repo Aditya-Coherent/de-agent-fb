@@ -386,7 +386,13 @@ def plausibility_review(m: dict, report_text: str, llm=None, max_chars: int = 90
     try:
         raw = _llm(llm).complete_json(_PLAUS_SYSTEM.format(market=m["market"]), user)
     except Exception as exc:  # noqa: BLE001
-        return {"ran": False, "error": str(exc), "items": []}
+        # usually an answer too long for the output limit: ask once for a shorter list
+        short = user + ("\n\nKEEP THE ANSWER SHORT: at most 12 items, \"high\" and \"medium\" only, every field "
+                        "at most 25 words.")
+        try:
+            raw = _llm(llm).complete_json(_PLAUS_SYSTEM.format(market=m["market"]), short)
+        except Exception as exc2:  # noqa: BLE001
+            return {"ran": False, "error": f"{exc}; shorter re-ask: {exc2}", "items": []}
     if not isinstance(raw, (dict, list)) or (isinstance(raw, dict) and not isinstance(raw.get("items"), list)):
         return {"ran": False, "error": f"unreadable answer: {str(raw)[:200]}", "items": []}
     return {"ran": True, "items": _norm_items(raw)}
@@ -419,8 +425,12 @@ def doc_blocks(path: Path) -> list[dict]:
 
 _LEFTOVER = re.compile(r"\[(?:to verify|unverified)\]|\bTBD\b|\blorem\b|\[insert|draft template|publication template",
                        re.I)
-_DRONE = re.compile(r"\b(drones?|UAS|UAV|BVLOS)\b", re.I)
-_INTERNAL = re.compile(r"\bgenerated sentences?\b|\bsweep\b|\bself-audit\b", re.I)
+_DRONE = re.compile(r"\b(drones?|UAS|UAV|BVLOS)\b", re.I)       # any drone word: is the market about drones?
+# a leftover is template wording about the drone MARKET, not drones as equipment ('underwater drones')
+from AiAgentsFleet.cmi_report.guard import DRONE_LEFTOVER  # noqa: E402
+# the pipeline's own words; 'sweep' only as its number check ('number sweep', 'the sweep'), not 'sweep nets'
+_INTERNAL = re.compile(r"\bgenerated sentences?\b|\b(?:number|consistency|final|register|qa|first)\s+sweeps?\b|"
+                       r"\bthe sweep\b(?!\s+nets?\b)|\bself-audit\b", re.I)
 _REGISTER_ID = re.compile(r"\bregister IDs?\b", re.I)
 _PUBLISHED = re.compile(r"\bpublished\s+(?:\d{4}\s+)?(?:global\s+)?(?:market\s+)?(?:estimates?|figures?)\b|"
                         r"\btriangulat\w*", re.I)
@@ -509,7 +519,7 @@ def release_gate(m: dict, blocks: list[dict], *, qa_report: dict, computed: dict
         for mm in _LEFTOVER.finditer(text):
             leftovers.append(f"'{mm.group(0)}' in: {text[max(0, mm.start() - 60): mm.end() + 20].strip()}")
         if not drone_ok:
-            for mm in _DRONE.finditer(text):
+            for mm in DRONE_LEFTOVER.finditer(text):    # not 'underwater drones' (equipment)
                 leftovers.append(f"'{mm.group(0)}' in: {text[max(0, mm.start() - 60): mm.end() + 20].strip()}")
         for mm in _INTERNAL.finditer(text):
             internal.append(f"'{mm.group(0)}' in: {text[max(0, mm.start() - 60): mm.end() + 40].strip()}")
@@ -813,6 +823,20 @@ def audit(slug: str, use_ai: bool = True, gate: bool = False, market_dir: Path |
                                    plausibility=res.get("plausibility_review"), fact_review=fact_review)
         if prose is None and (mdir / "cmi_prose.json").exists():
             prose = json.loads((mdir / "cmi_prose.json").read_text(encoding="utf-8"))
+        # a report whose chapters came back empty (the text agent's calls failed, e.g. out of LLM credit) must
+        # never pass: the checks above only judge the text that exists (2026-10-22, 12 reports with chapter 4 only)
+        slots = (prose or {}).get("slots") or {}
+        # sections every complete report has (across 487 reports: missing in at most one each); a complete report
+        # has ~80 sections -- 'reco_intro', 'vendor_intro' and 'thesis' are often absent by design
+        core = ("exec_para", "trends_intro", "drivers_para")
+        missing = [k for k in core if not slots.get(k)]
+        if prose is not None and 40 <= len(slots) and len(missing) == 1:
+            # one intro paragraph emptied by the sentence guards in an otherwise complete report: a warning
+            res["gate"]["warnings"].append(f"intro paragraph {missing[0]} is empty ({len(slots)} sections written)")
+        elif prose is not None and (len(slots) < 40 or missing):
+            res["gate"]["blockers"].append(f"report text incomplete: {len(slots)} text section(s) written, "
+                                           f"missing {', '.join(missing) or 'most chapters'} (text agent failed)")
+            res["gate"]["ready"] = False
         res["_to_verify_doc"] = list(dict.fromkeys(
             s[:200] for b in blocks for s in sentences(b["text"]) if "[to verify]" in s))
         res["internal_qa"] = str(write_internal_qa(mdir / f"{slug}-internal-qa.md", m, fleet, gate=res["gate"],

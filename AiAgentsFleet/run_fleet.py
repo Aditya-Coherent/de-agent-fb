@@ -34,7 +34,7 @@ from me_engine.generation.llm import GenLLM  # noqa: E402
 
 from AiAgentsFleet import randomizer  # noqa: E402
 from AiAgentsFleet.field_agent import run_field_group  # noqa: E402
-from AiAgentsFleet.field_groups import FIELD_GROUPS, FIELD_GROUP_KEYS  # noqa: E402
+from AiAgentsFleet.field_groups import CMI_FIELD_GROUPS, FIELD_GROUPS, FIELD_GROUP_KEYS  # noqa: E402
 from AiAgentsFleet.market_definition import generate_market_definition  # noqa: E402
 
 CACHE_PATH = ROOT / "output" / ".gen_cache.db"
@@ -52,6 +52,9 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--groups", default=None, help=f"Comma-separated subset of: {', '.join(FIELD_GROUP_KEYS)}")
     p.add_argument("--workers", type=int, default=4, help="Parallel field-group agents (default 4)")
     p.add_argument("--out", default=None, help="Output JSON path (default: output/<slug>/whitepaper_fields.json)")
+    p.add_argument("--definition-file", default=None,
+                   help="JSON {definition, inclusions, exclusions}: the client's market definition, kept verbatim "
+                        "as `definition_inclusion_exclusion` and given to the definition agent as its anchor")
     return p.parse_args()
 
 
@@ -67,7 +70,7 @@ def _maybe_jitter(raw: dict) -> dict:
     return out
 
 
-def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
+def run_fleet(market: str, groups: list[dict], workers: int = 4, client_definition: dict | None = None) -> dict:
     cfg = GenConfig.load(ROOT)
     if not cfg.is_online:
         print("ERROR: no LLM API key found in .env (DEEPSEEK_API_KEY / OPENAI_API_KEY / OPENROUTER_API_KEY).")
@@ -76,7 +79,8 @@ def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
 
     log: list[str] = []
     print(f"Generating one shared market definition for '{market}' (scope lock)...")
-    market_definition = generate_market_definition(market, llm, cfg, log)
+    market_definition = generate_market_definition(market, llm, cfg, log,
+                                                   **({"client": client_definition} if client_definition else {}))
     for line in log:
         print("  " + line)
 
@@ -103,7 +107,7 @@ def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
     order = {g["key"]: i for i, g in enumerate(groups)}
     results = dict(sorted(results.items(), key=lambda kv: order.get(kv[0], 0)))
     raw_results = dict(sorted(raw_results.items(), key=lambda kv: order.get(kv[0], 0)))
-    return {
+    out = {
         "market_name": market,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "market_definition": market_definition,
@@ -122,12 +126,17 @@ def run_fleet(market: str, groups: list[dict], workers: int = 4) -> dict:
         "fields_raw": raw_results,
         "log": log,
     }
+    if client_definition:        # read by cmi_report (run_data.py, model.py) as the client's definition
+        out["definition_inclusion_exclusion"] = client_definition
+    return out
 
 
 def main() -> int:
     args = _parse_args()
     if args.groups:
         wanted = {g.strip() for g in args.groups.split(",") if g.strip()}
+        if wanted == {"cmi"}:                       # only what the CMI whitepaper uses (field_groups.CMI_FIELD_GROUPS)
+            wanted = set(CMI_FIELD_GROUPS)
         unknown = wanted - set(FIELD_GROUP_KEYS)
         if unknown:
             print(f"ERROR: unknown group(s): {sorted(unknown)}. Valid: {FIELD_GROUP_KEYS}")
@@ -136,7 +145,9 @@ def main() -> int:
     else:
         groups = FIELD_GROUPS
 
-    result = run_fleet(args.market, groups, workers=args.workers)
+    client = (json.loads(Path(args.definition_file).read_text(encoding="utf-8"))
+              if args.definition_file else None)
+    result = run_fleet(args.market, groups, workers=args.workers, client_definition=client)
 
     out_path = Path(args.out) if args.out else OUTPUT_ROOT / _slug(args.market) / "whitepaper_fields.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)

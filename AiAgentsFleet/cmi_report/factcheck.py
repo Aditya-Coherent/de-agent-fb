@@ -22,7 +22,8 @@ _CLAUSE = re.compile(r";|,\s*(?:while|whereas|but|and)\b|\bwhile\b|\bwhereas\b")
 _CAGR_WORDS = re.compile(r"\b(cagr|grow\w*|growth|expand\w*|a year|annual\w*|per year|rate)\b", re.I)
 _SHARE_WORDS = re.compile(r"\b(share|of (?:the )?(?:global|market|regional|region|sub-region|total|value)|"
                           r"accounts? for|holds?|represent\w*|of [A-Z][a-z]+ (?:value|market))\b", re.I)
-_INCR_WORDS = re.compile(r"\b(incremental|add\w*|opportunit\w*|gain\w*|increase of|uplift)\b", re.I)
+# "an increment of $11.21B" is the growth amount, not a second end-year value (2026-10-21)
+_INCR_WORDS = re.compile(r"\b(incremen\w*|add\w*|opportunit\w*|gain\w*|increase of|uplift)\b", re.I)
 _YEAR = re.compile(r"\b(20[2-3]\d)[EF]?\b")
 
 
@@ -45,7 +46,10 @@ def build_index(register: list[dict]) -> tuple[dict, list[str]]:
     for e in register:
         kind, year = _kind(e)
         for n in e["entities"]:
-            if not n or n.lower() in ("market", "total", "overall", "worldwide", "world"):
+            # generic words, not an entity: 'regional'/'other' are aliases of the vendor chart's 'Regional & other'
+            # slice (register.py) -- as names they merged 'Rest of Europe ... 28.5% of regional value' and
+            # 'Rest of Middle East ... 14.0% of regional value' into one 'regional share' fact (2026-10-21)
+            if not n or n.lower() in ("market", "total", "overall", "worldwide", "world", "regional", "other"):
                 continue
             names.add(n)
             idx.setdefault((n.lower(), kind, year), set()).add(_norm_money(e["display"]).lstrip("+"))
@@ -65,6 +69,54 @@ def _entity_before(clause: str, pos: int, names: list[str]) -> str | None:
     if best is None and re.search(r"\b(global|world|overall market|the market)\b", low[:pos]):
         return "global"
     return best
+
+
+def _scope_before(clause: str, pos: int, names: list[str]) -> bool:
+    """The nearest name before the number sits in a scope phrase directly before it ('in the Middle East at
+    6.7%', 'across Africa with 7.1%'): it says where, so it is not the number's entity."""
+    near = _entity_before(clause, pos, names)
+    if not near:
+        return False
+    # optionally a year between the scope and the figure ('in the Middle East in 2026 at $62.3M')
+    return bool(re.search(rf"\b(?:in|within|across|among|throughout)\s+(?:the\s+)?{re.escape(near)}\s*"
+                          rf"(?:,?\s*(?:in|by|for)\s+(?:the\s+year\s+)?20[2-3]\d[EF]?\s*)?"
+                          rf"(?:at|with|,|of)?\s*(?:an?\s+)?$", clause[:pos], re.I))
+
+
+_VERSUS = re.compile(r"\b(?:against|versus|vs\.?|compared (?:with|to)|relative to)\s*$", re.I)
+
+
+_VERB_START = re.compile(r"\s*(?:and\s+)?(?:is|are|was|were|remains?|grows?|rises?|reaches|holds?|accounts? for|leads?|"
+                         r"trails?|ranks?|stays?|expands?|expanding|growing|reaching|holding|adding|adds)\b", re.I)
+
+
+def _continues_subject(clause: str, end: int, names: list[str]) -> bool:
+    """A clause that opens with a verb ('..., and is the smallest Middle East country grouping, at $0.09M') goes on
+    describing the sentence's subject: a region named inside it ('Middle East country grouping') describes,
+    it is not the figure's owner -- unless 'for X' / 'in X' follows the figure."""
+    return bool(_VERB_START.match(clause)) and not _entity_after(clause, end, names)
+
+
+def _comparison_partner(sent: str, clause: str, pos: int, names: list[str], subject: str | None) -> str | None:
+    """'The Middle East ... grows faster at 8.9% against 8.2%' in a sentence that also names Africa: the figure
+    after 'against / versus / compared with' is the one other entity the sentence names, not the subject's."""
+    if not subject or not _VERSUS.search(clause[:pos]):
+        return None
+    # only names up to this clause: a later '; Turkey is the largest country' is not the comparison partner
+    cut = sent.find(clause.strip())
+    upto = sent[: cut + len(clause.strip())] if cut >= 0 else sent
+    others = [e for e in entities_in(upto, names) if e not in (subject, "global")]
+    return others[0] if len(others) == 1 else None
+
+
+def _entity_after(clause: str, end: int, names: list[str]) -> str | None:
+    """The entity a number is attached to by 'for/in/of <name>' right after it ('7.2% for Africa');
+    the longest name wins ('Middle East & Africa', not 'Middle East')."""
+    tail = clause[end:end + 60].lower()
+    for n in names:                                  # names are longest first (build_index)
+        if re.match(rf"\s*(?:for|in|of)\s+(?:the\s+)?{re.escape(n.lower())}(?![a-z])", tail):
+            return n
+    return None
 
 
 _YEAR_AFTER = re.compile(r"\s*(?:\(\s*|,\s*)?(?:(?:in|by|for|of|during|through|until)\s+)?(?:the\s+year\s+)?"
@@ -135,6 +187,11 @@ def mentions(text: str, names: list[str]):
                 ent = _own_entities(clause, names, prev)
                 if not ent:
                     continue
+                if not (prev or subject) and _entity_before(clause, mm.start(), names) == "global":
+                    ent = ["global"]       # 'Together they explain why the global market moves from $4.89B to $10.64B'
+                elif prev and ent != [prev] and (_scope_before(clause, mm.start(), names)
+                                                 or _continues_subject(clause, mm.end(), names)):
+                    ent = [prev]            # '... the second-largest grouping in the Middle East in 2026 at $62.3M'
                 if paired and mm in plain and not _INCR_WORDS.search(clause[max(0, mm.start() - 30): mm.start()]):
                     yield mm.group(), _norm_money(mm.group()), ent, "value", years[plain.index(mm)], clause
                     continue
@@ -148,6 +205,26 @@ def mentions(text: str, names: list[str]):
                 ent = _own_entities(clause, names, prev)
                 if not ent:
                     continue
+                # 'grows at 7.5% against 7.2% for Africa': 7.2% is Africa's ('for Africa' right after it),
+                # and 7.5%, with no name before it in the clause, is the sentence subject's -- not Africa's
+                after = _entity_after(clause, mm.end(), names)
+                partner = _comparison_partner(sent, clause, mm.start(), names, prev or subject)
+                if after:
+                    ent = [after]
+                elif partner:
+                    ent = [partner]
+                elif not (prev or subject) and _entity_before(clause, mm.start(), names) == "global":
+                    # 'Together they explain why the global market keeps expanding at 6.6% a year ..., with Asia
+                    # Pacific setting the pace' -- only in a sentence with no subject of its own: in 'Middle East &
+                    # Africa is ..., 5.4% of global value, reaching $249M at 8.7% CAGR' the 8.7% is MEA's
+                    ent = ["global"]
+                elif prev and len(ent) == 1 and ent[0] != prev and not _entity_before(clause, mm.start(), names):
+                    ent = [prev]
+                elif prev and ent != [prev] and (_scope_before(clause, mm.start(), names)
+                                                 or _continues_subject(clause, mm.end(), names)):
+                    # '... is the slowest-growing grouping in the Middle East at 6.7%': 'in the Middle East' is
+                    # where, not who -- the figure is the sentence subject's (Rest of Middle East)
+                    ent = [prev]
                 if _GLOBAL_BEFORE.search(clause[:mm.start()]):
                     ent = ["global"]
                 win = clause[max(0, mm.start() - 45): mm.end() + 15]

@@ -28,6 +28,7 @@ import re
 from typing import Any
 
 FIXED_REGIONS = ("North America", "Europe", "Asia Pacific", "Latin America", "Middle East & Africa")
+REPORT_HORIZON = 2033      # the CMI report's last forecast year (cmi_report/model.py Y1)
 _SHARE_TOLERANCE = 0.5
 _REGION_SUM_TOLERANCE_PCT = 1.0
 _CAGR_TOLERANCE_PP = 0.2
@@ -178,7 +179,13 @@ def _reconcile_market_size(ms: dict, changes: list[str]) -> tuple[dict, float, f
         )
     ms["forecast_value_usd_mn"] = new_forecast_val
 
-    new_series = {str(y): round(base_val * (1 + rate) ** (y - base_year), 2) for y in range(base_year, forecast_year + 1)}
+    # the series runs at least to the CMI report's horizon: an agent answering 'forecast_year: 2030' would
+    # otherwise leave 2031-2033 missing and the report model fails (KeyError 2031, 2026-10-21 fleet run)
+    series_end = max(forecast_year, REPORT_HORIZON)
+    new_series = {str(y): round(base_val * (1 + rate) ** (y - base_year), 2) for y in range(base_year, series_end + 1)}
+    if series_end > forecast_year:
+        changes.append(f"forecast_series_usd_mn extended from {forecast_year} to {series_end} at the same "
+                       f"{cagr_pct}% CAGR (the report forecasts to {REPORT_HORIZON})")
     if ms.get("forecast_series_usd_mn") != new_series:
         changes.append("forecast_series_usd_mn rebuilt by compounding from base_year_value_usd_mn at cagr_pct (now strictly non-decreasing)")
     ms["forecast_series_usd_mn"] = new_series

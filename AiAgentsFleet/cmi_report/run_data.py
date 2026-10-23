@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -250,8 +251,8 @@ def sanity_review(market: str, data: dict, fields: dict, geo: dict, definition: 
     from AiAgentsFleet.cmi_report.model import geography
     gg = geography(data, fields)
     tbl = geo_check.table(gg["countries"], rest_members(geo), gg["reg"])
-    ev = search(market, [f"{market} production consumption by country largest",
-                         f"{market} top countries market share"], "geo_review", log)
+    # the geography agent's own searches (already paid for in this run: answered from the search cache)
+    ev = search(market, [q.format(market=market) for q in GEOGRAPHY_GROUP["queries"][:2]], "geo_review", log)
     try:
         raw = llm.complete_json(geo_check.SANITY_SYSTEM, definition_block(definition)
                                 + geo_check.sanity_prompt(market, tbl, [s["text"] for s in ev]))
@@ -272,10 +273,38 @@ def entity_search(queries: list[str]) -> list[dict]:
     no market-topic filter -- a page on a company's headquarters need not name
     the market."""
     try:
-        sourced = gather_with_sources(queries, per_query=4, cap=16, precise=True)   # standard search
+        # 2 queries x 8 results (entities.entity_queries) = the 16 snippets 4 x 4 gave. The company's own facts
+        # (HQ, parent: encyclopedic, the same in every market) on fast search ($1/1000); the company with this
+        # market's product -- the hard evidence -- on standard search ($5/1000), as before
+        sourced = gather_with_sources(queries[:1], per_query=8, cap=8, precise=False)
+        product = gather_with_sources(queries[1:], per_query=8, cap=8, precise=True)
+        if os.environ.get("ENTITY_PAGE_FETCH", "0") == "1":
+            product += _page_excerpts(queries[0].replace(" headquarters parent company owned by", ""), product)
+        sourced += product
     except Exception:  # noqa: BLE001
         return []
     return filter_sources(sourced)[0]
+
+
+def _page_excerpts(name: str, results: list[dict], pages: int = 3, max_chars: int = 1500) -> list[dict]:
+    """ENTITY_PAGE_FETCH=1 (cost, 2026-10-21): fast search finds the right pages but returns a short excerpt
+    that often misses the line tying a company to the product ('Neogen's portfolio includes pathogen
+    detection kits validated for ... aquaculture'). The top result pages are fetched (free) and the
+    sentences naming the company are added as evidence -- the full-text depth standard search sells."""
+    from me_engine.generation.web_evidence import fetch_page_text
+    from AiAgentsFleet.cmi_report.entities import named_in
+    from AiAgentsFleet.cmi_report.guard import sentences as split
+    out = []
+    for r in [r for r in results if r.get("url")][:pages]:
+        text = fetch_page_text(r["url"], timeout=8.0)
+        if not text:
+            continue
+        keep = [s.strip() for s in split(" ".join(text.split())) if named_in(s, name) and 40 <= len(s) <= 400]
+        excerpt = " ".join(dict.fromkeys(keep))[:max_chars]
+        if excerpt:
+            out.append({"text": f"{r.get('title') or r.get('domain')}: {excerpt}", "url": r["url"],
+                        "domain": r.get("domain", ""), "title": r.get("title", "")})
+    return out
 
 
 def review_vendors(market: str, data: dict, fields: dict, definition: dict, llm: GenLLM, log: list,
@@ -389,6 +418,25 @@ def run(slug: str, only: set[str] | None = None) -> Path:
     # 2. country splits: checked and re-asked once, then one sceptical review of the final table
     if any(g["key"] in geo_check.GROUP_REGIONS for g in wanted) and all(k in fields for k in geo_check.GROUP_REGIONS):
         review["splits"] = geo_check.review_splits(fields, geo, ask_group, log, regional=_regional(data, fields))
+
+        def ask_rest(region: str, members: list[str], named: dict[str, float]) -> float | None:
+            # one narrow question, on the snippets the country agent saw: the members' share of the region
+            key = geo_check.REGION_GROUP[region]
+            ev = [s["text"] for s in _SHOWN.get(key) or []]
+            user = (f"Market: {market}\n\n{definition_block(definition)}"
+                    + ("WEB EVIDENCE:\n" + "\n".join(f"- {e}" for e in ev) + "\n\n" if ev else "")
+                    # the named countries' shares are NOT shown: given them, the model answers 100 minus their
+                    # sum (-19.6% when they overshoot), which is the plug this question exists to avoid
+                    + f"Region: {region}. The report sizes {', '.join(named)} separately. 'Rest of {region}' is "
+                      f"every other country of the region: {', '.join(members)}. Estimate, from the evidence and "
+                      f"what you know of these countries' output in this market, what share (%) of the whole "
+                      f"{region} market those other countries hold together. Size them directly; do NOT work "
+                      f"it out as 100 minus any other figure. The answer is between 1 and 60. "
+                      'Return ONLY JSON: {"rest_share_pct": <number>, "reason": "<one sentence>"}')
+            raw = llm.complete_json("You are a market analyst sizing regional country splits from evidence.", user)
+            v = raw.get("rest_share_pct") if isinstance(raw, dict) else None
+            return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+        geo_check.fix_empty_rest(fields, geo, ask_rest, review["splits"], log)
         fields["geo_review"] = review
         review["sanity"] = sanity_review(market, data, fields, geo, definition, llm, log, ask_group)
         if review["sanity"].get("regional_answer"):       # a flagged region, re-asked and coherent

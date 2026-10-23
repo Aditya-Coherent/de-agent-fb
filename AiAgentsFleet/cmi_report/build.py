@@ -306,12 +306,15 @@ def vendor_shares(b: "Builder", i: int, m: dict, s, root: str, charts: dict, vsa
         if k == 0:
             b.keep(i)
         elif k == 1:
-            b.caption(i, "Figure", f"Vendor share of global {fmt.lower_name(root)} market value, {vy} (published figures)")
+            # every figure in the report is attributed to CMI (user decision 2026-10-22): the share estimates
+            # are CMI's, built on company and industry disclosures; the web sources stay in the internal log
+            b.caption(i, "Figure", f"Vendor share of global {fmt.lower_name(root)} market value, {vy} (CMI estimate)")
         elif k == 2:
             b.image(i, charts["vendor_global"])
         elif k == 3:
             pubs = dict.fromkeys(x.get("domain") or "" for x in m["vendor_sources"]["global"])
-            b.para(i, "Source: " + ", ".join(p for p in pubs if p) + "; shares as stated by each source")
+            b.log.append("vendor share evidence (internal, not printed): " + ", ".join(p for p in pubs if p))
+            b.para(i, "Source: CMI analysis")
         else:
             b.para(i, s("global_share_para"))
         return
@@ -728,11 +731,19 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
 
     def safe(text: str | None) -> str:
         """Agent-written table/box text through the same guards as the prose."""
+        if isinstance(text, (list, tuple)):    # an agent field given as a list (['Saudi Arabia', 'UAE']): one text
+            text = ", ".join(str(x).strip() for x in text if str(x).strip())
         return clean_text(text or "", ng, cg, dropped, absent) if text else ""
 
     def vsafe(text: str | None) -> str:
         """Vendor-chapter text: the same guards, then the vendor data (guard.vendor_clean)."""
         return vendor_clean(safe(text), m.get("vendor_text"), dropped) if text else ""
+
+    def label(name: str | None) -> str:
+        """An agent's factor name used as a label: its figures ('(... 50-70% of costs)') are not register
+        values, so extras.factor_name cuts them; the rest goes through the same guards as agent text."""
+        from AiAgentsFleet.cmi_report.extras import factor_name
+        return safe(factor_name(name or ""))
 
     def s(key: str, fallback: str | None = None):
         v = S.get(key)
@@ -981,7 +992,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             fleet_dr = m.get("fleet_drivers") or {}
 
             def top(lst_, key):
-                return max(lst_, key=lambda x: abs(float(x.get(key) or 0)))["name"] if lst_ else None
+                return label(max(lst_, key=lambda x: abs(float(x.get(key) or 0)))["name"]) or None if lst_ else None
 
             def largest_pool(geo):
                 d = seg[geo]["demand"] if sec["demand"]["show"] and seg[geo]["demand"] else \
@@ -1054,7 +1065,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             for tr in ((ag.get("dynamics") or {}).get("trends") or [])[:6]:
                 title = tr.get("title", "")
                 text = got.get(title.lower()) or next((t for l, t in got.items() if title.lower()[:12] in l), None) \
-                    or _sentence(tr.get("tagline", ""))
+                    or safe(_sentence(tr.get("tagline", "")))   # the agent's tagline: same checks as all text
                 b.lead(i, title.rstrip(".") + ".", text)
             mea_trends = pairs("trend_paras_mea")
             if mea_trends:
@@ -1102,7 +1113,7 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             from AiAgentsFleet.cmi_report import rules
             dyn = ag.get("dynamics") or {}
             # the impact label follows the reconciled impacts the report prints (no 'Low' factor with a top pp)
-            rows = [[safe(r.get("factor")), r.get("type", ""),
+            rows = [[label(r.get("factor")), r.get("type", ""),
                      rules.impact_label(str(r.get("factor") or ""), dyn) or r.get("impact", ""), r.get("timeframe", ""),
                      safe(r.get("most_exposed"))] for r in dyn.get("impact_matrix") or []]
             b.table(i, rows)
@@ -1127,8 +1138,10 @@ def build(template: Path, out_path: Path, m: dict, prose: dict, ag: dict, charts
             cond = obj("scenario_conditions")
             drv = (m.get("fleet_drivers") or {}).get("drivers") or []
             rst = (m.get("fleet_drivers") or {}).get("restraints") or []
-            d0 = max(drv, key=lambda x: x.get("cagr_contribution_bps", 0))["name"].lower() if drv else "core demand"
-            r0 = max(rst, key=lambda x: x.get("cagr_drag_bps", 0))["name"].lower() if rst else "structural headwinds"
+            d0 = (label(max(drv, key=lambda x: x.get("cagr_contribution_bps", 0))["name"]).lower() if drv else ""
+                  ) or "core demand"
+            r0 = (label(max(rst, key=lambda x: x.get("cagr_drag_bps", 0))["name"]).lower() if rst else ""
+                  ) or "structural headwinds"
             sdef = {"Conservative": f"Restraints such as {r0} weigh more heavily than in the base case.",
                     "Base": f"Current drivers, led by {d0}, continue at their present pace.",
                     "Optimistic": f"Faster momentum from {d0}, with easing pressure from {r0}."}

@@ -40,11 +40,15 @@ from pathlib import Path
 from AiAgentsFleet.cmi_report.guard import sentences, unverified_fact
 
 VERSION = 5          # 5: evidence from the Perplexity Search API; 4: judge must tie the authority to the category
-MAX_CLAIMS = 25                      # cost cap per report; the rest are not checked (and so not printed)
+# cost cap per report; the rest are not checked (and so not printed). 25 left ~40% of claims unchecked.
+MAX_CLAIMS = int(os.environ.get("AIFLEET_MAX_FACT_CLAIMS", "60"))
+CHECK_WORKERS = 6                    # claims checked at the same time (search + judge are I/O-bound)
 NOT_CONFIRMED = "Competent authority not confirmed"
 REQ_NOT_CONFIRMED = "Requirements not confirmed"
 VERDICTS = ("supported", "contradicted", "renamed", "not_found")
 _MIN_QUOTE = 20
+# a vendor 'move' that states there is none ('no dated MEA aquaculture move is evidenced')
+_NON_CLAIM = re.compile(r"\bno (?:dated|evidenced|documented)\b|\b(?:is|are) (?:not )?evidenced\b|\bnot evidenced\b", re.I)
 # where a claim is printed: lower = more visible, checked first (tables > timeline > profiles > other)
 _VISIBILITY = {"regulator": 0, "policy": 1, "milestone": 2, "vendor_move": 3}
 
@@ -151,7 +155,8 @@ def claims(fields: dict) -> list[dict]:
                         "text": f"{r['regulator'].strip()} is the competent authority in {country}."})
         for j, s in enumerate(sentences(str(r.get("requirements") or ""))[:3]):
             out.append({"id": f"requirement:{country}:{j}", "kind": "policy", "country": country, "text": s.strip(),
-                        "subject": r.get("regulator") or ""})
+                        "subject": r.get("regulator") or "",
+                        "tie_terms": [str(t) for t in reg.get("category_terms") or [] if str(t).strip()]})
     for i, ms in enumerate(reg.get("milestones") or []):
         ev = str(ms.get("event") or "").strip()
         if not ev:
@@ -172,7 +177,11 @@ def claims(fields: dict) -> list[dict]:
 
 
 def queries(c: dict, product: str) -> list[str]:
-    """1-2 targeted searches for one claim."""
+    """1-2 targeted searches for one claim. A country's requirement claims search exactly what its regulator
+    claim searches (same authority, same registration pages), so the country costs one paid search and the
+    requirement checks are answered from the search cache (2026-10-21: 18 searches -> 9 per market)."""
+    if c["kind"] == "policy" and str(c.get("subject") or "").strip():
+        return queries({**c, "kind": "regulator", "subject": str(c["subject"]).strip()}, product)
     if c["kind"] == "regulator":
         # the category the regulation agent named ('fertiliser') finds pages that tie the agency to the
         # product; a product-name-only query mostly finds generic 'this ministry exists' pages
@@ -331,6 +340,10 @@ def check_claim(c: dict, product: str, llm, search_fn) -> dict:
             hit = {**hit, "verdict": "not_found", "status": "omitted",
                    "note": f"the quote does not tie this authority to {product}"}
         return {**c, **hit, "cached": True}
+    if c["kind"] == "vendor_move" and _NON_CLAIM.search(c["text"]):
+        # 'no dated MEA move is evidenced': it states an absence -- nothing a search could confirm, and the
+        # row was dropped after a paid search anyway
+        return {**c, "verdict": "not_found", "status": "omitted", "note": "states no move: nothing to verify (not searched)"}
     try:
         # the first (most specific) query; the second only when the first finds nothing -- halves the
         # searches per claim (cost) without losing claims that the first query already answers
@@ -376,13 +389,11 @@ def verify(claim_list: list[dict], market: str, llm, search_fn=None, cap: int = 
            log=None) -> list[dict]:
     search_fn = search_fn or default_search
     product = product_name(market)
-    out = []
-    for k, c in enumerate(claim_list):
-        if k >= cap:
-            out.append({**c, "verdict": "not_found", "status": "not_checked",
-                        "note": f"beyond the {cap}-claim cap; not printed"})
-            continue
-        out.append(check_claim(c, product, llm, search_fn))
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=CHECK_WORKERS) as ex:
+        checked = list(ex.map(lambda c: check_claim(c, product, llm, search_fn), claim_list[:cap]))
+    out = checked + [{**c, "verdict": "not_found", "status": "not_checked",
+                      "note": f"beyond the {cap}-claim cap; not printed"} for c in claim_list[cap:]]
     if log:
         n = {s: sum(1 for r in out if r["status"] == s) for s in ("supported", "corrected", "omitted", "not_checked",
                                                                   "error")}

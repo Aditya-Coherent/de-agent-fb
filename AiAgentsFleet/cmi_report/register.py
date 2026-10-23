@@ -93,7 +93,9 @@ def build_register(m: dict, ag: dict) -> list[dict]:
                 if int(y) not in (Y0, Y1):
                     add(f"C-{_code(c)}-{y}", f"{c} market size, {y}", [c], fmt.usd(val), "value")
     for geo, dims in m["segments"].items():
-        total = g if geo == "Global" else (m["subregions"].get(geo) or
+        # regions too: run_cmi_report adds every region's segment split to m["segments"] (regional chapters),
+        # and without its total no share of it is registered ('Row Crops ... 37.7% of 2026E value' flagged)
+        total = g if geo == "Global" else (m["subregions"].get(geo) or m["regions"].get(geo) or
                                            next((d[geo] for d in m["countries"].values() if geo in d), None))
         for dim, segs in dims.items():
             if not m["sections"][dim]["show"]:
@@ -169,9 +171,26 @@ _MULT = re.compile(r"(?<![\d.])\d+(?:\.\d+)?x\b")
 _BARE = re.compile(r"(?<![\w$.+/-])\d[\d,]*(?:\.\d+)?(?![\d%xBM/])")
 
 
+# standard and certification identifiers are names, not data: 'ISO 22000', 'ISO/IEC 17025', 'GSO 2055-1',
+# 'SASO 2902:2018', 'EN 15607' (an 'ISO 22000' use case was flagged as a number not in the model, 2026-10-21)
+_STANDARD = re.compile(r"\b(?:ISO(?:/(?:IEC|TS|TR))?|IEC|EN|BS|ASTM|ANSI|SASO|GSO|JIS|DIN|NF|UNE|FSSC|OIML|CODEX|"
+                       r"CAC|EAS|SANS|KS|AS|NZS)\s?\d[\d.\-]*(?::\d{4})?\b|"
+                       # law and regulation references: 'FAA Part 107', 'Section 404', 'PL 2338', 'Article 6', 'Rule 1033'
+                       r"\b(?:Section|Sec\.|Part|Article|Art\.|PL|Bill|Act|Decree|Directive|Resolution|Rule|Notice|"
+                       r"Law|Order|Title|Chapter|Schedule)\s+(?:No\.?\s*)?\d[\d.\-/]*\b|"
+                       # versioned names: 'Agro 4.0', 'Industry 4.0', 'Dynamics 365', 'Office 365'
+                       r"\b(?:Agro|Agriculture|Industry|Farming|Ag|Dynamics|Office|Microsoft|Web)\s+\d+(?:\.\d+)?\b")
+
+
+# physical measures are not market data: 'farms of roughly 500 hectares', '10-500 ha', '2,000 head', '5 tonnes'
+_MEASURE = re.compile(r"\b\d[\d,]*(?:\.\d+)?(?:\s*[-–]\s*\d[\d,]*(?:\.\d+)?)?\s*(?:hectares?|ha|acres?|tonnes?|tons?|"
+                      r"kg|kilograms?|litres?|liters?|m2|m²|m3|m³|sq\.? ?m|square met(?:er|re)s?|km|kw|kwh|mw|hp|"
+                      r"horsepower|head|birds|cows|animals|sows|hens|ppm|ppb|°c|degrees)\b", re.I)
+
+
 def count_numbers(text: str) -> int:
     """How many data numbers a text holds (for the verification log)."""
-    rest = text
+    rest = _MEASURE.sub(" ", _STANDARD.sub(" ", text))
     n = 0
     for rx in (_MONEY, _PP, _PCT, _MULT):
         n += len(rx.findall(rest))
@@ -199,7 +218,7 @@ class FactGuard:
         return any(n and re.search(rf"(?<![a-z]){re.escape(n.lower())}(?![a-z])", low) for n in entry["entities"])
 
     def _check(self, token: str, key: str, text: str, kinds: set[str] | None = None,
-               sign: int | None = None) -> str | None:
+               sign: int | None = None, near: str | None = None) -> str | None:
         cands = [e for e in self.by_display.get(key, []) if not kinds or e["metric"] in kinds]
         if not cands:
             return f"{token} is not a register value"
@@ -213,7 +232,9 @@ class FactGuard:
         if not named:
             return f"{token} belongs to {cands[0]['id']} ({cands[0]['fact']}), whose entity is not named here"
         if "%" in token:
-            says_global = re.search(r"\bof (?:the )?(?:global|world|worldwide)\b", text, re.I)
+            # only the words around this figure, and not a possessive: 'produces most of the world's farmed
+            # fish' elsewhere in the paragraph does not make 'China ... 39.0% of the regional market' a global share
+            says_global = re.search(r"\bof (?:the )?(?:global|world|worldwide)\b(?!['’]s)", near or text, re.I)
             if says_global and all(e["metric"] == "share_parent" and "global" not in e["fact"] for e in named) \
                     and not any(e["metric"] in ("cagr", "share", "share_global") for e in named):
                 return f"{token} is a share of the parent region, but the sentence says 'of global'"
@@ -221,6 +242,7 @@ class FactGuard:
 
     def bad(self, text: str) -> list[str]:
         problems = []
+        text = _MEASURE.sub(" ", _STANDARD.sub(" ", text))   # 'ISO 22000', '500 hectares': names / measures
         rest = text
         for mm in _MONEY.finditer(text):
             p = self._check(mm.group(), _norm_money(mm.group()), text)
@@ -237,7 +259,7 @@ class FactGuard:
         for mm in _PCT.finditer(rest):
             if mm.group() in self.extra:
                 continue
-            p = self._check(mm.group(), mm.group(), text)
+            p = self._check(mm.group(), mm.group(), text, near=rest[max(0, mm.start() - 60): mm.end() + 60])
             if p:
                 problems.append(p)
         rest = _PCT.sub(" ", rest)

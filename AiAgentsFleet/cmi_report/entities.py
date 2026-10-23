@@ -27,7 +27,8 @@ import re
 import time
 from typing import Callable
 
-VENDOR_CAP = 12                     # entity checks per market (one LLM call each)
+VENDOR_CAP = 20                     # entity checks per market (one LLM call each); 12 left named leaders unchecked
+ENTITY_WORKERS = 6                  # entity checks run side by side
 UNSOURCED_MAX_PCT = 20.0            # an unsourced share above this is blocked
 MEA_PRESENCE = ("Leading", "Strong", "Moderate", "Limited", "None")
 
@@ -282,7 +283,9 @@ def product_phrases(market: str, definition: dict | None = None) -> list[str]:
     if len(words) >= 3:
         out.append(" ".join(words[-2:]))
     d = definition or {}
-    terms = list(d.get("included_items") or [])
+    # the definition's own words ('aquaculture production') rarely appear in a company profile, which says
+    # 'salmon farming': the definition agent's product_terms are how profiles name the product
+    terms = list(d.get("included_items") or []) + list(d.get("product_terms") or [])
     for inner in re.findall(r"\(([^)]*)\)", str(d.get("measures") or "")):
         terms += re.split(r",|;|\band\b|\bor\b", inner)
     for t in terms:
@@ -518,9 +521,12 @@ def entity_queries(name: str, market: str, products: list[str] | None = None) ->
     """HQ, parent, the market name and -- for the product check -- the shortest
     other product term ('CSPC ascorbic acid', 'Cargill poultry feed')."""
     root = re.sub(r"^\s*global\s+|\s+market\s*$", "", market or "", flags=re.I)
-    qs = [f"{name} company headquarters", f"{name} parent company subsidiary owned by", f"{name} {root}"]
     other = sorted((p for p in products or [] if _simple(p) != _simple(root)), key=len)
-    return qs + ([f"{name} {other[0]}"] if other else [])
+    # two searches, not four (cost, 2026-10-21): the company's own facts in one -- the same text in every
+    # market, so the shared search cache answers it after the first market that names the company -- and
+    # the company with this market's product in the other (each returns twice the results it did)
+    return [f"{name} headquarters parent company owned by",
+            f"{name} {root}" + (f" {other[0]}" if other else "")]
 
 
 def check_entity(name: str, market: str, definition_text: str, claims: dict, others: list[str], llm,
@@ -591,10 +597,12 @@ def check_entities(names: list[str], market: str, definition_text: str, vendors:
                    search: Callable[[list[str]], list[dict]], log: list[str], cap: int = VENDOR_CAP,
                    products: list[str] | None = None) -> dict:
     """fields["entities"]: {"records": {name: record}, "not_checked": [names beyond the cap]}."""
-    records = {}
-    for n in names[:cap]:
-        records[n] = check_entity(n, market, definition_text, claims_for(n, vendors), names, llm, search, log,
-                                  products)
+    from concurrent.futures import ThreadPoolExecutor
+    # one search + one LLM call each, I/O-bound: checked side by side, kept in list order
+    with ThreadPoolExecutor(max_workers=ENTITY_WORKERS) as ex:
+        done = list(ex.map(lambda n: check_entity(n, market, definition_text, claims_for(n, vendors), names, llm,
+                                                  search, log, products), names[:cap]))
+    records = dict(zip(names[:cap], done))
     log.append(f"[entities] {len(records)} vendor(s) checked, {len(included(names, records))} confirmed as making or selling the product"
                + (f"; {len(names) - cap} beyond the cap of {cap} not checked" if len(names) > cap else ""))
     return {"records": records, "not_checked": names[cap:], "products": products or []}

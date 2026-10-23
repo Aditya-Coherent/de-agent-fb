@@ -69,7 +69,8 @@ def test_perplexity_results_become_snippets_with_sources(env):
     calls = _httpx(env, [_Resp(200, PPLX)])
     out = w.search_snippets_with_sources("saudi fertiliser registration", 5)
     assert calls[0]["url"] == w.PERPLEXITY_URL and calls[0]["headers"]["Authorization"] == "Bearer pplx-test"
-    assert calls[0]["json"]["max_results"] == 5 and calls[0]["json"]["max_tokens_per_page"] > 0
+    # a request always asks for _FETCH_N results (same price); the caller gets the 5 it asked for
+    assert calls[0]["json"]["max_results"] == w._FETCH_N and calls[0]["json"]["max_tokens_per_page"] > 0
     assert out == [{"text": "GCC Fertilizers and Soil Conditioners Law: Registering the fertilizers and soil "
                             "conditioners that can be imported...", "url": "https://laws.boe.gov.sa/x",
                     "domain": "laws.boe.gov.sa", "title": "GCC Fertilizers and Soil Conditioners Law"}]

@@ -331,6 +331,62 @@ def review_splits(fields: dict, geo: dict, ask: Callable[[str, str], dict | None
     return out
 
 
+REST_MAX = 60.0     # a 'Rest of' answer above this is not a remainder of smaller markets
+
+
+def fix_empty_rest(fields: dict, geo: dict, ask_share: Callable[[str, list[str], dict[str, float]], float | None],
+                   review: dict, log: list[str]) -> None:
+    """A 'Rest of' still at 0% (or missing) after the full re-ask: the agent restated its whole split
+    unchanged, so it is asked ONE narrow question instead -- the share of the region its listed member
+    countries hold (`ask_share(region, members, named_shares)` -> % or None). The named countries keep
+    their relative sizes and are scaled into the remaining 100 - rest. Recorded per group in
+    review[key]["rest_fix"]; a region the narrow question can't fix keeps its blocker."""
+    members_of = {r: [c for c in MEMBERS[r] if c not in (geo.get(r) or [])] for r in REST}
+    for key, regions in GROUP_REGIONS.items():
+        ans = fields.get(key)
+        if not isinstance(ans, dict) or "error" in ans:
+            continue
+        for r in regions:
+            if r not in REST:
+                continue
+            split = ans.get(r) if isinstance(ans.get(r), dict) else None
+            if split is None:
+                continue
+            rest = rest_share(r, split)
+            if rest is not None and rest > 0:
+                continue
+            named = {c: _num(v.get("share_pct_of_region")) for c, v in split.items()
+                     if isinstance(v, dict) and not canonical(c).startswith("Rest of")}
+            named = {c: s for c, s in named.items() if s and s > 0}
+            try:
+                got = ask_share(r, members_of[r], named)
+            except Exception as exc:  # noqa: BLE001
+                log.append(f"[{key}] {REST[r]} share question failed: {exc}")
+                got = None
+            rec = {"region": r, "before": rest, "answer": got}
+            if got is None or not 0 < got <= REST_MAX or not named:
+                rec["outcome"] = "not fixed"
+                log.append(f"[{key}] {REST[r]}: narrow question gave {got!r} -- left as is")
+            else:
+                k = (100.0 - got) / sum(named.values())
+                for c, s in named.items():
+                    split[c]["share_pct_of_region"] = round(s * k, 2)
+                rest_key = next((c for c in split if canonical(c) == REST[r]), REST[r])
+                old = split.get(rest_key) if isinstance(split.get(rest_key), dict) else {}
+                if _num(old.get("cagr_2026_2033_pct")) is None:   # else model.py falls back to a fixed default
+                    g = {c: _num(split[c].get("cagr_2026_2033_pct")) for c in named}
+                    g = {c: v for c, v in g.items() if v is not None}
+                    if g:
+                        old = {**old, "cagr_2026_2033_pct": round(sum(named[c] * v for c, v in g.items())
+                                                                   / sum(named[c] for c in g), 2)}
+                split[rest_key] = {**old, "share_pct_of_region": round(got, 2)}
+                rec["outcome"] = f"fixed: named countries scaled by {k:.3f}"
+                log.append(f"[{key}] {REST[r]}: 0% -> {got:g}% from a narrow re-ask; named countries scaled by {k:.3f}")
+            rec_list = review.setdefault(key, {"problems": [], "reasked": True}).setdefault("rest_fix", [])
+            rec_list.append(rec)
+            review[key]["reasked"] = True
+
+
 # --------------------------------------------------------------------------- #
 # sceptical sanity review of the final country table
 # --------------------------------------------------------------------------- #

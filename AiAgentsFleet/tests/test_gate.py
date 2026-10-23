@@ -112,10 +112,20 @@ def test_to_verify_marker_is_not_ready(tmp_path):
     assert any("[to verify]" in b for b in g["blockers"])
 
 
-@pytest.mark.parametrize("text", ["A note: TBD.", "Lorem ipsum dolor sit amet.", "Drones are used for spraying.",
-                                  "Item [unverified] here."])
+@pytest.mark.parametrize("text", ["A note: TBD.", "Lorem ipsum dolor sit amet.",
+                                  "Approval carries the same weight it does in the drone market.",
+                                  "BVLOS rules set the pace.", "Item [unverified] here."])
 def test_other_leftovers_block(tmp_path, text):
     assert not _gate(_m(), _doc(tmp_path, extra=[("", text)]))["ready"]
+
+
+# drones as equipment are real content in agri-tech and aquaculture reports, not template leftovers
+@pytest.mark.parametrize("text", ["Drones are used for spraying.",
+                                  "Automated feeding, IoT monitoring and underwater drones cut labour.",
+                                  "Crowding grids, sweep nets and brailer bags move the harvest."])
+def test_equipment_words_do_not_block(tmp_path, text):
+    g = _gate(_m(), _doc(tmp_path, extra=[("", text)]))
+    assert g["ready"], g["blockers"]
 
 
 @pytest.mark.parametrize("text", ["51 generated sentence(s) removed before publication.",

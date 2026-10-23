@@ -272,3 +272,8 @@ FIELD_GROUPS: list[dict] = [
 ]
 
 FIELD_GROUP_KEYS = [g["key"] for g in FIELD_GROUPS]
+# the groups the CMI whitepaper reads (cmi_report/model.py, run_data.py, build.py). The other six -- Porter's,
+# sub-segments, pricing tiers, willingness-to-pay, investment priorities, end use -- only feed the older
+# Vitamin C report (report/); `run_fleet.py --groups cmi` skips their searches and LLM calls.
+CMI_FIELD_GROUPS = ["market_size", "drivers_restraints", "segmentation_grade_form", "regional",
+                    "competitive_landscape", "regulation", "scenarios"]

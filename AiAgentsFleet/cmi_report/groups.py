@@ -15,6 +15,18 @@ with them). No numbers live here.
 """
 from __future__ import annotations
 
+from AiAgentsFleet.field_groups import FIELD_GROUPS as _FLEET_GROUPS
+
+
+def FQ(group: str, i: int) -> str:
+    """The fleet's own query template (field_groups.py) for a topic both stages search. The fleet owns the
+    query; a CMI agent that needs the same topic uses its exact text, so the second search is answered from
+    the search cache instead of being paid for again (2026-10-21 query consolidation)."""
+    if group == "market_definition":           # market_definition.py's two searches
+        return ("{market} definition scope", "{market} market segmentation included excluded")[i]
+    return next(g for g in _FLEET_GROUPS if g["key"] == group)["queries"][i]
+
+
 # --------------------------------------------------------------------------- #
 # Geography. The template's regions and table sizes are fixed; WHICH countries
 # are named in each region is chosen per market by the `geography` agent (by
@@ -162,7 +174,7 @@ def schema_for(g: dict, geo: dict) -> str:
 GEOGRAPHY_GROUP = {
     "key": "geography",
     "randomize": False,
-    "queries": ["{market} largest countries by production consumption", "{market} market by country leading countries",
+    "queries": ["{market} largest countries by production consumption", FQ("regional", 2),
                 "{market} Middle East Africa leading countries", "{market} Asia Pacific Latin America top countries"],
     "system": _ANALYST + (
         " Choose which countries to name individually in each region of the report, by their real relevance to "
@@ -212,9 +224,9 @@ GROUPS: list[dict] = [
         # (end user / application / crop type / industry ...) chosen here.
         "key": "segments_global",
         "randomize": ("type_cagr_2026_2033_pct", "demand_segments"),
-        "queries": ["{market} market segmentation by type share CAGR",
-                    "{market} market by end user application share CAGR",
-                    "{market} market segmentation analysis"],
+        "queries": [FQ("segmentation_grade_form", 0),
+                    FQ("end_use_industry", 0),
+                    FQ("market_definition", 1)],
         "system": _ANALYST + (
             " Give the global 2026-2033 CAGR for each segment in CONTEXT.types (keep those exact names) and name "
             "that dimension. Then pick the demand-side segmentation that is standard for THIS market (end user, "
@@ -305,7 +317,7 @@ GROUPS: list[dict] = [
         "randomize": False,
         "queries": ["{market} regulation Middle East GCC regulator",
                     "{market} regulation Africa regulator",
-                    "{market} regulatory framework approval requirements",
+                    FQ("regulation", 0),
                     "{market} new regulation law 2025 2026",
                     "{market} regulation European Union United States"],
         "system": _ANALYST + (
@@ -340,7 +352,7 @@ GROUPS: list[dict] = [
         "key": "vendors",
         # vendor data is never jittered (PLAN-05): a share is printed only when a quote states it
         "randomize": False,
-        "queries": ["{market} leading producers manufacturers companies market share",
+        "queries": [FQ("competitive_landscape", 0),
                     "{market} Middle East Africa companies distributors market share",
                     "{market} value chain suppliers manufacturers distribution margins",
                     "{market} company acquisitions partnerships Middle East Africa 2025"],
@@ -396,7 +408,7 @@ GROUPS: list[dict] = [
     {
         "key": "published",
         "randomize": False,
-        "queries": ["{market} market size 2025 USD billion", "{market} market size 2024 report CAGR",
+        "queries": [FQ("market_size", 0), FQ("market_size", 3),
                     "{market} Middle East Africa market size report", "{market} market size Grand View Research",
                     "{market} market size MarketsandMarkets Mordor Intelligence"],
         "system": (

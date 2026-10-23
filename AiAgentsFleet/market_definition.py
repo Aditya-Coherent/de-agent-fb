@@ -55,6 +55,9 @@ _SCHEMA_HINT = (
     '"included": ["<short item whose revenue is counted>", ... at least 2], '
     '"excluded": ["<short item NOT counted: a parent/adjacent category or another value-chain level>", '
     '... at least 2], '
+    '"product_terms": ["<2-4 word phrase a company\'s own profile or annual report uses for making or selling '
+    'THIS market\'s product, e.g. \'salmon farming\', \'shrimp farming\' for aquaculture production; never an input, '
+    'equipment or service sold TO this market>", ... 6-12], '
     '"unit": "<e.g. USD million, market value>", '
     '"typical_published_size_usd_bn": <number if the EVIDENCE states a published global size for this '
     'exact scope, else null>}'
@@ -110,6 +113,8 @@ def _shape(data: dict, market: str) -> dict:
         "value_chain_level": normalise_level(data.get("value_chain_level")) or str(data.get("value_chain_level") or ""),
         "included": items(data.get("included")),
         "excluded": items(data.get("excluded")),
+        # how company profiles name the product: the vendor check matches them (entities.product_phrases)
+        "product_terms": items(data.get("product_terms")),
         "unit": str(data.get("unit") or data.get("unit_of_measure") or "USD million, market value").strip(),
         "typical_published_size_usd_bn": size if isinstance(size, (int, float)) and not isinstance(size, bool) else None,
     }

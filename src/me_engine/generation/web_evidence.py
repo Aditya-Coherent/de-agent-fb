@@ -133,6 +133,97 @@ def _cache_put(key: str, results: list[dict]) -> None:
         pass
 
 
+# --------------------------------------------------------------------------- #
+# de-duplication: one paid request per distinct query, across agents, markets and machines
+# --------------------------------------------------------------------------- #
+# Perplexity bills per request, not per result, so every request asks for _FETCH_N results and the cache
+# key is the query alone (normalised): a caller wanting 5 and one wanting 6 share one paid search.
+_FETCH_N = 10
+# SEARCH_SHARED_CACHE=gs://bucket/prefix: a cache every VM and market reads and writes (one object per
+# query). Company facts ('Thermo Fisher headquarters parent company'), source names and framework names are
+# the same in every market, so across a 400-market run each is paid for once. Off when unset or when the
+# google-cloud-storage library / credentials are missing.
+_shared = {"client": None, "bucket": None, "prefix": "", "off": False}
+# one in-flight request per key: parallel claim checks asking the same query wait for the first answer
+import threading as _threading  # noqa: E402
+_key_locks: dict[str, _threading.Lock] = {}
+_key_locks_guard = _threading.Lock()
+
+
+class SearchQuotaExhausted(BaseException):
+    """Perplexity refused for lack of credit. A BaseException on purpose: the agents catch Exception and would
+    carry on with an empty or free-fallback search, silently producing weaker reports (2026-10-21, ~47
+    markets). Raised only when WEB_SEARCH_STRICT=1 (the VM workers set it); the worker stops on it."""
+
+
+def normalise_query(q: str) -> str:
+    return " ".join(str(q).lower().split())
+
+
+def _shared_store():
+    if _shared["off"]:
+        return None
+    if _shared["bucket"] is None:
+        _ensure_env()
+        url = os.environ.get("SEARCH_SHARED_CACHE", "").strip()
+        if not url.startswith("gs://"):
+            _shared["off"] = True
+            return None
+        try:
+            from google.cloud import storage
+            name, _, prefix = url[5:].partition("/")
+            _shared["client"] = storage.Client()
+            _shared["bucket"] = _shared["client"].bucket(name)
+            _shared["prefix"] = prefix.strip("/")
+        except Exception:  # noqa: BLE001 - no library / no credentials: local cache only
+            _shared["off"] = True
+            return None
+    return _shared["bucket"]
+
+
+def _shared_get(key: str) -> list[dict] | None:
+    b = _shared_store()
+    if b is None:
+        return None
+    try:
+        import json
+        blob = b.blob(f"{_shared['prefix']}/{key}.json")
+        doc = json.loads(blob.download_as_bytes())
+        if time.time() - float(doc.get("created", 0)) <= _cache_days() * 86400:
+            return list(doc.get("results") or [])
+    except Exception:  # noqa: BLE001 - not found / network: a miss
+        return None
+    return None
+
+
+def _shared_put(key: str, results: list[dict]) -> None:
+    b = _shared_store()
+    if b is None:
+        return
+    try:
+        import json
+        b.blob(f"{_shared['prefix']}/{key}.json").upload_from_string(
+            json.dumps({"created": time.time(), "results": results}, ensure_ascii=False),
+            content_type="application/json", if_generation_match=0)
+    except Exception:  # noqa: BLE001 - already written by another VM, or network: fine
+        pass
+
+
+def _log_search(query: str, mode: str, source: str) -> None:
+    """SEARCH_LOG=<path>: one JSON line per search (query, mode, local|shared|paid|ddgs) -- the per-market
+    record that shows which searches were paid and that no query was paid twice."""
+    path = os.environ.get("SEARCH_LOG", "").strip()
+    if not path:
+        return
+    try:
+        import json
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"t": round(time.time(), 2), "query": query, "mode": mode, "source": source},
+                                ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _perplexity_results(query: str, max_results: int, retries: int = 2, mode: str = "fast") -> list[dict] | None:
     """Raw Perplexity Search API results [{title, url, snippet, date}], or None on failure
     (the caller then falls back to ddgs). Retries 429/5xx with a short backoff."""
@@ -154,6 +245,10 @@ def _perplexity_results(query: str, max_results: int, retries: int = 2, mode: st
                 return list(r.json().get("results") or [])
             except Exception:  # noqa: BLE001
                 return None
+        if r is not None and r.status_code in (401, 402) and "quota" in str(getattr(r, "text", "")).lower():
+            if os.environ.get("WEB_SEARCH_STRICT", "0") == "1":
+                raise SearchQuotaExhausted(f"PERPLEXITY_QUOTA_EXHAUSTED: {str(getattr(r, 'text', ''))[:200]}")
+            return None
         if r is not None and r.status_code not in (429, 500, 502, 503, 504):
             return None                      # 4xx other than 429: bad key / bad request -- don't retry
         time.sleep(2 * (attempt + 1))
@@ -175,16 +270,31 @@ def _raw_results(query: str, max_results: int, precise: bool = False) -> list[di
     Only successful Perplexity answers are cached -- a ddgs fallback is retried next time."""
     if backend() == "perplexity":
         mode = search_mode(precise)
-        key = _cache_key("perplexity", mode, _PPLX_TOKENS_PER_PAGE, int(max_results), query.strip().lower())
-        hit = _cache_get(key)
-        if hit is not None:
-            STATS["cached"] += 1
-            return hit
-        res = _perplexity_results(query, max_results, mode=mode)
-        if res is not None:
-            STATS[mode] += 1
-            _cache_put(key, res)
-            return res
+        n = int(max_results)
+        # the query alone (normalised) is the key: _FETCH_N results are fetched and each caller takes its n
+        key = _cache_key("perplexity", mode, _PPLX_TOKENS_PER_PAGE, _FETCH_N, normalise_query(query))
+        with _key_locks_guard:
+            lock = _key_locks.setdefault(key, _threading.Lock())
+        with lock:                                    # a parallel caller with the same query waits, then hits
+            hit = _cache_get(key)
+            if hit is not None:
+                STATS["cached"] += 1
+                _log_search(query, mode, "local")
+                return hit[:n]
+            hit = _shared_get(key)
+            if hit is not None:
+                STATS["cached"] += 1
+                _cache_put(key, hit)
+                _log_search(query, mode, "shared")
+                return hit[:n]
+            res = _perplexity_results(query, max(n, _FETCH_N), mode=mode)
+            if res is not None:
+                STATS[mode] += 1
+                _cache_put(key, res)
+                _shared_put(key, res)
+                _log_search(query, mode, "paid")
+                return res[:n]
+    _log_search(query, "ddgs", "ddgs")
     return _ddgs_results(query, max_results)
 
 
